@@ -2,7 +2,7 @@
 
 ## 1. 개요 및 조사 목적
 
-본 보고서는 Issue #4 및 [PRD v1.0](../../PRD/PRD_EduVibe_Archive_v1.0.md)에서 채택된 기술 스택(FastAPI, SQLAlchemy 2.0, Alembic, Python 3.12+ `sqlite3`, SQLite 3.45+)을 기반으로, 단일 호스트 환경에서 세션 폐기, 원자적 앱 쓰기, 지속형 백그라운드 검사 작업, 온라인 백업을 안전하게 병행 운용하기 위한 외부 1차 검증 자료(Primary Sources) 기반의 기술적 제약, 동작 조건 및 복구 절차를 정의한다.
+본 보고서는 Issue #4 및 [PRD v1.0](../../PRD/PRD_EduVibe_Archive_v1.0.md)에서 채택된 기술 스택(FastAPI, SQLAlchemy 2 계열, Alembic, Python `sqlite3`, SQLite)을 기반으로, 단일 호스트 환경에서 세션 폐기, 원자적 앱 쓰기, 지속형 백그라운드 검사 작업, 온라인 백업을 안전하게 병행 운용하기 위한 외부 1차 검증 자료(Primary Sources) 기반의 기술적 제약, 동작 조건 및 복구 절차를 정의한다. Python 3.12.3과 SQLite 3.45.1은 조사 시 검증 환경이지 PRD가 확정한 최소 버전이 아니다.
 
 본 조사는 SQLite를 다른 분산 RDBMS로 교체하지 않는다는 전제하에 진행되었으며, 모든 기술적 주장은 SQLite, Python, SQLAlchemy, FastAPI, Alembic, OWASP, IETF RFC 등의 공식 1차 출처에 근거한다.
 
@@ -306,71 +306,49 @@
 
 ## 8. 1차 출처 참고 문헌 (Primary Sources Reference List)
 
-본 보고서의 모든 판단과 기술적 제약은 아래 22개 공식 1차 출처 문서에만 기반합니다:
+아래는 보고서가 사용한 공식 1차 출처 중 핵심 22개입니다. 표와 본문에 직접 연결된 추가 공식 출처도 함께 근거로 사용했습니다.
 
-1. **SQLite 공식 문서: Write-Ahead Logging (WAL)**  
-   `https://www.sqlite.org/wal.html`  
+1. **SQLite 공식 문서: Write-Ahead Logging (WAL)** — `https://www.sqlite.org/wal.html`
    *(WAL 동시성, 읽기/쓰기 비차단 원리, 단일 쓰기 제약, 네트워크 파일시스템 미지원)*
-2. **SQLite 공식 문서: sqlite3_busy_timeout C-API**  
-   `https://www.sqlite.org/c3ref/busy_timeout.html`  
+2. **SQLite 공식 문서: sqlite3_busy_timeout C-API** — `https://www.sqlite.org/c3ref/busy_timeout.html`
    *(잠금 발생 시 대기 핸들러 설정 및 밀리초 단위 타임아웃 메커니즘)*
-3. **SQLite 공식 문서: Foreign Key Support**  
-   `https://www.sqlite.org/foreignkeys.html`  
+3. **SQLite 공식 문서: Foreign Key Support** — `https://www.sqlite.org/foreignkeys.html`
    *(외래키 제약 기본 비활성화, 연결별 PRAGMA foreign_keys=ON 설정, CASCADE 삭제)*
-4. **SQLite 공식 문서: File Locking And Concurrency In SQLite Version 3**  
-   `https://www.sqlite.org/lockingv3.html`  
+4. **SQLite 공식 문서: File Locking And Concurrency In SQLite Version 3** — `https://www.sqlite.org/lockingv3.html`
    *(SHARED, RESERVED, PENDING, EXCLUSIVE 잠금 상태 및 락 에스컬레이션 데드락)*
-5. **SQLite 공식 문서: SQL As Understood By SQLite - BEGIN TRANSACTION**  
-   `https://www.sqlite.org/lang_transaction.html`  
+5. **SQLite 공식 문서: SQL As Understood By SQLite - BEGIN TRANSACTION** — `https://www.sqlite.org/lang_transaction.html`
    *(DEFERRED, IMMEDIATE, EXCLUSIVE 트랜잭션 모드 정의 및 쓰기 경합 방지)*
-6. **SQLite 공식 문서: SQLite Online Backup API**  
-   `https://sqlite.org/backup.html`  
+6. **SQLite 공식 문서: SQLite Online Backup API** — `https://sqlite.org/backup.html`
    *(온라인 백업 API 아키텍처, 파일 단순 복사 시의 정합성 훼손 위험)*
-7. **SQLite 공식 문서: Partial Indexes**  
-   `https://www.sqlite.org/partialindex.html`  
+7. **SQLite 공식 문서: Partial Indexes** — `https://www.sqlite.org/partialindex.html`
    *(WHERE 절을 포함한 부분 인덱스 생성 및 상태별 고유성 강제)*
-8. **SQLite 공식 문서: PRAGMA Statements**  
-   `https://www.sqlite.org/pragma.html`  
+8. **SQLite 공식 문서: PRAGMA Statements** — `https://www.sqlite.org/pragma.html`
    *(journal_mode, busy_timeout, foreign_keys, integrity_check, foreign_key_check)*
-9. **SQLite 공식 문서: WAL Checkpoint C-API**  
-   `https://www.sqlite.org/c3ref/wal_checkpoint_v2.html`  
+9. **SQLite 공식 문서: WAL Checkpoint C-API** — `https://www.sqlite.org/c3ref/wal_checkpoint_v2.html`
    *(PASSIVE, FULL, RESTART, TRUNCATE 체크포인트 모드 및 WAL 비우기)*
-10. **SQLite 공식 문서: Using SQLite In Multi-Threaded Applications**  
-    `https://www.sqlite.org/threadsafe.html`  
+10. **SQLite 공식 문서: Using SQLite In Multi-Threaded Applications** — `https://www.sqlite.org/threadsafe.html`
     *(Single-thread, Multi-thread, Serialized 스레딩 모드 및 동시성 정책)*
-11. **Python 공식 문서: sqlite3 — DB-API 2.0 interface for SQLite databases**  
-    `https://docs.python.org/3/library/sqlite3.html`  
+11. **Python 공식 문서: sqlite3 — DB-API 2.0 interface for SQLite databases** — `https://docs.python.org/3/library/sqlite3.html`
     *(Python 3.12 PEP 249 autocommit 매개변수, Connection.backup, threadsafety, check_same_thread)*
-12. **Python 공식 문서: secrets — Generate secure random numbers for managing secrets**  
-    `https://docs.python.org/3/library/secrets.html`  
+12. **Python 공식 문서: secrets — Generate secure random numbers for managing secrets** — `https://docs.python.org/3/library/secrets.html`
     *(암호학적으로 안전한 256비트 난수 세션/CSRF 토큰 생성)*
-13. **Python 공식 문서: hashlib — Secure hashes and message digests**  
-    `https://docs.python.org/3/library/hashlib.html`  
+13. **Python 공식 문서: hashlib — Secure hashes and message digests** — `https://docs.python.org/3/library/hashlib.html`
     *(세션 토큰 SHA-256 단방향 해싱 저장)*
-14. **SQLAlchemy 공식 문서: SQLite Dialect**  
-    `https://docs.sqlalchemy.org/en/20/dialects/sqlite.html`  
+14. **SQLAlchemy 공식 문서: SQLite Dialect** — `https://docs.sqlalchemy.org/en/20/dialects/sqlite.html`
     *(connect 이벤트 리스너를 통한 외래키 및 busy_timeout 주입, QueuePool 설정, 트랜잭션 제어)*
-15. **SQLAlchemy 공식 문서: Optimistic Concurrency Control (version_id_col)**  
-    `https://docs.sqlalchemy.org/en/20/orm/versioning.html`  
+15. **SQLAlchemy 공식 문서: Optimistic Concurrency Control (version_id_col)** — `https://docs.sqlalchemy.org/en/20/orm/versioning.html`
     *(조건부 UPDATE 및 rowcount 기반 낙관적 동시성 충돌 감지)*
-16. **FastAPI 공식 문서: SQL (Relational) Databases**  
-    `https://fastapi.tiangolo.com/tutorial/sql-databases/`  
+16. **FastAPI 공식 문서: SQL (Relational) Databases** — `https://fastapi.tiangolo.com/tutorial/sql-databases/`
     *(SQLite 연동 가이드 및 connect_args={"check_same_thread": False} 설정)*
-17. **FastAPI 공식 문서: Concurrency and async / await**  
-    `https://fastapi.tiangolo.com/async/`  
+17. **FastAPI 공식 문서: Concurrency and async / await** — `https://fastapi.tiangolo.com/async/`
     *(def 라우트의 AnyIO 워커 스레드풀 분기 실행 및 이벤트 루프 블로킹 방지)*
-18. **Alembic 공식 문서: Running "Batch" Migrations for SQLite and Other Databases**  
-    `https://alembic.sqlalchemy.org/en/latest/batch.html`  
+18. **Alembic 공식 문서: Running "Batch" Migrations for SQLite and Other Databases** — `https://alembic.sqlalchemy.org/en/latest/batch.html`
     *(SQLite ALTER TABLE 제약 극복을 위한 batch_alter_table 모드)*
-19. **OWASP 공식 문서: Session Management Cheat Sheet**  
-    `https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html`  
+19. **OWASP 공식 문서: Session Management Cheat Sheet** — `https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html`
     *(서버 저장형 세션, 토큰 해싱 저장, 세션 회전 및 강제 무효화 정책)*
-20. **OWASP 공식 문서: Cross-Site Request Forgery (CSRF) Prevention Cheat Sheet**  
-    `https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html`  
+20. **OWASP 공식 문서: Cross-Site Request Forgery (CSRF) Prevention Cheat Sheet** — `https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html`
     *(SameSite 쿠키, 세션 결합 CSRF 토큰 검증, Origin/Referer 출처 검증)*
-21. **OWASP 공식 문서: Password Storage Cheat Sheet**  
-    `https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html`  
+21. **OWASP 공식 문서: Password Storage Cheat Sheet** — `https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html`
     *(Argon2id 최소 파라미터 m=19MiB, t=2, p=1 권장 및 더미 해시 타이밍 방어)*
-22. **IETF RFC 9106: Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications**  
-    `https://www.rfc-editor.org/rfc/rfc9106.html`  
+22. **IETF RFC 9106: Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications** — `https://www.rfc-editor.org/rfc/rfc9106.html`
     *(Argon2id 표준 권장사항, 메모리 제약 환경 권장 파라미터)*
