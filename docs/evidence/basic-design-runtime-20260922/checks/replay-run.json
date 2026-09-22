@@ -1,0 +1,1711 @@
+{
+  "mode": "replay",
+  "startedUTC": "2026-09-22T09:03:34.885080+00:00",
+  "origin": "http://127.0.0.1:34623",
+  "sourceRoot": "/mnt/d/dev/vibe_coding_archive/basic_design",
+  "sourceCommit": "d030edd835a3f846a250f6ca28b2c165617e77f3",
+  "python": "3.12.3",
+  "playwright": "1.62.0",
+  "os": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "osRelease": "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+  "console": [
+    {
+      "viewport": "1440x1000",
+      "type": "warning",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "line": 63,
+        "column": 1710,
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "viewport": "1440x1000",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+        "line": 29904,
+        "column": 18,
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "viewport": "1440x1000",
+      "type": "warning",
+      "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+      "location": {
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "line": 2,
+        "column": 3132940,
+        "lineNumber": 2,
+        "columnNumber": 3132940
+      }
+    },
+    {
+      "viewport": "1024x900",
+      "type": "warning",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "line": 63,
+        "column": 1710,
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "viewport": "1024x900",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+        "line": 29904,
+        "column": 18,
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "viewport": "1024x900",
+      "type": "warning",
+      "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+      "location": {
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "line": 2,
+        "column": 3132940,
+        "lineNumber": 2,
+        "columnNumber": 3132940
+      }
+    },
+    {
+      "viewport": "768x1024",
+      "type": "warning",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "line": 63,
+        "column": 1710,
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "viewport": "768x1024",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+        "line": 29904,
+        "column": 18,
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "viewport": "768x1024",
+      "type": "warning",
+      "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+      "location": {
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "line": 2,
+        "column": 3132940,
+        "lineNumber": 2,
+        "columnNumber": 3132940
+      }
+    },
+    {
+      "viewport": "390x844",
+      "type": "warning",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "line": 63,
+        "column": 1710,
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "viewport": "390x844",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+        "line": 29904,
+        "column": 18,
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "viewport": "390x844",
+      "type": "warning",
+      "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+      "location": {
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "line": 2,
+        "column": 3132940,
+        "lineNumber": 2,
+        "columnNumber": 3132940
+      }
+    },
+    {
+      "viewport": "360x844",
+      "type": "warning",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "line": 63,
+        "column": 1710,
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "viewport": "360x844",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+        "line": 29904,
+        "column": 18,
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "viewport": "360x844",
+      "type": "warning",
+      "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+      "location": {
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "line": 2,
+        "column": 3132940,
+        "lineNumber": 2,
+        "columnNumber": 3132940
+      }
+    }
+  ],
+  "pageerrors": [],
+  "network": [
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/EduVibe%20%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C.html",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/tweaks-panel.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/data.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/ui.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/view-auth.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/view-gallery.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/view-detail.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/view-submit.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/view-admin.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:34623/app.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/EduVibe%20%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C.html",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/tweaks-panel.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/data.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/ui.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/view-auth.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/view-gallery.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/view-detail.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/view-submit.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/view-admin.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "http://127.0.0.1:34623/app.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1024x900",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/EduVibe%20%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C.html",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/tweaks-panel.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/data.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/ui.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/view-auth.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/view-gallery.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/view-detail.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/view-submit.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/view-admin.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "http://127.0.0.1:34623/app.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "768x1024",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/EduVibe%20%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C.html",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/tweaks-panel.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/data.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/ui.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/view-auth.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/view-gallery.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/view-detail.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/view-submit.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/view-admin.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "http://127.0.0.1:34623/app.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "390x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/EduVibe%20%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C.html",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/tweaks-panel.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/data.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/ui.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/view-auth.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/view-gallery.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/view-detail.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/view-submit.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/view-admin.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "http://127.0.0.1:34623/app.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "360x844",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2",
+      "status": 200
+    }
+  ],
+  "failed": [],
+  "blockedRequests": [],
+  "captures": [
+    {
+      "file": "1440x1000/01-gallery.png",
+      "stateName": "01-gallery",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/02-gallery-search-focus.png",
+      "stateName": "02-gallery-search-focus",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/03-gallery-empty.png",
+      "stateName": "03-gallery-empty",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/04-detail-public.png",
+      "stateName": "04-detail-public",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/05-copy-done.png",
+      "stateName": "05-copy-done",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/06-detail-error-500.png",
+      "stateName": "06-detail-error-500",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/07-login.png",
+      "stateName": "07-login",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/08-login-error.png",
+      "stateName": "08-login-error",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/09-signup.png",
+      "stateName": "09-signup",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/10-signup-error.png",
+      "stateName": "10-signup-error",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/11-login-pending.png",
+      "stateName": "11-login-pending",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/12-detail-private.png",
+      "stateName": "12-detail-private",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/13-edit.png",
+      "stateName": "13-edit",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/14-delete-confirm.png",
+      "stateName": "14-delete-confirm",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/15-delete-cancel.png",
+      "stateName": "15-delete-cancel",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/16-submit.png",
+      "stateName": "16-submit",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/17-submit-error.png",
+      "stateName": "17-submit-error",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/18-admin-users.png",
+      "stateName": "18-admin-users",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/19-admin-user-confirm.png",
+      "stateName": "19-admin-user-confirm",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/20-admin-password.png",
+      "stateName": "20-admin-password",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/21-admin-health.png",
+      "stateName": "21-admin-health",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/22-admin-app-confirm.png",
+      "stateName": "22-admin-app-confirm",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/23-admin-checking.png",
+      "stateName": "23-admin-checking",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/24-admin-checked.png",
+      "stateName": "24-admin-checked",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/25-admin-detail-404.png",
+      "stateName": "25-admin-detail-404",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1440x1000/26-delete-complete.png",
+      "stateName": "26-delete-complete",
+      "viewport": "1440x1000"
+    },
+    {
+      "file": "1024x900/01-gallery.png",
+      "stateName": "01-gallery",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/02-gallery-search-focus.png",
+      "stateName": "02-gallery-search-focus",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/03-gallery-empty.png",
+      "stateName": "03-gallery-empty",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/04-detail-public.png",
+      "stateName": "04-detail-public",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/05-copy-done.png",
+      "stateName": "05-copy-done",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/06-detail-error-500.png",
+      "stateName": "06-detail-error-500",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/07-login.png",
+      "stateName": "07-login",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/08-login-error.png",
+      "stateName": "08-login-error",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/09-signup.png",
+      "stateName": "09-signup",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/10-signup-error.png",
+      "stateName": "10-signup-error",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/11-login-pending.png",
+      "stateName": "11-login-pending",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/12-detail-private.png",
+      "stateName": "12-detail-private",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/13-edit.png",
+      "stateName": "13-edit",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/14-delete-confirm.png",
+      "stateName": "14-delete-confirm",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/15-delete-cancel.png",
+      "stateName": "15-delete-cancel",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/16-submit.png",
+      "stateName": "16-submit",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/17-submit-error.png",
+      "stateName": "17-submit-error",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/18-admin-users.png",
+      "stateName": "18-admin-users",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/19-admin-user-confirm.png",
+      "stateName": "19-admin-user-confirm",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/20-admin-password.png",
+      "stateName": "20-admin-password",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/21-admin-health.png",
+      "stateName": "21-admin-health",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/22-admin-app-confirm.png",
+      "stateName": "22-admin-app-confirm",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/23-admin-checking.png",
+      "stateName": "23-admin-checking",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/24-admin-checked.png",
+      "stateName": "24-admin-checked",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/25-admin-detail-404.png",
+      "stateName": "25-admin-detail-404",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "1024x900/26-delete-complete.png",
+      "stateName": "26-delete-complete",
+      "viewport": "1024x900"
+    },
+    {
+      "file": "768x1024/01-gallery.png",
+      "stateName": "01-gallery",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/02-gallery-search-focus.png",
+      "stateName": "02-gallery-search-focus",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/03-gallery-empty.png",
+      "stateName": "03-gallery-empty",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/04-detail-public.png",
+      "stateName": "04-detail-public",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/05-copy-done.png",
+      "stateName": "05-copy-done",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/06-detail-error-500.png",
+      "stateName": "06-detail-error-500",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/07-login.png",
+      "stateName": "07-login",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/08-login-error.png",
+      "stateName": "08-login-error",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/09-signup.png",
+      "stateName": "09-signup",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/10-signup-error.png",
+      "stateName": "10-signup-error",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/11-login-pending.png",
+      "stateName": "11-login-pending",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/12-detail-private.png",
+      "stateName": "12-detail-private",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/13-edit.png",
+      "stateName": "13-edit",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/14-delete-confirm.png",
+      "stateName": "14-delete-confirm",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/15-delete-cancel.png",
+      "stateName": "15-delete-cancel",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/16-submit.png",
+      "stateName": "16-submit",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/17-submit-error.png",
+      "stateName": "17-submit-error",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/18-admin-users.png",
+      "stateName": "18-admin-users",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/19-admin-user-confirm.png",
+      "stateName": "19-admin-user-confirm",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/20-admin-password.png",
+      "stateName": "20-admin-password",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/21-admin-health.png",
+      "stateName": "21-admin-health",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/22-admin-app-confirm.png",
+      "stateName": "22-admin-app-confirm",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/23-admin-checking.png",
+      "stateName": "23-admin-checking",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/24-admin-checked.png",
+      "stateName": "24-admin-checked",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/25-admin-detail-404.png",
+      "stateName": "25-admin-detail-404",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "768x1024/26-delete-complete.png",
+      "stateName": "26-delete-complete",
+      "viewport": "768x1024"
+    },
+    {
+      "file": "390x844/01-gallery.png",
+      "stateName": "01-gallery",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/02-gallery-search-focus.png",
+      "stateName": "02-gallery-search-focus",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/03-gallery-empty.png",
+      "stateName": "03-gallery-empty",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/04-detail-public.png",
+      "stateName": "04-detail-public",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/05-copy-done.png",
+      "stateName": "05-copy-done",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/06-detail-error-500.png",
+      "stateName": "06-detail-error-500",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/07-login.png",
+      "stateName": "07-login",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/08-login-error.png",
+      "stateName": "08-login-error",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/09-signup.png",
+      "stateName": "09-signup",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/10-signup-error.png",
+      "stateName": "10-signup-error",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/11-login-pending.png",
+      "stateName": "11-login-pending",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/12-detail-private.png",
+      "stateName": "12-detail-private",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/13-edit.png",
+      "stateName": "13-edit",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/14-delete-confirm.png",
+      "stateName": "14-delete-confirm",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/15-delete-cancel.png",
+      "stateName": "15-delete-cancel",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/16-submit.png",
+      "stateName": "16-submit",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/17-submit-error.png",
+      "stateName": "17-submit-error",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/18-admin-users.png",
+      "stateName": "18-admin-users",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/19-admin-user-confirm.png",
+      "stateName": "19-admin-user-confirm",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/20-admin-password.png",
+      "stateName": "20-admin-password",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/21-admin-health.png",
+      "stateName": "21-admin-health",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/22-admin-app-confirm.png",
+      "stateName": "22-admin-app-confirm",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/23-admin-checking.png",
+      "stateName": "23-admin-checking",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/24-admin-checked.png",
+      "stateName": "24-admin-checked",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/25-admin-detail-404.png",
+      "stateName": "25-admin-detail-404",
+      "viewport": "390x844"
+    },
+    {
+      "file": "390x844/26-delete-complete.png",
+      "stateName": "26-delete-complete",
+      "viewport": "390x844"
+    },
+    {
+      "file": "360x844/01-gallery.png",
+      "stateName": "01-gallery",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/02-gallery-search-focus.png",
+      "stateName": "02-gallery-search-focus",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/03-gallery-empty.png",
+      "stateName": "03-gallery-empty",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/04-detail-public.png",
+      "stateName": "04-detail-public",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/05-copy-done.png",
+      "stateName": "05-copy-done",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/06-detail-error-500.png",
+      "stateName": "06-detail-error-500",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/07-login.png",
+      "stateName": "07-login",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/08-login-error.png",
+      "stateName": "08-login-error",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/09-signup.png",
+      "stateName": "09-signup",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/10-signup-error.png",
+      "stateName": "10-signup-error",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/11-login-pending.png",
+      "stateName": "11-login-pending",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/12-detail-private.png",
+      "stateName": "12-detail-private",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/13-edit.png",
+      "stateName": "13-edit",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/14-delete-confirm.png",
+      "stateName": "14-delete-confirm",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/15-delete-cancel.png",
+      "stateName": "15-delete-cancel",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/16-submit.png",
+      "stateName": "16-submit",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/17-submit-error.png",
+      "stateName": "17-submit-error",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/18-admin-users.png",
+      "stateName": "18-admin-users",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/19-admin-user-confirm.png",
+      "stateName": "19-admin-user-confirm",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/20-admin-password.png",
+      "stateName": "20-admin-password",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/21-admin-health.png",
+      "stateName": "21-admin-health",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/22-admin-app-confirm.png",
+      "stateName": "22-admin-app-confirm",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/23-admin-checking.png",
+      "stateName": "23-admin-checking",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/24-admin-checked.png",
+      "stateName": "24-admin-checked",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/25-admin-detail-404.png",
+      "stateName": "25-admin-detail-404",
+      "viewport": "360x844"
+    },
+    {
+      "file": "360x844/26-delete-complete.png",
+      "stateName": "26-delete-complete",
+      "viewport": "360x844"
+    }
+  ],
+  "checks": [
+    {
+      "viewport": "1440x1000",
+      "publicCards": 16,
+      "ownerCards": 17,
+      "signupMismatchAndDuplicate": "observed",
+      "pendingLogin": "rejected",
+      "cancelPreservesApps": true,
+      "adminPasswordType": "text",
+      "simulatedPing": {
+        "status": 200,
+        "ms": 280,
+        "lastChecked": "09:12"
+      },
+      "demoDeleteRemaining": 16,
+      "mobileAdminEntry": "visible navigation"
+    },
+    {
+      "viewport": "1024x900",
+      "publicCards": 16,
+      "ownerCards": 17,
+      "signupMismatchAndDuplicate": "observed",
+      "pendingLogin": "rejected",
+      "cancelPreservesApps": true,
+      "adminPasswordType": "text",
+      "simulatedPing": {
+        "status": 200,
+        "ms": 280,
+        "lastChecked": "09:12"
+      },
+      "demoDeleteRemaining": 16,
+      "mobileAdminEntry": "visible navigation"
+    },
+    {
+      "viewport": "768x1024",
+      "publicCards": 16,
+      "ownerCards": 17,
+      "signupMismatchAndDuplicate": "observed",
+      "pendingLogin": "rejected",
+      "cancelPreservesApps": true,
+      "adminPasswordType": "text",
+      "simulatedPing": {
+        "status": 200,
+        "ms": 280,
+        "lastChecked": "09:12"
+      },
+      "demoDeleteRemaining": 16,
+      "mobileAdminEntry": "visible navigation"
+    },
+    {
+      "viewport": "390x844",
+      "publicCards": 16,
+      "ownerCards": 17,
+      "signupMismatchAndDuplicate": "observed",
+      "pendingLogin": "rejected",
+      "cancelPreservesApps": true,
+      "adminPasswordType": "text",
+      "simulatedPing": {
+        "status": 200,
+        "ms": 280,
+        "lastChecked": "09:12"
+      },
+      "demoDeleteRemaining": 16,
+      "mobileAdminEntry": "resize from 768px"
+    },
+    {
+      "viewport": "360x844",
+      "publicCards": 16,
+      "ownerCards": 17,
+      "signupMismatchAndDuplicate": "observed",
+      "pendingLogin": "rejected",
+      "cancelPreservesApps": true,
+      "adminPasswordType": "text",
+      "simulatedPing": {
+        "status": 200,
+        "ms": 280,
+        "lastChecked": "09:12"
+      },
+      "demoDeleteRemaining": 16,
+      "mobileAdminEntry": "resize from 768px"
+    }
+  ],
+  "browser": "151.0.7922.34",
+  "executable": "/home/dominelinux/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+  "sourcesUnchanged": true,
+  "finishedUTC": "2026-09-22T09:05:20.523755+00:00"
+}

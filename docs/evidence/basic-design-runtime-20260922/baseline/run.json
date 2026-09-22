@@ -1,0 +1,221 @@
+{
+  "mode": "live-baseline",
+  "startedUTC": "2026-09-22T09:01:44.871366+00:00",
+  "origin": "http://127.0.0.1:36105",
+  "sourceRoot": "/mnt/d/dev/vibe_coding_archive/basic_design",
+  "sourceCommit": "d030edd835a3f846a250f6ca28b2c165617e77f3",
+  "python": "3.12.3",
+  "playwright": "1.62.0",
+  "os": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "osRelease": "PRETTY_NAME=\"Ubuntu 24.04.3 LTS\"\nNAME=\"Ubuntu\"\nVERSION_ID=\"24.04\"\nVERSION=\"24.04.3 LTS (Noble Numbat)\"\nVERSION_CODENAME=noble\nID=ubuntu\nID_LIKE=debian\nHOME_URL=\"https://www.ubuntu.com/\"\nSUPPORT_URL=\"https://help.ubuntu.com/\"\nBUG_REPORT_URL=\"https://bugs.launchpad.net/ubuntu/\"\nPRIVACY_POLICY_URL=\"https://www.ubuntu.com/legal/terms-and-policies/privacy-policy\"\nUBUNTU_CODENAME=noble\nLOGO=ubuntu-logo\n",
+  "console": [
+    {
+      "viewport": "1440x1000",
+      "type": "warning",
+      "text": "cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation",
+      "location": {
+        "url": "https://cdn.tailwindcss.com/",
+        "line": 63,
+        "column": 1710,
+        "lineNumber": 63,
+        "columnNumber": 1710
+      }
+    },
+    {
+      "viewport": "1440x1000",
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold",
+      "location": {
+        "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+        "line": 29904,
+        "column": 18,
+        "lineNumber": 29904,
+        "columnNumber": 18
+      }
+    },
+    {
+      "viewport": "1440x1000",
+      "type": "warning",
+      "text": "You are using the in-browser Babel transformer. Be sure to precompile your scripts for production - https://babeljs.io/docs/setup/",
+      "location": {
+        "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+        "line": 2,
+        "column": 3132940,
+        "lineNumber": 2,
+        "columnNumber": 3132940
+      }
+    }
+  ],
+  "pageerrors": [],
+  "network": [
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/EduVibe%20%EC%95%84%EC%B9%B4%EC%9D%B4%EB%B8%8C.html",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 302
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.tailwindcss.com/3.4.17",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/tweaks-panel.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/data.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/ui.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/view-auth.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/view-gallery.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/view-detail.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/view-submit.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/view-admin.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "http://127.0.0.1:36105/app.jsx",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200
+    },
+    {
+      "viewport": "1440x1000",
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200
+    }
+  ],
+  "failed": [],
+  "blockedRequests": [],
+  "captures": [
+    {
+      "file": "1440x1000/01-gallery.png",
+      "stateName": "01-gallery",
+      "viewport": "1440x1000"
+    }
+  ],
+  "checks": [],
+  "browser": "151.0.7922.34",
+  "executable": "/home/dominelinux/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome",
+  "sourcesUnchanged": true,
+  "finishedUTC": "2026-09-22T09:01:53.669405+00:00"
+}

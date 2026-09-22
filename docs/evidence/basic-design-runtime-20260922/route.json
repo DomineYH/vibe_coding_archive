@@ -1,0 +1,25 @@
+{
+  "task_id": "wayfinder-ui-evidence-20260922",
+  "profile": "architect",
+  "requested": {
+    "harness": "codex",
+    "model": "gpt-6-astra",
+    "effort": "xhigh"
+  },
+  "effective": {
+    "harness": "codex",
+    "model": "gpt-6-astra",
+    "effort": "xhigh"
+  },
+  "session": "01a0c851-0623-79c0-b338-bba1ceaf6aa4",
+  "turn": "01a0c851-be21-7541-9423-ec50f9b96b1f",
+  "bindingEvidence": "/home/dominelinux/.codex/sessions/2026/09/22/rollout-2026-09-22T17-52-28-01a0c851-0623-79c0-b338-bba1ceaf6aa4.jsonl",
+  "skill": "/home/dominelinux/.agents/skills/wayfinder/SKILL.md",
+  "claim": {
+    "assignee": "DomineYH",
+    "verifiedOwnerAndAuthenticatedUser": "DomineYH",
+    "command": "gh issue edit 2 --add-assignee DomineYH",
+    "beforeEvidence": true
+  },
+  "installs": []
+}

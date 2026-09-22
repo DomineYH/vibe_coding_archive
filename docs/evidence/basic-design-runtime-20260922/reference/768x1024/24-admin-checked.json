@@ -1,0 +1,622 @@
+{
+  "screen": "관리자 대시보드",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "dpr": 1,
+  "date": "2026-09-22T00:12:00.000Z",
+  "widths": {
+    "html": 768,
+    "body": 768,
+    "viewport": 768
+  },
+  "rootOverflowX": "hidden",
+  "bodyOverflowX": "hidden",
+  "outsideViewport": [],
+  "internalOverflow": [],
+  "gridColumns": null,
+  "text": "관리자 대시보드\n\n사용자 승인과 플랫폼 상태를 한곳에서 관리해요.\n\n사용자 관리\nHealth Monitor\n전체 사용자\n7\n승인 대기\n2\n등록된 앱\n17\n정상 가동\n15 / 17\n네트워크 활성 상태 모니터링\n전체 재검사\n분수 피자 가게\nhttps://fraction-pizza.vercel.app\n280 ms\n200 OK\n즉시 재검사\n삭제\n함수 그래프 실험실\nhttps://graph-lab.netlify.app\n156 ms\n200 OK\n즉시 재검사\n삭제\n확률 실험 시뮬레이터\nhttps://prob-sim.web.app\n203 ms\n200 OK\n즉시 재검사\n삭제\n입체도형 단면 탐험대\nhttps://solid-slice.pages.dev\n121 ms\n200 OK\n즉시 재검사\n삭제\n광합성 인터랙티브 시뮬레이터\nhttps://photosyn-lab.vercel.app\n98 ms\n200 OK\n즉시 재검사\n삭제\n주기율표 탐험 퀴즈\nhttps://element-quest.web.app\n187 ms\n200 OK\n즉시 재검사\n삭제\n전기회로 빌더\nhttps://circuit-builder.netlify.app\n500 Internal Server Error\n즉시 재검사\n삭제\n500 Internal Server Error — 서버 내부 오류\n\n서버 내부 오류가 감지되었습니다. 백엔드 함수 타임아웃, 환경변수 누락 또는 DB 커넥션 실패가 의심됩니다. 호스팅 콘솔의 런타임 로그를 확인하세요.\n\n별자리 관측 일지\nhttps://star-diary.pages.dev\n142 ms\n200 OK\n즉시 재검사\n삭제\nAI 회화 파트너\nhttps://talk-buddy.vercel.app\n311 ms\n200 OK\n즉시 재검사\n삭제\n영단어 스피드 배틀\nhttps://word-battle.web.app\n167 ms\n200 OK\n즉시 재검사\n삭제\n문법 클리닉\nhttps://grammar-clinic.netlify.app\n139 ms\n200 OK\n즉시 재검사\n삭제\n파닉스 사운드 랩\nhttps://phonics-lab.pages.dev\n404 Not Found\n즉시 재검사\n삭제\n404 Not Found — 리소스 없음\n\n요청한 페이지를 찾을 수 없습니다. 배포 URL이 변경되었거나 호스팅 프로젝트가 삭제·이동되었을 가능성이 있습니다. URL을 갱신하거나 재배포가 필요합니다.\n\n조선왕조 인터랙티브 타임라인\nhttps://joseon-timeline.vercel.app\n110 ms\n200 OK\n즉시 재검사\n삭제\n역사 인물 AI 인터뷰\nhttps://history-interview.vercel.app\n287 ms\n200 OK\n즉시 재검사\n삭제\n문화유산 도슨트 갤러리\nhttps://heritage-docent.web.app\n174 ms\n200 OK\n즉시 재검사\n삭제\n독립운동가 발자취 지도\nhttps://independence-map.netlify.app\n192 ms\n200 OK\n즉시 재검사\n삭제\n과학 수행평가 루브릭 채점기\nhttps://rubric-grader.vercel.app\n95 ms\n200 OK\n즉시 재검사\n삭제",
+  "inputValues": [],
+  "svgCount": 2,
+  "lucideLoaded": true,
+  "LRMatchesGlobal": true,
+  "fontStatus": "loaded",
+  "fontFaces": [
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+81-82, U+84, U+A2-A5, U+A7-A8, U+AA, U+AC, U+B1-B3, U+B6, U+B8-BA, U+BC-BE, U+C0, U+C2, U+C6-CB, U+CE-D0, U+D4, U+D8-D9, U+DB-DC, U+DE-DF, U+E6, U+EB, U+EE-F0, U+F4, U+F7-F9, U+FB, U+FE-FF, U+111, U+126-127, U+132-133, U+138, U+13F-142, U+149-14B, U+152-153, U+166-167, U+2BC, U+2C7, U+2D0, U+2D8-2D9, U+2DB-2DD, U+391-394, U+396-3A1, U+3A3-3A9, U+3B2-3B6, U+3B8, U+3BC, U+3BE-3C1, U+3C3-3C9, U+2010, U+2015-2016, U+2018-2019, U+201B, U+201F-2021, U+2025, U+2030, U+2033-2036, U+203C, U+203E, U+2042, U+2074, U+207A-207F, U+2081-2084, U+2109, U+2113, U+2116, U+2121, U+2126, U+212B, U+2153-2154"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+2039-203A, U+223C, U+25B3, U+25B7, U+25BD, U+25CF, U+266A, U+3002, U+300B, U+304B, U+3057, U+305F, U+306A-306B, U+307E, U+308A-308B, U+3093, U+30A2, U+30AF, U+30B9, U+30C3, U+30C8, U+30E9-30EB, U+33A1, U+4E00, U+524D, U+5357, U+5B50, U+7121, U+884C, U+9751, U+AC94, U+AEBE, U+AECD, U+AF08, U+AF41, U+AF49, U+B010, U+B053, U+B109, U+B11B, U+B128, U+B154, U+B291, U+B2E6, U+B301, U+B385, U+B525, U+B5B4, U+B729, U+B72F, U+B738, U+B7FF, U+B837, U+B975, U+BA67, U+BB47, U+BC1F, U+BD90, U+BFD4, U+C27C, U+C324, U+C379, U+C3E0, U+C465, U+C53B, U+C58C, U+C610, U+C653, U+C6CD, U+C813, U+C82F, U+C999, U+C9E0, U+CAC4, U+CAD3, U+CBD4, U+CC10, U+CC22, U+CCB8, U+CCBC, U+CDA5, U+CE84, U+CEA3, U+CF67, U+CFE1, U+D241, U+D30D, U+D31C, U+D391, U+D401, U+D479, U+D5C9, U+D5DB, U+D649, U+D6D4"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+B0, U+E9, U+2193, U+2462, U+260E, U+261E, U+300E-300F, U+3044, U+30A4, U+30FB-30FC, U+314D, U+5973, U+6545, U+6708, U+7537, U+AC89, U+AC9C, U+ACC1, U+AD04, U+AD75, U+AD7D, U+AE45, U+AE61, U+AF42, U+B0AB, U+B0AF, U+B0B3, U+B12C, U+B194, U+B1A8, U+B220, U+B258, U+B284, U+B2FF, U+B315, U+B371, U+B3D4-B3D5, U+B460, U+B527, U+B534, U+B810, U+B818, U+B98E, U+BA55, U+BBAC, U+BC0B, U+BC40, U+BCA1, U+BCCD, U+BD93, U+BE54, U+BE5A, U+BF08, U+BF50, U+BF55, U+BFDC, U+C0C0, U+C0D0, U+C0F4, U+C100, U+C11E, U+C170, U+C20D, U+C274, U+C290, U+C308, U+C369, U+C539, U+C587, U+C5FF, U+C6EC, U+C70C, U+C7AD, U+C7C8, U+C83C, U+C881, U+CB48, U+CC60, U+CE69, U+CE6B, U+CE75, U+CF04, U+CF08, U+CF55, U+CF70, U+CFFC, U+D0B7, U+D1A8, U+D2C8, U+D384, U+D47C, U+D48B, U+D5DD, U+D5E8, U+D720, U+D759, U+F981"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+E0, U+E2, U+395, U+3B7, U+3BA, U+2460-2461, U+25A0, U+3010-3011, U+306E, U+30F3, U+314A, U+314C, U+5927, U+65B0, U+7E41, U+97D3, U+9AD4, U+AD49, U+AE0B, U+AE0D, U+AE43, U+AE5D, U+AECF, U+AF3C, U+AF64, U+AFD4, U+B080, U+B084, U+B0C5, U+B10C, U+B1E8, U+B2AC, U+B36E, U+B451, U+B515, U+B540, U+B561, U+B6AB, U+B6B1, U+B72C, U+B730, U+B744, U+B800, U+B8EC, U+B8F0, U+B904, U+B968, U+B96D, U+B987, U+B9D9, U+BB36, U+BB49, U+BC2D, U+BC43, U+BCF6, U+BD89, U+BE57, U+BE61, U+BED4, U+C090, U+C130, U+C148, U+C19C, U+C2F9, U+C36C, U+C37C, U+C384, U+C3DF, U+C575, U+C584, U+C660, U+C719, U+C816, U+CA4D, U+CA54, U+CABC, U+CB49, U+CC14, U+CFF5, U+D004, U+D038, U+D0B4, U+D0D3, U+D0E0, U+D0ED, U+D131, U+D1B0, U+D31F, U+D33D, U+D3A0, U+D3AB, U+D514, U+D584, U+D6A1, U+D6CC, U+D749, U+D760, U+D799"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+24, U+60, U+3B9, U+3BB, U+3BD, U+2191, U+2606, U+300C-300D, U+3131, U+3134, U+3139, U+3141-3142, U+3148, U+3161, U+3163, U+321C, U+4EBA, U+5317, U+AC31, U+AC77, U+AC9F, U+ACB9, U+ACF0-ACF1, U+ACFD, U+AD73, U+AF3D, U+B00C, U+B04A, U+B057, U+B0C4, U+B188, U+B1CC, U+B214, U+B2DB, U+B2EE, U+B304, U+B4ED, U+B518, U+B5BC, U+B625, U+B69C-B69D, U+B7AC, U+B801, U+B86C, U+B959, U+B95C, U+B985, U+BA48, U+BB58, U+BC0C, U+BC38, U+BC85, U+BC9A, U+BF40, U+C068, U+C0BD, U+C0CC, U+C12F, U+C149, U+C1E0, U+C22B, U+C22D, U+C250, U+C2FC, U+C300, U+C313, U+C370, U+C3D8, U+C557, U+C580, U+C5E3, U+C62E, U+C634, U+C6F0, U+C74D, U+C783, U+C78E, U+C796, U+C7BC, U+C92C, U+CA4C, U+CC1C, U+CC54, U+CC59, U+CE04, U+CF30, U+CFC4, U+D140, U+D321, U+D38C, U+D399, U+D54F, U+D587, U+D5D0, U+D6E8, U+D770"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+D7, U+EA, U+FC, U+2192, U+25BC, U+3000, U+3137, U+3145, U+315C, U+7F8E, U+AC13, U+AC71, U+AC90, U+ACB8, U+ACE7, U+AD7F, U+AE50, U+AEF4, U+AF34, U+AFBC, U+B048, U+B09A, U+B0AD, U+B0BC, U+B113, U+B125, U+B141, U+B20C, U+B2D9, U+B2ED, U+B367, U+B369, U+B374, U+B3CB, U+B4EC, U+B611, U+B760, U+B81B, U+B834, U+B8B0, U+B8E1, U+B989, U+B9D1, U+B9E1, U+B9FA, U+BA4D, U+BA78, U+BB35, U+BB54, U+BBF9, U+BC11, U+BCB3, U+BD05, U+BD95, U+BDD4, U+BE10, U+BED0, U+BF51, U+C0D8, U+C232, U+C2B7, U+C2EB, U+C378, U+C500, U+C52C, U+C549, U+C568, U+C598, U+C5C9, U+C61B, U+C639, U+C67C, U+C717, U+C78A, U+C80A, U+C90C-C90D, U+C950, U+C9E7, U+CBE4, U+CCA9, U+CCE4, U+CDB0, U+CE78, U+CE94, U+CE98, U+CF8C, U+D018, U+D034, U+D0F1, U+D1B1, U+D280, U+D2F8, U+D338, U+D380, U+D3B4, U+D610, U+D69F, U+D6FC, U+D758"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+E7, U+2022, U+203B, U+25C0, U+2605, U+2661, U+3147, U+318D, U+672C, U+8A9E, U+ACAA, U+ACBC, U+AD1C, U+AE4A, U+AE5C, U+B044, U+B054, U+B0C8-B0C9, U+B2A6, U+B2D0, U+B35C, U+B364, U+B428, U+B454, U+B465, U+B4B7, U+B4E3, U+B51C, U+B5A1, U+B784, U+B790, U+B7AB, U+B7F4, U+B82C, U+B835, U+B8E9, U+B8F8, U+B9D8, U+B9F9, U+BA5C, U+BA64, U+BABD, U+BB18, U+BB3B, U+BBFF, U+BC0D, U+BC45, U+BC97, U+BCBC, U+BE45, U+BE75, U+BE7C, U+BFCC, U+C0B6, U+C0F7, U+C14B, U+C2B4, U+C30D, U+C4F8, U+C5BB, U+C5D1, U+C5E0, U+C5EE, U+C5FD, U+C606, U+C6C5, U+C6E0, U+C708, U+C81D, U+C820, U+C824, U+C878, U+C918, U+C96C, U+C9E4, U+C9F1, U+CC2E, U+CD09, U+CEA1, U+CEF5, U+CEF7, U+CF64, U+CF69, U+CFE8, U+D035, U+D0AC, U+D230, U+D234, U+D2F4, U+D31D, U+D575, U+D578, U+D608, U+D614, U+D718, U+D751, U+D761, U+D78C, U+D790"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+2665, U+3160, U+4E2D, U+6587, U+65E5, U+AC12, U+AC14, U+AC16, U+AC81, U+AD34, U+ADE0, U+AE54, U+AEBC, U+AF2C, U+AFC0, U+AFC8, U+B04C, U+B08C, U+B099, U+B0A9, U+B0AC, U+B0AE, U+B0B8, U+B123, U+B179, U+B2E5, U+B2F7, U+B4C0, U+B531, U+B538, U+B545, U+B550, U+B5A8, U+B6F0, U+B728, U+B73B, U+B7AD, U+B7ED, U+B809, U+B864, U+B86D, U+B871, U+B9BF, U+B9F5, U+BA40, U+BA4B, U+BA58, U+BA87, U+BAAC, U+BBC0, U+BC16, U+BC34, U+BD07, U+BD99, U+BE59, U+BFD0, U+C058, U+C0E4, U+C0F5, U+C12D, U+C139, U+C228, U+C529, U+C5C7, U+C635, U+C637, U+C735, U+C77D, U+C787, U+C789, U+C8C4, U+C989, U+C98C, U+C9D0, U+C9D3, U+CC0C, U+CC99, U+CD0C, U+CD2C, U+CD98, U+CDA4, U+CE59, U+CE60, U+CE6D, U+CEA0, U+D0D0-D0D1, U+D0D5, U+D14D, U+D1A4, U+D29C, U+D2F1, U+D301, U+D39C, U+D3BC, U+D4E8, U+D540, U+D5EC, U+D640, U+D750"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+5E, U+25B2, U+25B6, U+314E, U+AC24, U+ACE1, U+ACE4, U+AE68, U+AF2D, U+B0D0, U+B0E5, U+B150, U+B155, U+B193, U+B2C9, U+B2DD, U+B3C8, U+B3FC, U+B410, U+B458, U+B4DD, U+B5A0, U+B5A4, U+B5BB, U+B7B5, U+B838, U+B840, U+B86F, U+B8F9, U+B960, U+B9E5, U+BAB8, U+BB50, U+BC1D, U+BC24-BC25, U+BCA8, U+BCBD, U+BD04, U+BD10, U+BD24, U+BE48, U+BE5B, U+BE68, U+C05C, U+C12C, U+C140, U+C15C, U+C168, U+C194, U+C219, U+C27D, U+C2A8, U+C2F1, U+C2F8, U+C368, U+C554-C555, U+C559, U+C564, U+C5D8, U+C5FC, U+C625, U+C65C, U+C6B1, U+C728, U+C794, U+C84C, U+C88C, U+C8E0, U+C8FD, U+C998, U+C9DD, U+CC0D, U+CC30, U+CEEC, U+CF13, U+CF1C, U+CF5C, U+D050, U+D07C, U+D0A8, U+D134, U+D138, U+D154, U+D1F4, U+D2BC, U+D329, U+D32C, U+D3D0, U+D3F4, U+D3FC, U+D56B, U+D5CC, U+D600-D601, U+D639, U+D6C8, U+D754, U+D765"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+3C-3D, U+2026, U+24D2, U+314B, U+AC11, U+ACF3, U+AD74, U+AD81, U+ADF9, U+AE34, U+AF43, U+AFB8, U+B05D, U+B07C, U+B110, U+B118, U+B17C, U+B180, U+B18D, U+B192, U+B2CC, U+B355, U+B378, U+B4A4, U+B4EF, U+B78D, U+B799, U+B7A9, U+B7FD, U+B807, U+B80C, U+B839, U+B9B4, U+B9DB, U+BA3C, U+BAB0, U+BBA4, U+BC94, U+BE4C, U+C154, U+C1C4, U+C26C, U+C2AC, U+C2ED, U+C4F4, U+C55E, U+C561, U+C571, U+C5B5, U+C5C4, U+C654-C655, U+C695, U+C6E8, U+C6F9, U+C724, U+C751, U+C775, U+C7A0, U+C7C1, U+C874, U+C880, U+C9D5, U+C9F8, U+CABD, U+CC29, U+CC2C, U+CCA8, U+CCAB, U+CCD0, U+CE21, U+CE35, U+CE7C, U+CE90, U+CEE8, U+CEF4, U+CFE0, U+D070, U+D0B9, U+D0C1, U+D0C4, U+D0C8, U+D15C, U+D1A1, U+D2C0, U+D300, U+D314, U+D3ED, U+D478, U+D480, U+D48D, U+D508, U+D53D, U+D5E4, U+D611, U+D61C, U+D68D, U+D6A8, U+D798"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+23, U+25, U+5F, U+A9, U+AC08, U+AC78, U+ACA8, U+ACAC, U+ACE8, U+AD70, U+ADC0, U+ADDC, U+B137, U+B140, U+B208, U+B290, U+B2F5, U+B3C5, U+B3CC, U+B420, U+B429, U+B529, U+B530, U+B77D, U+B79C, U+B7A8, U+B7C9, U+B7F0, U+B7FC, U+B828, U+B860, U+B9AD, U+B9C1, U+B9C9, U+B9DD-B9DE, U+B9E8, U+BA38-BA39, U+BABB, U+BC00, U+BC8C, U+BCA0, U+BCA4, U+BCD1, U+BCFC, U+BD09, U+BDF0, U+BE60, U+C0AD, U+C0B4, U+C0BC, U+C190, U+C1FC, U+C220, U+C288, U+C2B9, U+C2F6, U+C528, U+C545, U+C558, U+C5BC, U+C5D4, U+C600, U+C644, U+C6C0, U+C6C3, U+C721, U+C798, U+C7A1, U+C811, U+C838, U+C871, U+C904, U+C990, U+C9DC, U+CC38, U+CC44, U+CCA0, U+CD1D, U+CD95, U+CDA9, U+CE5C, U+CF00, U+CF58, U+D150, U+D22C, U+D305, U+D328, U+D37C, U+D3F0, U+D551, U+D5A5, U+D5C8, U+D5D8, U+D63C, U+D64D, U+D669, U+D734, U+D76C"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+26, U+2B, U+3E, U+40, U+7E, U+AC01, U+AC19, U+AC1D, U+ACA0, U+ACA9, U+ACB0, U+AD8C, U+AE09, U+AE38, U+AE40, U+AED8, U+B09C, U+B0A0, U+B108, U+B204, U+B298, U+B2D8, U+B2EB-B2EC, U+B2F4, U+B313, U+B358, U+B450, U+B4E0, U+B54C, U+B610, U+B780, U+B78C, U+B791, U+B8E8, U+B958, U+B974, U+B984, U+B9B0, U+B9BC-B9BD, U+B9CE, U+BA70, U+BBFC, U+BC0F, U+BC15, U+BC1B, U+BC31, U+BC95, U+BCC0, U+BCC4, U+BD81, U+BD88, U+C0C8, U+C11D, U+C13C, U+C158, U+C18D, U+C1A1, U+C21C, U+C4F0, U+C54A, U+C560, U+C5B8, U+C5C8, U+C5F4, U+C628, U+C62C, U+C678, U+C6CC, U+C808, U+C810, U+C885, U+C88B, U+C900, U+C988, U+C99D, U+C9C8, U+CC3D-CC3E, U+CC45, U+CD08, U+CE20, U+CEE4, U+D074, U+D0A4, U+D0DD, U+D2B9, U+D3B8, U+D3C9, U+D488, U+D544, U+D559, U+D56D, U+D588, U+D615, U+D648, U+D655, U+D658, U+D65C"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+D, U+7C, U+AC10, U+AC15, U+AC74, U+AC80, U+AC83, U+ACC4, U+AD11, U+AD50, U+AD6D, U+ADFC, U+AE00, U+AE08, U+AE4C, U+B0A8, U+B124, U+B144, U+B178, U+B274, U+B2A5, U+B2E8, U+B2F9, U+B354, U+B370, U+B418, U+B41C, U+B4F1, U+B514, U+B798, U+B808, U+B824-B825, U+B8CC, U+B978, U+B9D0, U+B9E4, U+BAA9, U+BB3C, U+BC18, U+BC1C, U+BC30, U+BC84, U+BCF5, U+BCF8, U+BD84, U+BE0C, U+BE14, U+C0B0, U+C0C9, U+C0DD, U+C124, U+C2DD, U+C2E4, U+C2EC, U+C54C, U+C57C-C57D, U+C591, U+C5C5-C5C6, U+C5ED, U+C608, U+C640, U+C6B8, U+C6D4, U+C784, U+C7AC, U+C800-C801, U+C9C1, U+C9D1, U+CC28, U+CC98, U+CC9C, U+CCAD, U+CD5C, U+CD94, U+CD9C, U+CDE8, U+CE68, U+CF54, U+D0DC, U+D14C, U+D1A0, U+D1B5, U+D2F0, U+D30C, U+D310, U+D398, U+D45C, U+D50C, U+D53C, U+D560, U+D568, U+D589, U+D604, U+D6C4, U+D788"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+AC04, U+AC1C, U+AC70, U+AC8C, U+ACBD, U+ACF5, U+ACFC, U+AD00, U+AD6C, U+ADF8, U+B098, U+B0B4, U+B294, U+B2C8, U+B300, U+B3C4, U+B3D9, U+B4DC, U+B4E4, U+B77C, U+B7EC, U+B85D, U+B97C, U+B9C8, U+B9CC, U+BA54, U+BA74, U+BA85, U+BAA8, U+BB34, U+BB38, U+BBF8, U+BC14, U+BC29, U+BC88, U+BCF4, U+BD80, U+BE44, U+C0C1, U+C11C, U+C120, U+C131, U+C138, U+C18C, U+C218, U+C2B5, U+C2E0, U+C544, U+C548, U+C5B4, U+C5D0, U+C5EC, U+C5F0, U+C601, U+C624, U+C694, U+C6A9, U+C6B0, U+C6B4, U+C6D0, U+C704, U+C720, U+C73C, U+C740, U+C744, U+C74C, U+C758, U+C77C, U+C785, U+C788, U+C790-C791, U+C7A5, U+C804, U+C815, U+C81C, U+C870, U+C8FC, U+C911, U+C9C4, U+CCB4, U+CE58, U+CE74, U+D06C, U+D0C0, U+D130, U+D2B8, U+D3EC, U+D504, U+D55C, U+D569, U+D574, U+D638, U+D654, U+D68C"
+    },
+    {
+      "family": "Pretendard Variable",
+      "status": "loaded",
+      "weight": "45 920",
+      "unicodeRange": "U+20-22, U+27-2A, U+2C-39, U+3A-3B, U+3F, U+41-4E, U+4F-5D, U+61-7B, U+7D, U+A0-A1, U+AB, U+AD-AE, U+B7, U+BB, U+BF, U+2013-2014, U+201C-201D, U+2122, U+AC00, U+ACE0, U+AE30, U+B2E4, U+B85C, U+B9AC, U+C0AC, U+C2A4, U+C2DC, U+C774, U+C778, U+C9C0, U+D558"
+    }
+  ],
+  "fontFamily": "\"Pretendard Variable\", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, \"Apple SD Gothic Neo\", sans-serif",
+  "colors": {
+    "body": "rgb(234, 231, 226)",
+    "accent": "#4C7A96",
+    "radius": "22px"
+  },
+  "colorMixSupported": true,
+  "tweaksVisible": false,
+  "state": {
+    "users": [
+      {
+        "id": "admin",
+        "pw": "admin123",
+        "role": "admin",
+        "approved": true,
+        "joinedAt": "2026-03-02"
+      },
+      {
+        "id": "교사김코딩",
+        "pw": "1234",
+        "role": "user",
+        "approved": true,
+        "joinedAt": "2026-03-15"
+      },
+      {
+        "id": "비기너개발자",
+        "pw": "1234",
+        "role": "user",
+        "approved": false,
+        "joinedAt": "2026-06-08"
+      },
+      {
+        "id": "과학덕후박샘",
+        "pw": "1234",
+        "role": "user",
+        "approved": true,
+        "joinedAt": "2026-04-01"
+      },
+      {
+        "id": "영어쌤제이",
+        "pw": "1234",
+        "role": "user",
+        "approved": true,
+        "joinedAt": "2026-04-22"
+      },
+      {
+        "id": "역사수업연구가",
+        "pw": "1234",
+        "role": "user",
+        "approved": true,
+        "joinedAt": "2026-05-03"
+      },
+      {
+        "id": "코딩꿈나무",
+        "pw": "1234",
+        "role": "user",
+        "approved": false,
+        "joinedAt": "2026-06-09"
+      }
+    ],
+    "apps": [
+      {
+        "id": "app-01",
+        "name": "분수 피자 가게",
+        "subject": "수학",
+        "grades": [
+          "초3",
+          "초4",
+          "초5"
+        ],
+        "url": "https://fraction-pizza.vercel.app",
+        "owner": "교사김코딩",
+        "isPublic": true,
+        "theme": "sage",
+        "status": 200,
+        "ms": 280,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-02",
+        "stack": {
+          "db": "localStorage",
+          "backend": "없음 (클라이언트 전용)",
+          "frontend": "React + Vite",
+          "hosting": "Vercel"
+        },
+        "prompt": "초등 3~5학년이 분수 개념을 익히는 웹 게임을 만들어줘. 피자 가게 컨셉으로 손님이 \"3/4판 주세요\"처럼 분수로 주문하면, 학생이 피자를 드래그로 등분하고 알맞은 조각을 서빙하는 방식이야. 정답이면 폭죽 애니메이션과 점수를, 오답이면 시각적 힌트(겹쳐 보기)를 보여줘. 점수와 단계는 localStorage에 저장하고 태블릿 터치를 완벽 지원해줘.",
+        "description": "분수의 개념(등분, 단위분수, 크기 비교)을 놀이로 도입할 때 사용합니다.\n\n[활용 매뉴얼]\n1. 수학 3단원 도입 차시에 전자칠판으로 시연 후 학생 태블릿에 URL 배포\n2. 1단계(등분하기) → 2단계(주문 서빙) → 3단계(크기 비교) 순서로 진행\n3. 단계별 점수가 기기에 저장되므로 다음 차시에 이어서 진행 가능\n4. 모둠별 점수 대항전으로 운영하면 참여도가 크게 올라갑니다.",
+        "checking": false
+      },
+      {
+        "id": "app-02",
+        "name": "함수 그래프 실험실",
+        "subject": "수학",
+        "grades": [
+          "중2",
+          "중3"
+        ],
+        "url": "https://graph-lab.netlify.app",
+        "owner": "교사김코딩",
+        "isPublic": true,
+        "theme": "niagara",
+        "status": 200,
+        "ms": 156,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-18",
+        "stack": {
+          "db": "Supabase (PostgreSQL)",
+          "backend": "Supabase Edge Functions",
+          "frontend": "Next.js 14",
+          "hosting": "Netlify"
+        },
+        "prompt": "중학생용 일차·이차함수 그래프 실험실을 만들어줘. 슬라이더로 a, b, c 계수를 조절하면 y=ax+b, y=ax²+bx+c 그래프가 부드럽게 실시간 변형되는 인터랙티브 캔버스가 핵심이야. 두 함수를 겹쳐 교점을 표시하는 기능, 학생이 만든 그래프를 링크로 교사에게 제출하는 기능을 넣어줘. 제출 데이터는 Supabase에 저장해.",
+        "description": "계수의 변화가 그래프에 주는 영향을 직관적으로 탐구하는 수업 도구입니다.\n\n[활용 매뉴얼]\n1. \"a가 커지면 그래프가 어떻게 될까?\" 발문 후 학생이 직접 슬라이더 조작\n2. 탐구 결과를 그래프 링크로 제출받아 전자칠판에서 함께 비교\n3. 연립방정식 단원에서는 교점 표시 기능으로 해의 의미를 시각화\n4. 수행평가 과제(나만의 포물선 디자인)로도 활용 가능합니다."
+      },
+      {
+        "id": "app-03",
+        "name": "확률 실험 시뮬레이터",
+        "subject": "수학",
+        "grades": [
+          "고1"
+        ],
+        "url": "https://prob-sim.web.app",
+        "owner": "과학덕후박샘",
+        "isPublic": true,
+        "theme": "lavenderGray",
+        "status": 200,
+        "ms": 203,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-06",
+        "stack": {
+          "db": "Firebase Firestore",
+          "backend": "Firebase Functions",
+          "frontend": "React",
+          "hosting": "Firebase Hosting"
+        },
+        "prompt": "고1 확률 단원용 시뮬레이터를 만들어줘. 주사위·동전·룰렛을 1회/100회/10000회 던지기 버튼으로 실행하면 상대도수 막대그래프가 애니메이션으로 누적되고, 수학적 확률 기준선과의 차이가 점점 줄어드는 \"큰 수의 법칙\"을 시각적으로 체험하게 해줘. 학급 전체의 시행 결과를 Firestore로 합산하는 실시간 집계 모드도 필요해.",
+        "description": "큰 수의 법칙을 체험으로 이해시키는 데 효과적입니다.\n\n[활용 매뉴얼]\n1. 개별 기기에서 10회 시행 → 학급 합산 모드로 전체 결과 실시간 누적\n2. 상대도수가 수학적 확률에 수렴하는 과정을 그래프로 관찰\n3. \"시행 횟수가 적을 때 왜 들쑥날쑥할까?\" 토론으로 연결\n4. 통계적 확률과 수학적 확률의 차이를 정리하며 마무리합니다."
+      },
+      {
+        "id": "app-04",
+        "name": "입체도형 단면 탐험대",
+        "subject": "수학",
+        "grades": [
+          "중1"
+        ],
+        "url": "https://solid-slice.pages.dev",
+        "owner": "역사수업연구가",
+        "isPublic": true,
+        "theme": "turquoise",
+        "status": 200,
+        "ms": 121,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-21",
+        "stack": {
+          "db": "없음",
+          "backend": "없음 (정적 사이트)",
+          "frontend": "Three.js + Vanilla JS",
+          "hosting": "Cloudflare Pages"
+        },
+        "prompt": "Three.js로 중1 입체도형 단면 학습 앱을 만들어줘. 정육면체·원기둥·원뿔·구를 선택하고 평면을 드래그로 기울여 자르면 단면이 하이라이트 색으로 표시되는 3D 인터랙션이 핵심이야. 단면 모양 맞히기 퀴즈 모드(보기 4개 중 선택)도 넣어줘. 모바일 제스처(회전·핀치줌)를 지원하고 설치 없이 브라우저에서 바로 실행돼야 해.",
+        "description": "머릿속으로 상상하기 어려운 단면을 3D로 직접 잘라보는 도구입니다.\n\n[활용 매뉴얼]\n1. 도입에서 \"원뿔을 비스듬히 자르면?\" 질문 후 예상 그리기\n2. 앱에서 직접 잘라 확인하며 인지 충돌 유도\n3. 퀴즈 모드 10문항을 짝 활동으로 진행\n4. 회전체 단원 예고편으로 마지막 5분 자유 탐색을 권장합니다."
+      },
+      {
+        "id": "app-05",
+        "name": "광합성 인터랙티브 시뮬레이터",
+        "subject": "과학",
+        "grades": [
+          "중1",
+          "중2"
+        ],
+        "url": "https://photosyn-lab.vercel.app",
+        "owner": "과학덕후박샘",
+        "isPublic": true,
+        "theme": "turquoise",
+        "status": 200,
+        "ms": 98,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-09",
+        "stack": {
+          "db": "IndexedDB",
+          "backend": "없음 (클라이언트 전용)",
+          "frontend": "React + D3.js",
+          "hosting": "Vercel"
+        },
+        "prompt": "중학교 광합성 단원 시뮬레이터를 만들어줘. 빛의 세기·이산화탄소 농도·온도 슬라이더를 조절하면 잎에서 발생하는 산소 방울 애니메이션 속도와 광합성량 그래프가 실시간으로 변하는 가상 실험실이야. 변인 통제 실험 설계 모드(한 변인만 조작 가능하게 잠금)와 실험 결과를 표로 기록·저장하는 기능을 포함해줘.",
+        "description": "검정말 실험을 대체·보완하는 가상 실험 도구입니다.\n\n[활용 매뉴얼]\n1. 실제 실험 전 변인 통제 설계를 앱의 잠금 모드로 연습\n2. 변인별 그래프를 캡처해 실험 보고서에 첨부\n3. 날씨·계절 탓에 실물 실험이 어려운 시기의 대체 실험으로 적합\n4. 자유탐구 주제 선정 전 사전 탐색 활동으로도 좋습니다."
+      },
+      {
+        "id": "app-06",
+        "name": "주기율표 탐험 퀴즈",
+        "subject": "과학",
+        "grades": [
+          "중3",
+          "고1"
+        ],
+        "url": "https://element-quest.web.app",
+        "owner": "과학덕후박샘",
+        "isPublic": true,
+        "theme": "lavenderGray",
+        "status": 200,
+        "ms": 187,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-25",
+        "stack": {
+          "db": "Firebase Realtime DB",
+          "backend": "Firebase Functions",
+          "frontend": "Svelte",
+          "hosting": "Firebase Hosting"
+        },
+        "prompt": "주기율표 학습 퀴즈 앱을 만들어줘. 1~20번 원소 중심으로 원소 기호↔이름 매칭, 족·주기 위치 찾기, 성질 스피드 OX 세 가지 모드가 필요해. 카훗처럼 교사가 방을 만들면 학생들이 코드로 입장해 실시간 순위 경쟁하는 멀티플레이가 핵심이야. 정답률 낮은 원소를 교사 대시보드에 자동 집계해줘.",
+        "description": "원소 기호 암기를 게임화한 실시간 퀴즈 플랫폼입니다.\n\n[활용 매뉴얼]\n1. 단원 정리 차시에 방 코드 공유 → 전원 입장 확인 후 시작\n2. 모드 순서: 매칭(연습) → 위치 찾기(심화) → 스피드 OX(경쟁)\n3. 종료 후 교사 대시보드에서 오답 상위 원소를 즉석 재설명\n4. 상위 3명 시상은 학급 보상 체계와 연동하면 좋습니다."
+      },
+      {
+        "id": "app-07",
+        "name": "전기회로 빌더",
+        "subject": "과학",
+        "grades": [
+          "초6",
+          "중1",
+          "중2"
+        ],
+        "url": "https://circuit-builder.netlify.app",
+        "owner": "교사김코딩",
+        "isPublic": true,
+        "theme": "niagara",
+        "status": 500,
+        "ms": 0,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-11",
+        "stack": {
+          "db": "Supabase (PostgreSQL)",
+          "backend": "Node.js (Express)",
+          "frontend": "React + Konva.js",
+          "hosting": "Netlify + Render"
+        },
+        "prompt": "드래그 앤 드롭 전기회로 시뮬레이터를 만들어줘. 전지·전구·스위치·저항·전선을 캔버스에 배치해 회로를 구성하면, 회로가 닫혔을 때 전구 밝기가 직렬/병렬 구성에 따라 물리적으로 정확하게 달라져야 해. 단선·합선 상태를 경고 아이콘으로 표시하고, 완성한 회로를 이미지로 저장해 제출하는 기능을 넣어줘.",
+        "description": "실험 기구 없이 직렬·병렬 회로를 자유롭게 구성해보는 도구입니다.\n\n[활용 매뉴얼]\n1. 실물 실험 전 회로도를 앱으로 먼저 설계 (안전 교육 효과)\n2. \"전구를 더 밝게 하려면?\" 미션 과제로 직렬/병렬 차이 발견 유도\n3. 완성 회로 이미지를 제출받아 형성평가 자료로 활용\n4. 합선 경고 기능으로 안전 유의점을 자연스럽게 지도할 수 있습니다."
+      },
+      {
+        "id": "app-08",
+        "name": "별자리 관측 일지",
+        "subject": "과학",
+        "grades": [
+          "초5",
+          "초6"
+        ],
+        "url": "https://star-diary.pages.dev",
+        "owner": "영어쌤제이",
+        "isPublic": true,
+        "theme": "ironGate",
+        "status": 200,
+        "ms": 142,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-28",
+        "stack": {
+          "db": "PocketBase (SQLite)",
+          "backend": "PocketBase",
+          "frontend": "Vue 3",
+          "hosting": "Cloudflare Pages + Fly.io"
+        },
+        "prompt": "초등 5~6학년용 별자리 관측 일지 앱을 만들어줘. 날짜와 시간을 고르면 그날 밤하늘의 주요 별자리를 캔버스에 그려주고, 학생이 실제로 관측한 별자리를 탭해 스케치와 소감을 기록하는 일지 형식이야. 계절별 대표 별자리 도감과, 한 달 누적 관측 기록을 달력 뷰로 보여주는 기능을 포함해줘. 어두운 밤 모드 UI가 기본이야.",
+        "description": "계절별 별자리 단원의 가정 연계 관측 과제용 앱입니다.\n\n[활용 매뉴얼]\n1. 수업에서 도감으로 계절 별자리 학습 후 관측 과제 안내\n2. 학생은 귀가 후 실제 관측 → 앱에 스케치와 소감 기록\n3. 흐린 날은 앱의 시뮬레이션 하늘로 대체 관측 인정\n4. 한 달 뒤 달력 뷰를 모아 \"우리 반 밤하늘 전시회\"로 마무리합니다."
+      },
+      {
+        "id": "app-09",
+        "name": "AI 회화 파트너",
+        "subject": "영어",
+        "grades": [
+          "중1",
+          "중2",
+          "중3"
+        ],
+        "url": "https://talk-buddy.vercel.app",
+        "owner": "영어쌤제이",
+        "isPublic": true,
+        "theme": "powderPink",
+        "status": 200,
+        "ms": 311,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-14",
+        "stack": {
+          "db": "Supabase (PostgreSQL)",
+          "backend": "Vercel Serverless + Claude API",
+          "frontend": "Next.js 14",
+          "hosting": "Vercel"
+        },
+        "prompt": "중학생 영어 회화 연습용 AI 챗봇을 만들어줘. 공항·식당·길찾기 같은 상황극 시나리오를 고르면 AI가 원어민 역할로 대화를 이끌고, 학생 답변의 문법 오류를 대화 흐름을 끊지 않고 말풍선 하단에 부드럽게 교정 표시해줘. 음성 입력(Web Speech API)과 대화 내용 다운로드를 지원하고, 학생 수준(상/중/하)에 따라 AI 어휘 난이도가 조절돼야 해.",
+        "description": "말하기 수행평가 대비 개별 회화 연습 도구입니다.\n\n[활용 매뉴얼]\n1. 단원 주제와 맞는 시나리오를 지정해 과제로 배포\n2. 학생은 음성 입력으로 5분 이상 대화 후 스크립트 다운로드·제출\n3. 교정 표시된 문장 3개를 골라 고쳐 쓰기 활동으로 연계\n4. 원어민과의 대화가 부담스러운 학생의 심리적 장벽을 낮춰줍니다."
+      },
+      {
+        "id": "app-10",
+        "name": "영단어 스피드 배틀",
+        "subject": "영어",
+        "grades": [
+          "초5",
+          "초6",
+          "중1"
+        ],
+        "url": "https://word-battle.web.app",
+        "owner": "영어쌤제이",
+        "isPublic": true,
+        "theme": "sage",
+        "status": 200,
+        "ms": 167,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-02",
+        "stack": {
+          "db": "Firebase Realtime DB",
+          "backend": "Firebase Functions",
+          "frontend": "React",
+          "hosting": "Firebase Hosting"
+        },
+        "prompt": "교실 대항 영단어 게임을 만들어줘. 교사가 단어장을 CSV로 업로드하면 자동으로 4지선다·철자 입력·뜻 매칭 문제가 생성되고, 학생들이 방 코드로 입장해 1:1 토너먼트 또는 팀전으로 대결하는 구조야. 연속 정답 콤보 이펙트와 실시간 리더보드가 박진감 있게 표시돼야 하고, 게임 후 개인별 오답 단어장이 자동 생성돼야 해.",
+        "description": "단어 시험을 게임으로 대체하는 클래스 배틀 플랫폼입니다.\n\n[활용 매뉴얼]\n1. 주간 단어장을 CSV로 업로드 (양식은 앱 내 다운로드)\n2. 금요일 마지막 10분, 모둠 팀전으로 주간 복습\n3. 게임 후 자동 생성되는 개인 오답 단어장을 주말 과제로 연결\n4. 콤보 이펙트 덕분에 하위권 학생도 끝까지 집중합니다."
+      },
+      {
+        "id": "app-11",
+        "name": "문법 클리닉",
+        "subject": "영어",
+        "grades": [
+          "고1",
+          "고2"
+        ],
+        "url": "https://grammar-clinic.netlify.app",
+        "owner": "교사김코딩",
+        "isPublic": true,
+        "theme": "niagara",
+        "status": 200,
+        "ms": 139,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-17",
+        "stack": {
+          "db": "Supabase (PostgreSQL)",
+          "backend": "Supabase Edge Functions",
+          "frontend": "SvelteKit",
+          "hosting": "Netlify"
+        },
+        "prompt": "고등학생용 영문법 진단·처방 앱을 만들어줘. 병원 컨셉으로 20문항 진단 검사를 보면 시제·관계사·가정법 등 영역별 취약점이 차트(레이더)로 \"진단서\"처럼 나오고, 취약 영역별 맞춤 문제 세트가 \"처방전\"으로 발급되는 구조야. 문항별 해설은 접었다 펼치는 카드로, 누적 학습 기록은 회차별 성장 그래프로 보여줘.",
+        "description": "수능 어법 대비 개별 맞춤 클리닉입니다.\n\n[활용 매뉴얼]\n1. 학기 초 진단 검사로 학급 전체 취약 영역 파악\n2. 방과후·자습 시간에 개인별 처방전 문제 풀이\n3. 월 1회 재진단으로 성장 그래프 확인 (상담 자료로 활용)\n4. 진단서 차트는 학부모 상담 때 객관적 자료가 됩니다."
+      },
+      {
+        "id": "app-12",
+        "name": "파닉스 사운드 랩",
+        "subject": "영어",
+        "grades": [
+          "초1",
+          "초2",
+          "초3"
+        ],
+        "url": "https://phonics-lab.pages.dev",
+        "owner": "역사수업연구가",
+        "isPublic": true,
+        "theme": "butterum",
+        "status": 404,
+        "ms": 0,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-30",
+        "stack": {
+          "db": "localStorage",
+          "backend": "없음 (클라이언트 전용)",
+          "frontend": "Vue 3 + Howler.js",
+          "hosting": "Cloudflare Pages"
+        },
+        "prompt": "초등 저학년 파닉스 학습 앱을 만들어줘. 알파벳·이중자음·장모음 단계별로, 글자를 탭하면 발음이 재생되고 입모양 일러스트가 함께 표시돼야 해. 단어 빌더 모드에서는 음소 블록을 드래그로 조합해 단어를 만들면 합쳐진 발음을 들려줘. 모든 버튼은 저학년 손가락 기준으로 크게, 텍스트 없이 아이콘 중심 UI로 만들어줘.",
+        "description": "저학년 발음 지도용 사운드 중심 학습 도구입니다.\n\n[활용 매뉴얼]\n1. 전자칠판에서 음소 블록 조합을 전체 시연\n2. 짝 활동: 한 명이 블록 조합 → 짝이 발음 따라하기\n3. 텍스트가 거의 없어 한글 미해득 학생도 사용 가능\n4. 가정 학습용 QR로 배포하면 부모 지도 부담이 적습니다."
+      },
+      {
+        "id": "app-13",
+        "name": "조선왕조 인터랙티브 타임라인",
+        "subject": "역사",
+        "grades": [
+          "중2"
+        ],
+        "url": "https://joseon-timeline.vercel.app",
+        "owner": "역사수업연구가",
+        "isPublic": true,
+        "theme": "butterum",
+        "status": 200,
+        "ms": 110,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-06",
+        "stack": {
+          "db": "JSON (정적 데이터)",
+          "backend": "없음 (정적 사이트)",
+          "frontend": "React + Framer Motion",
+          "hosting": "Vercel"
+        },
+        "prompt": "조선왕조 527년 인터랙티브 타임라인을 만들어줘. 가로 스크롤 타임라인에 27명의 왕 재위 구간이 띠로 표시되고, 왕을 탭하면 주요 사건·제도·문화유산이 카드 스택으로 펼쳐지는 구조야. 사건끼리 인과관계가 있으면 연결선으로 표시해줘. \"이 사건은 몇 대 왕 때?\" 퀴즈 모드와 특정 연도로 점프하는 검색 기능을 포함해줘.",
+        "description": "조선 전·후기 흐름을 한눈에 잡는 통사 수업 도구입니다.\n\n[활용 매뉴얼]\n1. 단원 도입에서 전체 타임라인을 훑으며 시대 감각 형성\n2. 모둠별로 왕 1명을 맡아 카드 내용 요약 발표\n3. 사건 연결선을 따라가며 인과관계 서술형 답안 연습\n4. 단원 마무리 퀴즈 모드로 형성평가를 대체할 수 있습니다."
+      },
+      {
+        "id": "app-14",
+        "name": "역사 인물 AI 인터뷰",
+        "subject": "역사",
+        "grades": [
+          "중3",
+          "고1"
+        ],
+        "url": "https://history-interview.vercel.app",
+        "owner": "역사수업연구가",
+        "isPublic": true,
+        "theme": "ironGate",
+        "status": 200,
+        "ms": 287,
+        "lastChecked": "09:12",
+        "createdAt": "2026-04-29",
+        "stack": {
+          "db": "Supabase (PostgreSQL)",
+          "backend": "Vercel Serverless + Claude API",
+          "frontend": "Next.js 14",
+          "hosting": "Vercel"
+        },
+        "prompt": "역사 인물 가상 인터뷰 앱을 만들어줘. 세종대왕·이순신·신사임당·전봉준 등 인물을 선택하면 AI가 그 인물의 말투와 시대 배경을 반영해 1인칭으로 답하는 인터뷰 채팅이야. 사료에 근거한 답변만 하도록 하고, 역사적 사실이 불확실한 질문에는 \"기록에 없다\"고 답하게 해줘. 인터뷰 전문을 기사 형식으로 내보내는 기능이 필요해.",
+        "description": "인물 학습을 탐구형 인터뷰 활동으로 바꾸는 도구입니다.\n\n[활용 매뉴얼]\n1. 사전 활동: 인물 조사 후 인터뷰 질문 5개 작성\n2. 본 활동: AI 인터뷰 진행, 답변과 사료 교차 검증\n3. 산출물: 인터뷰 기사 내보내기 → 학급 신문 게시\n4. \"기록에 없다\" 답변을 역사적 상상력 토론 소재로 활용하세요."
+      },
+      {
+        "id": "app-15",
+        "name": "문화유산 도슨트 갤러리",
+        "subject": "역사",
+        "grades": [
+          "초5",
+          "초6"
+        ],
+        "url": "https://heritage-docent.web.app",
+        "owner": "교사김코딩",
+        "isPublic": true,
+        "theme": "butterum",
+        "status": 200,
+        "ms": 174,
+        "lastChecked": "09:12",
+        "createdAt": "2026-05-13",
+        "stack": {
+          "db": "Firebase Firestore",
+          "backend": "Firebase Functions",
+          "frontend": "React",
+          "hosting": "Firebase Hosting"
+        },
+        "prompt": "초등 5~6학년용 문화유산 갤러리 앱을 만들어줘. 석굴암·팔만대장경·금동대향로 등 유물을 미술관처럼 카드 갤러리로 전시하고, 유물을 탭하면 확대 이미지와 오디오 도슨트(TTS) 해설이 재생돼야 해. 학생이 직접 도슨트가 되어 해설 녹음을 올리는 \"어린이 도슨트\" 모드가 핵심 기능이야. 시대별·지역별 필터를 넣어줘.",
+        "description": "문화유산 단원을 전시·해설 프로젝트로 운영하는 앱입니다.\n\n[활용 매뉴얼]\n1. 1차시: 갤러리 관람 + 오디오 도슨트 청취\n2. 2~3차시: 모둠별 유물 선정, 해설 대본 작성·녹음 업로드\n3. 4차시: 서로의 어린이 도슨트 해설을 듣고 별점 피드백\n4. 학부모 공개수업에서 QR로 공유하면 반응이 매우 좋습니다."
+      },
+      {
+        "id": "app-16",
+        "name": "독립운동가 발자취 지도",
+        "subject": "역사",
+        "grades": [
+          "중3"
+        ],
+        "url": "https://independence-map.netlify.app",
+        "owner": "과학덕후박샘",
+        "isPublic": true,
+        "theme": "powderPink",
+        "status": 200,
+        "ms": 192,
+        "lastChecked": "09:12",
+        "createdAt": "2026-06-01",
+        "stack": {
+          "db": "PostgreSQL (Neon)",
+          "backend": "Node.js (Fastify)",
+          "frontend": "React + Leaflet",
+          "hosting": "Netlify + Railway"
+        },
+        "prompt": "독립운동가 발자취 지도 앱을 만들어줘. Leaflet 지도 위에 안중근·유관순·윤봉길 등 독립운동가의 주요 활동 장소가 핀으로 표시되고, 핀을 누르면 그 장소에서의 사건이 사진·연표와 함께 패널로 열리는 구조야. 인물별 이동 경로를 애니메이션 선으로 재생하는 \"발자취 따라가기\" 모드가 핵심이야. 우리 지역 사적지 제보 기능도 넣어줘.",
+        "description": "3·1운동과 독립운동사를 공간 중심으로 탐구하는 지도 앱입니다.\n\n[활용 매뉴얼]\n1. 발자취 따라가기 모드로 인물의 이동 동선을 함께 추적\n2. \"왜 이 장소였을까?\" 지리적 맥락 토론으로 연결\n3. 우리 지역 사적지 제보 활동으로 향토사 연계 수행평가 운영\n4. 현장체험학습 사전 답사 자료로도 유용합니다."
+      },
+      {
+        "id": "app-17",
+        "name": "과학 수행평가 루브릭 채점기",
+        "subject": "과학",
+        "grades": [
+          "중1",
+          "중2",
+          "중3"
+        ],
+        "url": "https://rubric-grader.vercel.app",
+        "owner": "교사김코딩",
+        "isPublic": false,
+        "theme": "niagara",
+        "status": 200,
+        "ms": 95,
+        "lastChecked": "09:12",
+        "createdAt": "2026-06-05",
+        "stack": {
+          "db": "Supabase (PostgreSQL)",
+          "backend": "Supabase Edge Functions",
+          "frontend": "Next.js 14",
+          "hosting": "Vercel"
+        },
+        "prompt": "교사 전용 수행평가 루브릭 채점 도구를 만들어줘. 평가 기준표(영역×수준)를 직접 만들고, 학생 명렬을 붙여넣으면 한 명씩 탭 한 번으로 수준을 선택해 빠르게 채점하는 UI가 핵심이야. 채점 결과는 자동 합산해 CSV로 내보내고, 영역별 학급 평균 차트를 보여줘. 학생 데이터는 내 계정에만 저장되도록 인증을 붙여줘.",
+        "description": "(비공개) 우리 학교 수행평가 채점용으로 만든 개인 도구입니다.\n\n[활용 매뉴얼]\n1. 평가 전 루브릭 작성 → 학생 명렬 등록\n2. 실험 순회하며 태블릿으로 즉석 채점\n3. 종료 후 CSV 내보내기 → 나이스 성적 입력 참고\n4. 학생 개인정보가 포함되므로 비공개로 유지합니다."
+      }
+    ],
+    "currentUserId": "admin"
+  },
+  "react": "18.3.1",
+  "babel": "7.29.0",
+  "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/151.0.7922.34 Safari/537.36",
+  "actualHeadingFonts": [
+    {
+      "familyName": "Pretendard Variable",
+      "postScriptName": "PretendardVariable-Regular",
+      "isCustomFont": true,
+      "glyphCount": 8
+    }
+  ],
+  "file": "768x1024/24-admin-checked.png",
+  "stateName": "24-admin-checked"
+}

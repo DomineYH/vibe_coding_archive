@@ -1,0 +1,46 @@
+{
+  "artifacts": {
+    "baseline": {
+      "states": 1,
+      "pngs": 2,
+      "sourceFiles": 11
+    },
+    "reference": {
+      "states": 130,
+      "pngs": 135,
+      "sourceFiles": 11
+    }
+  },
+  "integrity": "PASS",
+  "replay": {
+    "pixelIdentical": 133,
+    "different": [
+      {
+        "file": "1440x1000/13-edit-component.png",
+        "bounds": [
+          21,
+          214,
+          24,
+          482
+        ],
+        "pixels": 10,
+        "maxChannelDelta": 5
+      },
+      {
+        "file": "390x844/10-signup-error.png",
+        "bounds": [
+          312,
+          19,
+          317,
+          38
+        ],
+        "pixels": 20,
+        "maxChannelDelta": 22
+      }
+    ],
+    "stableMetricsIdentical": 130,
+    "networkFailures": 0,
+    "exactPixelCheck": "FAIL",
+    "visualApproval": "not assessed"
+  }
+}

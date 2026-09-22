@@ -1,0 +1,226 @@
+{
+  "uniqueResponses": 22,
+  "assets": [
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css",
+      "status": 200,
+      "mimeType": "text/css; charset=utf-8",
+      "bytes": 53513,
+      "sha256": "d274380cb7815e92479d38e43dd5b2eef585567091394022a3a2dede048474cb",
+      "archiveMember": "c6e076bc48c0611d5a445edfed8fbb81ed0996c4.css",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.tailwindcss.com/",
+      "status": 302,
+      "mimeType": "x-unknown",
+      "bytes": null,
+      "sha256": null,
+      "archiveMember": null,
+      "redirect": "https://cdn.tailwindcss.com/3.4.17"
+    },
+    {
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "status": 200,
+      "mimeType": "text/javascript; charset=utf-8",
+      "bytes": 109931,
+      "sha256": "28348fef6cb0ed8b2ceeb22deaf824428fd13875d84c73d38f77dd216fc24e7f",
+      "archiveMember": "90d578388b9ebfc83895b9533a9d15b8e537e108.js",
+      "redirect": ""
+    },
+    {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "status": 200,
+      "mimeType": "text/javascript; charset=utf-8",
+      "bytes": 1080227,
+      "sha256": "f9044a5e9c39db8bb1a204dff924e526ec0a621e695bb69de1035811be8709e4",
+      "archiveMember": "ab3bd02c5322c693ebe6e824ba87141e57a3a18a.js",
+      "redirect": ""
+    },
+    {
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "status": 200,
+      "mimeType": "text/javascript; charset=utf-8",
+      "bytes": 3137752,
+      "sha256": "2623a9e22809915ce789b4461154e277ddce520d5a4320c14d44332a5d0dcea0",
+      "archiveMember": "0a92e5a5df7883989923f9fa0b85ab58b79efda0.js",
+      "redirect": ""
+    },
+    {
+      "url": "https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js",
+      "status": 200,
+      "mimeType": "text/javascript; charset=utf-8",
+      "bytes": 788725,
+      "sha256": "758c4ff98317c752051654efdd77d9910448d95bedfede207270e984a7d544a8",
+      "archiveMember": "6bbdb1682b9e44beff60d9db6a631cf593feb712.js",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.tailwindcss.com/3.4.17",
+      "status": 200,
+      "mimeType": "text/javascript",
+      "bytes": 407279,
+      "sha256": "176e894661aa9cdc9a5cba6c720044cbbf7b8bd80d1c9a142a7c24b1b6c50d15",
+      "archiveMember": "1ff1738a40f3716e30e9031b181b0955ae578955.js",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 37996,
+      "sha256": "fc9fcd1bea9c8f43f97136a1e89bfa6e34db85f820f86538288647b4c24c5b06",
+      "archiveMember": "218f63cd375b3af720cf057e3f836cd8ece8ab99.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 20852,
+      "sha256": "ed2d605d80cbe4f2c1df801852f7a1d8ad5e1a4972b26d8fee93427317f32f09",
+      "archiveMember": "7d777d313006f86c9c7e83404c56c0aeb9629869.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 21864,
+      "sha256": "44634e793e0d50fcdf803a2ad513d8bf0482d9adccbbd4ef534325cae9b2ee01",
+      "archiveMember": "d1bb72df70e01ecbfa3d9adf4ec16fb96e52ad60.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 25104,
+      "sha256": "757b9fc85ad85a1024fcacc04a9b688ace2db7af393e9ddc3b5dd2ba605b5a9b",
+      "archiveMember": "bbb9f13c341d0316eefb075d539b77e71a4ad9bf.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 28324,
+      "sha256": "78ca0ca3a02fb86ff29c68e80c50555c29aa522f37f286e7ab5b3cd8fb0b2a51",
+      "archiveMember": "a11ce087597c4414b5a2b1d8278c200994a13863.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 25640,
+      "sha256": "192abc4c6ad933f53d809d8a46ee6237ae71e766bf66199fdce4678841fe12d7",
+      "archiveMember": "f227751860743c9a9631390963f670cd7bafb335.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 25716,
+      "sha256": "3e680901e55f16848b58d16d25870596495a6a073d9e3127fe481583ac4439b6",
+      "archiveMember": "4bac2c75aa9d21554ab4777e093848dac5351c5d.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 26500,
+      "sha256": "493e29967aa59d0f5326ae95fe163ca6e0ce9d95610838cc07a1f543a4a2e289",
+      "archiveMember": "9e9c4b5f6c58762005ad53ef00957e711282a2ca.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 26300,
+      "sha256": "f0ae631ec332bbaf686a493d126ff56a8ac0c6284bdbb7542cef8fedd946fa66",
+      "archiveMember": "fbe51873e01415885559c025579a994724f9753d.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 24664,
+      "sha256": "04ca8277cfe3d27235573956255b0211575504cb695cdeab644c583df774e257",
+      "archiveMember": "32b29bd2e0a22dbd5b3ebf5997cead0591064ac6.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 26224,
+      "sha256": "0bbdf492d859723843e118154b24573abdd62e781cb3827378e5dc65eeb8e0e9",
+      "archiveMember": "6e392c9e30b72aea3de23ebaba4bc028e8424776.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 24492,
+      "sha256": "d28ace2d199ca5c6304a6191f4233e28ddb225d341d6e0b41db040e9447c2cc9",
+      "archiveMember": "29646728e58dbb127085bb441c6f224da73b046b.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 26548,
+      "sha256": "67f065415552e8c66da5e60fc67a891ec1ba74bfb9370078261bbf9a718a182f",
+      "archiveMember": "6509a4a8dc8636ee2d18637200a1a7536eeeeaa1.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 26964,
+      "sha256": "f8f1fe652aaf3c759d78f37e48afe1c58c1d335e9261c5be2a2d90ff5bbfb9cc",
+      "archiveMember": "91d0d33f344fe1ee39c86f0edf26d930d42e9baf.woff2",
+      "redirect": ""
+    },
+    {
+      "url": "https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2",
+      "status": 200,
+      "mimeType": "font/woff2",
+      "bytes": 28796,
+      "sha256": "3802ad32c6c1bfa889c1019bd22d265c19392a6d52bbbd38e3a6fb99fdb0cf8f",
+      "archiveMember": "8abe3ae055a15d5618a3f3bfcf05bc8ef417a6ae.woff2",
+      "redirect": ""
+    }
+  ],
+  "sriChecks": [
+    {
+      "url": "https://unpkg.com/react@18.3.1/umd/react.development.js",
+      "algorithm": "sha384",
+      "source": "hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L",
+      "response": "hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L",
+      "match": true
+    },
+    {
+      "url": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js",
+      "algorithm": "sha384",
+      "source": "u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm",
+      "response": "u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm",
+      "match": true
+    },
+    {
+      "url": "https://unpkg.com/@babel/standalone@7.29.0/babel.min.js",
+      "algorithm": "sha384",
+      "source": "m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y",
+      "response": "m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y",
+      "match": true
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "path": "basic_design/.thumbnail",
+    "bytes": 18910,
+    "sha256": "67ad4825110e65247db47ada6a29df18451df100fb2b6c5b61962eb17c918904",
+    "role": "640×358 WebP preview; incomplete historical image, not runtime"
+  },
+  {
+    "path": "basic_design/EduVibe 아카이브.html",
+    "bytes": 3631,
+    "sha256": "96bc14dee0ae2f6e998ce304e86a0718774fb5c75060f827774750c92fac5d29",
+    "role": "Entry, CDN/SRI, font link, Tailwind config, global CSS, JSX order"
+  },
+  {
+    "path": "basic_design/app.jsx",
+    "bytes": 10395,
+    "sha256": "2d72ea5b11cf9d04e936f94e2fd15d241fe7dd79359a56d84b9685dcb3b17187",
+    "role": "Shell, state-only routing, localStorage, demo actions, tweak defaults"
+  },
+  {
+    "path": "basic_design/data.jsx",
+    "bytes": 26163,
+    "sha256": "6a34d3bdecbbf8881b8dcea6354707dcd8805c880cffeac3512b4b2cd48409ac",
+    "role": "Ordered fixtures: 7 demo users, 17 apps; themes, classifications, random Ping"
+  },
+  {
+    "path": "basic_design/tweaks-panel.jsx",
+    "bytes": 24657,
+    "sha256": "6591467622edc7b2425def3fcf6447556fa698a1d10090583ebb9e782da064b5",
+    "role": "Hidden developer panel and external editor postMessage protocol"
+  },
+  {
+    "path": "basic_design/ui.jsx",
+    "bytes": 10307,
+    "sha256": "1c15234ac807eec586524fc8104b777f862381735ae8be61ccc9c88ece13d23d",
+    "role": "Shared controls, LR fallback, badges, generated DeviceScreen/AppCard"
+  },
+  {
+    "path": "basic_design/view-admin.jsx",
+    "bytes": 11899,
+    "sha256": "5d1a3edf5c87ce635fdab5560d28b975b878d4f4dee17e595892fc87e25d556c",
+    "role": "User management and Health Monitor tabs"
+  },
+  {
+    "path": "basic_design/view-auth.jsx",
+    "bytes": 5134,
+    "sha256": "28f8b74a0c49cbaa2d3c01ba33bd98ef96e48044efe7b047c4c2145caefac423",
+    "role": "Login/signup and demo credentials"
+  },
+  {
+    "path": "basic_design/view-detail.jsx",
+    "bytes": 8329,
+    "sha256": "bb0c3b4d6b32631a41cf119884e6e6f2f4374406c0e68b7c5f9c0e4892d3b34b",
+    "role": "Public/private detail, copy, edit/delete and simulated Ping"
+  },
+  {
+    "path": "basic_design/view-gallery.jsx",
+    "bytes": 3918,
+    "sha256": "8039d52a9725304d3a4210b6adc014cc79ca8c73f082db31c6be2f99307d86ed",
+    "role": "Visibility, filters, search and responsive grid"
+  },
+  {
+    "path": "basic_design/view-submit.jsx",
+    "bytes": 8532,
+    "sha256": "364d12f57812c6b9ff54a27549fae181b5dae0b5aa38efe4fe9580990dbc491b",
+    "role": "Registration/edit, validation, preview, visibility and themes"
+  }
+]
