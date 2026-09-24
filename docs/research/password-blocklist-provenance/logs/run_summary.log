@@ -1,0 +1,10 @@
+==========================================================
+Execution Summary (/tmp/pw-research-reproduce-xsfFKO):
+Timestamp: 2026-09-24T14:44:02+09:00
+  - Fetch candidate blocklists: exit 0
+  - Convert NCSC 100k to binary SHA-256: exit 0
+  - Convert NCSC 100k filtered to >= 15 code points: exit 0
+  - Verify blocklists and synthetic tests: exit 0
+  - Worktree plaintext absence check: exit 0
+Overall Result: SUCCESS (all exit 0)
+==========================================================

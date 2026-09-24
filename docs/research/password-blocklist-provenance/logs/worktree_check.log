@@ -1,0 +1,4 @@
+Auditing deliverables against downloaded candidates in /tmp/pw-research-reproduce-xsfFKO/downloads...
+Total candidate passwords audited (len >= 6): 94937
+Candidate password matches found in deliverables: 0
+PASS: Zero candidate password entries (len >= 6) found in deliverables.

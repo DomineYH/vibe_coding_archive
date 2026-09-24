@@ -1,0 +1,8 @@
+Converting '/tmp/pw-research-reproduce-xsfFKO/downloads/100k-most-used-passwords-NCSC.txt' -> '/tmp/pw-research-reproduce-xsfFKO/converted/ncsc_gte15.txt' (format=text, length=15..128)...
+Conversion Summary:
+  Total Lines Read: 99840
+  Empty Lines Skipped: 1
+  Filtered by Length (15..128): 99508
+  Final Unique Records: 331
+  Output File Size: 6158 bytes
+  Output SHA-256: 279bf70358d4c849051ffa87523eed2ca4f941488c6e6dfee0b83cee3e962955

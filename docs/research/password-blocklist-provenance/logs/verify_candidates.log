@@ -1,0 +1,179 @@
+Executing blocklist verification against target directory: /tmp/pw-research-reproduce-xsfFKO/downloads
+==================================================
+Dataset Analysis: SecLists NCSC 100k
+File Path: /tmp/pw-research-reproduce-xsfFKO/downloads/100k-most-used-passwords-NCSC.txt
+==================================================
+File Size: 835538 bytes
+SHA-256: c2e5696882c603b76bb67a47ee970897e5a76fc4c3f5547abe3d0ca340c576e0
+Total Lines: 99840, Non-empty Lines: 99839, Empty Lines: 1
+Line Endings: LF=99840, CRLF=0, UTF-8 Decode Errors: 0
+Duplicates (in non-empty): 0
+Lines altered by NFC normalization: 0
+Length Distribution (Unicode code points):
+  Min Length: 1, Max Length: 32, Avg Length: 7.36
+  Length < 15: 99508 (99.67%)
+  Length >= 15: 331 (0.33%)
+  Length 15..128: 331 (0.33%)
+  Length > 128: 0
+Character Composition:
+  ASCII Only: 99760, Non-ASCII: 79, Korean (Hangul): 0
+  Whitespace: Leading/Trailing=0, Internal=0
+  Case: Lowercase=75526, Uppercase=668, Mixed-case=2150
+
+==================================================
+Dataset Analysis: Django 20k common (compressed)
+File Path: /tmp/pw-research-reproduce-xsfFKO/downloads/common-passwords.txt.gz
+==================================================
+File Size: 80228 bytes
+SHA-256: 3c1baed62596de36860824eb3f436d5932d37ca8b06e59df78f5a44ec175afe4
+Total Lines: 19640, Non-empty Lines: 19640, Empty Lines: 0
+Line Endings: LF=19640, CRLF=0, UTF-8 Decode Errors: 0
+Duplicates (in non-empty): 0
+Lines altered by NFC normalization: 0
+Length Distribution (Unicode code points):
+  Min Length: 1, Max Length: 33, Avg Length: 7.26
+  Length < 15: 19592 (99.76%)
+  Length >= 15: 48 (0.24%)
+  Length 15..128: 48 (0.24%)
+  Length > 128: 0
+Character Composition:
+  ASCII Only: 19626, Non-ASCII: 14, Korean (Hangul): 0
+  Whitespace: Leading/Trailing=0, Internal=3
+  Case: Lowercase=18181, Uppercase=0, Mixed-case=0
+
+==================================================
+Dataset Analysis: Django 20k common (decompressed)
+File Path: /tmp/pw-research-reproduce-xsfFKO/downloads/common-passwords.txt
+==================================================
+File Size: 162384 bytes
+SHA-256: 29ca0fa5303165f012f3e9775e3e95a3071cdd59f219973ec1cbb308d0214a6f
+Total Lines: 19640, Non-empty Lines: 19640, Empty Lines: 0
+Line Endings: LF=19640, CRLF=0, UTF-8 Decode Errors: 0
+Duplicates (in non-empty): 0
+Lines altered by NFC normalization: 0
+Length Distribution (Unicode code points):
+  Min Length: 1, Max Length: 33, Avg Length: 7.26
+  Length < 15: 19592 (99.76%)
+  Length >= 15: 48 (0.24%)
+  Length 15..128: 48 (0.24%)
+  Length > 128: 0
+Character Composition:
+  ASCII Only: 19626, Non-ASCII: 14, Korean (Hangul): 0
+  Whitespace: Leading/Trailing=0, Internal=3
+  Case: Lowercase=18181, Uppercase=0, Mixed-case=0
+
+==================================================
+Dataset Analysis: SecLists 10k-most-common
+File Path: /tmp/pw-research-reproduce-xsfFKO/downloads/10k-most-common.txt
+==================================================
+File Size: 73017 bytes
+SHA-256: 4adb3f0afb4a10cf19ebe48d8c69a46f934bbc8d77c694c210564f9583e7f4ba
+Total Lines: 10000, Non-empty Lines: 10000, Empty Lines: 0
+Line Endings: LF=10000, CRLF=0, UTF-8 Decode Errors: 0
+Duplicates (in non-empty): 0
+Lines altered by NFC normalization: 0
+Length Distribution (Unicode code points):
+  Min Length: 4, Max Length: 18, Avg Length: 6.30
+  Length < 15: 9999 (99.99%)
+  Length >= 15: 1 (0.01%)
+  Length 15..128: 1 (0.01%)
+  Length > 128: 0
+Character Composition:
+  ASCII Only: 10000, Non-ASCII: 0, Korean (Hangul): 0
+  Whitespace: Leading/Trailing=0, Internal=0
+  Case: Lowercase=9439, Uppercase=0, Mixed-case=0
+
+==================================================
+Dataset Analysis: SecLists probable-v2-1575
+File Path: /tmp/pw-research-reproduce-xsfFKO/downloads/probable-v2_top-1575.txt
+==================================================
+File Size: 12261 bytes
+SHA-256: 3ce41d89e5e75075f3e73ebf1b32121dd873510f2b242dc69c177707ade06dbb
+Total Lines: 1575, Non-empty Lines: 1575, Empty Lines: 0
+Line Endings: LF=1575, CRLF=0, UTF-8 Decode Errors: 0
+Duplicates (in non-empty): 0
+Lines altered by NFC normalization: 0
+Length Distribution (Unicode code points):
+  Min Length: 1, Max Length: 12, Avg Length: 6.78
+  Length < 15: 1575 (100.00%)
+  Length >= 15: 0 (0.00%)
+  Length 15..128: 0 (0.00%)
+  Length > 128: 0
+Character Composition:
+  ASCII Only: 1575, Non-ASCII: 0, Korean (Hangul): 0
+  Whitespace: Leading/Trailing=0, Internal=0
+  Case: Lowercase=1483, Uppercase=0, Mixed-case=3
+
+==================================================
+Dataset Analysis: SecLists xato-net-10k
+File Path: /tmp/pw-research-reproduce-xsfFKO/downloads/xato-net-10-million-passwords-10000.txt
+==================================================
+File Size: 76497 bytes
+SHA-256: c63d5e4ccc31344d662583cc39ca4bd5bd20517ff1d24501f0c4e0c22d9b722a
+Total Lines: 10000, Non-empty Lines: 9999, Empty Lines: 1
+Line Endings: LF=10000, CRLF=0, UTF-8 Decode Errors: 0
+Duplicates (in non-empty): 0
+Lines altered by NFC normalization: 0
+Length Distribution (Unicode code points):
+  Min Length: 3, Max Length: 16, Avg Length: 6.65
+  Length < 15: 9997 (99.98%)
+  Length >= 15: 2 (0.02%)
+  Length 15..128: 2 (0.02%)
+  Length > 128: 0
+Character Composition:
+  ASCII Only: 9999, Non-ASCII: 0, Korean (Hangul): 0
+  Whitespace: Leading/Trailing=0, Internal=0
+  Case: Lowercase=7896, Uppercase=23, Mixed-case=91
+
+==================================================
+Benchmark Load and Memory Footprint
+==================================================
+Benchmark: SecLists NCSC 100k
+  String Set:  Count=99839, Load Time=153.15 ms, Peak RAM=9.65 MB
+  SHA-256 Set: Count=99839, Load Time=752.17 ms, Peak RAM=10.90 MB
+  Lookup Latency: 0.057 microseconds/query (17,439,551 queries/sec)
+
+Benchmark: Django 20k common (compressed)
+  String Set:  Count=19640, Load Time=31.47 ms, Peak RAM=1.51 MB
+  SHA-256 Set: Count=19640, Load Time=142.96 ms, Peak RAM=1.82 MB
+  Lookup Latency: 0.059 microseconds/query (17,026,186 queries/sec)
+
+Benchmark: SecLists 10k-most-common
+  String Set:  Count=10000, Load Time=12.84 ms, Peak RAM=0.96 MB
+  SHA-256 Set: Count=10000, Load Time=82.59 ms, Peak RAM=1.13 MB
+  Lookup Latency: 0.056 microseconds/query (17,844,029 queries/sec)
+
+Benchmark: SecLists probable-v2-1575
+  String Set:  Count=1575, Load Time=2.19 ms, Peak RAM=0.22 MB
+  SHA-256 Set: Count=1575, Load Time=10.87 ms, Peak RAM=0.24 MB
+  Lookup Latency: 0.055 microseconds/query (18,080,554 queries/sec)
+
+Benchmark: SecLists xato-net-10k
+  String Set:  Count=9999, Load Time=13.37 ms, Peak RAM=0.97 MB
+  SHA-256 Set: Count=9999, Load Time=72.05 ms, Peak RAM=1.13 MB
+  Lookup Latency: 0.057 microseconds/query (17,558,908 queries/sec)
+
+==================================================
+Synthetic Policy and Integrity Verification Tests
+==================================================
+[TEST 1] Exact match on synthetic token (len=47):
+         Result: BLOCKED (Expected)
+[TEST 2] Whole-string match check on substring containing synthetic token:
+         Result: ALLOWED (Expected, substring not blocked)
+[TEST 3] Case preservation test on synthetic set:
+         Cased token in blocklist: True (Expected: True)
+         Lower token in blocklist: False (Expected: False)
+         Result: Case is preserved; exact case matches and lowercase variant does not match (PASS).
+[TEST 4] Whitespace preservation on synthetic token:
+         Result: ALLOWED (Expected, no trim applied)
+[TEST 5] Synthetic logic verification (Unicode NFC equivalence):
+         Composed (NFC) vs Decomposed (NFD) string equivalence verified.
+         Normalized query matches stored NFC entry (PASS).
+[TEST 6A] Valid hash verification: PASS
+[TEST 6B] Corrupted hash detection: PASS (Caught expected ValueError)
+[TEST 6C] Missing file detection: PASS (Caught expected FileNotFoundError)
+[TEST 7] Real dataset lookup by index without plaintext leakage:
+         Line: 100, Length: 8, SHA-256: d24259be13407e0d132337bd8398ee9aaff43a249c38d0bf222429f311c9c939
+         Presence in in-memory set: Verified (PASS)
+
+All synthetic and integrity tests passed successfully.

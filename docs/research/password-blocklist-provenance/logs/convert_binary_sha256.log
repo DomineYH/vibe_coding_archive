@@ -1,0 +1,8 @@
+Converting '/tmp/pw-research-reproduce-xsfFKO/downloads/100k-most-used-passwords-NCSC.txt' -> '/tmp/pw-research-reproduce-xsfFKO/converted/ncsc_100k.sha256.bin' (format=binary_sha256, length=0..128)...
+Conversion Summary:
+  Total Lines Read: 99840
+  Empty Lines Skipped: 1
+  Filtered by Length (0..128): 0
+  Final Unique Records: 99839
+  Output File Size: 3194848 bytes
+  Output SHA-256: 3454787f31778a25124a31abbfb8a65d2fda9cc1cf40bac2a379544a143a8d38
