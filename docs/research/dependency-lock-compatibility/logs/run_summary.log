@@ -1,0 +1,22 @@
+==========================================================
+Execution Summary (/tmp/deps-verify-reproduce-kMR5k1):
+Timestamp: 2026-09-24T13:26:07+09:00
+  - Frontend npm ci: exit 0
+  - Frontend OpenAPI lint (redocly): exit 0
+  - Frontend OpenAPI TypeScript generate: exit 0
+  - Frontend OpenAPI generated diff check: exit 0
+  - Frontend TypeScript typecheck (tsc): exit 0
+  - Frontend ESLint: exit 0
+  - Frontend Prettier check: exit 0
+  - Frontend Vitest unit/component tests: exit 0
+  - Frontend Vite production build: exit 0
+  - Frontend Playwright E2E smoke test: exit 0
+  - Frontend npm audit: exit 0
+  - Backend uv venv (Python 3.12.3): exit 0
+  - Backend uv sync --locked: exit 0
+  - Backend uv run ruff check: exit 0
+  - Backend uv run ruff format check: exit 0
+  - Backend uv run pytest: exit 0
+  - Backend uv audit: exit 0
+Overall Result: SUCCESS (all exit 0)
+==========================================================

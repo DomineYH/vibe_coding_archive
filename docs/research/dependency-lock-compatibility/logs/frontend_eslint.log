@@ -1,0 +1,8 @@
+npm notice run eduvibe-archive-frontend@0.1.0 npx
+npm notice run 'eslint' .
+
+/tmp/deps-verify-reproduce-kMR5k1/frontend/src/main.jsx
+  6:10  warning  Fast refresh only works when a file has exports. Move your component(s) to a separate file  react-refresh/only-export-components
+
+✖ 1 problem (0 errors, 1 warning)
+

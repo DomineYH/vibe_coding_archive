@@ -1,0 +1,13 @@
+npm notice run eduvibe-archive-frontend@0.1.0 npx
+npm notice run 'vitest' run
+
+ RUN  v5.0.1 /tmp/deps-verify-reproduce-kMR5k1/frontend
+
+ ✓ tests/Router.test.jsx (1 test) 45ms
+ ✓ tests/StatusBadge.test.jsx (3 tests) 51ms
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  13:25:56
+   Duration  1.30s (environment 61%, import 20%, transform 8%, setup 6%, tests 4%, worker 1%)
+

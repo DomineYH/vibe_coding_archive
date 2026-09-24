@@ -1,0 +1,109 @@
+openapi: 3.1.0
+info:
+  title: EduVibe Archive API
+  version: 1.0.0
+  description: EduVibe Archive API Contract based on PRD §10
+servers:
+  - url: /api/v1
+    description: EduVibe API v1
+paths:
+  /meta:
+    get:
+      summary: Retrieve system metadata and capabilities
+      operationId: getMeta
+      responses:
+        "200":
+          description: Metadata response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaResponse"
+  /auth/me:
+    get:
+      summary: Get current authenticated user profile
+      operationId: getAuthMe
+      responses:
+        "200":
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    MetaResponse:
+      type: object
+      required:
+        - subjects
+        - grades
+        - themes
+        - capabilities
+      properties:
+        subjects:
+          type: array
+          items:
+            type: string
+        grades:
+          type: array
+          items:
+            type: string
+        themes:
+          type: array
+          items:
+            type: string
+        capabilities:
+          type: object
+          additionalProperties:
+            type: boolean
+    UserResponse:
+      type: object
+      required:
+        - id
+        - login_id
+        - nickname
+        - role
+        - approved
+        - must_change_password
+      properties:
+        id:
+          type: string
+          format: uuid
+        login_id:
+          type: string
+        nickname:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        approved:
+          type: boolean
+        must_change_password:
+          type: boolean
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+            - request_id
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            request_id:
+              type: string
+            fields:
+              type: object
+              additionalProperties:
+                type: string

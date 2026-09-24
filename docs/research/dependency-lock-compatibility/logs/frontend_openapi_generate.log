@@ -1,0 +1,4 @@
+npm notice run eduvibe-archive-frontend@0.1.0 npx
+npm notice run 'openapi-typescript' contracts/openapi.yaml -o src/contracts/api.d.ts
+✨ openapi-typescript 7.13.0
+🚀 contracts/openapi.yaml → src/contracts/api.d.ts [124ms]

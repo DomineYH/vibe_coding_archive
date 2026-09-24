@@ -1,0 +1,3 @@
+warning: `uv audit` is experimental and may change without warning. Pass `--preview-features audit-command` to disable this warning.
+Resolved 43 packages in 1ms
+Found no known vulnerabilities and no adverse project statuses in 42 packages

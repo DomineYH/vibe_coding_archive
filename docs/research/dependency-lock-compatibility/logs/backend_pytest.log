@@ -1,0 +1,15 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /tmp/deps-verify-reproduce-kMR5k1/backend/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /tmp/deps-verify-reproduce-kMR5k1/backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 4 items
+
+tests/test_smoke.py::test_sqlite_pragmas PASSED                          [ 25%]
+tests/test_smoke.py::test_password_hash PASSED                           [ 50%]
+tests/test_smoke.py::test_pydantic_schema PASSED                         [ 75%]
+tests/test_smoke.py::test_fastapi_async_client PASSED                    [100%]
+
+============================== 4 passed in 1.62s ===============================

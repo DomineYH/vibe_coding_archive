@@ -1,0 +1,8 @@
+npm notice run eduvibe-archive-frontend@0.1.0 npx
+npm notice run 'playwright' test
+
+Running 1 test using 1 worker
+
+  ✓  1 [system-chrome] › e2e/smoke.spec.js:3:1 › browser launches and executes javascript (277ms)
+
+  1 passed (1.4s)

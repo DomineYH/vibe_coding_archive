@@ -1,0 +1,7 @@
+npm notice run eduvibe-archive-frontend@0.1.0 npx
+npm notice run 'redocly' lint contracts/openapi.yaml
+validating contracts/openapi.yaml...
+contracts/openapi.yaml: validated in 29ms
+
+Woohoo! Your API description is valid. 🎉
+
