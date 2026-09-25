@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, Copy, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCheckedAt, formatDate } from "../../components/presentation";
 import {
@@ -136,7 +136,7 @@ export function AppDetailView({ app, meta, loading, error, retry }) {
           to="/"
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-800"
         >
-          <ArrowLeft size={15} aria-hidden="true" />
+          <ChevronLeft size={15} aria-hidden="true" />
           갤러리로
         </Link>
         <span aria-hidden="true" />
@@ -175,7 +175,7 @@ export function AppDetailView({ app, meta, loading, error, retry }) {
           className="acc-bg inline-flex h-11 items-center gap-2 rounded-full px-6 text-[14px] font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:shadow-md active:scale-[0.97]"
         >
           <span>앱 열기</span>
-          <ExternalLink size={16} aria-hidden="true" />
+          <ArrowUpRight size={16} aria-hidden="true" />
         </a>
       </div>
 

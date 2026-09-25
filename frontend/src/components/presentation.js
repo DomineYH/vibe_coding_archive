@@ -36,5 +36,5 @@ export function formatDate(value) {
   const date = Object.fromEntries(
     parts.map(({ type, value: part }) => [type, part]),
   );
-  return `${date.year}.${Number(date.month)}.${Number(date.day)}.`;
+  return `${date.year}-${date.month}-${date.day}`;
 }

@@ -107,6 +107,12 @@ function dateTime(value: unknown): string {
   const result = string(value);
   if (!DATE_TIME.test(result) || Number.isNaN(Date.parse(result)))
     throw contractError();
+  const calendarDate = result.slice(0, 10);
+  if (
+    new Date(`${calendarDate}T00:00:00.000Z`).toISOString().slice(0, 10) !==
+    calendarDate
+  )
+    throw contractError();
   return result;
 }
 

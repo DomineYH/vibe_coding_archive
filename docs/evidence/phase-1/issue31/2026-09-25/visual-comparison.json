@@ -13,14 +13,9 @@
       "height": 1826,
       "expectedWidth": 1440,
       "expectedHeight": 1826,
-      "differentPixels": 69435,
-      "maxChannelDelta": 212,
-      "bounds": {
-        "left": 112,
-        "top": 11,
-        "right": 1315,
-        "bottom": 1791
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "detail",
@@ -34,14 +29,9 @@
       "height": 1360,
       "expectedWidth": 1440,
       "expectedHeight": 1360,
-      "differentPixels": 46099,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 120,
-        "top": 11,
-        "right": 1315,
-        "bottom": 1325
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-loading",
@@ -71,14 +61,9 @@
       "height": 1000,
       "expectedWidth": 1440,
       "expectedHeight": 1000,
-      "differentPixels": 27620,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 112,
-        "top": 11,
-        "right": 1315,
-        "bottom": 827
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-failure",
@@ -124,14 +109,9 @@
       "height": 2503,
       "expectedWidth": 1024,
       "expectedHeight": 2503,
-      "differentPixels": 73828,
-      "maxChannelDelta": 212,
-      "bounds": {
-        "left": 32,
-        "top": 11,
-        "right": 979,
-        "bottom": 2468
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "detail",
@@ -145,14 +125,9 @@
       "height": 1341,
       "expectedWidth": 1024,
       "expectedHeight": 1341,
-      "differentPixels": 46371,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 38,
-        "top": 11,
-        "right": 988,
-        "bottom": 1306
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-loading",
@@ -182,14 +157,9 @@
       "height": 900,
       "expectedWidth": 1024,
       "expectedHeight": 900,
-      "differentPixels": 27620,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 32,
-        "top": 11,
-        "right": 979,
-        "bottom": 827
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-failure",
@@ -235,14 +205,9 @@
       "height": 3313,
       "expectedWidth": 768,
       "expectedHeight": 3313,
-      "differentPixels": 66453,
-      "maxChannelDelta": 212,
-      "bounds": {
-        "left": 32,
-        "top": 11,
-        "right": 723,
-        "bottom": 3278
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "detail",
@@ -256,14 +221,9 @@
       "height": 1757,
       "expectedWidth": 768,
       "expectedHeight": 1757,
-      "differentPixels": 46221,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 38,
-        "top": 11,
-        "right": 732,
-        "bottom": 1722
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-loading",
@@ -293,14 +253,9 @@
       "height": 1024,
       "expectedWidth": 768,
       "expectedHeight": 1024,
-      "differentPixels": 27620,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 32,
-        "top": 11,
-        "right": 723,
-        "bottom": 827
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-failure",
@@ -346,14 +301,9 @@
       "height": 6143,
       "expectedWidth": 390,
       "expectedHeight": 6143,
-      "differentPixels": 67167,
-      "maxChannelDelta": 212,
-      "bounds": {
-        "left": 1,
-        "top": 13,
-        "right": 388,
-        "bottom": 6105
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "detail",
@@ -367,14 +317,9 @@
       "height": 1968,
       "expectedWidth": 390,
       "expectedHeight": 1968,
-      "differentPixels": 45955,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 1,
-        "top": 13,
-        "right": 388,
-        "bottom": 1930
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-loading",
@@ -401,11 +346,11 @@
       "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/03-gallery-empty.png",
       "screenshot": "gallery-empty-390x844.png",
       "width": 390,
-      "height": 865,
+      "height": 905,
       "expectedWidth": 390,
       "expectedHeight": 905,
-      "differentPixels": null,
-      "maxChannelDelta": null,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
       "bounds": null
     },
     {
@@ -452,14 +397,9 @@
       "height": 5882,
       "expectedWidth": 360,
       "expectedHeight": 5882,
-      "differentPixels": 66878,
-      "maxChannelDelta": 212,
-      "bounds": {
-        "left": 4,
-        "top": 13,
-        "right": 351,
-        "bottom": 5847
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "detail",
@@ -473,14 +413,9 @@
       "height": 1955,
       "expectedWidth": 360,
       "expectedHeight": 1955,
-      "differentPixels": 40509,
-      "maxChannelDelta": 217,
-      "bounds": {
-        "left": 4,
-        "top": 13,
-        "right": 351,
-        "bottom": 1920
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-loading",
@@ -494,14 +429,9 @@
       "height": 904,
       "expectedWidth": 360,
       "expectedHeight": 904,
-      "differentPixels": 16,
-      "maxChannelDelta": 18,
-      "bounds": {
-        "left": 34,
-        "top": 396,
-        "right": 69,
-        "bottom": 429
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-empty",
@@ -512,11 +442,11 @@
       "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/03-gallery-empty.png",
       "screenshot": "gallery-empty-360x844.png",
       "width": 360,
-      "height": 925,
+      "height": 965,
       "expectedWidth": 360,
       "expectedHeight": 965,
-      "differentPixels": null,
-      "maxChannelDelta": null,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
       "bounds": null
     },
     {
@@ -531,14 +461,9 @@
       "height": 960,
       "expectedWidth": 360,
       "expectedHeight": 960,
-      "differentPixels": 16,
-      "maxChannelDelta": 18,
-      "bounds": {
-        "left": 34,
-        "top": 396,
-        "right": 69,
-        "bottom": 429
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "corrupt-storage-recovery",
@@ -568,14 +493,9 @@
       "height": 286,
       "expectedWidth": 289,
       "expectedHeight": 286,
-      "differentPixels": 2698,
-      "maxChannelDelta": 182,
-      "bounds": {
-        "left": 25,
-        "top": 82,
-        "right": 250,
-        "bottom": 268
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "detail-component",
@@ -589,14 +509,9 @@
       "height": 555,
       "expectedWidth": 340,
       "expectedHeight": 555,
-      "differentPixels": 8531,
-      "maxChannelDelta": 201,
-      "bounds": {
-        "left": 14,
-        "top": 4,
-        "right": 336,
-        "bottom": 543
-      }
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     }
   ]
 }

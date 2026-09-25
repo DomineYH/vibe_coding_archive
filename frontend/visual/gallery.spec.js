@@ -138,7 +138,6 @@ async function captureAndCompare(
   else await page.clock.install({ time: captureTime });
   const scenarios = {
     "gallery-loading": { scenario: "list_delayed", apps: [] },
-    "gallery-empty": { scenario: "empty", apps: [] },
     "gallery-failure": { scenario: "list_failure", apps: [] },
     "corrupt-storage-recovery": { scenario: "original", apps: [{}] },
   };
@@ -160,6 +159,25 @@ async function captureAndCompare(
         ? "/__dev/mock-reset"
         : "/",
   );
+  if (state === "gallery-empty") {
+    await expect(page.locator("a.card-r")).toHaveCount(16);
+    const capturePrecedingState = async () => {
+      await page.mouse.move(0, 0);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.clock.runFor(400);
+      await page.evaluate(() => document.fonts.ready);
+      await page.screenshot({
+        fullPage: true,
+        animations: "disabled",
+        caret: "hide",
+      });
+    };
+    await capturePrecedingState();
+    const search = page.getByPlaceholder("앱·작성자 검색");
+    await search.focus();
+    await capturePrecedingState();
+    await search.fill("없는앱-증거");
+  }
   if (state === "gallery" || state === "gallery-component")
     await expect(page.locator("a.card-r")).toHaveCount(16);
   else if (detailState)
@@ -197,8 +215,19 @@ async function captureAndCompare(
     await expect(page.getByRole("status")).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
+  if (state === "gallery-empty")
+    await page
+      .getByPlaceholder("앱·작성자 검색")
+      .evaluate((input) => input.blur());
   await page.mouse.move(0, 0);
   await page.evaluate(() => window.scrollTo(0, 0));
+  if (state === "gallery-empty") {
+    await page.clock.runFor(400);
+    await expect(page.getByPlaceholder("앱·작성자 검색")).toHaveCSS(
+      "width",
+      viewport.width < 640 ? "144px" : "176px",
+    );
+  }
   const actual = componentSelector
     ? await page.locator(componentSelector).first().screenshot({
         animations: "disabled",

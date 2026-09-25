@@ -89,6 +89,12 @@ describe("response mappers", () => {
     });
   });
 
+  it("rejects timestamps whose calendar date rolls over", () => {
+    expect(() =>
+      mapMeta({ ...meta, server_time: "2026-02-30T00:00:00.000Z" }),
+    ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
   it("rejects missing fields and unsupported health values instead of supplying normal defaults", () => {
     expect(() => mapAppPage({ ...page, pagination: undefined })).toThrowError(
       expect.objectContaining({ code: "CONTRACT_ERROR" }),

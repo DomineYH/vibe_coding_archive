@@ -24,10 +24,10 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Install pinned visual Chromium
         run: |
-          curl --fail --location --silent --show-error https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-linux64.zip --output "$RUNNER_TEMP/chrome-151.zip"
+          curl --fail --location --silent --show-error https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-headless-shell-linux64.zip --output "$RUNNER_TEMP/chrome-151.zip"
           mkdir -p "$RUNNER_TEMP/chrome-151"
           unzip -q "$RUNNER_TEMP/chrome-151.zip" -d "$RUNNER_TEMP/chrome-151"
-          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$RUNNER_TEMP/chrome-151/chrome-linux64/chrome" >> "$GITHUB_ENV"
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$RUNNER_TEMP/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell" >> "$GITHUB_ENV"
       - name: Static checks
         working-directory: frontend
         run: npm run check
@@ -37,9 +37,6 @@ jobs:
       - name: Browser tests
         working-directory: frontend
         run: npm run test:e2e
-      - name: Visual comparisons
-        working-directory: frontend
-        run: npm run test:visual
       - name: Mock build
         working-directory: frontend
         run: npm run build:mock
@@ -49,3 +46,6 @@ jobs:
       - name: Source preservation check
         working-directory: frontend
         run: npm run check:reference
+      - name: Visual comparisons
+        working-directory: frontend
+        run: npm run test:visual

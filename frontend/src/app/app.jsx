@@ -51,7 +51,7 @@ function Header({ active, onLogin }) {
           <Link
             to="/"
             aria-current={active === "gallery" ? "page" : undefined}
-            className={navButton(active === "gallery" || active === "detail")}
+            className={`inline-flex items-center justify-center ${navButton(active === "gallery" || active === "detail")}`}
           >
             갤러리
           </Link>
@@ -89,14 +89,34 @@ function Footer() {
   );
 }
 
-function GalleryRoute() {
-  const [filters, setFilters] = useState({});
-  const onQueryChange = useCallback((next) => setFilters(next), []);
-  const meta = useQuery({
+function usePublicMetadata() {
+  const query = useQuery({
     queryKey: [__DATA_MODE__, "meta"],
     queryFn: ({ signal }) => appsService.getMeta({ signal }),
   });
-  const canRead = meta.data?.capabilities.apps_read.enabled === true;
+  const canRead = query.data?.capabilities.apps_read.enabled === true;
+  const unavailable =
+    query.data && !canRead
+      ? new ServiceError(
+          "FEATURE_UNAVAILABLE",
+          "공개 아카이브를 현재 사용할 수 없어요.",
+        )
+      : null;
+  return {
+    meta: query.data,
+    canRead,
+    loading: query.isPending,
+    error: query.error ?? unavailable,
+    retry(refetch) {
+      void (query.isError || !canRead ? query.refetch() : refetch());
+    },
+  };
+}
+
+function GalleryRoute() {
+  const [filters, setFilters] = useState({});
+  const onQueryChange = useCallback((next) => setFilters(next), []);
+  const access = usePublicMetadata();
   const list = useQuery({
     queryKey: [
       __DATA_MODE__,
@@ -111,45 +131,31 @@ function GalleryRoute() {
       filters.grade ?? null,
       24,
     ],
-    enabled: canRead,
+    enabled: access.canRead,
     queryFn: async ({ signal }) => {
       const page = await appsService.list(
         { ...filters, limit: 24, offset: 0 },
         { signal },
       );
-      assertThemeIds(meta.data, page.items);
+      assertThemeIds(access.meta, page.items);
       return page;
     },
   });
-  const unavailable =
-    meta.data && !canRead
-      ? new ServiceError(
-          "FEATURE_UNAVAILABLE",
-          "공개 아카이브를 현재 사용할 수 없어요.",
-        )
-      : null;
-  const error = meta.error ?? unavailable ?? list.error;
   return (
     <GalleryView
-      meta={meta.data}
+      meta={access.meta}
       page={list.data}
       onQueryChange={onQueryChange}
-      error={error}
-      loading={meta.isPending || (canRead && list.isPending)}
-      retry={() => {
-        void (meta.isError || !canRead ? meta.refetch() : list.refetch());
-      }}
+      error={access.error ?? list.error}
+      loading={access.loading || (access.canRead && list.isPending)}
+      retry={() => access.retry(list.refetch)}
     />
   );
 }
 
 function DetailRoute() {
   const { id = "" } = useParams();
-  const meta = useQuery({
-    queryKey: [__DATA_MODE__, "meta"],
-    queryFn: ({ signal }) => appsService.getMeta({ signal }),
-  });
-  const canRead = meta.data?.capabilities.apps_read.enabled === true;
+  const access = usePublicMetadata();
   const detail = useQuery({
     queryKey: [
       __DATA_MODE__,
@@ -161,7 +167,7 @@ function DetailRoute() {
       "detail",
       id,
     ],
-    enabled: canRead,
+    enabled: access.canRead,
     queryFn: async ({ signal }) => {
       const app = await appsService.get(id, { signal });
       if (!app.isPublic)
@@ -169,28 +175,18 @@ function DetailRoute() {
           outcome: "rejected",
           httpStatus: 404,
         });
-      assertThemeIds(meta.data, [app]);
+      assertThemeIds(access.meta, [app]);
       return app;
     },
   });
-  const unavailable =
-    meta.data && !canRead
-      ? new ServiceError(
-          "FEATURE_UNAVAILABLE",
-          "공개 아카이브를 현재 사용할 수 없어요.",
-        )
-      : null;
-  const error = meta.error ?? unavailable ?? detail.error;
   const app = detail.data?.isPublic ? detail.data : undefined;
   return (
     <AppDetailView
       app={app}
-      meta={meta.data}
-      loading={meta.isPending || (canRead && detail.isPending)}
-      error={error}
-      retry={() => {
-        void (meta.isError || !canRead ? meta.refetch() : detail.refetch());
-      }}
+      meta={access.meta}
+      loading={access.loading || (access.canRead && detail.isPending)}
+      error={access.error ?? detail.error}
+      retry={() => access.retry(detail.refetch)}
     />
   );
 }

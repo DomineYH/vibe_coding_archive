@@ -14,7 +14,7 @@ npm run check
 npm test -- tests/mappers.test.ts
 npm test
 npm run test:e2e
-PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome-151 npm run test:visual
+PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome-headless-shell-151 npm run test:visual
 npm run build:mock
 npm run build
 npm run check:dist
@@ -23,4 +23,4 @@ npm run check:reference
 
 `npm run build` creates the API-only `dist/`; `npm run build:mock` creates the development demo at `dist-mock/`. Neither command updates the visual reference files. `npm run mock:reset` prints the browser URL for the mock storage page. The mock state is reset only after the explicit button is used there.
 
-The visual comparison uses the exact Chromium 151.0.7922.34 binary required by the source evidence. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its full `chrome` executable path; the test fails if the browser version differs.
+The visual comparison uses the exact Chromium 151.0.7922.34 headless-shell binary used by the source evidence. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its executable path; the test fails if the browser version differs.
