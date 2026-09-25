@@ -139,9 +139,15 @@ The persisted mock-state audit covers exact state keys (`version`, `generation`,
 
 The current follow-up supersedes #31-9's initial mapper acceptance statement: its 400 `VALIDATION_ERROR` case was not an Appendix B tuple for these GET endpoints. Earlier passing hosted runs 36116826924 and 36116822928 remain evidence for code commit `76c1e76` only. The current API/state follow-up has not yet been verified by hosted PR CI. AC7 remains BLOCKED and AC8 remains partial pending a human demonstration.
 
+## Review #31-12: persist before updating mock generation
+
+Audited every mock-layer storage write and caller. Initial state creation in `readState` persists before returning and does not mutate module generation or emit a reset event. `setMockScenario` and `resetMockState` now compute the next generation locally, persist it, then update `resetGeneration` and dispatch `MOCK_RESET_EVENT`. The reset-page caller changes its selected scenario only after `setMockScenario` returns, and clears the query cache/navigates only after `resetMockState` returns. No other mock-service path writes persisted mock state. The separate startup cleanup runs only in API mode; it removes stale keys without mutating module generation or dispatching the reset event.
+
+[`mock-apps.test.ts`](../../../../../frontend/tests/mock-apps.test.ts#L139) covers a one-time failure during initial state creation, confirms no saved state/event was left behind, then verifies a successful 16-item list on retry. L155 and L173 cover one-time failures in scenario change and explicit reset; both assert stored bytes are unchanged, no reset event is dispatched, and the next list returns 16 items. The mock service file passed 15/15 and the persisted-state validation file passed 65/65 (combined 80/80); the combined API/state/mock selection passed 106/106. Final verification: full unit suite 129/129 across 12 files; E2E 7/7; `npm run check`; and mock build all passed.
+
 ## Remaining unverified work
 
-- Coordinator PR CI for the API error-map/docs follow-up commit, plus DomineYH local handover acceptance.
+- Coordinator PR CI for the current API/state persistence follow-up commit, plus DomineYH local handover acceptance.
 - Replay raster-cause investigation remains incomplete; see the preceding section.
 - Manual keyboard/accessibility demonstration remains pending a human; only automated browser checks are recorded here.
 - Real API/backend/database behavior, auth/session/cookie protection, actual health probes, and operational or release approval.

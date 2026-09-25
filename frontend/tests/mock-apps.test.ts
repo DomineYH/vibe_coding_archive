@@ -1,10 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
 import {
+  MOCK_RESET_EVENT,
   MOCK_STORAGE_KEY,
   resetMockState,
   setMockScenario,
 } from "../src/services/mock/state";
+
+function failNextStorageWrite() {
+  vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+    throw new DOMException("temporary write failure", "QuotaExceededError");
+  });
+}
 
 describe("deterministic gallery mock", () => {
   beforeEach(() => {
@@ -127,6 +134,58 @@ describe("deterministic gallery mock", () => {
     await expect(
       appsService.list({ limit: 24, offset: 0 }),
     ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+  });
+
+  it("initializes on retry after a one-time initial storage write failure", async () => {
+    const dispatchEvent = vi.spyOn(window, "dispatchEvent");
+    failNextStorageWrite();
+
+    await expect(
+      appsService.list({ limit: 24, offset: 0 }),
+    ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBeNull();
+    expect(dispatchEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: MOCK_RESET_EVENT }),
+    );
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items,
+    ).toHaveLength(16);
+  });
+
+  it("keeps scenario state and reset events unchanged when persistence fails once", async () => {
+    resetMockState();
+    const saved = localStorage.getItem(MOCK_STORAGE_KEY);
+    const dispatchEvent = vi.spyOn(window, "dispatchEvent");
+    failNextStorageWrite();
+
+    expect(() => setMockScenario("list_failure")).toThrow(
+      "개발용 저장 데이터를 읽거나 저장하지 못했어요.",
+    );
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(saved);
+    expect(dispatchEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: MOCK_RESET_EVENT }),
+    );
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items,
+    ).toHaveLength(16);
+  });
+
+  it("keeps reset generation and reset events unchanged when persistence fails once", async () => {
+    resetMockState();
+    const saved = localStorage.getItem(MOCK_STORAGE_KEY);
+    const dispatchEvent = vi.spyOn(window, "dispatchEvent");
+    failNextStorageWrite();
+
+    expect(() => resetMockState()).toThrow(
+      "개발용 저장 데이터를 읽거나 저장하지 못했어요.",
+    );
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(saved);
+    expect(dispatchEvent).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: MOCK_RESET_EVENT }),
+    );
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items,
+    ).toHaveLength(16);
   });
 
   it("fails the current request when reset invalidates its generation", async () => {

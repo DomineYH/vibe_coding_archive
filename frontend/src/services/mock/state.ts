@@ -200,8 +200,8 @@ export function resetMockState(): void {
   } catch {
     // An explicit reset is the recovery path for damaged or unsupported saved data.
   }
-  resetGeneration = next;
   writeState({ ...initialState(), generation: next });
+  resetGeneration = next;
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
 }
 
@@ -209,8 +209,9 @@ export function setMockScenario(scenario: MockScenario): void {
   if (!isMockScenario(scenario))
     throw new TypeError("Unsupported mock scenario");
   const state = readState();
-  resetGeneration = nextGeneration(state.generation);
-  writeState({ ...state, scenario, generation: resetGeneration });
+  const next = nextGeneration(state.generation);
+  writeState({ ...state, scenario, generation: next });
+  resetGeneration = next;
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
 }
 
