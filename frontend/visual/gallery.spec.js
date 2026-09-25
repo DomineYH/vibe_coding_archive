@@ -93,6 +93,24 @@ test.beforeAll(async ({ browser }) => {
       families,
       "Visual baseline prompt must render Latin in Liberation Mono and Korean in Noto Sans CJK JP.",
     ).toEqual(expect.arrayContaining(["Liberation Mono", "Noto Sans CJK JP"]));
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("http://localhost:5173/");
+    await page.locator("#grade-filter").waitFor();
+    await page.evaluate(() => document.fonts.ready);
+    const { root: galleryRoot } = await session.send("DOM.getDocument");
+    const { nodeId: gradeFilterNodeId } = await session.send(
+      "DOM.querySelector",
+      { nodeId: galleryRoot.nodeId, selector: "#grade-filter" },
+    );
+    const { fonts: gradeFilterFonts } = await session.send(
+      "CSS.getPlatformFontsForNode",
+      { nodeId: gradeFilterNodeId },
+    );
+    expect(
+      gradeFilterFonts.map(({ familyName }) => familyName),
+      "Visual baselines require the 390px grade filter to render in Pretendard Variable like the source; check inherited font loading and the pinned browser/font environment.",
+    ).toContain("Pretendard Variable");
   } finally {
     await page.close();
   }
