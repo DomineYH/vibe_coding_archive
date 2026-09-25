@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../contracts/catalog.json";
 import {
+  mapAuthResult,
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
+  mapSelf,
 } from "../src/contracts/mappers";
 
 const capability = { enabled: false, reasons: ["not_implemented"] };
@@ -79,6 +81,55 @@ const page = {
 };
 
 describe("response mappers", () => {
+  it("keeps member ID, login ID, and nickname as separate auth fields", () => {
+    const member = {
+      id: "00000000-0000-4000-8000-000000000101",
+      login_id: "teacher-login",
+      nickname: "수학쌤",
+      role: "user",
+      approved: true,
+      must_change_password: false,
+      session_kind: "full",
+      expires_at: "2026-09-22T08:12:00.000Z",
+      email: null,
+      phone: null,
+      recent_auth_until: null,
+    };
+    expect(mapSelf(member)).toMatchObject({
+      id: member.id,
+      loginId: "teacher-login",
+      nickname: "수학쌤",
+    });
+    expect(
+      mapAuthResult({ user: member, csrf_token: "mock-token" }).csrfToken,
+    ).toBe("mock-token");
+  });
+
+  it("rejects inconsistent or incomplete authentication restore responses", () => {
+    const valid = {
+      id: "00000000-0000-4000-8000-000000000101",
+      login_id: "teacher-login",
+      nickname: "수학쌤",
+      role: "user",
+      approved: true,
+      must_change_password: false,
+      session_kind: "full",
+      expires_at: "2026-09-22T08:12:00.000Z",
+      email: null,
+      phone: null,
+      recent_auth_until: null,
+    };
+    expect(() => mapSelf({ ...valid, id: "not-a-uuid" })).toThrowError(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
+    expect(() => mapSelf({ ...valid, login_id: undefined })).toThrowError(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
+    expect(() => mapSelf({ ...valid, approved: false })).toThrowError(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
+  });
+
   it("maps the catalog and snake-case app fields into display data", () => {
     expect(mapMeta(meta).themes[0].id).toBe("sage");
     expect(mapAppPage(page).items[0]).toMatchObject({

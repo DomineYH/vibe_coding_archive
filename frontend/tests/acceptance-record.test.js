@@ -148,6 +148,48 @@ describe("Phase 1 acceptance traces", () => {
     expect(evidence).toContain("app-write return");
   });
 
+  it("records every issue 34 criterion and its local run evidence", () => {
+    const lines = acceptance.split("\n");
+    const headerIndex = lines.findIndex((line) =>
+      line.startsWith("| Requirement / source"),
+    );
+    const headers = lines[headerIndex]
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    const records = lines
+      .slice(headerIndex + 2)
+      .filter((line) => line.startsWith("| #34 AC"));
+
+    expect(records).toHaveLength(11);
+    expect(
+      records.map((record) =>
+        Number(
+          record
+            .split("|")[1]
+            .trim()
+            .match(/^#34 AC(\d+)\b/)[1],
+        ),
+      ),
+    ).toEqual(Array.from({ length: 11 }, (_, index) => index + 1));
+    for (const record of records) {
+      const cells = record
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      expect(cells).toHaveLength(headers.length);
+      expect(cells.every(Boolean)).toBe(true);
+    }
+
+    const evidence = readFileSync(
+      path.resolve("../docs/evidence/phase-1/issue34/2026-09-26/README.md"),
+      "utf8",
+    );
+    expect(evidence).toContain("#34 local run evidence");
+    expect(evidence).toContain("Authentication case trace");
+    expect(evidence).toContain("Open and unverified");
+  });
+
   it("runs frontend checks, tests, builds, and preservation before visuals in CI", () => {
     const steps = workflow.jobs.frontend.steps;
     const commands = steps.map((step) => step.run);

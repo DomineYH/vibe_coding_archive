@@ -158,6 +158,15 @@ function StateView({ loading, error, retry }) {
   }
   if (!error) return null;
   const notFound = error instanceof ServiceError && error.code === "NOT_FOUND";
+  const authRequired =
+    error instanceof ServiceError && error.code === "AUTH_REQUIRED";
+  const forbidden =
+    error instanceof ServiceError &&
+    [
+      "FORBIDDEN",
+      "PASSWORD_CHANGE_REQUIRED",
+      "SESSION_KIND_NOT_ALLOWED",
+    ].includes(error.code);
   const storage =
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   return (
@@ -166,7 +175,11 @@ function StateView({ loading, error, retry }) {
         title={
           notFound
             ? "아카이브 앱을 찾을 수 없어요"
-            : "상세 정보를 불러오지 못했어요"
+            : forbidden
+              ? "이 화면을 볼 권한이 없어요"
+              : authRequired
+                ? "로그인이 필요해요"
+                : "상세 정보를 불러오지 못했어요"
         }
         desc={error.message || "잠시 후 다시 시도해 주세요."}
       >
@@ -178,7 +191,14 @@ function StateView({ loading, error, retry }) {
             >
               갤러리로
             </Link>
-          ) : (
+          ) : authRequired ? (
+            <Link
+              to={`/auth?mode=login&return_to=${encodeURIComponent(window.location.pathname)}`}
+              className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+            >
+              로그인
+            </Link>
+          ) : forbidden ? null : (
             <Btn onClick={retry}>다시 시도</Btn>
           )}
           {__DATA_MODE__ === "mock" && storage ? (
@@ -226,7 +246,7 @@ export function AppDetailView({ app, meta, loading, error, retry, onBack }) {
       ref={mainRef}
       tabIndex={-1}
       className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-8 focus:outline-none sm:px-8"
-      data-screen-label="공개 앱 상세"
+      data-screen-label={app.isPublic ? "공개 앱 상세" : "비공개 앱 상세"}
     >
       <div className="mb-6 flex items-center justify-between">
         <button

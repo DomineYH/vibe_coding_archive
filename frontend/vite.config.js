@@ -57,6 +57,10 @@ export default defineConfig(({ command, mode: viteMode }) => {
           root,
           `src/services/${dataMode}/reset-page.jsx`,
         ),
+        "@services/auth": path.resolve(
+          root,
+          `src/services/${dataMode}/auth.ts`,
+        ),
       },
     },
     define: { __DATA_MODE__: JSON.stringify(dataMode) },

@@ -84,6 +84,9 @@ export default function MockResetPage() {
           <option value="duplicate_pages">중복뿐인 페이지</option>
           <option value="no_progress">진행 불가능한 페이지</option>
           <option value="long_copy">긴 문구</option>
+          <option value="auth_delayed">로그인 처리 지연</option>
+          <option value="auth_network_error">로그인 통신 실패</option>
+          <option value="detail_delayed">상세 조회 지연</option>
         </select>
         {readFailed ? (
           <p className="mt-2 text-[13px] text-red-700" role="alert">

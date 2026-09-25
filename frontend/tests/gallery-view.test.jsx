@@ -134,7 +134,7 @@ describe("public gallery states", () => {
         await vi.advanceTimersByTimeAsync(1);
       });
       expect(onQueryChange).toHaveBeenLastCalledWith(
-        { q: "분수", subject: undefined, grade: undefined },
+        { q: "분수" },
         { replace: true },
       );
     } finally {
@@ -142,7 +142,7 @@ describe("public gallery states", () => {
     }
   });
 
-  it("uses the last committed query when a filter changes during composition", async () => {
+  it("does not submit composing search when another filter changes", async () => {
     const meta = await appsService.getMeta();
     const page = await appsService.list({ limit: 24, offset: 0 });
     const onQueryChange = vi.fn();
@@ -165,7 +165,7 @@ describe("public gallery states", () => {
       fireEvent.change(input, { target: { value: "조합중" } });
       fireEvent.click(screen.getByRole("button", { name: "과학" }));
       expect(onQueryChange).toHaveBeenLastCalledWith(
-        { q: "committed", subject: "과학", grade: undefined },
+        { subject: "과학" },
         { replace: false },
       );
 
@@ -182,7 +182,7 @@ describe("public gallery states", () => {
         await vi.advanceTimersByTimeAsync(300);
       });
       expect(onQueryChange).toHaveBeenLastCalledWith(
-        { q: "조합중", subject: "과학", grade: undefined },
+        { q: "조합중" },
         { replace: true },
       );
     } finally {
@@ -215,13 +215,13 @@ describe("public gallery states", () => {
         await vi.advanceTimersByTimeAsync(1);
       });
       expect(onQueryChange).toHaveBeenLastCalledWith(
-        { q: "분수", subject: undefined, grade: undefined },
+        { q: "분수" },
         { replace: true },
       );
 
       fireEvent.change(input, { target: { value: "" } });
       expect(onQueryChange).toHaveBeenLastCalledWith(
-        { q: undefined, subject: undefined, grade: undefined },
+        { q: undefined },
         { replace: true },
       );
     } finally {

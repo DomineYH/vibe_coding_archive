@@ -21,6 +21,9 @@ const outputRoot = path.resolve("test-results/visual/captures");
 const originalApps = JSON.parse(
   readFileSync(path.resolve("src/fixtures/public-apps.json"), "utf8"),
 );
+const privateApps = JSON.parse(
+  readFileSync(path.resolve("src/fixtures/private-apps.json"), "utf8"),
+);
 const viewports = [
   { width: 1440, height: 1000 },
   { width: 1024, height: 900 },
@@ -249,7 +252,13 @@ async function captureAndCompare(
       ({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
       {
         key: "eduvibe-archive-mock-v1",
-        value: { version: 1, generation: 0, ...savedState },
+        value: {
+          version: 2,
+          generation: 0,
+          private_apps: privateApps,
+          principal_id: null,
+          ...savedState,
+        },
       },
     );
   }
