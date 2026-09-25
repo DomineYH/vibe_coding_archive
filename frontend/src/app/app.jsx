@@ -218,16 +218,19 @@ function GalleryRoute({ auth }) {
   const filters = query.filters;
   const access = usePublicMetadata();
   const onQueryChange = useCallback(
-    (next, { replace = true } = {}) => {
-      if (query.invalid) return;
+    (patch, { replace = true } = {}) => {
+      const currentSearch = window.location.search;
+      const current = readGalleryFilters(currentSearch);
+      if (current.invalid) return;
+      const next = { ...current.filters, ...patch };
       const params = new URLSearchParams();
       if (next.q) params.set("q", next.q);
       if (next.subject) params.set("subject", next.subject);
       if (next.grade) params.set("grade", next.grade);
-      if (params.toString() !== location.search.slice(1))
+      if (params.toString() !== currentSearch.slice(1))
         setSearchParams(params, { replace });
     },
-    [location.search, query.invalid, setSearchParams],
+    [setSearchParams],
   );
   const resetQuery = useCallback(
     () => setSearchParams(new URLSearchParams(), { replace: true }),

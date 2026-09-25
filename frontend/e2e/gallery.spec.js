@@ -146,6 +146,8 @@ test("search edits replace history while subject and grade filters remain naviga
   page,
 }) => {
   await page.goto("/");
+  const throttle = await page.context().newCDPSession(page);
+  await throttle.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.getByRole("button", { name: "수학", exact: true }).click();
   await expect(page).toHaveURL(/\?subject=%EC%88%98%ED%95%99$/);
   const grade = page.getByRole("combobox", { name: "학년 필터" });

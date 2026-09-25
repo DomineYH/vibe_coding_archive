@@ -36,6 +36,8 @@ export function GalleryView({
     page?.facets.subjectsInUse ?? [],
   );
   const [focusOnRetry, setFocusOnRetry] = useState(false);
+  const lastRouteSearch = useRef(initialSearch);
+  const routeSearchPending = useRef(false);
   const mainRef = useRef(null);
   const loadMoreRegionRef = useRef(null);
   const loadMoreLocked = useRef(false);
@@ -54,38 +56,32 @@ export function GalleryView({
     error instanceof ServiceError && error.code === "VALIDATION_ERROR";
 
   useLayoutEffect(() => {
+    if (lastRouteSearch.current === initialSearch) return;
+    lastRouteSearch.current = initialSearch;
+    routeSearchPending.current = true;
     setSearch(initialSearch);
   }, [initialSearch]);
   useEffect(() => {
     if (page) setSubjectsInUse(page.facets.subjectsInUse);
   }, [page]);
   useEffect(() => {
+    if (routeSearchPending.current) {
+      routeSearchPending.current = false;
+      return undefined;
+    }
     if (composing || searchTooLong) return undefined;
     const q = search.trim().normalize("NFC") || undefined;
     if ((q ?? "") === initialSearch) return undefined;
-    const next = {
-      q,
-      subject: subject || undefined,
-      grade: grade || undefined,
-    };
     if (!q) {
-      onQueryChange(next, { replace: true });
+      onQueryChange({ q }, { replace: true });
       return undefined;
     }
     const timer = window.setTimeout(
-      () => onQueryChange(next, { replace: true }),
+      () => onQueryChange({ q }, { replace: true }),
       300,
     );
     return () => window.clearTimeout(timer);
-  }, [
-    composing,
-    grade,
-    initialSearch,
-    onQueryChange,
-    search,
-    searchTooLong,
-    subject,
-  ]);
+  }, [composing, initialSearch, onQueryChange, search, searchTooLong]);
   useEffect(() => {
     if (focusOnRetry && loading) {
       mainRef.current?.focus({ preventScroll: true });
@@ -129,15 +125,7 @@ export function GalleryView({
   };
   const changeSearch = (value) => {
     setSearch(value);
-    if (!value)
-      onQueryChange(
-        {
-          q: undefined,
-          subject: subject || undefined,
-          grade: grade || undefined,
-        },
-        { replace: true },
-      );
+    if (!value) onQueryChange({ q: undefined }, { replace: true });
   };
 
   return (
@@ -184,11 +172,7 @@ export function GalleryView({
                   aria-pressed={subject === value}
                   onClick={() =>
                     onQueryChange(
-                      {
-                        q: initialSearch || undefined,
-                        subject: value || undefined,
-                        grade: grade || undefined,
-                      },
+                      { subject: value || undefined },
                       { replace: false },
                     )
                   }
@@ -208,11 +192,7 @@ export function GalleryView({
               value={grade}
               onChange={(event) =>
                 onQueryChange(
-                  {
-                    q: initialSearch || undefined,
-                    subject: subject || undefined,
-                    grade: event.target.value || undefined,
-                  },
+                  { grade: event.target.value || undefined },
                   { replace: false },
                 )
               }
@@ -241,14 +221,7 @@ export function GalleryView({
                   setComposing(false);
                   setSearch(event.currentTarget.value);
                   if (!event.currentTarget.value)
-                    onQueryChange(
-                      {
-                        q: undefined,
-                        subject: subject || undefined,
-                        grade: grade || undefined,
-                      },
-                      { replace: true },
-                    );
+                    onQueryChange({ q: undefined }, { replace: true });
                 }}
                 aria-invalid={searchTooLong || undefined}
                 aria-describedby={
