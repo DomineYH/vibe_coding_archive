@@ -5,8 +5,13 @@ import { ServiceError } from "../service-error";
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
 
-export type MockScenario =
-  "original" | "empty" | "list_failure" | "list_delayed";
+const MOCK_SCENARIOS = [
+  "original",
+  "empty",
+  "list_failure",
+  "list_delayed",
+] as const;
+export type MockScenario = (typeof MOCK_SCENARIOS)[number];
 type MockState = {
   version: 1;
   generation: number;
@@ -15,6 +20,16 @@ type MockState = {
 };
 
 let resetGeneration = 0;
+
+function isMockScenario(value: unknown): value is MockScenario {
+  return MOCK_SCENARIOS.includes(value as MockScenario);
+}
+
+function nextGeneration(currentGeneration: number): number {
+  const current = Math.max(currentGeneration, resetGeneration);
+  return current >= Number.MAX_SAFE_INTEGER ? 0 : current + 1;
+}
+
 const initialState = (): MockState => ({
   version: 1,
   generation: resetGeneration,
@@ -60,10 +75,10 @@ function readState(): MockState {
   const state = value as Partial<MockState>;
   if (
     state.version !== 1 ||
+    typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
-    !["original", "empty", "list_failure", "list_delayed"].includes(
-      String(state.scenario),
-    ) ||
+    state.generation < 0 ||
+    !isMockScenario(state.scenario) ||
     !Array.isArray(state.apps)
   ) {
     throw storageError();
@@ -94,24 +109,23 @@ export function getMockSnapshot(): MockState {
 }
 
 export function resetMockState(): void {
-  resetGeneration += 1;
-  let nextGeneration = resetGeneration;
+  let next = nextGeneration(resetGeneration);
   try {
     const current = readState();
-    nextGeneration = Math.max(current.generation + 1, resetGeneration);
+    next = nextGeneration(current.generation);
   } catch {
     // An explicit reset is the recovery path for damaged or unsupported saved data.
   }
-  resetGeneration = nextGeneration;
-  writeState({ ...initialState(), generation: nextGeneration });
+  resetGeneration = next;
+  writeState({ ...initialState(), generation: next });
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
 }
 
 export function setMockScenario(scenario: MockScenario): void {
-  if (!["original", "empty", "list_failure", "list_delayed"].includes(scenario))
+  if (!isMockScenario(scenario))
     throw new TypeError("Unsupported mock scenario");
   const state = readState();
-  resetGeneration = Math.max(resetGeneration + 1, state.generation + 1);
+  resetGeneration = nextGeneration(state.generation);
   writeState({ ...state, scenario, generation: resetGeneration });
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
 }

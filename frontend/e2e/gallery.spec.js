@@ -223,7 +223,7 @@ test("damaged mock catalog is reported until the visitor explicitly resets it", 
   await page.evaluate(() => {
     const key = "eduvibe-archive-mock-v1";
     const current = JSON.parse(localStorage.getItem(key));
-    localStorage.setItem(key, JSON.stringify({ ...current, apps: [{}] }));
+    localStorage.setItem(key, JSON.stringify({ ...current, generation: -1 }));
   });
   await page.reload();
   await expect(page.getByRole("alert")).toContainText(

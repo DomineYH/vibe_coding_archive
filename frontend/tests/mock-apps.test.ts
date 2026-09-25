@@ -42,6 +42,36 @@ describe("deterministic gallery mock", () => {
     ).toHaveLength(16);
   });
 
+  it("rejects a negative generation and recovers only after explicit reset", async () => {
+    resetMockState();
+    const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
+    const damaged = JSON.stringify({ ...saved, generation: -1 });
+    localStorage.setItem(MOCK_STORAGE_KEY, damaged);
+
+    await expect(
+      appsService.list({ limit: 24, offset: 0 }),
+    ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(damaged);
+
+    resetMockState();
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items,
+    ).toHaveLength(16);
+  });
+
+  it("rejects enum values with the wrong stored shape", async () => {
+    resetMockState();
+    const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({ ...saved, scenario: ["empty"] }),
+    );
+
+    await expect(
+      appsService.list({ limit: 24, offset: 0 }),
+    ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+  });
+
   it("rejects unsupported saved versions until explicit reset", async () => {
     localStorage.setItem(
       MOCK_STORAGE_KEY,
@@ -61,16 +91,20 @@ describe("deterministic gallery mock", () => {
     ).toHaveLength(16);
   });
 
-  it("rejects malformed saved app records without resetting them", async () => {
+  it("rejects malformed app collections and records without resetting them", async () => {
     resetMockState();
     const valid = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
-    const damaged = JSON.stringify({ ...valid, apps: [{}] });
-    localStorage.setItem(MOCK_STORAGE_KEY, damaged);
+    for (const damaged of [
+      JSON.stringify({ ...valid, apps: {} }),
+      JSON.stringify({ ...valid, apps: [{}] }),
+    ]) {
+      localStorage.setItem(MOCK_STORAGE_KEY, damaged);
 
-    await expect(
-      appsService.list({ limit: 24, offset: 0 }),
-    ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
-    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(damaged);
+      await expect(
+        appsService.list({ limit: 24, offset: 0 }),
+      ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+      expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(damaged);
+    }
 
     resetMockState();
     expect(
@@ -120,5 +154,22 @@ describe("deterministic gallery mock", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("recovers storage with the largest safe generation", async () => {
+    resetMockState();
+    const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({ ...saved, generation: Number.MAX_SAFE_INTEGER }),
+    );
+
+    resetMockState();
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null").generation,
+    ).toBe(0);
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items,
+    ).toHaveLength(16);
   });
 });
