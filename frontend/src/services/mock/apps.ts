@@ -13,6 +13,11 @@ type WireAppDetail = components["schemas"]["AppDetail"];
 type MockMeta = components["schemas"]["Meta"];
 const fixedTime = "2026-09-22T00:12:00.000Z";
 const listDelayMs = 300;
+const longCopy = Array.from(
+  { length: 32 },
+  (_, index) =>
+    `${index + 1}. 학생의 풀이를 먼저 묻고, 개념을 설명한 뒤 새로운 예제로 이해를 확인합니다. 정답보다 풀이 과정을 격려하고, 필요한 경우 단계별 힌트를 제공합니다.`,
+).join("\n\n");
 const capabilities = {
   apps_read: { enabled: true, reasons: [] },
   auth_register: { enabled: false, reasons: ["not_implemented"] },
@@ -79,6 +84,27 @@ function checkSignal(signal?: AbortSignal): void {
     throw signal.reason ?? new DOMException("Request aborted", "AbortError");
 }
 
+function scenarioApps(state: Awaited<ReturnType<typeof beginRead>>) {
+  const apps = state.apps as WireAppDetail[];
+  if (state.scenario === "long_list")
+    return [
+      ...apps,
+      ...Array.from({ length: 12 }, (_, index) => {
+        const app = apps[index % apps.length];
+        return {
+          ...app,
+          id: `00000000-0000-4000-8000-${String(index + 201).padStart(12, "0")}`,
+          name: `${app.name} · 긴 목록 ${index + 1}`,
+        };
+      }),
+    ];
+  if (state.scenario === "long_copy")
+    return apps.map((app, index) =>
+      index === 0 ? { ...app, description: longCopy, prompt: longCopy } : app,
+    );
+  return apps;
+}
+
 async function beginRead(signal?: AbortSignal) {
   checkSignal(signal);
   const state = getMockSnapshot();
@@ -106,8 +132,7 @@ export const appsService: AppsService = {
       await new Promise((resolve) => setTimeout(resolve, listDelayMs));
       assertCurrentGeneration(state.generation, signal);
     }
-    const publicApps =
-      state.scenario === "empty" ? [] : (state.apps as WireAppDetail[]);
+    const publicApps = state.scenario === "empty" ? [] : scenarioApps(state);
     const queryText = normalized.q?.toLocaleLowerCase("ko-KR");
     const matching = publicApps.filter((app) => {
       if (!app.is_public) return false;
@@ -143,7 +168,7 @@ export const appsService: AppsService = {
 
   async get(id, { signal } = {}) {
     const state = await beginRead(signal);
-    const app = (state.apps as WireAppDetail[]).find(
+    const app = scenarioApps(state).find(
       (item) => item.id === id && item.is_public,
     );
     if (!app)

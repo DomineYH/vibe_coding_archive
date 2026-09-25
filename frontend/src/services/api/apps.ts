@@ -64,26 +64,13 @@ function mapApiError(
   httpStatus: number,
 ): ServiceError {
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
-    return new ServiceError(
-      "CONTRACT_ERROR",
-      "서비스 오류 응답 형식을 확인할 수 없어요.",
-      { httpStatus },
-    );
+    return apiContractError(httpStatus);
   }
   const envelope = body as Record<string, unknown>;
-  if (!hasOnlyKeys(envelope, ["error"]))
-    return new ServiceError(
-      "CONTRACT_ERROR",
-      "서비스 오류 응답 형식을 확인할 수 없어요.",
-      { httpStatus },
-    );
+  if (!hasOnlyKeys(envelope, ["error"])) return apiContractError(httpStatus);
   const error = (body as { error?: unknown }).error;
   if (error === null || typeof error !== "object" || Array.isArray(error)) {
-    return new ServiceError(
-      "CONTRACT_ERROR",
-      "서비스 오류 응답 형식을 확인할 수 없어요.",
-      { httpStatus },
-    );
+    return apiContractError(httpStatus);
   }
   const fields = error as Record<string, unknown>;
   if (
@@ -105,11 +92,7 @@ function mapApiError(
     (fields.server_time !== undefined &&
       !isNullableDateTime(fields.server_time))
   ) {
-    return new ServiceError(
-      "CONTRACT_ERROR",
-      "서비스 오류 응답 형식을 확인할 수 없어요.",
-      { httpStatus },
-    );
+    return apiContractError(httpStatus);
   }
   const allowed = API_ERROR_TRIPLES.find(
     (entry) =>
@@ -117,12 +100,7 @@ function mapApiError(
       entry.status === httpStatus &&
       entry.code === fields.code,
   );
-  if (!allowed)
-    return new ServiceError(
-      "CONTRACT_ERROR",
-      "서비스 오류 응답 형식을 확인할 수 없어요.",
-      { httpStatus },
-    );
+  if (!allowed) return apiContractError(httpStatus);
   return new ServiceError(allowed.code, fields.message, {
     httpStatus,
     outcome: httpStatus === 404 ? "rejected" : "not_applicable",
@@ -132,6 +110,14 @@ function mapApiError(
     retryAt: fields.retry_at as string | null | undefined,
     serverTime: fields.server_time as string | null | undefined,
   });
+}
+
+function apiContractError(httpStatus: number): ServiceError {
+  return new ServiceError(
+    "CONTRACT_ERROR",
+    "서비스 오류 응답 형식을 확인할 수 없어요.",
+    { httpStatus },
+  );
 }
 
 function hasOnlyKeys(value: Record<string, unknown>, allowed: string[]) {

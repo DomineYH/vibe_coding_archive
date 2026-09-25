@@ -46,6 +46,31 @@ describe("deterministic gallery mock", () => {
     ).toHaveLength(0);
   });
 
+  it("selects deterministic long-list and long-copy scenarios without changing original data", async () => {
+    const originalDetail = await appsService.get(
+      "00000000-0000-4000-8000-000000000001",
+    );
+
+    setMockScenario("long_list");
+    const longList = await appsService.list({ limit: 24, offset: 0 });
+    const allLongList = await appsService.list({ limit: 100, offset: 0 });
+    expect(longList.pagination.total).toBe(28);
+    expect(longList.items).toHaveLength(24);
+    expect(longList.items.at(-1)?.name).toContain("긴 목록 8");
+    expect(allLongList.items).toHaveLength(28);
+    expect(new Set(allLongList.items.map((item) => item.id)).size).toBe(28);
+
+    setMockScenario("long_copy");
+    const longCopy = await appsService.get(originalDetail.id);
+    expect(longCopy.description.length).toBeGreaterThan(2000);
+    expect(longCopy.prompt.length).toBeGreaterThan(2000);
+
+    setMockScenario("original");
+    expect((await appsService.get(originalDetail.id)).prompt).toBe(
+      originalDetail.prompt,
+    );
+  });
+
   it("rejects damaged storage and only restores fixtures after explicit reset", async () => {
     localStorage.setItem("eduvibe-archive-mock-v1", "{");
     await expect(

@@ -35,13 +35,22 @@ describe("issue 31 acceptance trace", () => {
       "Review / acceptance",
     ]);
     expect(records).toHaveLength(10);
+    const identifiers = records.map((record) => {
+      const identifier = record
+        .split("|")[1]
+        .trim()
+        .match(/^#31 AC(\d+)\b/);
+      expect(identifier).not.toBeNull();
+      return Number(identifier[1]);
+    });
+    expect(identifiers).toEqual(Array.from({ length: 10 }, (_, i) => i + 1));
     for (const record of records) {
       const cells = record
         .split("|")
         .slice(1, -1)
         .map((cell) => cell.trim());
       expect(cells).toHaveLength(headers.length);
-      expect(cells.slice(2).every(Boolean)).toBe(true);
+      expect(cells.every(Boolean)).toBe(true);
     }
 
     const ac9 = records

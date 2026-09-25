@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppCard, Btn, EmptyState } from "../../components/ui";
@@ -17,6 +17,11 @@ export function GalleryView({
   const [search, setSearch] = useState("");
   const [committedSearch, setCommittedSearch] = useState("");
   const [composing, setComposing] = useState(false);
+  const [subjectsInUse, setSubjectsInUse] = useState(
+    page?.facets.subjectsInUse ?? [],
+  );
+  const [focusOnRetry, setFocusOnRetry] = useState(false);
+  const mainRef = useRef(null);
 
   const changeSearch = (value) => {
     setSearch(value);
@@ -26,15 +31,30 @@ export function GalleryView({
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
 
   useEffect(() => {
+    if (page) setSubjectsInUse(page.facets.subjectsInUse);
+  }, [page]);
+  useEffect(() => {
+    if (focusOnRetry && loading) {
+      mainRef.current?.focus({ preventScroll: true });
+      setFocusOnRetry(false);
+    }
+  }, [focusOnRetry, loading]);
+  useEffect(() => {
     onQueryChange({
       q: committedSearch || undefined,
       subject: subject || undefined,
       grade: grade || undefined,
     });
   }, [committedSearch, grade, onQueryChange, subject]);
+  const handleRetry = () => {
+    setFocusOnRetry(true);
+    retry();
+  };
 
   return (
     <main
+      ref={mainRef}
+      tabIndex={-1}
       className="mx-auto w-full max-w-[1280px] px-5 pb-24 sm:px-8"
       data-screen-label="갤러리"
     >
@@ -66,7 +86,7 @@ export function GalleryView({
             className="flex flex-wrap items-center gap-1.5"
             aria-label="과목 필터"
           >
-            {["", ...(page?.facets.subjectsInUse ?? [])].map((value) => {
+            {["", ...subjectsInUse].map((value) => {
               const label = value || "전체";
               return (
                 <button
@@ -137,7 +157,7 @@ export function GalleryView({
             desc={error.message || "잠시 후 다시 시도해 주세요."}
           >
             <div className="flex flex-wrap justify-center gap-2">
-              <Btn onClick={retry}>다시 시도</Btn>
+              <Btn onClick={handleRetry}>다시 시도</Btn>
               {__DATA_MODE__ === "mock" && resetRoute ? (
                 <Link
                   className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"

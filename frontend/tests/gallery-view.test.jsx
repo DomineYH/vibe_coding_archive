@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { GalleryView } from "../src/features/gallery/view-gallery";
@@ -34,6 +35,69 @@ describe("public gallery states", () => {
     expect(
       screen.queryByText("조건에 맞는 앱이 없어요"),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps the focused subject filter mounted while its request is pending", async () => {
+    const user = userEvent.setup();
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    const onQueryChange = vi.fn();
+    const props = {
+      meta,
+      page,
+      onQueryChange,
+      loading: false,
+      retry: () => {},
+    };
+    const { rerender } = render(
+      <MemoryRouter>
+        <GalleryView {...props} />
+      </MemoryRouter>,
+    );
+    const math = screen.getByRole("button", { name: "수학" });
+    math.focus();
+    await user.keyboard("{Enter}");
+    expect(onQueryChange).toHaveBeenLastCalledWith({
+      q: undefined,
+      subject: "수학",
+      grade: undefined,
+    });
+
+    rerender(
+      <MemoryRouter>
+        <GalleryView {...props} page={undefined} loading />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "수학" })).toHaveFocus();
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
+
+  it("moves retry focus to the stable gallery region while loading", async () => {
+    const user = userEvent.setup();
+    const retry = vi.fn();
+    const error = new ServiceError("SERVICE_UNAVAILABLE", "목록 오류");
+    const props = {
+      meta: undefined,
+      page: undefined,
+      onQueryChange: () => {},
+      retry,
+    };
+    const { rerender } = render(
+      <MemoryRouter>
+        <GalleryView {...props} error={error} loading={false} />
+      </MemoryRouter>,
+    );
+    const retryButton = screen.getByRole("button", { name: "다시 시도" });
+    retryButton.focus();
+    await user.keyboard("{Enter}");
+    expect(retry).toHaveBeenCalledOnce();
+
+    rerender(
+      <MemoryRouter>
+        <GalleryView {...props} error={undefined} loading />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("main")).toHaveFocus();
   });
 
   it("keeps Korean IME composition out of search requests until composition ends", async () => {

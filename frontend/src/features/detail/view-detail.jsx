@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft, Copy, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCheckedAt, formatDate } from "../../components/presentation";
@@ -110,9 +110,17 @@ function StateView({ loading, error, retry }) {
 
 export function AppDetailView({ app, meta, loading, error, retry }) {
   const [notice, setNotice] = useState("");
+  const mainRef = useRef(null);
+  useEffect(() => {
+    if (loading) mainRef.current?.focus({ preventScroll: true });
+  }, [loading]);
   if (loading || error) {
     return (
-      <main className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-12 sm:px-8">
+      <main
+        ref={mainRef}
+        tabIndex={-1}
+        className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-12 focus:outline-none sm:px-8"
+      >
         <StateView loading={loading} error={error} retry={retry} />
       </main>
     );
@@ -128,7 +136,9 @@ export function AppDetailView({ app, meta, loading, error, retry }) {
 
   return (
     <main
-      className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-8 sm:px-8"
+      ref={mainRef}
+      tabIndex={-1}
+      className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-8 focus:outline-none sm:px-8"
       data-screen-label="공개 앱 상세"
     >
       <div className="mb-6 flex items-center justify-between">

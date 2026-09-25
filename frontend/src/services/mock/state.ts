@@ -11,6 +11,8 @@ const MOCK_SCENARIOS = [
   "empty",
   "list_failure",
   "list_delayed",
+  "long_list",
+  "long_copy",
 ] as const;
 const STATE_KEYS = ["version", "generation", "scenario", "apps"];
 const APP_KEYS = [

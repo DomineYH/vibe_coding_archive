@@ -27,6 +27,7 @@ test("public gallery opens a detail route and supports refresh and browser histo
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
   ).toBeVisible();
+  await expect(page.getByRole("main")).toBeFocused();
   const open = page.getByRole("link", { name: "앱 열기" });
   await expect(open).toHaveAccessibleName("앱 열기");
   await expect(open).toHaveAttribute("rel", "noopener noreferrer");
@@ -181,6 +182,27 @@ test("filters search by app, author, and description and distinguishes an empty 
   await search.fill("no matching app");
   await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
+});
+
+test("selects long-list and long-copy mock states for deterministic layout review", async ({
+  page,
+}) => {
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("long_list");
+  await page.getByRole("link", { name: "갤러리로" }).click();
+  const cards = page.locator("a.card-r");
+  await expect(cards).toHaveCount(24);
+  await expect(cards.last()).toHaveAccessibleName(/긴 목록 8/);
+
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("long_copy");
+  await page.goto("/apps/00000000-0000-4000-8000-000000000001");
+  await expect(
+    page.getByRole("heading", { name: "분수 피자 가게" }),
+  ).toBeVisible();
+  await expect
+    .poll(() => page.locator("pre").evaluate((element) => element.scrollHeight))
+    .toBeGreaterThan(420);
 });
 
 test("explicitly selects empty and failure scenarios, then lets the visitor retry", async ({
