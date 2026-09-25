@@ -409,6 +409,7 @@ function AuthRoute({ location, auth, onRetry, onLogin, onRegister }) {
   const route = readAuthRoute(location.search);
   return (
     <AuthView
+      key={route.mode}
       mode={route.mode}
       routeError={route.invalid}
       authStatus={auth.status}

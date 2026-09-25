@@ -302,7 +302,7 @@ test("signup form exposes labeled required and optional fields", async ({
   }
 });
 
-test("signup rejects disabled fake contacts without creating a partial account", async ({
+test("signup rejects disabled contacts and resets after returning from pending state", async ({
   page,
 }) => {
   await page.goto("/auth?mode=signup");
@@ -336,6 +336,23 @@ test("signup rejects disabled fake contacts without creating a partial account",
   await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
 
   await page.getByRole("link", { name: "로그인 화면으로" }).click();
+  await page.getByRole("link", { name: "회원가입" }).click();
+  await expect(
+    page.getByRole("heading", { name: "아카이브에 합류하기" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+  ).toHaveCount(0);
+  for (const label of [
+    "로그인 아이디",
+    /^비밀번호 \(필수\)$/,
+    "비밀번호 확인",
+    "별명",
+    "이메일",
+    "연락처",
+  ])
+    await expect(page.getByLabel(label)).toHaveValue("");
+  await page.getByRole("link", { name: "로그인", exact: true }).click();
   await login(page, "new-teacher-1", "correct horse battery staple");
   await expect(page.getByRole("alert")).toContainText(
     "승인 대기 중인 계정입니다",
