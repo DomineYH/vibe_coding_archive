@@ -49,4 +49,15 @@ describe("API static output guard", () => {
       checkDist({ "assets/main.css": "/* 분수 피자 가게 */" }).status,
     ).not.toBe(0);
   });
+
+  it("rejects the mock reset route and page in API output", () => {
+    expect(
+      checkDist({ "assets/main.js": 'path:"/__dev/mock-reset"' }).status,
+    ).not.toBe(0);
+    expect(
+      checkDist({
+        "assets/main.js": '"mock reset은 개발 모드에서만 사용할 수 있어요"',
+      }).status,
+    ).not.toBe(0);
+  });
 });

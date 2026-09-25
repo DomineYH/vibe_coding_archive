@@ -94,7 +94,7 @@ function StateView({ loading, error, retry }) {
           ) : (
             <Btn onClick={retry}>다시 시도</Btn>
           )}
-          {storage ? (
+          {__DATA_MODE__ === "mock" && storage ? (
             <Link
               to="/__dev/mock-reset"
               className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"

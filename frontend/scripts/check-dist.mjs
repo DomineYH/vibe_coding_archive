@@ -50,6 +50,8 @@ for (const forbidden of [
   "mockMeta",
   "list_failure",
   "list_delayed",
+  "/__dev/mock-reset",
+  "mock reset은 개발 모드에서만 사용할 수 있어요",
 ]) {
   if (textAssets.includes(forbidden))
     throw new Error(`API bundle includes mock-only content: ${forbidden}`);

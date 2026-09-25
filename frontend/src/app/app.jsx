@@ -245,7 +245,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<GalleryRoute />} />
         <Route path="/apps/:id" element={<DetailRoute />} />
-        <Route path="/__dev/mock-reset" element={<MockResetPage />} />
+        {__DATA_MODE__ === "mock" ? (
+          <Route path="/__dev/mock-reset" element={<MockResetPage />} />
+        ) : null}
         <Route path="*" element={<NotFoundRoute />} />
       </Routes>
       <Footer />

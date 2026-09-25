@@ -1,10 +1,11 @@
 import {
+  isDateTime,
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
 } from "../../contracts/mappers";
 import { ServiceError, type ServiceErrorCode } from "../service-error";
-import { normalizeQuery, type AppsService } from "../apps-service";
+import { normalizeQueryForService, type AppsService } from "../apps-service";
 
 async function getJson(path: string, signal?: AbortSignal): Promise<unknown> {
   let response: Response;
@@ -57,7 +58,12 @@ function mapApiError(body: unknown, httpStatus: number): ServiceError {
   if (
     typeof fields.code !== "string" ||
     typeof fields.message !== "string" ||
-    !(typeof fields.request_id === "string" || fields.request_id === null)
+    !(typeof fields.request_id === "string" || fields.request_id === null) ||
+    (fields.fields !== undefined && !isStringMap(fields.fields)) ||
+    (fields.reasons !== undefined && !isStringArray(fields.reasons)) ||
+    (fields.retry_at !== undefined && !isNullableDateTime(fields.retry_at)) ||
+    (fields.server_time !== undefined &&
+      !isNullableDateTime(fields.server_time))
   ) {
     return new ServiceError(
       "CONTRACT_ERROR",
@@ -77,7 +83,31 @@ function mapApiError(body: unknown, httpStatus: number): ServiceError {
     httpStatus,
     outcome:
       httpStatus === 400 || httpStatus === 404 ? "rejected" : "not_applicable",
+    fields: fields.fields as Record<string, string> | undefined,
+    requestId: fields.request_id as string | null,
+    reasons: fields.reasons as string[] | undefined,
+    retryAt: fields.retry_at as string | null | undefined,
+    serverTime: fields.server_time as string | null | undefined,
   });
+}
+
+function isStringMap(value: unknown): value is Record<string, string> {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.values(value).every((item) => typeof item === "string")
+  );
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+function isNullableDateTime(value: unknown): value is string | null {
+  return value === null || isDateTime(value);
 }
 
 export const appsService: AppsService = {
@@ -86,14 +116,7 @@ export const appsService: AppsService = {
   },
 
   async list(query, { signal } = {}) {
-    let normalized;
-    try {
-      normalized = normalizeQuery(query);
-    } catch {
-      throw new ServiceError("VALIDATION_ERROR", "검색 조건을 확인해 주세요.", {
-        outcome: "rejected",
-      });
-    }
+    const normalized = normalizeQueryForService(query);
     const params = new URLSearchParams();
     if (normalized.q) params.set("q", normalized.q);
     if (normalized.subject) params.set("subject", normalized.subject);

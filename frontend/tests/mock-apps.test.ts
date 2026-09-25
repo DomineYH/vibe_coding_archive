@@ -15,6 +15,14 @@ describe("deterministic gallery mock", () => {
     vi.restoreAllMocks();
   });
 
+  it("uses the shared validation error for invalid list queries", async () => {
+    await expect(appsService.list({ limit: 0 })).rejects.toMatchObject({
+      name: "ServiceError",
+      code: "VALIDATION_ERROR",
+      outcome: "rejected",
+    });
+  });
+
   it("keeps original public fixture order and filters only public search fields", async () => {
     const first = await appsService.list({ limit: 24, offset: 0 });
     const again = await appsService.list({ limit: 24, offset: 0 });

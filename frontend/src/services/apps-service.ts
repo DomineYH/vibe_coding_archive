@@ -1,4 +1,5 @@
 import type { AppDetail, AppPage, Meta } from "../contracts/mappers";
+import { ServiceError } from "./service-error";
 
 export type ListAppsQuery = {
   q?: string;
@@ -33,4 +34,14 @@ export function normalizeQuery(query: ListAppsQuery = {}) {
     limit,
     offset,
   };
+}
+
+export function normalizeQueryForService(query?: ListAppsQuery) {
+  try {
+    return normalizeQuery(query);
+  } catch {
+    throw new ServiceError("VALIDATION_ERROR", "검색 조건을 확인해 주세요.", {
+      outcome: "rejected",
+    });
+  }
 }

@@ -138,7 +138,7 @@ export function GalleryView({
           >
             <div className="flex flex-wrap justify-center gap-2">
               <Btn onClick={retry}>다시 시도</Btn>
-              {resetRoute ? (
+              {__DATA_MODE__ === "mock" && resetRoute ? (
                 <Link
                   className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
                   to="/__dev/mock-reset"

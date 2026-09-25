@@ -6,7 +6,7 @@ import {
 } from "../../contracts/mappers";
 import type { components } from "../../contracts/api";
 import { ServiceError } from "../service-error";
-import { normalizeQuery, type AppsService } from "../apps-service";
+import { normalizeQueryForService, type AppsService } from "../apps-service";
 import { assertCurrentGeneration, getMockSnapshot } from "./state";
 
 type WireAppDetail = components["schemas"]["AppDetail"];
@@ -94,14 +94,7 @@ export const appsService: AppsService = {
   },
 
   async list(query, { signal } = {}) {
-    let normalized;
-    try {
-      normalized = normalizeQuery(query);
-    } catch {
-      throw new ServiceError("VALIDATION_ERROR", "검색 조건을 확인해 주세요.", {
-        outcome: "rejected",
-      });
-    }
+    const normalized = normalizeQueryForService(query);
     const state = await beginRead(signal);
     if (state.scenario === "list_failure") {
       throw new ServiceError(

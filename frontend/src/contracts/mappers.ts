@@ -103,17 +103,23 @@ function nonEmpty(value: unknown): string {
   return result;
 }
 
-function dateTime(value: unknown): string {
-  const result = string(value);
-  if (!DATE_TIME.test(result) || Number.isNaN(Date.parse(result)))
-    throw contractError();
-  const calendarDate = result.slice(0, 10);
+export function isDateTime(value: unknown): value is string {
   if (
-    new Date(`${calendarDate}T00:00:00.000Z`).toISOString().slice(0, 10) !==
-    calendarDate
+    typeof value !== "string" ||
+    !DATE_TIME.test(value) ||
+    Number.isNaN(Date.parse(value))
   )
-    throw contractError();
-  return result;
+    return false;
+  const calendarDate = value.slice(0, 10);
+  return (
+    new Date(`${calendarDate}T00:00:00.000Z`).toISOString().slice(0, 10) ===
+    calendarDate
+  );
+}
+
+function dateTime(value: unknown): string {
+  if (!isDateTime(value)) throw contractError();
+  return value;
 }
 
 function nullableDateTime(value: unknown): string | null {
