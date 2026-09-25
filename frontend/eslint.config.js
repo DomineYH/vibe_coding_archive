@@ -1,0 +1,44 @@
+import js from "@eslint/js";
+import globals from "globals";
+import tseslint from "typescript-eslint";
+import reactHooks from "eslint-plugin-react-hooks";
+import reactRefresh from "eslint-plugin-react-refresh";
+import prettier from "eslint-config-prettier";
+
+export default tseslint.config(
+  {
+    ignores: [
+      "dist/**",
+      "dist-mock/**",
+      "src/contracts/api.d.ts",
+      "../docs/**",
+    ],
+  },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  {
+    files: ["**/*.{js,jsx,ts,tsx}"],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        __DATA_MODE__: "readonly",
+      },
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
+    plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
+    rules: {
+      ...reactHooks.configs.recommended.rules,
+      "react-refresh/only-export-components": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  {
+    files: ["tests/**/*.{js,jsx,ts,tsx}"],
+    languageOptions: {
+      globals: { ...globals.browser, ...globals.node, ...globals.jest },
+    },
+  },
+  { files: ["**/*.mjs"], languageOptions: { globals: { ...globals.node } } },
+  prettier,
+);

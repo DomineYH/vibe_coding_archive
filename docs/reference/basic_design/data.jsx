@@ -1,0 +1,202 @@
+// 목 데이터 & 상수 — EduVibe 아카이브
+const SUBJECTS = ['수학', '과학', '영어', '역사', '국어', '사회', '정보', '기타'];
+const GRADES = ['초1','초2','초3','초4','초5','초6','중1','중2','중3','고1','고2','고3'];
+
+// Pantone Color of the Year 2026 — 11-4201 Cloud Dancer & 공식 하모니 팔레트
+// (Powdered Pastels / Atmospheric / Comfort Zone / Light & Shadow)
+const THEMES = [
+  { id: 'cloudDancer',  name: 'Cloud Dancer',    pantone: '11-4201', from: '#F4F2ED', to: '#DDD8CD', ink: 'dark'  },
+  { id: 'niagara',      name: 'Niagara',         pantone: '17-4123', from: '#4C7A96', to: '#90B2C7', ink: 'light' },
+  { id: 'turquoise',    name: 'Dusty Turquoise', pantone: '17-5025', from: '#4E8382', to: '#90B6B2', ink: 'light' },
+  { id: 'sage',         name: 'Sage',            pantone: '15-6414', from: '#A2B187', to: '#D0D8B8', ink: 'dark'  },
+  { id: 'lavenderGray', name: 'Lavender Gray',   pantone: '17-3910', from: '#7E6E82', to: '#B5ABBA', ink: 'light' },
+  { id: 'butterum',     name: 'Butterum',        pantone: '16-1341', from: '#A9714B', to: '#D3A57C', ink: 'light' },
+  { id: 'powderPink',   name: 'Powder Pink',     pantone: '14-1511', from: '#E0B2B0', to: '#F2DCDA', ink: 'dark'  },
+  { id: 'ironGate',     name: 'Iron Gate',       pantone: '19-3910', from: '#3A3A3E', to: '#6F6E74', ink: 'light' },
+];
+const themeById = (id) => THEMES.find((t) => t.id === id) || THEMES[0];
+
+const STATUS_META = {
+  200: { code: '200 OK', tone: 'mint', label: '정상 작동', detail: '애플리케이션이 정상적으로 응답하고 있습니다.' },
+  404: { code: '404 Not Found', tone: 'tomato', label: '리소스 없음', detail: '요청한 페이지를 찾을 수 없습니다. 배포 URL이 변경되었거나 호스팅 프로젝트가 삭제·이동되었을 가능성이 있습니다. URL을 갱신하거나 재배포가 필요합니다.' },
+  500: { code: '500 Internal Server Error', tone: 'tomato', label: '서버 내부 오류', detail: '서버 내부 오류가 감지되었습니다. 백엔드 함수 타임아웃, 환경변수 누락 또는 DB 커넥션 실패가 의심됩니다. 호스팅 콘솔의 런타임 로그를 확인하세요.' },
+};
+
+const INITIAL_USERS = [
+  { id: 'admin',        pw: 'admin123', role: 'admin', approved: true,  joinedAt: '2026-03-02' },
+  { id: '교사김코딩',    pw: '1234',     role: 'user',  approved: true,  joinedAt: '2026-03-15' },
+  { id: '비기너개발자',  pw: '1234',     role: 'user',  approved: false, joinedAt: '2026-06-08' },
+  { id: '과학덕후박샘',  pw: '1234',     role: 'user',  approved: true,  joinedAt: '2026-04-01' },
+  { id: '영어쌤제이',    pw: '1234',     role: 'user',  approved: true,  joinedAt: '2026-04-22' },
+  { id: '역사수업연구가', pw: '1234',    role: 'user',  approved: true,  joinedAt: '2026-05-03' },
+  { id: '코딩꿈나무',    pw: '1234',     role: 'user',  approved: false, joinedAt: '2026-06-09' },
+];
+
+const INITIAL_APPS = [
+  // ───────── 수학 ─────────
+  {
+    id: 'app-01', name: '분수 피자 가게', subject: '수학', grades: ['초3','초4','초5'],
+    url: 'https://fraction-pizza.vercel.app', owner: '교사김코딩', isPublic: true, theme: 'sage',
+    status: 200, ms: 84, lastChecked: '09:12', createdAt: '2026-04-02',
+    stack: { db: 'localStorage', backend: '없음 (클라이언트 전용)', frontend: 'React + Vite', hosting: 'Vercel' },
+    prompt: '초등 3~5학년이 분수 개념을 익히는 웹 게임을 만들어줘. 피자 가게 컨셉으로 손님이 "3/4판 주세요"처럼 분수로 주문하면, 학생이 피자를 드래그로 등분하고 알맞은 조각을 서빙하는 방식이야. 정답이면 폭죽 애니메이션과 점수를, 오답이면 시각적 힌트(겹쳐 보기)를 보여줘. 점수와 단계는 localStorage에 저장하고 태블릿 터치를 완벽 지원해줘.',
+    description: '분수의 개념(등분, 단위분수, 크기 비교)을 놀이로 도입할 때 사용합니다.\n\n[활용 매뉴얼]\n1. 수학 3단원 도입 차시에 전자칠판으로 시연 후 학생 태블릿에 URL 배포\n2. 1단계(등분하기) → 2단계(주문 서빙) → 3단계(크기 비교) 순서로 진행\n3. 단계별 점수가 기기에 저장되므로 다음 차시에 이어서 진행 가능\n4. 모둠별 점수 대항전으로 운영하면 참여도가 크게 올라갑니다.',
+  },
+  {
+    id: 'app-02', name: '함수 그래프 실험실', subject: '수학', grades: ['중2','중3'],
+    url: 'https://graph-lab.netlify.app', owner: '교사김코딩', isPublic: true, theme: 'niagara',
+    status: 200, ms: 156, lastChecked: '09:12', createdAt: '2026-04-18',
+    stack: { db: 'Supabase (PostgreSQL)', backend: 'Supabase Edge Functions', frontend: 'Next.js 14', hosting: 'Netlify' },
+    prompt: '중학생용 일차·이차함수 그래프 실험실을 만들어줘. 슬라이더로 a, b, c 계수를 조절하면 y=ax+b, y=ax²+bx+c 그래프가 부드럽게 실시간 변형되는 인터랙티브 캔버스가 핵심이야. 두 함수를 겹쳐 교점을 표시하는 기능, 학생이 만든 그래프를 링크로 교사에게 제출하는 기능을 넣어줘. 제출 데이터는 Supabase에 저장해.',
+    description: '계수의 변화가 그래프에 주는 영향을 직관적으로 탐구하는 수업 도구입니다.\n\n[활용 매뉴얼]\n1. "a가 커지면 그래프가 어떻게 될까?" 발문 후 학생이 직접 슬라이더 조작\n2. 탐구 결과를 그래프 링크로 제출받아 전자칠판에서 함께 비교\n3. 연립방정식 단원에서는 교점 표시 기능으로 해의 의미를 시각화\n4. 수행평가 과제(나만의 포물선 디자인)로도 활용 가능합니다.',
+  },
+  {
+    id: 'app-03', name: '확률 실험 시뮬레이터', subject: '수학', grades: ['고1'],
+    url: 'https://prob-sim.web.app', owner: '과학덕후박샘', isPublic: true, theme: 'lavenderGray',
+    status: 200, ms: 203, lastChecked: '09:12', createdAt: '2026-05-06',
+    stack: { db: 'Firebase Firestore', backend: 'Firebase Functions', frontend: 'React', hosting: 'Firebase Hosting' },
+    prompt: '고1 확률 단원용 시뮬레이터를 만들어줘. 주사위·동전·룰렛을 1회/100회/10000회 던지기 버튼으로 실행하면 상대도수 막대그래프가 애니메이션으로 누적되고, 수학적 확률 기준선과의 차이가 점점 줄어드는 "큰 수의 법칙"을 시각적으로 체험하게 해줘. 학급 전체의 시행 결과를 Firestore로 합산하는 실시간 집계 모드도 필요해.',
+    description: '큰 수의 법칙을 체험으로 이해시키는 데 효과적입니다.\n\n[활용 매뉴얼]\n1. 개별 기기에서 10회 시행 → 학급 합산 모드로 전체 결과 실시간 누적\n2. 상대도수가 수학적 확률에 수렴하는 과정을 그래프로 관찰\n3. "시행 횟수가 적을 때 왜 들쑥날쑥할까?" 토론으로 연결\n4. 통계적 확률과 수학적 확률의 차이를 정리하며 마무리합니다.',
+  },
+  {
+    id: 'app-04', name: '입체도형 단면 탐험대', subject: '수학', grades: ['중1'],
+    url: 'https://solid-slice.pages.dev', owner: '역사수업연구가', isPublic: true, theme: 'turquoise',
+    status: 200, ms: 121, lastChecked: '09:12', createdAt: '2026-05-21',
+    stack: { db: '없음', backend: '없음 (정적 사이트)', frontend: 'Three.js + Vanilla JS', hosting: 'Cloudflare Pages' },
+    prompt: 'Three.js로 중1 입체도형 단면 학습 앱을 만들어줘. 정육면체·원기둥·원뿔·구를 선택하고 평면을 드래그로 기울여 자르면 단면이 하이라이트 색으로 표시되는 3D 인터랙션이 핵심이야. 단면 모양 맞히기 퀴즈 모드(보기 4개 중 선택)도 넣어줘. 모바일 제스처(회전·핀치줌)를 지원하고 설치 없이 브라우저에서 바로 실행돼야 해.',
+    description: '머릿속으로 상상하기 어려운 단면을 3D로 직접 잘라보는 도구입니다.\n\n[활용 매뉴얼]\n1. 도입에서 "원뿔을 비스듬히 자르면?" 질문 후 예상 그리기\n2. 앱에서 직접 잘라 확인하며 인지 충돌 유도\n3. 퀴즈 모드 10문항을 짝 활동으로 진행\n4. 회전체 단원 예고편으로 마지막 5분 자유 탐색을 권장합니다.',
+  },
+  // ───────── 과학 ─────────
+  {
+    id: 'app-05', name: '광합성 인터랙티브 시뮬레이터', subject: '과학', grades: ['중1','중2'],
+    url: 'https://photosyn-lab.vercel.app', owner: '과학덕후박샘', isPublic: true, theme: 'turquoise',
+    status: 200, ms: 98, lastChecked: '09:12', createdAt: '2026-04-09',
+    stack: { db: 'IndexedDB', backend: '없음 (클라이언트 전용)', frontend: 'React + D3.js', hosting: 'Vercel' },
+    prompt: '중학교 광합성 단원 시뮬레이터를 만들어줘. 빛의 세기·이산화탄소 농도·온도 슬라이더를 조절하면 잎에서 발생하는 산소 방울 애니메이션 속도와 광합성량 그래프가 실시간으로 변하는 가상 실험실이야. 변인 통제 실험 설계 모드(한 변인만 조작 가능하게 잠금)와 실험 결과를 표로 기록·저장하는 기능을 포함해줘.',
+    description: '검정말 실험을 대체·보완하는 가상 실험 도구입니다.\n\n[활용 매뉴얼]\n1. 실제 실험 전 변인 통제 설계를 앱의 잠금 모드로 연습\n2. 변인별 그래프를 캡처해 실험 보고서에 첨부\n3. 날씨·계절 탓에 실물 실험이 어려운 시기의 대체 실험으로 적합\n4. 자유탐구 주제 선정 전 사전 탐색 활동으로도 좋습니다.',
+  },
+  {
+    id: 'app-06', name: '주기율표 탐험 퀴즈', subject: '과학', grades: ['중3','고1'],
+    url: 'https://element-quest.web.app', owner: '과학덕후박샘', isPublic: true, theme: 'lavenderGray',
+    status: 200, ms: 187, lastChecked: '09:12', createdAt: '2026-04-25',
+    stack: { db: 'Firebase Realtime DB', backend: 'Firebase Functions', frontend: 'Svelte', hosting: 'Firebase Hosting' },
+    prompt: '주기율표 학습 퀴즈 앱을 만들어줘. 1~20번 원소 중심으로 원소 기호↔이름 매칭, 족·주기 위치 찾기, 성질 스피드 OX 세 가지 모드가 필요해. 카훗처럼 교사가 방을 만들면 학생들이 코드로 입장해 실시간 순위 경쟁하는 멀티플레이가 핵심이야. 정답률 낮은 원소를 교사 대시보드에 자동 집계해줘.',
+    description: '원소 기호 암기를 게임화한 실시간 퀴즈 플랫폼입니다.\n\n[활용 매뉴얼]\n1. 단원 정리 차시에 방 코드 공유 → 전원 입장 확인 후 시작\n2. 모드 순서: 매칭(연습) → 위치 찾기(심화) → 스피드 OX(경쟁)\n3. 종료 후 교사 대시보드에서 오답 상위 원소를 즉석 재설명\n4. 상위 3명 시상은 학급 보상 체계와 연동하면 좋습니다.',
+  },
+  {
+    id: 'app-07', name: '전기회로 빌더', subject: '과학', grades: ['초6','중1','중2'],
+    url: 'https://circuit-builder.netlify.app', owner: '교사김코딩', isPublic: true, theme: 'niagara',
+    status: 500, ms: 0, lastChecked: '09:12', createdAt: '2026-05-11',
+    stack: { db: 'Supabase (PostgreSQL)', backend: 'Node.js (Express)', frontend: 'React + Konva.js', hosting: 'Netlify + Render' },
+    prompt: '드래그 앤 드롭 전기회로 시뮬레이터를 만들어줘. 전지·전구·스위치·저항·전선을 캔버스에 배치해 회로를 구성하면, 회로가 닫혔을 때 전구 밝기가 직렬/병렬 구성에 따라 물리적으로 정확하게 달라져야 해. 단선·합선 상태를 경고 아이콘으로 표시하고, 완성한 회로를 이미지로 저장해 제출하는 기능을 넣어줘.',
+    description: '실험 기구 없이 직렬·병렬 회로를 자유롭게 구성해보는 도구입니다.\n\n[활용 매뉴얼]\n1. 실물 실험 전 회로도를 앱으로 먼저 설계 (안전 교육 효과)\n2. "전구를 더 밝게 하려면?" 미션 과제로 직렬/병렬 차이 발견 유도\n3. 완성 회로 이미지를 제출받아 형성평가 자료로 활용\n4. 합선 경고 기능으로 안전 유의점을 자연스럽게 지도할 수 있습니다.',
+  },
+  {
+    id: 'app-08', name: '별자리 관측 일지', subject: '과학', grades: ['초5','초6'],
+    url: 'https://star-diary.pages.dev', owner: '영어쌤제이', isPublic: true, theme: 'ironGate',
+    status: 200, ms: 142, lastChecked: '09:12', createdAt: '2026-05-28',
+    stack: { db: 'PocketBase (SQLite)', backend: 'PocketBase', frontend: 'Vue 3', hosting: 'Cloudflare Pages + Fly.io' },
+    prompt: '초등 5~6학년용 별자리 관측 일지 앱을 만들어줘. 날짜와 시간을 고르면 그날 밤하늘의 주요 별자리를 캔버스에 그려주고, 학생이 실제로 관측한 별자리를 탭해 스케치와 소감을 기록하는 일지 형식이야. 계절별 대표 별자리 도감과, 한 달 누적 관측 기록을 달력 뷰로 보여주는 기능을 포함해줘. 어두운 밤 모드 UI가 기본이야.',
+    description: '계절별 별자리 단원의 가정 연계 관측 과제용 앱입니다.\n\n[활용 매뉴얼]\n1. 수업에서 도감으로 계절 별자리 학습 후 관측 과제 안내\n2. 학생은 귀가 후 실제 관측 → 앱에 스케치와 소감 기록\n3. 흐린 날은 앱의 시뮬레이션 하늘로 대체 관측 인정\n4. 한 달 뒤 달력 뷰를 모아 "우리 반 밤하늘 전시회"로 마무리합니다.',
+  },
+  // ───────── 영어 ─────────
+  {
+    id: 'app-09', name: 'AI 회화 파트너', subject: '영어', grades: ['중1','중2','중3'],
+    url: 'https://talk-buddy.vercel.app', owner: '영어쌤제이', isPublic: true, theme: 'powderPink',
+    status: 200, ms: 311, lastChecked: '09:12', createdAt: '2026-04-14',
+    stack: { db: 'Supabase (PostgreSQL)', backend: 'Vercel Serverless + Claude API', frontend: 'Next.js 14', hosting: 'Vercel' },
+    prompt: '중학생 영어 회화 연습용 AI 챗봇을 만들어줘. 공항·식당·길찾기 같은 상황극 시나리오를 고르면 AI가 원어민 역할로 대화를 이끌고, 학생 답변의 문법 오류를 대화 흐름을 끊지 않고 말풍선 하단에 부드럽게 교정 표시해줘. 음성 입력(Web Speech API)과 대화 내용 다운로드를 지원하고, 학생 수준(상/중/하)에 따라 AI 어휘 난이도가 조절돼야 해.',
+    description: '말하기 수행평가 대비 개별 회화 연습 도구입니다.\n\n[활용 매뉴얼]\n1. 단원 주제와 맞는 시나리오를 지정해 과제로 배포\n2. 학생은 음성 입력으로 5분 이상 대화 후 스크립트 다운로드·제출\n3. 교정 표시된 문장 3개를 골라 고쳐 쓰기 활동으로 연계\n4. 원어민과의 대화가 부담스러운 학생의 심리적 장벽을 낮춰줍니다.',
+  },
+  {
+    id: 'app-10', name: '영단어 스피드 배틀', subject: '영어', grades: ['초5','초6','중1'],
+    url: 'https://word-battle.web.app', owner: '영어쌤제이', isPublic: true, theme: 'sage',
+    status: 200, ms: 167, lastChecked: '09:12', createdAt: '2026-05-02',
+    stack: { db: 'Firebase Realtime DB', backend: 'Firebase Functions', frontend: 'React', hosting: 'Firebase Hosting' },
+    prompt: '교실 대항 영단어 게임을 만들어줘. 교사가 단어장을 CSV로 업로드하면 자동으로 4지선다·철자 입력·뜻 매칭 문제가 생성되고, 학생들이 방 코드로 입장해 1:1 토너먼트 또는 팀전으로 대결하는 구조야. 연속 정답 콤보 이펙트와 실시간 리더보드가 박진감 있게 표시돼야 하고, 게임 후 개인별 오답 단어장이 자동 생성돼야 해.',
+    description: '단어 시험을 게임으로 대체하는 클래스 배틀 플랫폼입니다.\n\n[활용 매뉴얼]\n1. 주간 단어장을 CSV로 업로드 (양식은 앱 내 다운로드)\n2. 금요일 마지막 10분, 모둠 팀전으로 주간 복습\n3. 게임 후 자동 생성되는 개인 오답 단어장을 주말 과제로 연결\n4. 콤보 이펙트 덕분에 하위권 학생도 끝까지 집중합니다.',
+  },
+  {
+    id: 'app-11', name: '문법 클리닉', subject: '영어', grades: ['고1','고2'],
+    url: 'https://grammar-clinic.netlify.app', owner: '교사김코딩', isPublic: true, theme: 'niagara',
+    status: 200, ms: 139, lastChecked: '09:12', createdAt: '2026-05-17',
+    stack: { db: 'Supabase (PostgreSQL)', backend: 'Supabase Edge Functions', frontend: 'SvelteKit', hosting: 'Netlify' },
+    prompt: '고등학생용 영문법 진단·처방 앱을 만들어줘. 병원 컨셉으로 20문항 진단 검사를 보면 시제·관계사·가정법 등 영역별 취약점이 차트(레이더)로 "진단서"처럼 나오고, 취약 영역별 맞춤 문제 세트가 "처방전"으로 발급되는 구조야. 문항별 해설은 접었다 펼치는 카드로, 누적 학습 기록은 회차별 성장 그래프로 보여줘.',
+    description: '수능 어법 대비 개별 맞춤 클리닉입니다.\n\n[활용 매뉴얼]\n1. 학기 초 진단 검사로 학급 전체 취약 영역 파악\n2. 방과후·자습 시간에 개인별 처방전 문제 풀이\n3. 월 1회 재진단으로 성장 그래프 확인 (상담 자료로 활용)\n4. 진단서 차트는 학부모 상담 때 객관적 자료가 됩니다.',
+  },
+  {
+    id: 'app-12', name: '파닉스 사운드 랩', subject: '영어', grades: ['초1','초2','초3'],
+    url: 'https://phonics-lab.pages.dev', owner: '역사수업연구가', isPublic: true, theme: 'butterum',
+    status: 404, ms: 0, lastChecked: '09:12', createdAt: '2026-05-30',
+    stack: { db: 'localStorage', backend: '없음 (클라이언트 전용)', frontend: 'Vue 3 + Howler.js', hosting: 'Cloudflare Pages' },
+    prompt: '초등 저학년 파닉스 학습 앱을 만들어줘. 알파벳·이중자음·장모음 단계별로, 글자를 탭하면 발음이 재생되고 입모양 일러스트가 함께 표시돼야 해. 단어 빌더 모드에서는 음소 블록을 드래그로 조합해 단어를 만들면 합쳐진 발음을 들려줘. 모든 버튼은 저학년 손가락 기준으로 크게, 텍스트 없이 아이콘 중심 UI로 만들어줘.',
+    description: '저학년 발음 지도용 사운드 중심 학습 도구입니다.\n\n[활용 매뉴얼]\n1. 전자칠판에서 음소 블록 조합을 전체 시연\n2. 짝 활동: 한 명이 블록 조합 → 짝이 발음 따라하기\n3. 텍스트가 거의 없어 한글 미해득 학생도 사용 가능\n4. 가정 학습용 QR로 배포하면 부모 지도 부담이 적습니다.',
+  },
+  // ───────── 역사 ─────────
+  {
+    id: 'app-13', name: '조선왕조 인터랙티브 타임라인', subject: '역사', grades: ['중2'],
+    url: 'https://joseon-timeline.vercel.app', owner: '역사수업연구가', isPublic: true, theme: 'butterum',
+    status: 200, ms: 110, lastChecked: '09:12', createdAt: '2026-04-06',
+    stack: { db: 'JSON (정적 데이터)', backend: '없음 (정적 사이트)', frontend: 'React + Framer Motion', hosting: 'Vercel' },
+    prompt: '조선왕조 527년 인터랙티브 타임라인을 만들어줘. 가로 스크롤 타임라인에 27명의 왕 재위 구간이 띠로 표시되고, 왕을 탭하면 주요 사건·제도·문화유산이 카드 스택으로 펼쳐지는 구조야. 사건끼리 인과관계가 있으면 연결선으로 표시해줘. "이 사건은 몇 대 왕 때?" 퀴즈 모드와 특정 연도로 점프하는 검색 기능을 포함해줘.',
+    description: '조선 전·후기 흐름을 한눈에 잡는 통사 수업 도구입니다.\n\n[활용 매뉴얼]\n1. 단원 도입에서 전체 타임라인을 훑으며 시대 감각 형성\n2. 모둠별로 왕 1명을 맡아 카드 내용 요약 발표\n3. 사건 연결선을 따라가며 인과관계 서술형 답안 연습\n4. 단원 마무리 퀴즈 모드로 형성평가를 대체할 수 있습니다.',
+  },
+  {
+    id: 'app-14', name: '역사 인물 AI 인터뷰', subject: '역사', grades: ['중3','고1'],
+    url: 'https://history-interview.vercel.app', owner: '역사수업연구가', isPublic: true, theme: 'ironGate',
+    status: 200, ms: 287, lastChecked: '09:12', createdAt: '2026-04-29',
+    stack: { db: 'Supabase (PostgreSQL)', backend: 'Vercel Serverless + Claude API', frontend: 'Next.js 14', hosting: 'Vercel' },
+    prompt: '역사 인물 가상 인터뷰 앱을 만들어줘. 세종대왕·이순신·신사임당·전봉준 등 인물을 선택하면 AI가 그 인물의 말투와 시대 배경을 반영해 1인칭으로 답하는 인터뷰 채팅이야. 사료에 근거한 답변만 하도록 하고, 역사적 사실이 불확실한 질문에는 "기록에 없다"고 답하게 해줘. 인터뷰 전문을 기사 형식으로 내보내는 기능이 필요해.',
+    description: '인물 학습을 탐구형 인터뷰 활동으로 바꾸는 도구입니다.\n\n[활용 매뉴얼]\n1. 사전 활동: 인물 조사 후 인터뷰 질문 5개 작성\n2. 본 활동: AI 인터뷰 진행, 답변과 사료 교차 검증\n3. 산출물: 인터뷰 기사 내보내기 → 학급 신문 게시\n4. "기록에 없다" 답변을 역사적 상상력 토론 소재로 활용하세요.',
+  },
+  {
+    id: 'app-15', name: '문화유산 도슨트 갤러리', subject: '역사', grades: ['초5','초6'],
+    url: 'https://heritage-docent.web.app', owner: '교사김코딩', isPublic: true, theme: 'butterum',
+    status: 200, ms: 174, lastChecked: '09:12', createdAt: '2026-05-13',
+    stack: { db: 'Firebase Firestore', backend: 'Firebase Functions', frontend: 'React', hosting: 'Firebase Hosting' },
+    prompt: '초등 5~6학년용 문화유산 갤러리 앱을 만들어줘. 석굴암·팔만대장경·금동대향로 등 유물을 미술관처럼 카드 갤러리로 전시하고, 유물을 탭하면 확대 이미지와 오디오 도슨트(TTS) 해설이 재생돼야 해. 학생이 직접 도슨트가 되어 해설 녹음을 올리는 "어린이 도슨트" 모드가 핵심 기능이야. 시대별·지역별 필터를 넣어줘.',
+    description: '문화유산 단원을 전시·해설 프로젝트로 운영하는 앱입니다.\n\n[활용 매뉴얼]\n1. 1차시: 갤러리 관람 + 오디오 도슨트 청취\n2. 2~3차시: 모둠별 유물 선정, 해설 대본 작성·녹음 업로드\n3. 4차시: 서로의 어린이 도슨트 해설을 듣고 별점 피드백\n4. 학부모 공개수업에서 QR로 공유하면 반응이 매우 좋습니다.',
+  },
+  {
+    id: 'app-16', name: '독립운동가 발자취 지도', subject: '역사', grades: ['중3'],
+    url: 'https://independence-map.netlify.app', owner: '과학덕후박샘', isPublic: true, theme: 'powderPink',
+    status: 200, ms: 192, lastChecked: '09:12', createdAt: '2026-06-01',
+    stack: { db: 'PostgreSQL (Neon)', backend: 'Node.js (Fastify)', frontend: 'React + Leaflet', hosting: 'Netlify + Railway' },
+    prompt: '독립운동가 발자취 지도 앱을 만들어줘. Leaflet 지도 위에 안중근·유관순·윤봉길 등 독립운동가의 주요 활동 장소가 핀으로 표시되고, 핀을 누르면 그 장소에서의 사건이 사진·연표와 함께 패널로 열리는 구조야. 인물별 이동 경로를 애니메이션 선으로 재생하는 "발자취 따라가기" 모드가 핵심이야. 우리 지역 사적지 제보 기능도 넣어줘.',
+    description: '3·1운동과 독립운동사를 공간 중심으로 탐구하는 지도 앱입니다.\n\n[활용 매뉴얼]\n1. 발자취 따라가기 모드로 인물의 이동 동선을 함께 추적\n2. "왜 이 장소였을까?" 지리적 맥락 토론으로 연결\n3. 우리 지역 사적지 제보 활동으로 향토사 연계 수행평가 운영\n4. 현장체험학습 사전 답사 자료로도 유용합니다.',
+  },
+  // ───────── 비공개 예시 ─────────
+  {
+    id: 'app-17', name: '과학 수행평가 루브릭 채점기', subject: '과학', grades: ['중1','중2','중3'],
+    url: 'https://rubric-grader.vercel.app', owner: '교사김코딩', isPublic: false, theme: 'niagara',
+    status: 200, ms: 95, lastChecked: '09:12', createdAt: '2026-06-05',
+    stack: { db: 'Supabase (PostgreSQL)', backend: 'Supabase Edge Functions', frontend: 'Next.js 14', hosting: 'Vercel' },
+    prompt: '교사 전용 수행평가 루브릭 채점 도구를 만들어줘. 평가 기준표(영역×수준)를 직접 만들고, 학생 명렬을 붙여넣으면 한 명씩 탭 한 번으로 수준을 선택해 빠르게 채점하는 UI가 핵심이야. 채점 결과는 자동 합산해 CSV로 내보내고, 영역별 학급 평균 차트를 보여줘. 학생 데이터는 내 계정에만 저장되도록 인증을 붙여줘.',
+    description: '(비공개) 우리 학교 수행평가 채점용으로 만든 개인 도구입니다.\n\n[활용 매뉴얼]\n1. 평가 전 루브릭 작성 → 학생 명렬 등록\n2. 실험 순회하며 태블릿으로 즉석 채점\n3. 종료 후 CSV 내보내기 → 나이스 성적 입력 참고\n4. 학생 개인정보가 포함되므로 비공개로 유지합니다.',
+  },
+];
+
+// 핑 시뮬레이션: 75% 정상, 12% 404, 13% 500
+function simulatePing() {
+  const r = Math.random();
+  const status = r < 0.75 ? 200 : r < 0.87 ? 404 : 500;
+  return {
+    status,
+    ms: status === 200 ? Math.floor(40 + Math.random() * 480) : 0,
+    lastChecked: new Date().toTimeString().slice(0, 5),
+  };
+}
+
+const uid = () => 'app-' + Math.random().toString(36).slice(2, 9);
+// 목적격 조사: 받침 있으면 '을', 없으면 '를'
+const objJosa = (s) => {
+  const t = String(s || '').trim();
+  const c = t.charCodeAt(t.length - 1);
+  return (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0) ? '을' : '를';
+};
+const today = () => new Date().toISOString().slice(0, 10);
+
+Object.assign(window, {
+  SUBJECTS, GRADES, THEMES, themeById, STATUS_META,
+  INITIAL_USERS, INITIAL_APPS, simulatePing, uid, today, objJosa,
+});

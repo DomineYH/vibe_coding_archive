@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EduVibe 아카이브 — 교사 에이전틱 코딩 공유</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  // Pantone Color of the Year 2026 — 11-4201 Cloud Dancer 기반 웜 뉴트럴 스케일
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          white: '#FBFAF7',
+          neutral: { 50:'#F7F5F1', 100:'#F0EEE9', 200:'#E2DED5', 300:'#CFC9BF', 400:'#9A948B', 500:'#75706A', 600:'#585450', 700:'#433F3C', 800:'#2F2C29', 900:'#232120' },
+          emerald: { 50:'#EAF1EE', 200:'#C1D7D0', 600:'#3C7A72', 700:'#2F6159' },
+          red:     { 50:'#F6EBEA', 200:'#E2C7C6', 600:'#9B3B41', 700:'#7D2F34' },
+          amber:   { 50:'#F7F1E4', 200:'#E3D3B6', 600:'#A9714B', 700:'#8A5C3D', 800:'#6F4A31' },
+        },
+      },
+    },
+  };
+</script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script>window.react = window.React; window['react-dom'] = window.ReactDOM;</script>
+<script src="https://unpkg.com/lucide-react@0.453.0/dist/umd/lucide-react.js" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --cloud-dancer: #F0EEE9; /* PANTONE 11-4201 · Color of the Year 2026 */
+    --accent: #4C7A96;       /* PANTONE 17-4123 Niagara · Atmospheric */
+    --radius-card: 22px;
+  }
+  html { overflow-x: hidden; }
+  body {
+    margin: 0;
+    background: #EAE7E2;
+    color: #232120;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  .acc-bg { background-color: var(--accent); }
+  .acc-text { color: var(--accent); }
+  .acc-soft { background-color: color-mix(in srgb, var(--accent) 9%, var(--cloud-dancer)); }
+  .card-r { border-radius: var(--radius-card); }
+  ::selection { background: color-mix(in srgb, var(--accent) 24%, var(--cloud-dancer)); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { color: color-mix(in srgb, var(--accent) 72%, #232120); }
+  pre::-webkit-scrollbar { width: 8px; height: 8px; }
+  pre::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 8px; }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="ui.jsx"></script>
+<script type="text/babel" src="view-auth.jsx"></script>
+<script type="text/babel" src="view-gallery.jsx"></script>
+<script type="text/babel" src="view-detail.jsx"></script>
+<script type="text/babel" src="view-submit.jsx"></script>
+<script type="text/babel" src="view-admin.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+</body>
+</html>

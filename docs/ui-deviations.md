@@ -1,0 +1,43 @@
+# Phase 1 source mapping and UI differences
+
+Applies to [issue #31](https://github.com/DomineYH/vibe_coding_archive/issues/31): the public gallery and public detail only. The detailed source and visual contract is [issue #6](https://github.com/DomineYH/vibe_coding_archive/issues/6); original runtime observations are in [issue #2](https://github.com/DomineYH/vibe_coding_archive/issues/2) and [`docs/evidence/basic-design-runtime-20260922/`](evidence/basic-design-runtime-20260922/README.md). Original files stay unchanged in `basic_design/` and are byte-preserved in [`docs/reference/basic_design/`](reference/basic_design/).
+
+## Original-to-product mapping
+
+| Preserved original      | Product / evidence mapping                                                                      | Issue #31 treatment                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `EduVibe 아카이브.html` | `frontend/index.html`, `src/main.jsx`, `src/styles/global.css`, `tailwind.config.js`            | Entry, shell styles, fixed original brand values, local Pretendard 1.3.9 and Lucide components                            |
+| `app.jsx`               | `frontend/src/app/app.jsx`                                                                      | Header/footer and public gallery/detail routing; React Query owns async request states                                    |
+| `data.jsx`              | `contracts/catalog.json`, `frontend/src/fixtures/public-apps.json`, `src/services/mock/apps.ts` | Original public ordering/content retained as 16 public records; original private record is not exposed in the public mock |
+| `ui.jsx`                | `frontend/src/components/ui.jsx`, `src/components/presentation.js`                              | Shared cards, badges, chips, buttons, device preview, status/empty states and date display                                |
+| `view-gallery.jsx`      | `frontend/src/features/gallery/view-gallery.jsx`                                                | Public search, subject/grade filters, result cards, empty/loading/error/retry states                                      |
+| `view-detail.jsx`       | `frontend/src/features/detail/view-detail.jsx`                                                  | Public detail, original content order, copy, stack, saved health display and metadata                                     |
+| `view-auth.jsx`         | Preserved only                                                                                  | Login/signup/password-change screens are outside this public-gallery issue; not claimed implemented                       |
+| `view-submit.jsx`       | Preserved only                                                                                  | Registration/edit flows are outside this issue; not claimed implemented                                                   |
+| `view-admin.jsx`        | Preserved only                                                                                  | User management and Health Monitor are outside this issue; not claimed implemented                                        |
+| `tweaks-panel.jsx`      | Preserved only                                                                                  | Tweaks is not imported into the product; API bundle exclusion is checked by `npm run check:dist`                          |
+| `.thumbnail`            | Preserved only as `docs/reference/basic_design/.thumbnail`                                      | Hidden 640×358 WebP is not runtime UI or a pixel-comparison baseline                                                      |
+
+`npm run check:reference` compares the 11 preserved copies with their source hashes and byte lengths. It passed 11/11. Do not edit the original source, reference copies, source screenshots, or baseline to make a product comparison pass.
+
+## UI-D scope and observed behavior
+
+| Change ID from #6 | Issue #31 coverage                                                          | Evidence / boundary                                                                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| UI-D01            | Not implemented                                                             | Signup and optional contact fields belong to other Phase 1 work; no signup behavior is claimed here                                                                      |
+| UI-D02            | Applied to the public gallery                                               | Cards/details retain the original display nickname; login ID and auth flows are absent from this public-only scope                                                       |
+| UI-D03            | Applied to list/detail loading, empty, failure, retry, and unchecked states | Unit tests and browser tests cover current gallery/detail states; five fixed viewports are captured                                                                      |
+| UI-D04            | Applied                                                                     | Demo fixtures remain available only in mock mode; Tweaks code is not ported; API `dist/` bundle exclusions are checked                                                   |
+| UI-D05            | Not implemented                                                             | Admin password controls are outside this issue                                                                                                                           |
+| UI-D06            | Partially applied as display-only mock data                                 | Public detail shows the fixture health result and fixed checked time. “연결 다시 확인” explains that no live probe runs; no network check or actual freshness is claimed |
+| UI-D07            | Applied for public routes                                                   | Direct public detail, refresh, browser back, and unknown ID are covered; admin routes and mobile `/admin` are outside this issue                                         |
+| UI-D08            | Not implemented                                                             | Optional personal-data input is outside this public-only issue; the mock has no real user data collection                                                                |
+| UI-D09            | Applied to the gallery’s first page                                         | Initial loading, empty results, request failure, explicit retry, and reset recovery are covered; infinite pagination is not implemented                                  |
+
+## Visual comparison record
+
+The required viewports are `1440×1000`, `1024×900`, `768×1024`, `390×844`, and `360×844`. Browser captures use Chromium `151.0.7922.34`, DPR 1, `ko-KR`, `Asia/Seoul`, the fixed source time, loaded local font, hidden caret, disabled animation, and zero allowed pixel difference. Full-page gallery/detail captures are accompanied by a 1440px first-card and detail-aside capture.
+
+All 12 comparisons fail the zero-pixel check. Dimensions match the corresponding reference images. The current run reports 40,509–73,828 differing pixels on full pages, 2,698 on the first-card component, and 8,531 on the detail aside. These counts describe the comparison only; they are not a similarity score or an approval. The screenshots and per-case metrics are [`visual-comparison.json`](evidence/phase-1/issue31/2026-09-25/visual-comparison.json) and the adjacent PNGs.
+
+The original reference itself was replayed five times in fresh browser contexts. Stable DOM/state metrics were identical for all 130 captures per run and network failures were zero, while exact pixel identity varied from 129 to 131 of 135 images. Across the five runs, six image paths showed a difference at least once; the per-run counts and locations are in [`original-repeat-summary.json`](evidence/phase-1/issue31/2026-09-25/original-repeat-summary.json). The cause remains undetermined. No tolerance, baseline update, or visual exception is approved. DomineYH owns the visual-difference review and acceptance.

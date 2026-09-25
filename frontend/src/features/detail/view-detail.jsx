@@ -1,0 +1,284 @@
+import { useState } from "react";
+import { ArrowLeft, Copy, ExternalLink, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
+import { formatCheckedAt, formatDate } from "../../components/presentation";
+import {
+  Avatar,
+  Btn,
+  Chip,
+  DeviceScreen,
+  EmptyState,
+  StatusBadge,
+} from "../../components/ui";
+import { ServiceError } from "../../services/service-error";
+
+function CopyButton({ text }) {
+  const [state, setState] = useState("idle");
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setState("done");
+    } catch {
+      setState("error");
+    }
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => void copy()}
+        className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-[12px] font-semibold text-neutral-300 transition-colors hover:bg-white/20"
+      >
+        {state === "done" ? (
+          <span aria-hidden="true">✓</span>
+        ) : (
+          <Copy size={13} aria-hidden="true" />
+        )}
+        <span>{state === "done" ? "복사됨" : "복사하기"}</span>
+      </button>
+      {state === "error" ? (
+        <span role="alert" className="text-[12px] text-red-300">
+          복사하지 못했어요.
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function SpecCell({ label, value }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b border-neutral-200/70 py-3 last:border-0">
+      <div className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
+        {label}
+      </div>
+      <div className="break-keep text-right text-[13px] font-semibold leading-snug text-neutral-700">
+        {value || "—"}
+      </div>
+    </div>
+  );
+}
+
+function StateView({ loading, error, retry }) {
+  if (loading) {
+    return (
+      <div role="status" aria-live="polite">
+        <EmptyState
+          title="아카이브 앱을 불러오는 중이에요"
+          desc="잠시만 기다려 주세요."
+        />
+      </div>
+    );
+  }
+  if (!error) return null;
+  const notFound = error instanceof ServiceError && error.code === "NOT_FOUND";
+  const storage =
+    error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
+  return (
+    <div role="alert" aria-live="assertive">
+      <EmptyState
+        title={
+          notFound
+            ? "아카이브 앱을 찾을 수 없어요"
+            : "상세 정보를 불러오지 못했어요"
+        }
+        desc={error.message || "잠시 후 다시 시도해 주세요."}
+      >
+        <div className="flex flex-wrap justify-center gap-2">
+          {notFound ? (
+            <Link
+              to="/"
+              className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+            >
+              갤러리로
+            </Link>
+          ) : (
+            <Btn onClick={retry}>다시 시도</Btn>
+          )}
+          {storage ? (
+            <Link
+              to="/__dev/mock-reset"
+              className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+            >
+              mock 저장 초기화
+            </Link>
+          ) : null}
+        </div>
+      </EmptyState>
+    </div>
+  );
+}
+
+export function AppDetailView({ app, meta, loading, error, retry }) {
+  const [notice, setNotice] = useState("");
+  if (loading || error) {
+    return (
+      <main className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-12 sm:px-8">
+        <StateView loading={loading} error={error} retry={retry} />
+      </main>
+    );
+  }
+  if (!app || !meta) return null;
+  const theme = meta.themes.find((item) => item.id === app.themeId);
+  if (!theme) return null;
+  const checkedAt = formatCheckedAt(
+    app.health.result.checked_at,
+    app.serverTime,
+  );
+  const creationDate = formatDate(app.createdAt);
+
+  return (
+    <main
+      className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-8 sm:px-8"
+      data-screen-label="공개 앱 상세"
+    >
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-800"
+        >
+          <ArrowLeft size={15} aria-hidden="true" />
+          갤러리로
+        </Link>
+        <span aria-hidden="true" />
+      </div>
+
+      <DeviceScreen
+        app={app}
+        theme={theme}
+        big
+        className="card-r aspect-[16/7] w-full ring-1 ring-black/[0.06] sm:aspect-[16/5.5]"
+      />
+
+      <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-[28px] font-extrabold tracking-tight text-neutral-900">
+            {app.name}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-neutral-600">
+              <Avatar name={app.owner} size={20} />
+              {app.owner}
+            </span>
+            <span className="text-neutral-300" aria-hidden="true">
+              ·
+            </span>
+            <Chip tone="blue">{app.subject}</Chip>
+            {app.grades.map((grade) => (
+              <Chip key={grade}>{grade}</Chip>
+            ))}
+          </div>
+        </div>
+        <a
+          href={app.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="acc-bg inline-flex h-11 items-center gap-2 rounded-full px-6 text-[14px] font-semibold text-white shadow-sm transition-all hover:brightness-110 hover:shadow-md active:scale-[0.97]"
+        >
+          <span>앱 열기</span>
+          <ExternalLink size={16} aria-hidden="true" />
+        </a>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="flex min-w-0 flex-col gap-6">
+          <section className="rounded-3xl border border-neutral-200/80 bg-white p-6">
+            <h2 className="mb-3 text-[15px] font-bold text-neutral-900">
+              상세 설명 · 활용 매뉴얼
+            </h2>
+            <p className="break-keep whitespace-pre-line text-[14px] leading-[1.8] text-neutral-600">
+              {app.description}
+            </p>
+          </section>
+          <section className="overflow-hidden rounded-3xl bg-[#2B2724] shadow-[0_12px_36px_-14px_rgba(0,0,0,0.4)]">
+            <div className="flex items-center justify-between border-b border-white/[0.07] px-5 py-3.5">
+              <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-neutral-400">
+                핵심 프롬프트
+              </div>
+              <CopyButton text={app.prompt} />
+            </div>
+            <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap break-keep px-5 py-5 font-mono text-[13px] leading-[1.85] text-neutral-300">
+              {app.prompt}
+            </pre>
+          </section>
+        </div>
+
+        <aside className="flex flex-col gap-6">
+          <section>
+            <h2 className="mb-3 px-1 text-[12px] font-bold uppercase tracking-wider text-neutral-400">
+              기술 스택
+            </h2>
+            <div className="rounded-3xl border border-neutral-200/80 bg-white px-5 py-2">
+              <SpecCell label="Database" value={app.stack.db} />
+              <SpecCell label="Backend" value={app.stack.backend} />
+              <SpecCell label="Frontend" value={app.stack.frontend} />
+              <SpecCell label="Hosting" value={app.stack.hosting} />
+            </div>
+          </section>
+          <section className="rounded-3xl border border-neutral-200/80 bg-white p-5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-[14px] font-bold text-neutral-900">
+                연결 상태
+              </h2>
+              <StatusBadge state={app.health.result.state} />
+            </div>
+            <dl className="grid gap-2 text-[13px]">
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                <dt className="text-neutral-500">마지막 검사</dt>
+                <dd className="font-semibold text-neutral-800">{checkedAt}</dd>
+              </div>
+            </dl>
+            {app.health.result.state !== "healthy" &&
+            app.health.result.state !== "unchecked" ? (
+              <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
+                <div>
+                  <div className="text-[13px] font-bold text-red-700">
+                    지금은 열 수 없는 앱이에요
+                  </div>
+                  <p className="mt-1 break-keep text-[12px] leading-relaxed text-red-600/90">
+                    앱 주소가 응답하지 않습니다. 잠시 후 다시 시도해 보시고,
+                    계속 열리지 않으면 등록한 선생님이나 관리자에게 알려 주세요.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+            <Btn
+              variant="soft"
+              className="mt-4 w-full"
+              onClick={() =>
+                setNotice(
+                  "이 화면은 저장된 시연 결과를 보여 줍니다. 실제 연결 검사는 실행하지 않았어요.",
+                )
+              }
+            >
+              <RefreshCw size={14} aria-hidden="true" />
+              <span>연결 다시 확인</span>
+            </Btn>
+            {notice ? (
+              <p className="mt-2 text-[12px] text-neutral-500" role="status">
+                {notice}
+              </p>
+            ) : null}
+          </section>
+          <div className="px-1 text-[12px] leading-relaxed text-neutral-400">
+            <div className="flex items-center justify-between border-b border-neutral-200/70 py-2">
+              <span>공개 범위</span>
+              <span className="font-semibold text-neutral-600">전체 공개</span>
+            </div>
+            <div className="flex items-center justify-between border-b border-neutral-200/70 py-2">
+              <span>등록일</span>
+              <span className="font-semibold text-neutral-600">
+                {creationDate}
+              </span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span>썸네일 테마</span>
+              <span className="font-semibold text-neutral-600">
+                Pantone {theme.pantone} {theme.name}
+              </span>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
+}

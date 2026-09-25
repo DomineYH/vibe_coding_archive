@@ -1,0 +1,7 @@
+node_modules
+dist
+dist-mock
+src/contracts/api.d.ts
+visual/*-snapshots
+playwright-report
+test-results

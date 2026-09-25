@@ -1,0 +1,257 @@
+{
+  "thresholdPixels": 0,
+  "results": [
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/01-gallery.png",
+      "screenshot": "gallery-1440x1000.png",
+      "width": 1440,
+      "height": 1826,
+      "expectedWidth": 1440,
+      "expectedHeight": 1826,
+      "differentPixels": 69435,
+      "maxChannelDelta": 212,
+      "bounds": {
+        "left": 112,
+        "top": 11,
+        "right": 1315,
+        "bottom": 1791
+      }
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public.png",
+      "screenshot": "detail-1440x1000.png",
+      "width": 1440,
+      "height": 1360,
+      "expectedWidth": 1440,
+      "expectedHeight": 1360,
+      "differentPixels": 46099,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 120,
+        "top": 11,
+        "right": 1315,
+        "bottom": 1325
+      }
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/01-gallery.png",
+      "screenshot": "gallery-1024x900.png",
+      "width": 1024,
+      "height": 2503,
+      "expectedWidth": 1024,
+      "expectedHeight": 2503,
+      "differentPixels": 73828,
+      "maxChannelDelta": 212,
+      "bounds": {
+        "left": 32,
+        "top": 11,
+        "right": 979,
+        "bottom": 2468
+      }
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/04-detail-public.png",
+      "screenshot": "detail-1024x900.png",
+      "width": 1024,
+      "height": 1341,
+      "expectedWidth": 1024,
+      "expectedHeight": 1341,
+      "differentPixels": 46371,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 38,
+        "top": 11,
+        "right": 988,
+        "bottom": 1306
+      }
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/01-gallery.png",
+      "screenshot": "gallery-768x1024.png",
+      "width": 768,
+      "height": 3313,
+      "expectedWidth": 768,
+      "expectedHeight": 3313,
+      "differentPixels": 66453,
+      "maxChannelDelta": 212,
+      "bounds": {
+        "left": 32,
+        "top": 11,
+        "right": 723,
+        "bottom": 3278
+      }
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/04-detail-public.png",
+      "screenshot": "detail-768x1024.png",
+      "width": 768,
+      "height": 1757,
+      "expectedWidth": 768,
+      "expectedHeight": 1757,
+      "differentPixels": 46221,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 38,
+        "top": 11,
+        "right": 732,
+        "bottom": 1722
+      }
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/01-gallery.png",
+      "screenshot": "gallery-390x844.png",
+      "width": 390,
+      "height": 6143,
+      "expectedWidth": 390,
+      "expectedHeight": 6143,
+      "differentPixels": 67167,
+      "maxChannelDelta": 212,
+      "bounds": {
+        "left": 1,
+        "top": 13,
+        "right": 388,
+        "bottom": 6105
+      }
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/04-detail-public.png",
+      "screenshot": "detail-390x844.png",
+      "width": 390,
+      "height": 1968,
+      "expectedWidth": 390,
+      "expectedHeight": 1968,
+      "differentPixels": 45955,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 1,
+        "top": 13,
+        "right": 388,
+        "bottom": 1930
+      }
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/01-gallery.png",
+      "screenshot": "gallery-360x844.png",
+      "width": 360,
+      "height": 5882,
+      "expectedWidth": 360,
+      "expectedHeight": 5882,
+      "differentPixels": 66878,
+      "maxChannelDelta": 212,
+      "bounds": {
+        "left": 4,
+        "top": 13,
+        "right": 351,
+        "bottom": 5847
+      }
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/04-detail-public.png",
+      "screenshot": "detail-360x844.png",
+      "width": 360,
+      "height": 1955,
+      "expectedWidth": 360,
+      "expectedHeight": 1955,
+      "differentPixels": 40509,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 4,
+        "top": 13,
+        "right": 351,
+        "bottom": 1920
+      }
+    },
+    {
+      "state": "gallery-component",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/01-gallery-component.png",
+      "screenshot": "gallery-component-1440x1000.png",
+      "width": 289,
+      "height": 286,
+      "expectedWidth": 289,
+      "expectedHeight": 286,
+      "differentPixels": 2698,
+      "maxChannelDelta": 182,
+      "bounds": {
+        "left": 25,
+        "top": 82,
+        "right": 250,
+        "bottom": 268
+      }
+    },
+    {
+      "state": "detail-component",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public-component.png",
+      "screenshot": "detail-component-1440x1000.png",
+      "width": 340,
+      "height": 555,
+      "expectedWidth": 340,
+      "expectedHeight": 555,
+      "differentPixels": 8531,
+      "maxChannelDelta": 201,
+      "bounds": {
+        "left": 14,
+        "top": 4,
+        "right": 336,
+        "bottom": 543
+      }
+    }
+  ]
+}
