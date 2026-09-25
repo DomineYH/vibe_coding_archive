@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -47,6 +49,53 @@ const addedStates = [
 const states = ["gallery", "detail", ...addedStates];
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
+  let fontPath;
+  try {
+    fontPath = execFileSync(
+      "fc-match",
+      ["--format=%{file}", "Noto Sans CJK JP"],
+      { encoding: "utf8" },
+    ).trim();
+  } catch (error) {
+    throw new Error(
+      "Visual baselines require Noto Sans CJK JP from fonts-noto-cjk; fc-match could not find it.",
+      { cause: error },
+    );
+  }
+  const fontHash = createHash("sha256")
+    .update(readFileSync(fontPath))
+    .digest("hex");
+  expect(
+    fontHash,
+    "Visual baselines require the source Noto Sans CJK JP font (SHA-256 b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a).",
+  ).toBe("b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a");
+
+  const page = await browser.newPage();
+  try {
+    await page.goto(
+      "http://localhost:5173/apps/00000000-0000-4000-8000-000000000001",
+    );
+    await page.locator("pre").waitFor();
+    await page.evaluate(() => document.fonts.ready);
+    const session = await page.context().newCDPSession(page);
+    await session.send("DOM.enable");
+    await session.send("CSS.enable");
+    const { root } = await session.send("DOM.getDocument");
+    const { nodeId } = await session.send("DOM.querySelector", {
+      nodeId: root.nodeId,
+      selector: "pre",
+    });
+    const { fonts } = await session.send("CSS.getPlatformFontsForNode", {
+      nodeId,
+    });
+    const families = fonts.map(({ familyName }) => familyName);
+    expect(
+      families,
+      "Visual baseline prompt must render Latin in Liberation Mono and Korean in Noto Sans CJK JP.",
+    ).toEqual(expect.arrayContaining(["Liberation Mono", "Noto Sans CJK JP"]));
+  } finally {
+    await page.close();
+  }
 });
 
 async function compareInPage(page, actual, expected) {

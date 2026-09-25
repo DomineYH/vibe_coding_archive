@@ -22,6 +22,11 @@ jobs:
       - name: Install Playwright Chromium
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      - name: Install source-reference CJK font
+        run: |
+          sudo apt-get install --yes fonts-noto-cjk
+          sudo apt-get remove --yes fonts-wqy-zenhei
+          fc-cache --force
       - name: Install pinned visual Chromium
         run: |
           curl --fail --location --silent --show-error https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-headless-shell-linux64.zip --output "$RUNNER_TEMP/chrome-151.zip"
