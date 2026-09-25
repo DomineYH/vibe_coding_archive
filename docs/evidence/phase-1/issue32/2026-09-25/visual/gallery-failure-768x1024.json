@@ -1,0 +1,17 @@
+{
+  "state": "gallery-failure",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-768x1024.png",
+  "screenshot": "gallery-failure-768x1024.png",
+  "width": 768,
+  "height": 1024,
+  "expectedWidth": 768,
+  "expectedHeight": 1024,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}

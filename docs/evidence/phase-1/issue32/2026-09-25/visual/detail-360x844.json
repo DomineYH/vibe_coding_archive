@@ -1,0 +1,17 @@
+{
+  "state": "detail",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/04-detail-public.png",
+  "screenshot": "detail-360x844.png",
+  "width": 360,
+  "height": 1955,
+  "expectedWidth": 360,
+  "expectedHeight": 1955,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}

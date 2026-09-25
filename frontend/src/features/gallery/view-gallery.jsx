@@ -8,14 +8,19 @@ export function GalleryView({
   meta,
   page,
   onQueryChange,
+  initialFilters = {},
+  detailLinkState,
   error,
   loading,
   retry,
+  resetQuery,
 }) {
-  const [subject, setSubject] = useState("");
-  const [grade, setGrade] = useState("");
-  const [search, setSearch] = useState("");
-  const [committedSearch, setCommittedSearch] = useState("");
+  const [subject, setSubject] = useState(initialFilters.subject ?? "");
+  const [grade, setGrade] = useState(initialFilters.grade ?? "");
+  const [search, setSearch] = useState(initialFilters.q ?? "");
+  const [committedSearch, setCommittedSearch] = useState(
+    initialFilters.q ?? "",
+  );
   const [composing, setComposing] = useState(false);
   const [subjectsInUse, setSubjectsInUse] = useState(
     page?.facets.subjectsInUse ?? [],
@@ -29,6 +34,8 @@ export function GalleryView({
   };
   const resetRoute =
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
+  const invalidQuery =
+    error instanceof ServiceError && error.code === "VALIDATION_ERROR";
 
   useEffect(() => {
     if (page) setSubjectsInUse(page.facets.subjectsInUse);
@@ -49,6 +56,13 @@ export function GalleryView({
   const handleRetry = () => {
     setFocusOnRetry(true);
     retry();
+  };
+  const handleResetQuery = () => {
+    setSubject("");
+    setGrade("");
+    setSearch("");
+    setCommittedSearch("");
+    resetQuery();
   };
 
   return (
@@ -153,12 +167,20 @@ export function GalleryView({
       ) : error ? (
         <div role="alert" aria-live="assertive">
           <EmptyState
-            title="공개 아카이브를 불러오지 못했어요"
+            title={
+              invalidQuery
+                ? "검색 조건을 확인할 수 없어요"
+                : "공개 아카이브를 불러오지 못했어요"
+            }
             desc={error.message || "잠시 후 다시 시도해 주세요."}
           >
             <div className="flex flex-wrap justify-center gap-2">
-              <Btn onClick={handleRetry}>다시 시도</Btn>
-              {__DATA_MODE__ === "mock" && resetRoute ? (
+              {invalidQuery ? (
+                <Btn onClick={handleResetQuery}>조건 초기화</Btn>
+              ) : (
+                <Btn onClick={handleRetry}>다시 시도</Btn>
+              )}
+              {!invalidQuery && __DATA_MODE__ === "mock" && resetRoute ? (
                 <Link
                   className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
                   to="/__dev/mock-reset"
@@ -174,7 +196,12 @@ export function GalleryView({
           {page?.items.map((app) => {
             const theme = meta.themes.find((item) => item.id === app.themeId);
             return theme ? (
-              <AppCard key={app.id} app={app} theme={theme} />
+              <AppCard
+                key={app.id}
+                app={app}
+                theme={theme}
+                detailLinkState={detailLinkState}
+              />
             ) : null;
           })}
         </div>

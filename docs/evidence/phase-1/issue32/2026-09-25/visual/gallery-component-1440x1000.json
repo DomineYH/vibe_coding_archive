@@ -1,0 +1,17 @@
+{
+  "state": "gallery-component",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/01-gallery-component.png",
+  "screenshot": "gallery-component-1440x1000.png",
+  "width": 289,
+  "height": 286,
+  "expectedWidth": 289,
+  "expectedHeight": 286,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}

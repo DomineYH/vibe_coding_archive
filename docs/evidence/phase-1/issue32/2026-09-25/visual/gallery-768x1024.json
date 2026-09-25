@@ -1,0 +1,17 @@
+{
+  "state": "gallery",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/01-gallery.png",
+  "screenshot": "gallery-768x1024.png",
+  "width": 768,
+  "height": 3313,
+  "expectedWidth": 768,
+  "expectedHeight": 3313,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}

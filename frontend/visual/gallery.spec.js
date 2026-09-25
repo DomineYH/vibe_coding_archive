@@ -46,7 +46,7 @@ const addedStates = [
   "gallery-failure",
   "corrupt-storage-recovery",
 ];
-const states = ["gallery", "detail", ...addedStates];
+const states = ["gallery", "detail", "detail-copy-done", ...addedStates];
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
   let fontPath;
@@ -116,9 +116,9 @@ test.beforeAll(async ({ browser }) => {
   }
 });
 
-async function compareInPage(page, actual, expected) {
+async function compareInPage(page, actual, expected, region = null) {
   return page.evaluate(
-    async ({ actualData, expectedData }) => {
+    async ({ actualData, expectedData, region }) => {
       const decode = async (source) => {
         const image = new Image();
         image.src = `data:image/png;base64,${source}`;
@@ -137,6 +137,7 @@ async function compareInPage(page, actual, expected) {
         differentPixels: null,
         maxChannelDelta: null,
         bounds: null,
+        comparedRegion: region,
       };
       if (
         actualImage.width !== expectedImage.width ||
@@ -161,23 +162,31 @@ async function compareInPage(page, actual, expected) {
       let top = actualImage.height;
       let right = -1;
       let bottom = -1;
-      for (let offset = 0; offset < a.length; offset += 4) {
-        const delta = Math.max(
-          Math.abs(a[offset] - b[offset]),
-          Math.abs(a[offset + 1] - b[offset + 1]),
-          Math.abs(a[offset + 2] - b[offset + 2]),
-          Math.abs(a[offset + 3] - b[offset + 3]),
-        );
-        if (delta === 0) continue;
-        changed += 1;
-        max = Math.max(max, delta);
-        const pixel = offset / 4;
-        const x = pixel % actualImage.width;
-        const y = Math.floor(pixel / actualImage.width);
-        left = Math.min(left, x);
-        top = Math.min(top, y);
-        right = Math.max(right, x);
-        bottom = Math.max(bottom, y);
+      const leftEdge = region ? Math.floor(region.left) : 0;
+      const topEdge = region ? Math.floor(region.top) : 0;
+      const rightEdge = region
+        ? Math.ceil(region.left + region.width)
+        : actualImage.width;
+      const bottomEdge = region
+        ? Math.ceil(region.top + region.height)
+        : actualImage.height;
+      for (let y = topEdge; y < bottomEdge; y += 1) {
+        for (let x = leftEdge; x < rightEdge; x += 1) {
+          const offset = (y * actualImage.width + x) * 4;
+          const delta = Math.max(
+            Math.abs(a[offset] - b[offset]),
+            Math.abs(a[offset + 1] - b[offset + 1]),
+            Math.abs(a[offset + 2] - b[offset + 2]),
+            Math.abs(a[offset + 3] - b[offset + 3]),
+          );
+          if (delta === 0) continue;
+          changed += 1;
+          max = Math.max(max, delta);
+          left = Math.min(left, x);
+          top = Math.min(top, y);
+          right = Math.max(right, x);
+          bottom = Math.max(bottom, y);
+        }
       }
       report.differentPixels = changed;
       report.maxChannelDelta = max;
@@ -187,6 +196,7 @@ async function compareInPage(page, actual, expected) {
     {
       actualData: actual.toString("base64"),
       expectedData: expected.toString("base64"),
+      region,
     },
   );
 }
@@ -218,7 +228,17 @@ async function captureAndCompare(
       },
     );
   }
-  const detailState = state === "detail" || state === "detail-component";
+  const detailState =
+    state === "detail" ||
+    state === "detail-copy-done" ||
+    state === "detail-component";
+  if (state === "detail-copy-done")
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: async () => {} },
+      });
+    });
   await page.goto(
     detailState
       ? "/apps/00000000-0000-4000-8000-000000000001"
@@ -278,6 +298,11 @@ async function captureAndCompare(
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
     });
+  if (state === "detail-copy-done") {
+    await page.getByRole("button", { name: "복사하기" }).click();
+    await expect(page.getByRole("status")).toHaveText("복사됨");
+    await page.evaluate(() => document.activeElement.blur());
+  }
   if (state === "gallery-loading")
     await expect(page.getByRole("status")).toContainText(
       "공개 아카이브를 불러오는 중이에요",
@@ -288,6 +313,7 @@ async function captureAndCompare(
       .evaluate((input) => input.blur());
   await page.mouse.move(0, 0);
   await page.evaluate(() => window.scrollTo(0, 0));
+  if (state === "detail-copy-done") await page.clock.runFor(400);
   if (state === "gallery-empty") {
     await page.clock.runFor(400);
     await expect(page.getByPlaceholder("앱·작성자 검색")).toHaveCSS(
@@ -314,7 +340,26 @@ async function captureAndCompare(
     writeFileSync(baselinePath, actual);
   }
   const expected = readFileSync(baselinePath);
-  const comparison = await compareInPage(page, actual, expected);
+  const comparisonRegion =
+    state === "detail-copy-done"
+      ? await page
+          .getByRole("button", { name: "복사됨" })
+          .evaluate((button) => {
+            const bounds = button.getBoundingClientRect();
+            return {
+              left: bounds.left + window.scrollX,
+              top: bounds.top + window.scrollY,
+              width: bounds.width,
+              height: bounds.height,
+            };
+          })
+      : null;
+  const comparison = await compareInPage(
+    page,
+    actual,
+    expected,
+    comparisonRegion,
+  );
   const name = `${state}-${viewport.width}x${viewport.height}.png`;
   mkdirSync(outputRoot, { recursive: true });
   writeFileSync(path.join(outputRoot, name), actual);
@@ -407,6 +452,17 @@ for (const viewport of viewports) {
       "detail",
       viewport,
       path.join(baselineRoot, tag, "04-detail-public.png"),
+      testInfo,
+    );
+  });
+  test(`public detail copy success matches the original at ${tag}`, async ({
+    page,
+  }, testInfo) => {
+    await captureAndCompare(
+      page,
+      "detail-copy-done",
+      viewport,
+      path.join(baselineRoot, tag, "05-copy-done.png"),
       testInfo,
     );
   });

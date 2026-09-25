@@ -63,6 +63,31 @@ function stubErrorResponse(
 }
 
 describe("API service errors", () => {
+  it("uses one public message for missing and inaccessible detail reads", async () => {
+    const notFound = (message: string) =>
+      new Response(
+        JSON.stringify({
+          error: { code: "NOT_FOUND", message, request_id: null },
+        }),
+        { status: 404 },
+      );
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(notFound("Private app"))
+        .mockResolvedValueOnce(notFound("Missing app")),
+    );
+
+    for (const id of ["private", "missing"]) {
+      await expect(appsService.get(id)).rejects.toMatchObject({
+        code: "NOT_FOUND",
+        httpStatus: 404,
+        message: "아카이브 앱을 찾을 수 없어요.",
+      });
+    }
+  });
+
   it.each(allowedErrors)(
     "accepts $endpoint $status $code",
     async ({ endpoint, status, code }) => {

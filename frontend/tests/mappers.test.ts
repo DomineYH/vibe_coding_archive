@@ -138,4 +138,52 @@ describe("response mappers", () => {
       hosting: "Vercel",
     });
   });
+
+  it("rejects missing detail fields and invalid nullable field values", () => {
+    const detail = {
+      ...card,
+      url: "https://example.edu/app",
+      prompt: "수업 앱을 만들어 주세요.",
+      description: "분수 수업에서 사용합니다.",
+      stack_db: null,
+      stack_backend: null,
+      stack_frontend: "React",
+      stack_hosting: null,
+      created_at: "2026-04-01T15:00:00.000Z",
+      updated_at: "2026-04-01T15:00:00.000Z",
+    };
+    const response = { item: detail, server_time: page.server_time };
+
+    for (const field of [
+      "url",
+      "prompt",
+      "description",
+      "stack_db",
+      "stack_backend",
+      "stack_frontend",
+      "stack_hosting",
+      "created_at",
+      "updated_at",
+    ]) {
+      const item: Record<string, unknown> = { ...detail };
+      delete item[field];
+      expect(() => mapAppDetailResponse({ ...response, item })).toThrowError(
+        expect.objectContaining({ code: "CONTRACT_ERROR" }),
+      );
+    }
+
+    for (const [field, value] of [
+      ["url", null],
+      ["prompt", null],
+      ["description", 42],
+      ["stack_db", 42],
+      ["stack_hosting", false],
+      ["created_at", null],
+    ] as const) {
+      const item: Record<string, unknown> = { ...detail, [field]: value };
+      expect(() => mapAppDetailResponse({ ...response, item })).toThrowError(
+        expect.objectContaining({ code: "CONTRACT_ERROR" }),
+      );
+    }
+  });
 });

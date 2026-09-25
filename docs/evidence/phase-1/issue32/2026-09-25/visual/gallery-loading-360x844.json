@@ -1,0 +1,17 @@
+{
+  "state": "gallery-loading",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-360x844.png",
+  "screenshot": "gallery-loading-360x844.png",
+  "width": 360,
+  "height": 904,
+  "expectedWidth": 360,
+  "expectedHeight": 904,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}
