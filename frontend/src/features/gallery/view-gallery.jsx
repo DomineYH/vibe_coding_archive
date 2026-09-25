@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppCard, Btn, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
+import { normalizeSearch } from "../../services/apps-service";
 
 export function GalleryView({
   meta,
@@ -14,32 +15,71 @@ export function GalleryView({
   loading,
   retry,
   resetQuery,
+  loadMore,
+  loadingMore,
+  nextPageError,
+  hasNextPage,
+  duplicateOnlyPage,
 }) {
-  const [subject, setSubject] = useState(initialFilters.subject ?? "");
-  const [grade, setGrade] = useState(initialFilters.grade ?? "");
-  const [search, setSearch] = useState(initialFilters.q ?? "");
-  const [committedSearch, setCommittedSearch] = useState(
-    initialFilters.q ?? "",
-  );
+  const initialSearch = initialFilters.q ?? "";
+  const subject = initialFilters.subject ?? "";
+  const grade = initialFilters.grade ?? "";
+  const [search, setSearch] = useState(initialSearch);
   const [composing, setComposing] = useState(false);
   const [subjectsInUse, setSubjectsInUse] = useState(
     page?.facets.subjectsInUse ?? [],
   );
   const [focusOnRetry, setFocusOnRetry] = useState(false);
   const mainRef = useRef(null);
-
-  const changeSearch = (value) => {
-    setSearch(value);
-    if (!composing) setCommittedSearch(value);
-  };
+  const loadMoreRegionRef = useRef(null);
+  const loadMoreLocked = useRef(false);
+  const startLoadMore = useCallback(() => {
+    if (!loadMore || loadMoreLocked.current) return;
+    loadMoreLocked.current = true;
+    void Promise.resolve(loadMore()).finally(() => {
+      loadMoreLocked.current = false;
+    });
+  }, [loadMore]);
+  const foldedSearch = normalizeSearch(search) ?? "";
+  const searchTooLong = !composing && Array.from(foldedSearch).length > 100;
   const resetRoute =
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   const invalidQuery =
     error instanceof ServiceError && error.code === "VALIDATION_ERROR";
 
   useEffect(() => {
+    setSearch(initialSearch);
+  }, [initialSearch]);
+  useEffect(() => {
     if (page) setSubjectsInUse(page.facets.subjectsInUse);
   }, [page]);
+  useEffect(() => {
+    if (composing || searchTooLong) return undefined;
+    const q = search.trim().normalize("NFC") || undefined;
+    if ((q ?? "") === initialSearch) return undefined;
+    const next = {
+      q,
+      subject: subject || undefined,
+      grade: grade || undefined,
+    };
+    if (!q) {
+      onQueryChange(next, { replace: true });
+      return undefined;
+    }
+    const timer = window.setTimeout(
+      () => onQueryChange(next, { replace: true }),
+      300,
+    );
+    return () => window.clearTimeout(timer);
+  }, [
+    composing,
+    grade,
+    initialSearch,
+    onQueryChange,
+    search,
+    searchTooLong,
+    subject,
+  ]);
   useEffect(() => {
     if (focusOnRetry && loading) {
       mainRef.current?.focus({ preventScroll: true });
@@ -47,22 +87,51 @@ export function GalleryView({
     }
   }, [focusOnRetry, loading]);
   useEffect(() => {
-    onQueryChange({
-      q: committedSearch || undefined,
-      subject: subject || undefined,
-      grade: grade || undefined,
-    });
-  }, [committedSearch, grade, onQueryChange, subject]);
+    if (
+      !hasNextPage ||
+      loadingMore ||
+      nextPageError ||
+      duplicateOnlyPage ||
+      typeof IntersectionObserver === "undefined"
+    )
+      return undefined;
+    const region = loadMoreRegionRef.current;
+    if (!region) return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) startLoadMore();
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(region);
+    return () => observer.disconnect();
+  }, [
+    duplicateOnlyPage,
+    hasNextPage,
+    loadingMore,
+    loadMore,
+    nextPageError,
+    startLoadMore,
+  ]);
   const handleRetry = () => {
     setFocusOnRetry(true);
     retry();
   };
   const handleResetQuery = () => {
-    setSubject("");
-    setGrade("");
     setSearch("");
-    setCommittedSearch("");
     resetQuery();
+  };
+  const changeSearch = (value) => {
+    setSearch(value);
+    if (!value)
+      onQueryChange(
+        {
+          q: undefined,
+          subject: subject || undefined,
+          grade: grade || undefined,
+        },
+        { replace: true },
+      );
   };
 
   return (
@@ -107,7 +176,16 @@ export function GalleryView({
                   key={label}
                   type="button"
                   aria-pressed={subject === value}
-                  onClick={() => setSubject(value)}
+                  onClick={() =>
+                    onQueryChange(
+                      {
+                        q: initialSearch || undefined,
+                        subject: value || undefined,
+                        grade: grade || undefined,
+                      },
+                      { replace: false },
+                    )
+                  }
                   className={`h-8 rounded-full px-3.5 text-[12.5px] font-semibold transition-all ${subject === value ? "acc-bg text-white shadow-sm" : "border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"}`}
                 >
                   {label}
@@ -122,7 +200,16 @@ export function GalleryView({
             <select
               id="grade-filter"
               value={grade}
-              onChange={(event) => setGrade(event.target.value)}
+              onChange={(event) =>
+                onQueryChange(
+                  {
+                    q: initialSearch || undefined,
+                    subject: subject || undefined,
+                    grade: event.target.value || undefined,
+                  },
+                  { replace: false },
+                )
+              }
               className="h-8 rounded-full border border-neutral-200 bg-white pl-3 pr-7 text-[12.5px] font-semibold text-neutral-600 outline-none focus-visible:ring-2 focus-visible:ring-[#4C7A96]"
             >
               <option value="">학년 전체</option>
@@ -147,17 +234,41 @@ export function GalleryView({
                 onCompositionEnd={(event) => {
                   setComposing(false);
                   setSearch(event.currentTarget.value);
-                  setCommittedSearch(event.currentTarget.value);
+                  if (!event.currentTarget.value)
+                    onQueryChange(
+                      {
+                        q: undefined,
+                        subject: subject || undefined,
+                        grade: grade || undefined,
+                      },
+                      { replace: true },
+                    );
                 }}
+                aria-invalid={searchTooLong || undefined}
+                aria-describedby={
+                  searchTooLong ? "gallery-search-error" : undefined
+                }
                 placeholder="앱·작성자 검색"
                 className="h-8 w-36 rounded-full border border-neutral-200 bg-white pl-8 pr-3 text-[12.5px] outline-none transition-all focus:w-48 focus:border-[#4C7A96]/40 sm:w-44"
               />
+              {searchTooLong ? (
+                <span id="gallery-search-error" className="sr-only">
+                  검색어는 정규화 후 100자 이하여야 해요.
+                </span>
+              ) : null}
             </div>
           </div>
         </div>
       </div>
 
-      {loading ? (
+      {searchTooLong ? (
+        <div role="alert" aria-live="assertive">
+          <EmptyState
+            title="검색어가 너무 길어요"
+            desc="검색어는 정규화 후 100자 이하여야 해요. 입력 내용은 유지됩니다."
+          />
+        </div>
+      ) : loading ? (
         <div role="status" aria-live="polite">
           <EmptyState
             title="공개 아카이브를 불러오는 중이에요"
@@ -192,19 +303,47 @@ export function GalleryView({
           </EmptyState>
         </div>
       ) : (page?.items.length ?? 0) > 0 ? (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {page?.items.map((app) => {
-            const theme = meta.themes.find((item) => item.id === app.themeId);
-            return theme ? (
-              <AppCard
-                key={app.id}
-                app={app}
-                theme={theme}
-                detailLinkState={detailLinkState}
-              />
-            ) : null;
-          })}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {page?.items.map((app) => {
+              const theme = meta.themes.find((item) => item.id === app.themeId);
+              return theme ? (
+                <AppCard
+                  key={app.id}
+                  app={app}
+                  theme={theme}
+                  detailLinkState={detailLinkState}
+                />
+              ) : null;
+            })}
+          </div>
+          {nextPageError ? (
+            <div
+              className="mt-8 flex flex-col items-center gap-3"
+              role="alert"
+              aria-live="assertive"
+            >
+              <p className="text-[13px] text-neutral-600">
+                추가 자료를 불러오지 못했어요. 기존 목록은 유지됩니다.
+              </p>
+              <Btn onClick={startLoadMore}>다시 시도</Btn>
+            </div>
+          ) : hasNextPage ? (
+            <div
+              ref={loadMoreRegionRef}
+              className="mt-8 flex justify-center"
+              aria-live="polite"
+            >
+              <Btn onClick={startLoadMore} disabled={loadingMore}>
+                {loadingMore
+                  ? "불러오는 중이에요"
+                  : duplicateOnlyPage
+                    ? "계속 불러오기"
+                    : "더 불러오기"}
+              </Btn>
+            </div>
+          ) : null}
+        </>
       ) : (
         <EmptyState
           title="조건에 맞는 앱이 없어요"

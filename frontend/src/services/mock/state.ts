@@ -10,9 +10,14 @@ const MOCK_SCENARIOS = [
   "original",
   "empty",
   "list_failure",
+  "list_refetch_failure",
+  "next_page_failure",
   "list_delayed",
   "long_list",
+  "duplicate_pages",
+  "no_progress",
   "long_copy",
+  "visual_fixture",
 ] as const;
 const STATE_KEYS = ["version", "generation", "scenario", "apps"];
 const APP_KEYS = [

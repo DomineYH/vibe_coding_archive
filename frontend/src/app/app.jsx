@@ -9,9 +9,14 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import catalog from "../../../contracts/catalog.json";
 import { appsService } from "@services/apps";
+import { normalizeSearch } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { contractError, ServiceError } from "../services/service-error";
 import { AppDetailView } from "../features/detail/view-detail";
@@ -21,8 +26,9 @@ import { Btn, EmptyState } from "../components/ui";
 const galleryQueryKeys = new Set(["q", "subject", "grade"]);
 
 function readGalleryFilters(search) {
-  if (!search) return { filters: {}, invalid: false };
+  if (!search || search === "?") return { filters: {}, invalid: false };
   const values = {};
+  const seen = new Set();
   for (const pair of search.slice(1).split("&")) {
     if (!pair) return { filters: {}, invalid: true };
     const separator = pair.indexOf("=");
@@ -35,12 +41,20 @@ function readGalleryFilters(search) {
     } catch {
       return { filters: {}, invalid: true };
     }
-    if (!galleryQueryKeys.has(key) || Object.hasOwn(values, key) || !value)
+    if (!galleryQueryKeys.has(key) || seen.has(key))
       return { filters: {}, invalid: true };
-    values[key] = value;
+    seen.add(key);
+    if (key === "q") {
+      const normalized = value.trim().normalize("NFC");
+      const folded = normalizeSearch(value);
+      if (folded && Array.from(folded).length > 100)
+        return { filters: {}, invalid: true };
+      if (normalized) values.q = normalized;
+    } else if (value) {
+      values[key] = value;
+    }
   }
   if (
-    (values.q && values.q.trim().length > 100) ||
     (values.subject && !catalog.subjects.includes(values.subject)) ||
     (values.grade && !catalog.grades.includes(values.grade))
   )
@@ -160,14 +174,14 @@ function GalleryRoute() {
   const filters = query.filters;
   const access = usePublicMetadata();
   const onQueryChange = useCallback(
-    (next) => {
+    (next, { replace = true } = {}) => {
       if (query.invalid) return;
       const params = new URLSearchParams();
       if (next.q) params.set("q", next.q);
       if (next.subject) params.set("subject", next.subject);
       if (next.grade) params.set("grade", next.grade);
       if (params.toString() !== location.search.slice(1))
-        setSearchParams(params, { replace: true });
+        setSearchParams(params, { replace });
     },
     [location.search, query.invalid, setSearchParams],
   );
@@ -175,7 +189,23 @@ function GalleryRoute() {
     () => setSearchParams(new URLSearchParams(), { replace: true }),
     [setSearchParams],
   );
-  const list = useQuery({
+  useEffect(() => {
+    if (query.invalid) return;
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.subject) params.set("subject", filters.subject);
+    if (filters.grade) params.set("grade", filters.grade);
+    if (params.toString() !== location.search.slice(1))
+      setSearchParams(params, { replace: true });
+  }, [
+    filters.grade,
+    filters.q,
+    filters.subject,
+    location.search,
+    query.invalid,
+    setSearchParams,
+  ]);
+  const list = useInfiniteQuery({
     queryKey: [
       __DATA_MODE__,
       "anonymous",
@@ -189,20 +219,57 @@ function GalleryRoute() {
       filters.grade ?? null,
       24,
     ],
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => {
+      if (!lastPage.pagination.hasMore) return undefined;
+      const nextOffset = lastPage.pagination.offset + lastPage.pagination.limit;
+      return Number.isSafeInteger(nextOffset) &&
+        nextOffset > lastPage.pagination.offset
+        ? nextOffset
+        : undefined;
+    },
+    retry: false,
     enabled: access.canRead && !query.invalid,
-    queryFn: async ({ signal }) => {
+    queryFn: async ({ pageParam, signal }) => {
       const page = await appsService.list(
-        { ...filters, limit: 24, offset: 0 },
+        { ...filters, limit: 24, offset: pageParam },
         { signal },
       );
+      if (
+        page.pagination.offset !== pageParam ||
+        page.pagination.limit !== 24 ||
+        (page.pagination.hasMore && page.items.length === 0)
+      )
+        throw contractError();
       assertThemeIds(access.meta, page.items);
       return page;
     },
   });
+  const pages = list.data?.pages ?? [];
+  const lastPage = pages.at(-1);
+  const seen = new Set();
+  const items = pages.flatMap((page) =>
+    page.items.filter((item) => {
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    }),
+  );
+  const page = lastPage ? { ...lastPage, items } : undefined;
+  const previousIds = new Set(
+    pages
+      .slice(0, -1)
+      .flatMap((currentPage) => currentPage.items.map((item) => item.id)),
+  );
+  const duplicateOnlyPage = Boolean(
+    lastPage?.pagination.hasMore &&
+    lastPage.items.length > 0 &&
+    lastPage.items.every((item) => previousIds.has(item.id)),
+  );
   return (
     <GalleryView
       meta={access.meta}
-      page={list.data}
+      page={page}
       onQueryChange={onQueryChange}
       initialFilters={filters}
       detailLinkState={{ fromGallery: true }}
@@ -212,13 +279,23 @@ function GalleryRoute() {
               "VALIDATION_ERROR",
               "검색 조건을 확인할 수 없어요.",
             )
-          : (access.error ?? list.error)
+          : (access.error ??
+            (list.isRefetchError || pages.length === 0
+              ? list.error
+              : undefined))
       }
       loading={
-        !query.invalid && (access.loading || (access.canRead && list.isPending))
+        !query.invalid &&
+        (access.loading ||
+          (access.canRead && (list.isPending || list.isRefetching)))
       }
-      retry={() => access.retry(list.refetch)}
+      retry={() => access.retry(() => list.refetch())}
       resetQuery={resetQuery}
+      loadMore={() => list.fetchNextPage()}
+      loadingMore={list.isFetchingNextPage}
+      nextPageError={list.isFetchNextPageError ? list.error : undefined}
+      hasNextPage={list.hasNextPage}
+      duplicateOnlyPage={duplicateOnlyPage}
     />
   );
 }
@@ -285,15 +362,28 @@ function NotFoundRoute() {
 export default function App() {
   const location = useLocation();
   const navigationType = useNavigationType();
-  const previousPath = useRef(location.pathname);
+  const previousLocation = useRef({
+    key: location.key,
+    pathname: location.pathname,
+    initial: true,
+  });
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
   useEffect(() => {
+    const previous = previousLocation.current;
     const historyTraversal =
-      navigationType === "POP" && previousPath.current !== location.pathname;
-    previousPath.current = location.pathname;
-    if (!historyTraversal) window.scrollTo({ top: 0 });
-  }, [location.pathname, navigationType]);
+      navigationType === "POP" && previous.key !== location.key;
+    previousLocation.current = {
+      key: location.key,
+      pathname: location.pathname,
+      initial: false,
+    };
+    if (
+      previous.initial ||
+      (!historyTraversal && previous.pathname !== location.pathname)
+    )
+      window.scrollTo({ top: 0 });
+  }, [location.key, location.pathname, navigationType]);
   useEffect(() => {
     const clearQueries = () => queryClient.clear();
     const refreshQueries = (event) => {

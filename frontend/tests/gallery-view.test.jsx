@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -57,11 +57,14 @@ describe("public gallery states", () => {
     const math = screen.getByRole("button", { name: "수학" });
     math.focus();
     await user.keyboard("{Enter}");
-    expect(onQueryChange).toHaveBeenLastCalledWith({
-      q: undefined,
-      subject: "수학",
-      grade: undefined,
-    });
+    expect(onQueryChange).toHaveBeenLastCalledWith(
+      {
+        q: undefined,
+        subject: "수학",
+        grade: undefined,
+      },
+      { replace: false },
+    );
 
     rerender(
       <MemoryRouter>
@@ -104,31 +107,178 @@ describe("public gallery states", () => {
     const meta = await appsService.getMeta();
     const page = await appsService.list({ limit: 24, offset: 0 });
     const onQueryChange = vi.fn();
+    vi.useFakeTimers();
+    try {
+      render(
+        <MemoryRouter>
+          <GalleryView
+            meta={meta}
+            page={page}
+            onQueryChange={onQueryChange}
+            loading={false}
+            retry={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: "분수" } });
+      expect(onQueryChange).not.toHaveBeenCalled();
+      fireEvent.compositionEnd(input, { data: "분수" });
+      expect(onQueryChange).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(299);
+      });
+      expect(onQueryChange).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(onQueryChange).toHaveBeenLastCalledWith(
+        { q: "분수", subject: undefined, grade: undefined },
+        { replace: true },
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("uses the last committed query when a filter changes during composition", async () => {
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    const onQueryChange = vi.fn();
+    vi.useFakeTimers();
+    try {
+      const props = {
+        meta,
+        page,
+        onQueryChange,
+        loading: false,
+        retry: () => {},
+      };
+      const { rerender } = render(
+        <MemoryRouter>
+          <GalleryView {...props} initialFilters={{ q: "committed" }} />
+        </MemoryRouter>,
+      );
+      const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: "조합중" } });
+      fireEvent.click(screen.getByRole("button", { name: "과학" }));
+      expect(onQueryChange).toHaveBeenLastCalledWith(
+        { q: "committed", subject: "과학", grade: undefined },
+        { replace: false },
+      );
+
+      rerender(
+        <MemoryRouter>
+          <GalleryView
+            {...props}
+            initialFilters={{ q: "committed", subject: "과학" }}
+          />
+        </MemoryRouter>,
+      );
+      fireEvent.compositionEnd(input, { data: "조합중" });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(300);
+      });
+      expect(onQueryChange).toHaveBeenLastCalledWith(
+        { q: "조합중", subject: "과학", grade: undefined },
+        { replace: true },
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("debounces search edits for 300 ms and clears immediately", async () => {
+    vi.useFakeTimers();
+    try {
+      const onQueryChange = vi.fn();
+      render(
+        <MemoryRouter>
+          <GalleryView
+            meta={undefined}
+            page={undefined}
+            onQueryChange={onQueryChange}
+            loading={false}
+            retry={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+      fireEvent.change(input, { target: { value: "분수" } });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(299);
+      });
+      expect(onQueryChange).not.toHaveBeenCalled();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(onQueryChange).toHaveBeenLastCalledWith(
+        { q: "분수", subject: undefined, grade: undefined },
+        { replace: true },
+      );
+
+      fireEvent.change(input, { target: { value: "" } });
+      expect(onQueryChange).toHaveBeenLastCalledWith(
+        { q: undefined, subject: undefined, grade: undefined },
+        { replace: true },
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("preserves and announces an over-limit folded query while hiding old cards", async () => {
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
     render(
       <MemoryRouter>
         <GalleryView
           meta={meta}
           page={page}
-          onQueryChange={onQueryChange}
+          onQueryChange={() => {}}
           loading={false}
           retry={() => {}}
         />
       </MemoryRouter>,
     );
     const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
-    fireEvent.compositionStart(input);
-    fireEvent.change(input, { target: { value: "분수" } });
-    expect(onQueryChange).toHaveBeenLastCalledWith({
-      q: undefined,
-      subject: undefined,
-      grade: undefined,
-    });
-    fireEvent.compositionEnd(input, { data: "분수" });
-    expect(onQueryChange).toHaveBeenLastCalledWith({
-      q: "분수",
-      subject: undefined,
-      grade: undefined,
-    });
+    fireEvent.change(input, { target: { value: "ß".repeat(51) } });
+
+    expect(input).toHaveValue("ß".repeat(51));
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("검색어가 너무 길어요");
+    expect(screen.queryByRole("link", { name: /상세 보기$/ })).toBeNull();
+  });
+
+  it("keeps cards visible after a later page fails and offers an explicit retry", async () => {
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    const loadMore = vi.fn();
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={meta}
+          page={page}
+          onQueryChange={() => {}}
+          loading={false}
+          retry={() => {}}
+          hasNextPage
+          nextPageError={new ServiceError("CONTRACT_ERROR", "목록 응답 오류")}
+          loadMore={loadMore}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getAllByRole("link", { name: /상세 보기$/ })).toHaveLength(
+      16,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "추가 자료를 불러오지 못했어요",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+    expect(loadMore).toHaveBeenCalledOnce();
   });
 
   it("shows a failure separately and retries only after an explicit action", () => {

@@ -6,11 +6,17 @@ import {
 } from "../../contracts/mappers";
 import type { components } from "../../contracts/api";
 import { ServiceError } from "../service-error";
-import { normalizeQueryForService, type AppsService } from "../apps-service";
+import {
+  caseFold,
+  normalizeQueryForService,
+  type AppsService,
+} from "../apps-service";
 import { assertCurrentGeneration, getMockSnapshot } from "./state";
 
 type WireAppDetail = components["schemas"]["AppDetail"];
 type MockMeta = components["schemas"]["Meta"];
+const subjects = catalog.subjects as MockMeta["subjects"];
+const grades = catalog.grades as MockMeta["grades"];
 const fixedTime = "2026-09-22T00:12:00.000Z";
 const listDelayMs = 300;
 const longCopy = Array.from(
@@ -43,8 +49,8 @@ const capabilities = {
 } satisfies MockMeta["capabilities"];
 
 const mockMeta: MockMeta = {
-  subjects: catalog.subjects,
-  grades: catalog.grades,
+  subjects,
+  grades,
   themes: catalog.themes as MockMeta["themes"],
   server_time: fixedTime,
   capabilities,
@@ -86,23 +92,62 @@ function checkSignal(signal?: AbortSignal): void {
 
 function scenarioApps(state: Awaited<ReturnType<typeof beginRead>>) {
   const apps = state.apps as WireAppDetail[];
-  if (state.scenario === "long_list")
-    return [
+  if (
+    state.scenario === "long_list" ||
+    state.scenario === "duplicate_pages" ||
+    state.scenario === "no_progress" ||
+    state.scenario === "next_page_failure"
+  ) {
+    const expanded = [
       ...apps,
       ...Array.from({ length: 12 }, (_, index) => {
         const app = apps[index % apps.length];
+        const createdAt = new Date(
+          Date.parse(fixedTime) - index * 1000,
+        ).toISOString();
         return {
           ...app,
           id: `00000000-0000-4000-8000-${String(index + 201).padStart(12, "0")}`,
           name: `${app.name} · 긴 목록 ${index + 1}`,
+          created_at: createdAt,
+          updated_at: createdAt,
         };
       }),
-    ];
+    ].sort(sortApps);
+    if (
+      state.scenario === "long_list" ||
+      state.scenario === "no_progress" ||
+      state.scenario === "next_page_failure"
+    )
+      return expanded;
+
+    const firstPage = expanded.slice(0, 24);
+    const duplicatePage = firstPage.map((app) => ({
+      ...app,
+      created_at: "2025-01-01T00:00:00.000Z",
+      updated_at: "2025-01-01T00:00:00.000Z",
+    }));
+    const lastPage = firstPage.slice(0, 4).map((app, index) => ({
+      ...app,
+      id: `00000000-0000-4000-8000-${String(index + 301).padStart(12, "0")}`,
+      name: `${app.name} · 마지막 페이지 ${index + 1}`,
+      created_at: "2024-01-01T00:00:00.000Z",
+      updated_at: "2024-01-01T00:00:00.000Z",
+    }));
+    return [...firstPage, ...duplicatePage, ...lastPage];
+  }
   if (state.scenario === "long_copy")
     return apps.map((app, index) =>
       index === 0 ? { ...app, description: longCopy, prompt: longCopy } : app,
     );
   return apps;
+}
+
+function sortApps(left: WireAppDetail, right: WireAppDetail): number {
+  return (
+    Date.parse(right.created_at) - Date.parse(left.created_at) ||
+    right.id.localeCompare(left.id)
+  );
 }
 
 async function beginRead(signal?: AbortSignal) {
@@ -122,46 +167,72 @@ export const appsService: AppsService = {
   async list(query, { signal } = {}) {
     const normalized = normalizeQueryForService(query);
     const state = await beginRead(signal);
-    if (state.scenario === "list_failure") {
+    if (
+      state.scenario === "list_failure" ||
+      state.scenario === "list_refetch_failure"
+    ) {
+      if (state.scenario === "list_refetch_failure") {
+        await new Promise((resolve) => setTimeout(resolve, listDelayMs));
+        assertCurrentGeneration(state.generation, signal);
+      }
       throw new ServiceError(
         "SERVICE_UNAVAILABLE",
         "목록을 불러오지 못했어요. 다시 시도해 주세요.",
       );
     }
+    if (state.scenario === "next_page_failure" && normalized.offset > 0) {
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "다음 목록을 불러오지 못했어요.",
+      );
+    }
     if (state.scenario === "list_delayed") {
-      await new Promise((resolve) => setTimeout(resolve, listDelayMs));
-      assertCurrentGeneration(state.generation, signal);
+      const ignoreAbort = normalized.q === "slow";
+      await new Promise((resolve) =>
+        setTimeout(resolve, ignoreAbort ? listDelayMs * 3 : listDelayMs),
+      );
+      // Exercise query-key isolation even when a transport cannot cancel.
+      assertCurrentGeneration(
+        state.generation,
+        ignoreAbort ? undefined : signal,
+      );
     }
     const publicApps = state.scenario === "empty" ? [] : scenarioApps(state);
-    const queryText = normalized.q?.toLocaleLowerCase("ko-KR");
     const matching = publicApps.filter((app) => {
       if (!app.is_public) return false;
       if (normalized.subject && app.subject !== normalized.subject)
         return false;
       if (normalized.grade && !app.grades.includes(normalized.grade))
         return false;
-      if (!queryText) return true;
-      return `${app.name}${app.owner.nickname}${app.description}`
-        .toLocaleLowerCase("ko-KR")
-        .includes(queryText);
+      if (!normalized.q) return true;
+      return [app.name, app.owner.nickname, app.description].some((field) =>
+        caseFold(field.normalize("NFC")).includes(normalized.q!),
+      );
     });
-    const subjectsInUse = [
-      ...new Set(
-        publicApps.filter((app) => app.is_public).map((app) => app.subject),
-      ),
-    ];
+    const subjectsInUse = new Set(
+      publicApps.filter((app) => app.is_public).map((app) => app.subject),
+    );
+    if (state.scenario !== "visual_fixture") matching.sort(sortApps);
+    const offset =
+      state.scenario === "no_progress" && normalized.offset > 0
+        ? 0
+        : normalized.offset;
     const page = {
       items: matching
         .slice(normalized.offset, normalized.offset + normalized.limit)
         .map(toCard),
       pagination: {
         limit: normalized.limit,
-        offset: normalized.offset,
+        offset,
         total: matching.length,
         has_more: normalized.offset + normalized.limit < matching.length,
       },
       server_time: fixedTime,
-      facets: { subjects_in_use: subjectsInUse },
+      facets: {
+        subjects_in_use: subjects.filter((subject) =>
+          subjectsInUse.has(subject),
+        ),
+      },
     };
     return mapAppPage(page);
   },

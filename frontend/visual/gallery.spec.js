@@ -13,7 +13,14 @@ const stateBaselineRoot = path.join(
   root,
   "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines",
 );
+const issue33BaselineRoot = path.join(
+  root,
+  "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines",
+);
 const outputRoot = path.resolve("test-results/visual/captures");
+const originalApps = JSON.parse(
+  readFileSync(path.resolve("src/fixtures/public-apps.json"), "utf8"),
+);
 const viewports = [
   { width: 1440, height: 1000 },
   { width: 1024, height: 900 },
@@ -45,6 +52,11 @@ const addedStates = [
   "gallery-empty",
   "gallery-failure",
   "corrupt-storage-recovery",
+  "gallery-api-order",
+  "gallery-filtered",
+  "gallery-query-overflow",
+  "gallery-duplicate-continue",
+  "gallery-next-page-error",
 ];
 const states = ["gallery", "detail", "detail-copy-done", ...addedStates];
 test.beforeAll(async ({ browser }) => {
@@ -214,6 +226,19 @@ async function captureAndCompare(
   if (state === "gallery-loading") await page.clock.pauseAt(captureTime);
   else await page.clock.install({ time: captureTime });
   const scenarios = {
+    gallery: { scenario: "visual_fixture", apps: originalApps },
+    "gallery-component": { scenario: "visual_fixture", apps: originalApps },
+    "gallery-api-order": { scenario: "original", apps: originalApps },
+    "gallery-filtered": { scenario: "original", apps: originalApps },
+    "gallery-query-overflow": { scenario: "original", apps: originalApps },
+    "gallery-duplicate-continue": {
+      scenario: "duplicate_pages",
+      apps: originalApps,
+    },
+    "gallery-next-page-error": {
+      scenario: "next_page_failure",
+      apps: originalApps,
+    },
     "gallery-loading": { scenario: "list_delayed", apps: [] },
     "gallery-failure": { scenario: "list_failure", apps: [] },
     "corrupt-storage-recovery": { scenario: "original", apps: [{}] },
@@ -244,8 +269,31 @@ async function captureAndCompare(
       ? "/apps/00000000-0000-4000-8000-000000000001"
       : state === "corrupt-storage-recovery"
         ? "/__dev/mock-reset"
-        : "/",
+        : state === "gallery-filtered"
+          ? "/?q=%EB%B6%84%EC%88%98+%ED%94%BC%EC%9E%90&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883"
+          : "/",
   );
+  if (state === "gallery-query-overflow") {
+    await page
+      .getByRole("textbox", { name: "앱·작성자 검색" })
+      .fill("ß".repeat(51));
+    await expect(page.getByRole("alert")).toContainText("검색어가 너무 길어요");
+  }
+  if (
+    state === "gallery-duplicate-continue" ||
+    state === "gallery-next-page-error"
+  ) {
+    await expect(page.locator("a.card-r")).toHaveCount(24);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    if (state === "gallery-duplicate-continue")
+      await expect(
+        page.getByRole("button", { name: "계속 불러오기" }),
+      ).toBeVisible();
+    else
+      await expect(page.getByRole("alert")).toContainText(
+        "추가 자료를 불러오지 못했어요",
+      );
+  }
   if (state === "gallery-empty") {
     await expect(page.locator("a.card-r")).toHaveCount(16);
     const capturePrecedingState = async () => {
@@ -265,8 +313,21 @@ async function captureAndCompare(
     await capturePrecedingState();
     await search.fill("없는앱-증거");
   }
-  if (state === "gallery" || state === "gallery-component")
+  if (
+    state === "gallery" ||
+    state === "gallery-component" ||
+    state === "gallery-api-order"
+  )
     await expect(page.locator("a.card-r")).toHaveCount(16);
+  else if (state === "gallery-filtered")
+    await expect(page.locator("a.card-r")).toHaveCount(1);
+  else if (state === "gallery-query-overflow")
+    await expect(page.getByRole("alert")).toContainText("검색어가 너무 길어요");
+  else if (
+    state === "gallery-duplicate-continue" ||
+    state === "gallery-next-page-error"
+  )
+    await expect(page.locator("a.card-r")).toHaveCount(24);
   else if (detailState)
     await expect(
       page.getByRole("heading", { name: "분수 피자 가게" }),
@@ -474,7 +535,16 @@ for (const state of addedStates) {
     const baselinePath =
       state === "gallery-empty"
         ? path.join(baselineRoot, tag, "03-gallery-empty.png")
-        : path.join(stateBaselineRoot, `${state}-${tag}.png`);
+        : [
+              "gallery-api-order",
+              "gallery-filtered",
+              "gallery-query-overflow",
+              "gallery-duplicate-continue",
+              "gallery-next-page-error",
+              "corrupt-storage-recovery",
+            ].includes(state)
+          ? path.join(issue33BaselineRoot, `${state}-${tag}.png`)
+          : path.join(stateBaselineRoot, `${state}-${tag}.png`);
     test(`${state} matches its baseline at ${tag}`, async ({
       page,
     }, testInfo) => {

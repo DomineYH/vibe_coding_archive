@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import catalog from "../../contracts/catalog.json";
 import {
   mapAppDetailResponse,
   mapAppPage,
@@ -7,8 +8,8 @@ import {
 
 const capability = { enabled: false, reasons: ["not_implemented"] };
 const meta = {
-  subjects: ["수학"],
-  grades: ["초3"],
+  subjects: catalog.subjects,
+  grades: catalog.grades,
   themes: [
     {
       id: "sage",
@@ -93,6 +94,24 @@ describe("response mappers", () => {
     expect(() =>
       mapMeta({ ...meta, server_time: "2026-02-30T00:00:00.000Z" }),
     ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
+  it("rejects unknown, repeated, or out-of-order gallery catalog values", () => {
+    for (const subjects_in_use of [
+      ["Unknown"],
+      ["수학", "수학"],
+      ["과학", "수학"],
+    ]) {
+      expect(() =>
+        mapAppPage({
+          ...page,
+          facets: { subjects_in_use },
+        }),
+      ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    }
+    expect(() => mapMeta({ ...meta, grades: ["중4"] })).toThrowError(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
   });
 
   it("rejects missing fields and unsupported health values instead of supplying normal defaults", () => {
