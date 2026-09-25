@@ -44,7 +44,7 @@ function job(state: StoredState): StoredObject {
 
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 2)],
+  ["unsupported state version", (state) => (state.version = 3)],
   ["extra state field", (state) => (state.extra = true)],
   ["missing generation", (state) => delete state.generation],
   ["string generation", (state) => (state.generation = "1")],
@@ -175,4 +175,29 @@ describe("persisted mock state validation", () => {
       expect((await appsService.list()).items).toHaveLength(16);
     },
   );
+
+  it("migrates the existing public mock state to auth-capable storage", async () => {
+    resetMockState();
+    const current = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        generation: current.generation,
+        scenario: current.scenario,
+        apps: current.apps,
+      }),
+    );
+
+    expect((await appsService.list()).items).toHaveLength(16);
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
+    ).toMatchObject({
+      version: 2,
+      principal_id: null,
+      private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
+    });
+  });
 });

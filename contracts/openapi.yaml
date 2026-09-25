@@ -2,10 +2,87 @@ openapi: 3.1.0
 info:
   title: EduVibe Archive API
   version: 1.0.0
-  description: Public catalog and archive reads for the Phase 1 gallery.
+  description: Phase 1 public catalog reads and demo authentication contract.
 servers:
   - url: /api/v1
 paths:
+  /auth/csrf:
+    get:
+      operationId: getAuthCsrf
+      summary: Read the current session CSRF token
+      security: []
+      responses:
+        "200":
+          description: Current CSRF token and expiry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CsrfToken"
+        "401":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
+  /auth/me:
+    get:
+      operationId: getAuthMe
+      summary: Restore the current authenticated member
+      security:
+        - SessionCookie: []
+      responses:
+        "200":
+          description: The current member; contact fields are excluded or null.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Self"
+        "401":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
+  /auth/login:
+    post:
+      operationId: login
+      summary: Sign in an approved member
+      security:
+        - {}
+        - SessionCookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Authenticated member and rotated CSRF token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          $ref: "#/components/responses/ServiceError"
+        "403":
+          $ref: "#/components/responses/ServiceError"
+        "409":
+          $ref: "#/components/responses/ServiceError"
+        "429":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
+  /auth/logout:
+    post:
+      operationId: logout
+      summary: Sign out the current browser session
+      security:
+        - {}
+        - SessionCookie: []
+      responses:
+        "204":
+          description: The current session was cleared or was already anonymous.
+        "403":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
   /meta:
     get:
       operationId: getMeta
@@ -79,9 +156,11 @@ paths:
           $ref: "#/components/responses/ServiceError"
   /apps/{id}:
     get:
-      operationId: getPublicApp
-      summary: Read one public archive app
-      security: []
+      operationId: getApp
+      summary: Read an archive app available to the current member
+      security:
+        - {}
+        - SessionCookie: []
       parameters:
         - name: id
           in: path
@@ -96,12 +175,21 @@ paths:
                 $ref: "#/components/schemas/AppDetailResponse"
         "404":
           $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/ServiceError"
+        "403":
+          $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
 components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-eduvibe_session
   responses:
     NotFound:
-      description: The app does not exist or is not publicly accessible.
+      description: The app does not exist or is not accessible to the current member.
       content:
         application/json:
           schema:
@@ -113,6 +201,81 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
   schemas:
+    Role:
+      type: string
+      enum: [user, admin]
+    SessionKind:
+      type: string
+      enum: [full, change_only]
+    LoginInput:
+      type: object
+      additionalProperties: false
+      required: [login_id, password]
+      properties:
+        login_id:
+          type: string
+          minLength: 2
+          maxLength: 32
+          pattern: "^[가-힣A-Za-z0-9_.-]+$"
+        password: { type: string, minLength: 1 }
+    Self:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          login_id,
+          nickname,
+          role,
+          approved,
+          must_change_password,
+          session_kind,
+          expires_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        login_id: { type: string }
+        nickname: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        approved: { type: boolean }
+        must_change_password: { type: boolean }
+        session_kind: { $ref: "#/components/schemas/SessionKind" }
+        expires_at: { type: string, format: date-time }
+        email: { type: [string, "null"] }
+        phone: { type: [string, "null"] }
+        recent_auth_until: { type: [string, "null"], format: date-time }
+      allOf:
+        - if:
+            properties:
+              session_kind: { const: full }
+          then:
+            required: [email, phone, recent_auth_until]
+            properties:
+              approved: { const: true }
+              must_change_password: { const: false }
+              email: { type: [string, "null"] }
+              phone: { type: [string, "null"] }
+              recent_auth_until: { type: [string, "null"], format: date-time }
+        - if:
+            properties:
+              session_kind: { const: change_only }
+          then:
+            properties:
+              must_change_password: { const: true }
+    AuthResult:
+      type: object
+      additionalProperties: false
+      required: [user, csrf_token]
+      properties:
+        user: { $ref: "#/components/schemas/Self" }
+        csrf_token: { type: string, minLength: 1 }
+    CsrfToken:
+      type: object
+      additionalProperties: false
+      required: [csrf_token, expires_at]
+      properties:
+        csrf_token: { type: string, minLength: 1 }
+        expires_at: { type: string, format: date-time }
     Subject:
       type: string
       enum: [수학, 과학, 영어, 역사, 국어, 사회, 정보, 기타]

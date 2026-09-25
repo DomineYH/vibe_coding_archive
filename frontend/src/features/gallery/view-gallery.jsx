@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppCard, Btn, EmptyState } from "../../components/ui";
@@ -47,7 +53,7 @@ export function GalleryView({
   const invalidQuery =
     error instanceof ServiceError && error.code === "VALIDATION_ERROR";
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setSearch(initialSearch);
   }, [initialSearch]);
   useEffect(() => {

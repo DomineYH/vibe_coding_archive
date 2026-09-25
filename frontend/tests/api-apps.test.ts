@@ -15,6 +15,18 @@ const allowedErrors = [
   { endpoint: "GET /apps", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /apps", status: 503, code: "SERVICE_UNAVAILABLE" },
   { endpoint: "GET /apps/{id}", status: 404, code: "NOT_FOUND" },
+  { endpoint: "GET /apps/{id}", status: 401, code: "AUTH_REQUIRED" },
+  { endpoint: "GET /apps/{id}", status: 403, code: "FORBIDDEN" },
+  {
+    endpoint: "GET /apps/{id}",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "GET /apps/{id}",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
   { endpoint: "GET /apps/{id}", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /apps/{id}", status: 503, code: "SERVICE_UNAVAILABLE" },
 ] as const;
@@ -26,6 +38,7 @@ const invalidErrors = [
   { endpoint: "GET /apps", status: 422, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps", status: 429, code: "RATE_LIMITED" },
   { endpoint: "GET /apps", status: 503, code: "RATE_LIMITED" },
+  { endpoint: "GET /apps/{id}", status: 403, code: "INVALID_CREDENTIALS" },
   { endpoint: "GET /meta", status: 503, code: "AUTH_BUSY" },
   { endpoint: "GET /meta", status: 410, code: "SERVICE_MOVED" },
   { endpoint: "GET /apps", status: 503, code: "UNRECOGNIZED_CODE" },

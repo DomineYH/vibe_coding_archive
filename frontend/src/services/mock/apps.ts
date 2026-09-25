@@ -12,13 +12,14 @@ import {
   type AppsService,
 } from "../apps-service";
 import { assertCurrentGeneration, getMockSnapshot } from "./state";
+import { DEMO_ACCOUNTS } from "./accounts";
 
 type WireAppDetail = components["schemas"]["AppDetail"];
 type MockMeta = components["schemas"]["Meta"];
 const subjects = catalog.subjects as MockMeta["subjects"];
 const grades = catalog.grades as MockMeta["grades"];
 const fixedTime = "2026-09-22T00:12:00.000Z";
-const listDelayMs = 300;
+const readDelayMs = 300;
 const longCopy = Array.from(
   { length: 32 },
   (_, index) =>
@@ -27,8 +28,8 @@ const longCopy = Array.from(
 const capabilities = {
   apps_read: { enabled: true, reasons: [] },
   auth_register: { enabled: false, reasons: ["not_implemented"] },
-  auth_login: { enabled: false, reasons: ["not_implemented"] },
-  auth_logout: { enabled: false, reasons: ["not_implemented"] },
+  auth_login: { enabled: true, reasons: [] },
+  auth_logout: { enabled: true, reasons: [] },
   auth_password_change: { enabled: false, reasons: ["not_implemented"] },
   admin_users_read: { enabled: false, reasons: ["not_implemented"] },
   admin_approval: { enabled: false, reasons: ["not_implemented"] },
@@ -172,7 +173,7 @@ export const appsService: AppsService = {
       state.scenario === "list_refetch_failure"
     ) {
       if (state.scenario === "list_refetch_failure") {
-        await new Promise((resolve) => setTimeout(resolve, listDelayMs));
+        await new Promise((resolve) => setTimeout(resolve, readDelayMs));
         assertCurrentGeneration(state.generation, signal);
       }
       throw new ServiceError(
@@ -189,7 +190,7 @@ export const appsService: AppsService = {
     if (state.scenario === "list_delayed") {
       const ignoreAbort = normalized.q === "slow";
       await new Promise((resolve) =>
-        setTimeout(resolve, ignoreAbort ? listDelayMs * 3 : listDelayMs),
+        setTimeout(resolve, ignoreAbort ? readDelayMs * 3 : readDelayMs),
       );
       // Exercise query-key isolation even when a transport cannot cancel.
       assertCurrentGeneration(
@@ -239,10 +240,21 @@ export const appsService: AppsService = {
 
   async get(id, { signal } = {}) {
     const state = await beginRead(signal);
-    const app = scenarioApps(state).find(
-      (item) => item.id === id && item.is_public,
+    if (state.scenario === "detail_delayed") {
+      await new Promise((resolve) => setTimeout(resolve, readDelayMs));
+      assertCurrentGeneration(state.generation, signal);
+    }
+    const app = [...scenarioApps(state), ...state.private_apps].find(
+      (item) => item.id === id,
     );
-    if (!app)
+    const account = DEMO_ACCOUNTS.find(
+      (item) => item.id === state.principal_id,
+    );
+    const canReadPrivate =
+      app?.is_public ||
+      (account !== undefined &&
+        (account.role === "admin" || app?.owner.id === account.id));
+    if (!app || !canReadPrivate)
       throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
         outcome: "rejected",
         httpStatus: 404,

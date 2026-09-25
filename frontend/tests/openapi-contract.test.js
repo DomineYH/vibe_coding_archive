@@ -21,6 +21,18 @@ const validateAppDetail = new Ajv({ allErrors: true }).compile({
 });
 
 describe("OpenAPI app detail schema", () => {
+  it("defines the Phase 1 authentication and session restore contract", () => {
+    expect(openapi.paths["/auth/me"].get.responses["200"]).toBeDefined();
+    expect(openapi.paths["/auth/login"].post.requestBody).toBeDefined();
+    expect(openapi.paths["/auth/logout"].post.responses["204"]).toBeDefined();
+    expect(
+      openapi.components.schemas.LoginInput.properties.login_id.pattern,
+    ).toBe("^[가-힣A-Za-z0-9_.-]+$");
+    expect(openapi.components.schemas.Self.properties.role.$ref).toBe(
+      "#/components/schemas/Role",
+    );
+  });
+
   it("accepts representative detail fixtures", () => {
     expect(publicApps.every((app) => validateAppDetail(app))).toBe(true);
   });

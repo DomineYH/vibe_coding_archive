@@ -4,6 +4,74 @@
  */
 
 export interface paths {
+    "/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the current session CSRF token */
+        get: operations["getAuthCsrf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Restore the current authenticated member */
+        get: operations["getAuthMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign in an approved member */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sign out the current browser session */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/meta": {
         parameters: {
             query?: never;
@@ -48,8 +116,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read one public archive app */
-        get: operations["getPublicApp"];
+        /** Read an archive app available to the current member */
+        get: operations["getApp"];
         put?: never;
         post?: never;
         delete?: never;
@@ -62,6 +130,39 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        Role: "user" | "admin";
+        /** @enum {string} */
+        SessionKind: "full" | "change_only";
+        LoginInput: {
+            login_id: string;
+            password: string;
+        };
+        Self: {
+            /** Format: uuid */
+            id: string;
+            login_id: string;
+            nickname: string;
+            role: components["schemas"]["Role"];
+            approved: boolean;
+            must_change_password: boolean;
+            session_kind: components["schemas"]["SessionKind"];
+            /** Format: date-time */
+            expires_at: string;
+            email?: string | null;
+            phone?: string | null;
+            /** Format: date-time */
+            recent_auth_until?: string | null;
+        } & (unknown & unknown);
+        AuthResult: {
+            user: components["schemas"]["Self"];
+            csrf_token: string;
+        };
+        CsrfToken: {
+            csrf_token: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
         /** @enum {string} */
         Subject: "수학" | "과학" | "영어" | "역사" | "국어" | "사회" | "정보" | "기타";
         /** @enum {string} */
@@ -229,7 +330,7 @@ export interface components {
         };
     };
     responses: {
-        /** @description The app does not exist or is not publicly accessible. */
+        /** @description The app does not exist or is not accessible to the current member. */
         NotFound: {
             headers: {
                 [name: string]: unknown;
@@ -255,6 +356,99 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getAuthCsrf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current CSRF token and expiry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsrfToken"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getAuthMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current member; contact fields are excluded or null. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Self"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginInput"];
+            };
+        };
+        responses: {
+            /** @description Authenticated member and rotated CSRF token. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The current session was cleared or was already anonymous. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
     getMeta: {
         parameters: {
             query?: never;
@@ -310,7 +504,7 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
-    getPublicApp: {
+    getApp: {
         parameters: {
             query?: never;
             header?: never;
@@ -330,6 +524,8 @@ export interface operations {
                     "application/json": components["schemas"]["AppDetailResponse"];
                 };
             };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
             503: components["responses"]["ServiceError"];
         };

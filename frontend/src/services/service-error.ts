@@ -5,7 +5,14 @@ export type ServiceErrorCode =
   | "NOT_FOUND"
   | "VALIDATION_ERROR"
   | "FEATURE_UNAVAILABLE"
-  | "MOCK_STORAGE_ERROR";
+  | "MOCK_STORAGE_ERROR"
+  | "AUTH_REQUIRED"
+  | "INVALID_CREDENTIALS"
+  | "ACCOUNT_NOT_APPROVED"
+  | "ALREADY_AUTHENTICATED"
+  | "FORBIDDEN"
+  | "PASSWORD_CHANGE_REQUIRED"
+  | "SESSION_KIND_NOT_ALLOWED";
 
 export type ErrorOutcome = "not_applicable" | "rejected" | "unknown";
 

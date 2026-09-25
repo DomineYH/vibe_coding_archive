@@ -1,0 +1,34 @@
+[
+  {
+    "id": "00000000-0000-4000-8000-000000000091",
+    "owner": {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "nickname": "교사김코딩"
+    },
+    "name": "과학 수행평가 루브릭 채점기",
+    "subject": "과학",
+    "grades": ["중1", "중2", "중3"],
+    "is_public": false,
+    "theme_id": "niagara",
+    "version": 1,
+    "url_version": 1,
+    "health": {
+      "result": {
+        "state": "healthy",
+        "checked_at": "2026-09-22T00:12:00.000Z",
+        "fresh_until": null
+      },
+      "latest_job": null,
+      "next_check_at": null
+    },
+    "url": "https://rubric-grader.vercel.app",
+    "prompt": "교사 전용 수행평가 루브릭 채점 도구를 만들어줘. 평가 기준표(영역×수준)를 직접 만들고, 학생 명렬을 붙여넣으면 한 명씩 탭 한 번으로 수준을 선택해 빠르게 채점하는 UI가 핵심이야. 채점 결과는 자동 합산해 CSV로 내보내고, 영역별 학급 평균 차트를 보여줘. 학생 데이터는 내 계정에만 저장되도록 인증을 붙여줘.",
+    "description": "(비공개) 우리 학교 수행평가 채점용으로 만든 개인 도구입니다.\n\n[활용 매뉴얼]\n1. 평가 전 루브릭 작성 → 학생 명렬 등록\n2. 실험 순회하며 태블릿으로 즉석 채점\n3. 종료 후 CSV 내보내기 → 나이스 성적 입력 참고\n4. 학생 개인정보가 포함되므로 비공개로 유지합니다.",
+    "stack_db": "Supabase (PostgreSQL)",
+    "stack_backend": "Supabase Edge Functions",
+    "stack_frontend": "Next.js 14",
+    "stack_hosting": "Vercel",
+    "created_at": "2026-06-05T00:00:00.000Z",
+    "updated_at": "2026-06-05T00:00:00.000Z"
+  }
+]

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Link,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -16,12 +17,15 @@ import {
 } from "@tanstack/react-query";
 import catalog from "../../../contracts/catalog.json";
 import { appsService } from "@services/apps";
+import { authService } from "@services/auth";
 import { normalizeSearch } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { contractError, ServiceError } from "../services/service-error";
 import { AppDetailView } from "../features/detail/view-detail";
 import { GalleryView } from "../features/gallery/view-gallery";
-import { Btn, EmptyState } from "../components/ui";
+import { Avatar, Btn, EmptyState } from "../components/ui";
+import { AuthView } from "../features/auth/view-auth";
+import { readAuthRoute } from "../features/auth/auth-route";
 
 const galleryQueryKeys = new Set(["q", "subject", "grade"]);
 
@@ -78,7 +82,7 @@ function assertThemeIds(meta, items) {
   return items;
 }
 
-function Header({ active, onLogin }) {
+function Header({ active, auth, onLogin, onLogout, logoutPending }) {
   const navButton = (isActive) =>
     `h-9 rounded-full px-4 text-[13px] font-semibold transition-all ${isActive ? "bg-neutral-900/[0.06] text-neutral-900" : "text-neutral-500 hover:bg-neutral-900/[0.04] hover:text-neutral-900"}`;
   return (
@@ -109,11 +113,41 @@ function Header({ active, onLogin }) {
           >
             갤러리
           </Link>
+          {auth.user?.role === "admin" ? (
+            <Link
+              to="/admin"
+              aria-current={active === "admin" ? "page" : undefined}
+              className={`inline-flex items-center justify-center ${navButton(active === "admin")}`}
+            >
+              관리자
+            </Link>
+          ) : null}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          <Btn size="sm" variant="primary" onClick={onLogin}>
-            로그인
-          </Btn>
+          {auth.status === "checking" ? (
+            <span className="text-[12px] text-neutral-500" role="status">
+              로그인 상태 확인 중
+            </span>
+          ) : auth.user ? (
+            <>
+              <span className="inline-flex max-w-[145px] items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:gap-2 sm:text-[13px]">
+                <Avatar name={auth.user.nickname} size={28} />
+                <span className="truncate">{auth.user.nickname}</span>
+              </span>
+              <Btn
+                size="sm"
+                variant="line"
+                onClick={onLogout}
+                disabled={logoutPending}
+              >
+                {logoutPending ? "로그아웃 중…" : "로그아웃"}
+              </Btn>
+            </>
+          ) : (
+            <Btn size="sm" variant="primary" onClick={onLogin}>
+              로그인
+            </Btn>
+          )}
         </div>
       </div>
     </header>
@@ -167,7 +201,17 @@ function usePublicMetadata() {
   };
 }
 
-function GalleryRoute() {
+function authCacheScope(auth) {
+  return [
+    __DATA_MODE__,
+    auth.user?.id ?? "anonymous",
+    auth.user?.sessionKind ?? "anonymous",
+    auth.user?.role ?? null,
+    auth.epoch,
+  ];
+}
+
+function GalleryRoute({ auth }) {
   const location = useLocation();
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
@@ -207,11 +251,7 @@ function GalleryRoute() {
   ]);
   const list = useInfiniteQuery({
     queryKey: [
-      __DATA_MODE__,
-      "anonymous",
-      "anonymous",
-      null,
-      0,
+      ...authCacheScope(auth),
       "apps",
       "list",
       filters.q ?? "",
@@ -300,26 +340,25 @@ function GalleryRoute() {
   );
 }
 
-function DetailRoute() {
+function DetailRoute({ auth, onRetryAuth }) {
   const { id = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const access = usePublicMetadata();
+  const authPending = __DATA_MODE__ === "mock" && auth.status === "checking";
+  const authError = __DATA_MODE__ === "mock" && auth.status === "error";
   const detail = useQuery({
-    queryKey: [
-      __DATA_MODE__,
-      "anonymous",
-      "anonymous",
-      null,
-      0,
-      "apps",
-      "detail",
-      id,
-    ],
-    enabled: access.canRead,
+    queryKey: [...authCacheScope(auth), "apps", "detail", id],
+    enabled:
+      access.canRead && (__DATA_MODE__ !== "mock" || auth.status === "ready"),
     queryFn: async ({ signal }) => {
       const app = await appsService.get(id, { signal });
-      if (!app.isPublic)
+      if (
+        !app.isPublic &&
+        __DATA_MODE__ === "mock" &&
+        (!auth.user ||
+          (auth.user.role !== "admin" && app.ownerId !== auth.user.id))
+      )
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
           outcome: "rejected",
           httpStatus: 404,
@@ -328,14 +367,18 @@ function DetailRoute() {
       return app;
     },
   });
-  const app = detail.data?.isPublic ? detail.data : undefined;
+  const app = detail.data;
   return (
     <AppDetailView
       app={app}
       meta={access.meta}
-      loading={access.loading || (access.canRead && detail.isPending)}
-      error={access.error ?? detail.error}
-      retry={() => access.retry(detail.refetch)}
+      loading={
+        authPending ||
+        access.loading ||
+        (access.canRead && !authError && detail.isPending)
+      }
+      error={authError ? auth.error : (access.error ?? detail.error)}
+      retry={authError ? onRetryAuth : () => access.retry(detail.refetch)}
       onBack={() => navigate(location.state?.fromGallery === true ? -1 : "/")}
     />
   );
@@ -359,8 +402,72 @@ function NotFoundRoute() {
   );
 }
 
+function AuthRoute({ location, auth, onRetry, onLogin }) {
+  const route = readAuthRoute(location.search);
+  return (
+    <AuthView
+      mode={route.mode}
+      routeError={route.invalid}
+      authStatus={auth.status}
+      authError={auth.error}
+      onRetry={onRetry}
+      onLogin={(input) => onLogin(input, route.returnTo)}
+    />
+  );
+}
+
+function AdminRoute({ auth, onRetry }) {
+  if (auth.status === "checking")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState title="로그인 상태를 확인하고 있어요" />
+        </div>
+      </main>
+    );
+  if (auth.status === "error")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="alert" aria-live="assertive">
+          <EmptyState
+            title="로그인 상태를 확인할 수 없어요"
+            desc={auth.error?.message}
+          >
+            <Btn onClick={onRetry}>다시 확인</Btn>
+          </EmptyState>
+        </div>
+      </main>
+    );
+  if (!auth.user)
+    return (
+      <Navigate
+        to={`/auth?mode=login&return_to=${encodeURIComponent("/admin")}`}
+        replace
+      />
+    );
+  if (auth.user.role !== "admin")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="alert" aria-live="assertive">
+          <EmptyState title="관리자 권한이 필요해요" />
+        </div>
+      </main>
+    );
+  return (
+    <main className="mx-auto w-full max-w-[760px] px-5 pb-24 pt-12 sm:px-8">
+      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+        관리자
+      </h1>
+      <p className="mt-2 text-[14px] text-neutral-500">
+        관리자 작업은 아직 제공하지 않아요.
+      </p>
+    </main>
+  );
+}
+
 export default function App() {
   const location = useLocation();
+  const navigate = useNavigate();
   const navigationType = useNavigationType();
   const previousLocation = useRef({
     key: location.key,
@@ -369,6 +476,87 @@ export default function App() {
   });
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
+  const authRequest = useRef(0);
+  const authEpoch = useRef(0);
+  const [auth, setAuth] = useState({
+    status: "checking",
+    user: null,
+    error: null,
+    epoch: 0,
+  });
+  const [logoutPending, setLogoutPending] = useState(false);
+
+  const clearMemberQueries = useCallback(async () => {
+    const isMemberQuery = (query) =>
+      query.queryKey[0] === __DATA_MODE__ && query.queryKey[1] !== "meta";
+    await queryClient.cancelQueries({ predicate: isMemberQuery });
+    queryClient.removeQueries({ predicate: isMemberQuery });
+  }, [queryClient]);
+
+  const restoreAuth = useCallback(async () => {
+    const request = ++authRequest.current;
+    const epoch = ++authEpoch.current;
+    setAuth({ status: "checking", user: null, error: null, epoch });
+    await clearMemberQueries();
+    if (request !== authRequest.current) return;
+    try {
+      const user = await authService.getMe();
+      if (request === authRequest.current)
+        setAuth({ status: "ready", user, error: null, epoch });
+    } catch (error) {
+      if (request !== authRequest.current) return;
+      if (error instanceof ServiceError && error.code === "AUTH_REQUIRED")
+        setAuth({ status: "ready", user: null, error: null, epoch });
+      else setAuth({ status: "error", user: null, error, epoch });
+    }
+  }, [clearMemberQueries]);
+
+  const updateAuth = useCallback(
+    async (user) => {
+      ++authRequest.current;
+      const epoch = ++authEpoch.current;
+      await clearMemberQueries();
+      setAuth({ status: "ready", user, error: null, epoch });
+    },
+    [clearMemberQueries],
+  );
+
+  const login = useCallback(
+    async (input, returnTo) => {
+      const result = await authService.login(input);
+      await updateAuth(result.user);
+      const appMatch = returnTo.match(/^\/apps\/([0-9a-f-]+)$/i);
+      if (appMatch) {
+        try {
+          await appsService.get(appMatch[1]);
+        } catch {
+          // The destination route repeats this check and renders its safe error state.
+        }
+      }
+      navigate(returnTo, { replace: true });
+    },
+    [navigate, updateAuth],
+  );
+
+  const logout = useCallback(async () => {
+    if (logoutPending) return;
+    setLogoutPending(true);
+    try {
+      await clearMemberQueries();
+      await authService.logout();
+      await updateAuth(null);
+      navigate("/", { replace: true });
+    } catch {
+      await restoreAuth();
+      setToast("로그아웃하지 못했어요. 연결을 확인하고 다시 시도해 주세요.");
+    } finally {
+      setLogoutPending(false);
+    }
+  }, [clearMemberQueries, logoutPending, navigate, restoreAuth, updateAuth]);
+
+  useEffect(() => {
+    void restoreAuth();
+  }, [restoreAuth]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
@@ -385,34 +573,58 @@ export default function App() {
       window.scrollTo({ top: 0 });
   }, [location.key, location.pathname, navigationType]);
   useEffect(() => {
-    const clearQueries = () => queryClient.clear();
     const refreshQueries = (event) => {
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1")
-        void queryClient.invalidateQueries();
+        void restoreAuth();
     };
-    window.addEventListener("eduvibe:mock-reset", clearQueries);
+    window.addEventListener("eduvibe:mock-reset", restoreAuth);
     window.addEventListener("storage", refreshQueries);
     return () => {
-      window.removeEventListener("eduvibe:mock-reset", clearQueries);
+      window.removeEventListener("eduvibe:mock-reset", restoreAuth);
       window.removeEventListener("storage", refreshQueries);
     };
-  }, [queryClient]);
+  }, [restoreAuth]);
   useEffect(() => {
     if (!toast) return undefined;
     const timer = window.setTimeout(() => setToast(""), 2200);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const active = location.pathname.startsWith("/apps/") ? "detail" : "gallery";
+  const active = location.pathname.startsWith("/apps/")
+    ? "detail"
+    : location.pathname === "/admin"
+      ? "admin"
+      : "gallery";
   return (
     <div className="min-h-screen">
       <Header
         active={active}
-        onLogin={() => setToast("Phase 1에서는 공개 갤러리를 제공합니다.")}
+        auth={auth}
+        onLogin={() => navigate("/auth?mode=login")}
+        onLogout={logout}
+        logoutPending={logoutPending}
       />
       <Routes>
-        <Route path="/" element={<GalleryRoute />} />
-        <Route path="/apps/:id" element={<DetailRoute />} />
+        <Route path="/" element={<GalleryRoute auth={auth} />} />
+        <Route
+          path="/apps/:id"
+          element={<DetailRoute auth={auth} onRetryAuth={restoreAuth} />}
+        />
+        <Route
+          path="/auth"
+          element={
+            <AuthRoute
+              location={location}
+              auth={auth}
+              onRetry={restoreAuth}
+              onLogin={login}
+            />
+          }
+        />
+        <Route
+          path="/admin"
+          element={<AdminRoute auth={auth} onRetry={restoreAuth} />}
+        />
         {__DATA_MODE__ === "mock" ? (
           <Route path="/__dev/mock-reset" element={<MockResetPage />} />
         ) : null}

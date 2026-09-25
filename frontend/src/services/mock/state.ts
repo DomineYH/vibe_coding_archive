@@ -1,7 +1,9 @@
 import catalog from "../../../../contracts/catalog.json";
 import publicApps from "../../fixtures/public-apps.json";
+import privateApps from "../../fixtures/private-apps.json";
 import { mapAppDetailResponse } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
+import { DEMO_ACCOUNTS } from "./accounts";
 
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
@@ -18,8 +20,19 @@ const MOCK_SCENARIOS = [
   "no_progress",
   "long_copy",
   "visual_fixture",
+  "auth_delayed",
+  "auth_network_error",
+  "detail_delayed",
 ] as const;
-const STATE_KEYS = ["version", "generation", "scenario", "apps"];
+const STATE_KEYS = [
+  "version",
+  "generation",
+  "scenario",
+  "apps",
+  "private_apps",
+  "principal_id",
+];
+const LEGACY_STATE_KEYS = ["version", "generation", "scenario", "apps"];
 const APP_KEYS = [
   "id",
   "owner",
@@ -57,10 +70,12 @@ const CATALOG_GRADES = new Set(catalog.grades);
 const CATALOG_THEMES = new Set(catalog.themes.map((theme) => theme.id));
 export type MockScenario = (typeof MOCK_SCENARIOS)[number];
 type MockState = {
-  version: 1;
+  version: 2;
   generation: number;
   scenario: MockScenario;
   apps: typeof publicApps;
+  private_apps: typeof privateApps;
+  principal_id: string | null;
 };
 
 let resetGeneration = 0;
@@ -82,7 +97,7 @@ function hasExactKeys(
   );
 }
 
-function validateApps(apps: unknown[]): void {
+function validateApps(apps: unknown[], isPublic: boolean): void {
   const appIds = new Set<string>();
   const jobIds = new Set<string>();
   const ownerNames = new Map<string, string>();
@@ -109,7 +124,7 @@ function validateApps(apps: unknown[]): void {
       item.grades.some((grade) => !CATALOG_GRADES.has(grade)) ||
       new Set(item.grades).size !== item.grades.length ||
       !CATALOG_THEMES.has(item.themeId) ||
-      !item.isPublic ||
+      item.isPublic !== isPublic ||
       appIds.has(item.id) ||
       (jobId !== undefined && jobIds.has(jobId)) ||
       (ownerName !== undefined && ownerName !== item.owner)
@@ -119,6 +134,11 @@ function validateApps(apps: unknown[]): void {
     appIds.add(item.id);
     if (jobId !== undefined) jobIds.add(jobId);
     ownerNames.set(item.ownerId, item.owner);
+    if (
+      !isPublic &&
+      !DEMO_ACCOUNTS.some((account) => account.id === item.ownerId)
+    )
+      throw storageError();
   }
 }
 
@@ -128,10 +148,12 @@ function nextGeneration(currentGeneration: number): number {
 }
 
 const initialState = (): MockState => ({
-  version: 1,
+  version: 2,
   generation: resetGeneration,
   scenario: "original",
   apps: publicApps,
+  private_apps: privateApps,
+  principal_id: null,
 });
 
 function storage(): Storage {
@@ -167,24 +189,49 @@ function readState(): MockState {
   } catch {
     throw storageError();
   }
-  if (!hasExactKeys(value, STATE_KEYS)) throw storageError();
-  const state = value;
+  let state: Record<string, unknown>;
+  let needsMigration = false;
+  if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
+    state = {
+      ...value,
+      version: 2,
+      private_apps: privateApps,
+      principal_id: null,
+    };
+    needsMigration = true;
+  } else if (hasExactKeys(value, STATE_KEYS)) {
+    state = value;
+  } else {
+    throw storageError();
+  }
   if (
-    state.version !== 1 ||
+    state.version !== 2 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
     !isMockScenario(state.scenario) ||
-    !Array.isArray(state.apps)
+    !Array.isArray(state.apps) ||
+    !Array.isArray(state.private_apps) ||
+    (state.principal_id !== null &&
+      !DEMO_ACCOUNTS.some((account) => account.id === state.principal_id))
   ) {
     throw storageError();
   }
   try {
-    validateApps(state.apps);
+    validateApps(state.apps, true);
+    validateApps(state.private_apps, false);
   } catch {
     throw storageError();
   }
-  return state as MockState;
+  const ids = new Set(state.apps.map((app) => app.id));
+  if (state.private_apps.some((app) => ids.has(app.id))) throw storageError();
+  const validState = state as unknown as MockState;
+  if (needsMigration) {
+    validState.generation = nextGeneration(validState.generation);
+    writeState(validState);
+    resetGeneration = validState.generation;
+  }
+  return validState;
 }
 
 function writeState(state: MockState): void {
@@ -224,6 +271,19 @@ export function setMockScenario(scenario: MockScenario): void {
 
 export function readMockScenario(): MockScenario {
   return readState().scenario;
+}
+
+export function setMockPrincipal(principalId: string | null): void {
+  if (
+    principalId !== null &&
+    !DEMO_ACCOUNTS.some((account) => account.id === principalId)
+  )
+    throw new TypeError("Unsupported demo member");
+  const state = readState();
+  if (state.principal_id === principalId) return;
+  const generation = nextGeneration(state.generation);
+  writeState({ ...state, principal_id: principalId, generation });
+  resetGeneration = generation;
 }
 
 export function assertCurrentGeneration(

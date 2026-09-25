@@ -10,6 +10,9 @@ type WireHealth = Wire["HealthView"];
 type WireHealthResult = Wire["HealthResult"];
 type WireReason = Wire["Reason"];
 type WireCapability = Wire["Capability"];
+type WireSelf = Wire["Self"];
+type WireAuthResult = Wire["AuthResult"];
+type WireCsrfToken = Wire["CsrfToken"];
 
 export type Theme = Wire["Theme"];
 export type Subject = Wire["Subject"];
@@ -68,6 +71,21 @@ export type AppDetail = AppCard & {
   updatedAt: string;
   serverTime: string;
 };
+export type AuthUser = {
+  id: string;
+  loginId: string;
+  nickname: string;
+  role: Wire["Role"];
+  approved: boolean;
+  mustChangePassword: boolean;
+  sessionKind: Wire["SessionKind"];
+  expiresAt: string;
+  email: string | null;
+  phone: string | null;
+  recentAuthUntil: string | null;
+};
+export type AuthResult = { user: AuthUser; csrfToken: string };
+export type CsrfToken = { csrfToken: string; expiresAt: string };
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -178,6 +196,73 @@ function catalogValue<T extends string>(
 
 function nullableString(value: unknown): string | null {
   return value === null ? null : string(value);
+}
+
+export function mapSelf(value: unknown): AuthUser {
+  const item = record(value) as unknown as Partial<WireSelf>;
+  const id = nonEmpty(item.id);
+  const loginId = nonEmpty(item.login_id);
+  const nickname = nonEmpty(item.nickname);
+  const role = item.role;
+  const sessionKind = item.session_kind;
+  if (
+    !UUID.test(id) ||
+    (role !== "user" && role !== "admin") ||
+    (sessionKind !== "full" && sessionKind !== "change_only") ||
+    typeof item.approved !== "boolean" ||
+    typeof item.must_change_password !== "boolean"
+  )
+    throw contractError();
+
+  const expiresAt = dateTime(item.expires_at);
+  const fullSession = sessionKind === "full";
+  if (
+    (fullSession && (!item.approved || item.must_change_password)) ||
+    (!fullSession && !item.must_change_password)
+  )
+    throw contractError();
+  if (
+    fullSession !==
+    (Object.hasOwn(item, "email") &&
+      Object.hasOwn(item, "phone") &&
+      Object.hasOwn(item, "recent_auth_until"))
+  )
+    throw contractError();
+  const email = fullSession ? nullableString(item.email) : null;
+  const phone = fullSession ? nullableString(item.phone) : null;
+  const recentAuthUntil = fullSession
+    ? nullableDateTime(item.recent_auth_until)
+    : null;
+  if (role === "user" && recentAuthUntil !== null) throw contractError();
+  return {
+    id,
+    loginId,
+    nickname,
+    role,
+    approved: item.approved,
+    mustChangePassword: item.must_change_password,
+    sessionKind,
+    expiresAt,
+    email,
+    phone,
+    recentAuthUntil,
+  };
+}
+
+export function mapAuthResult(value: unknown): AuthResult {
+  const item = record(value) as unknown as Partial<WireAuthResult>;
+  return {
+    user: mapSelf(item.user),
+    csrfToken: nonEmpty(item.csrf_token),
+  };
+}
+
+export function mapCsrfToken(value: unknown): CsrfToken {
+  const item = record(value) as unknown as Partial<WireCsrfToken>;
+  return {
+    csrfToken: nonEmpty(item.csrf_token),
+    expiresAt: dateTime(item.expires_at),
+  };
 }
 
 function mapTheme(value: unknown): Theme {
