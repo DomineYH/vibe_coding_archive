@@ -118,7 +118,26 @@ The #31 OpenAPI public-read endpoints document only 400 (`VALIDATION_ERROR`) on 
 
 Hosted runs [36116826924](https://github.com/DomineYH/vibe_coding_archive/actions/runs/36116826924) and [36116822928](https://github.com/DomineYH/vibe_coding_archive/actions/runs/36116822928) both ran exact code HEAD `76c1e761fcf4338353c315a041faabd7242e7e33`; all workflow steps passed, including visual comparisons 32/32 at zero differing pixels. Historical failures remain: 36102435411 failed 5/32 detail visuals (at 360×844, 1979px vs 1955px) due the runner's CJK fallback; 36105283727 failed font preflight on CJK KR and did not execute the remaining 31 cases. The pinned JP font/config resolved these runner failures, as confirmed by the later passing runs.
 
-This subsequent commit changes only the API error map, its test, and acceptance/evidence docs. The coordinator will verify this follow-up on the PR. The two successful runs apply to code commit `76c1e76`, not this follow-up commit.
+The following #31-10 commit supersedes that initial API mapping audit and adds persisted-state validation; its current scope and evidence are recorded below. The coordinator will verify the follow-up on the PR. The two successful runs apply to code commit `76c1e76`, not this follow-up commit.
+
+## Review #31-10: complete API error and persisted-state audit
+
+The #31 API mapper now uses one endpoint/status/code allowlist derived from #12 Appendix B and the #31 OpenAPI reads:
+
+| Endpoint         | HTTP status | Allowed code                                 |
+| ---------------- | ----------: | -------------------------------------------- |
+| `GET /meta`      |         503 | `FEATURE_UNAVAILABLE`, `SERVICE_UNAVAILABLE` |
+| `GET /apps`      |         503 | `FEATURE_UNAVAILABLE`, `SERVICE_UNAVAILABLE` |
+| `GET /apps/{id}` |         404 | `NOT_FOUND`                                  |
+| `GET /apps/{id}` |         503 | `FEATURE_UNAVAILABLE`, `SERVICE_UNAVAILABLE` |
+
+The table contains seven exact triples. Appendix B `VALIDATION_ERROR` is 422 for disabled email/phone collection, `RATE_LIMITED` is for other limited operations, `AUTH_BUSY` is authentication-specific, and `SERVICE_MOVED` is the legacy-domain 410 response; none is emitted by these three public GET endpoints. The generic OpenAPI 400 response has no applicable Appendix B tuple. Every other status/code/endpoint combination, unknown code, and malformed/extra error-envelope field maps to `CONTRACT_ERROR`. [`api-apps.test.ts`](../../../../../frontend/tests/api-apps.test.ts#L12) exercises every allowed tuple; L22-L35 table-tests mismatches and unknown codes; L66-L92 asserts status and mapped code. The API test file passed 26/26; the combined API/state/mock focused set passed 103/103.
+
+The persisted mock-state audit covers exact state keys (`version`, `generation`, `scenario`, `apps`); version `1`; nonnegative safe-integer generation; the `original`, `empty`, `list_failure`, `list_delayed` scenario enum; and every field of the 19-field AppDetail plus exact nested Owner, HealthView, HealthResult, and Job shapes. Existing contract mappers check every field's primitive, enum, date-time, URL, UUID, and numeric constraints. `readState` additionally checks subject/grade/theme membership in `contracts/catalog.json`, unique grades per app, unique app IDs and latest-job IDs, owner UUIDs and stable owner-ID-to-nickname references, and public-only visibility. This validation runs before scenario filtering, so `empty` cannot hide a damaged record. Invalid persisted data yields `MOCK_STORAGE_ERROR`, leaves the saved bytes unchanged, and remains recoverable through explicit reset.
+
+[`mock-state-validation.test.ts`](../../../../../frontend/tests/mock-state-validation.test.ts#L45) table-tests 65 malformed persisted states across top-level fields, app fields, nested owner/health/job values, catalog references, visibility, and duplicate IDs. Its assertion at L158-L176 checks `MOCK_STORAGE_ERROR`, retained corrupt bytes, and 16-fixture reset recovery for every case; result: 65/65. The existing mock-service suite passed 12/12. The affected combined unit selection passed 103/103. Final verification passed: `npm test` 125/125 across 12 files; E2E 7/7; `npm run check`; mock build; API build; `npm run check:dist` (96 files, no reset markers); and `npm run check:reference` (11/11).
+
+The current follow-up supersedes #31-9's initial mapper acceptance statement: its 400 `VALIDATION_ERROR` case was not an Appendix B tuple for these GET endpoints. Earlier passing hosted runs 36116826924 and 36116822928 remain evidence for code commit `76c1e76` only. The current API/state follow-up has not yet been verified by hosted PR CI. AC7 remains BLOCKED and AC8 remains partial pending a human demonstration.
 
 ## Remaining unverified work
 
