@@ -74,6 +74,7 @@ function mapApiError(body: unknown, httpStatus: number): ServiceError {
   const knownCodes: Record<string, ServiceErrorCode> = {
     NOT_FOUND: "NOT_FOUND",
     VALIDATION_ERROR: "VALIDATION_ERROR",
+    FEATURE_UNAVAILABLE: "FEATURE_UNAVAILABLE",
     SERVICE_UNAVAILABLE: "SERVICE_UNAVAILABLE",
   };
   const code =

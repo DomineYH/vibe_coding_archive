@@ -38,6 +38,54 @@ describe("API service errors", () => {
   });
 
   it.each([
+    {
+      operation: () => appsService.get("missing"),
+      status: 404,
+      code: "NOT_FOUND",
+    },
+    {
+      operation: () => appsService.getMeta(),
+      status: 503,
+      code: "FEATURE_UNAVAILABLE",
+    },
+    {
+      operation: () => appsService.getMeta(),
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+    },
+  ])(
+    "preserves documented error code $code",
+    async ({ operation, status, code }) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              error: {
+                code,
+                message: "Public service error",
+                request_id: null,
+                ...(code === "FEATURE_UNAVAILABLE"
+                  ? { reasons: ["operational_restriction"] }
+                  : {}),
+              },
+            }),
+            { status },
+          ),
+        ),
+      );
+
+      await expect(operation()).rejects.toMatchObject({
+        code,
+        httpStatus: status,
+        ...(code === "FEATURE_UNAVAILABLE"
+          ? { reasons: ["operational_restriction"] }
+          : {}),
+      });
+    },
+  );
+
+  it.each([
     { fields: { q: 42 } },
     { reasons: ["not_implemented", 42] },
     { retry_at: "2026-02-30T00:00:00Z" },
