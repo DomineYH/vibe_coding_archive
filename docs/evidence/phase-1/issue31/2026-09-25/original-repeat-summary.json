@@ -1,0 +1,512 @@
+{
+  "ticket": 31,
+  "source": "basic_design, unchanged; replayed from the preserved Chromium 151 CDN HAR",
+  "command": "capture.py --mode replay --har docs/evidence/basic-design-runtime-20260922/reference/cdn.har.zip --out /tmp/issue31-original-replay-N (N=1..5); verify.py --candidate <out>",
+  "environment": {
+    "browser": "151.0.7922.34",
+    "python": "3.12.3",
+    "playwright": "1.62.0",
+    "os": "Ubuntu 24.04.3 LTS / WSL2",
+    "locale": "ko-KR",
+    "timezone": "Asia/Seoul",
+    "deviceScaleFactor": 1
+  },
+  "zeroPixelTolerance": true,
+  "runs": [
+    {
+      "context": 1,
+      "startedUTC": "2026-09-25T00:48:45.117040+00:00",
+      "sourceCommit": "ed6b2a4229ebe36ef61bbfb2b6c174e7ac316e40",
+      "sourceFilesUnchanged": true,
+      "browser": "151.0.7922.34",
+      "python": "3.12.3",
+      "playwright": "1.62.0",
+      "captures": 130,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "failedRequests": 0,
+      "blockedRequests": 0,
+      "stableMetricsIdentical": 130,
+      "pixelIdentical": 129,
+      "comparedPngs": 135,
+      "exactPixelCheck": "FAIL",
+      "differences": [
+        {
+          "file": "1440x1000/13-edit-component.png",
+          "bounds": [21, 454, 24, 482],
+          "pixels": 9,
+          "maxChannelDelta": 5
+        },
+        {
+          "file": "360x844/03-gallery-empty.png",
+          "bounds": [27, 425, 64, 430],
+          "pixels": 20,
+          "maxChannelDelta": 42
+        },
+        {
+          "file": "360x844/11-login-pending.png",
+          "bounds": [282, 19, 287, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/04-detail-public.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/06-detail-error-500.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/11-login-pending.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        }
+      ]
+    },
+    {
+      "context": 2,
+      "startedUTC": "2026-09-25T00:49:52.986975+00:00",
+      "sourceCommit": "ed6b2a4229ebe36ef61bbfb2b6c174e7ac316e40",
+      "sourceFilesUnchanged": true,
+      "browser": "151.0.7922.34",
+      "python": "3.12.3",
+      "playwright": "1.62.0",
+      "captures": 130,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "failedRequests": 0,
+      "blockedRequests": 0,
+      "stableMetricsIdentical": 130,
+      "pixelIdentical": 129,
+      "comparedPngs": 135,
+      "exactPixelCheck": "FAIL",
+      "differences": [
+        {
+          "file": "1440x1000/13-edit-component.png",
+          "bounds": [21, 454, 24, 482],
+          "pixels": 9,
+          "maxChannelDelta": 5
+        },
+        {
+          "file": "360x844/03-gallery-empty.png",
+          "bounds": [28, 425, 59, 430],
+          "pixels": 18,
+          "maxChannelDelta": 26
+        },
+        {
+          "file": "360x844/11-login-pending.png",
+          "bounds": [282, 19, 287, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/04-detail-public.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/06-detail-error-500.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/11-login-pending.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        }
+      ]
+    },
+    {
+      "context": 3,
+      "startedUTC": "2026-09-25T00:51:23.054569+00:00",
+      "sourceCommit": "ed6b2a4229ebe36ef61bbfb2b6c174e7ac316e40",
+      "sourceFilesUnchanged": true,
+      "browser": "151.0.7922.34",
+      "python": "3.12.3",
+      "playwright": "1.62.0",
+      "captures": 130,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "failedRequests": 0,
+      "blockedRequests": 0,
+      "stableMetricsIdentical": 130,
+      "pixelIdentical": 130,
+      "comparedPngs": 135,
+      "exactPixelCheck": "FAIL",
+      "differences": [
+        {
+          "file": "1440x1000/13-edit-component.png",
+          "bounds": [21, 454, 24, 482],
+          "pixels": 9,
+          "maxChannelDelta": 5
+        },
+        {
+          "file": "360x844/03-gallery-empty.png",
+          "bounds": [27, 425, 64, 430],
+          "pixels": 20,
+          "maxChannelDelta": 42
+        },
+        {
+          "file": "360x844/11-login-pending.png",
+          "bounds": [282, 19, 287, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/04-detail-public.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/11-login-pending.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        }
+      ]
+    },
+    {
+      "context": 4,
+      "startedUTC": "2026-09-25T00:52:33.789854+00:00",
+      "sourceCommit": "ed6b2a4229ebe36ef61bbfb2b6c174e7ac316e40",
+      "sourceFilesUnchanged": true,
+      "browser": "151.0.7922.34",
+      "python": "3.12.3",
+      "playwright": "1.62.0",
+      "captures": 130,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "failedRequests": 0,
+      "blockedRequests": 0,
+      "stableMetricsIdentical": 130,
+      "pixelIdentical": 131,
+      "comparedPngs": 135,
+      "exactPixelCheck": "FAIL",
+      "differences": [
+        {
+          "file": "360x844/11-login-pending.png",
+          "bounds": [282, 19, 287, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/04-detail-public.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/06-detail-error-500.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/11-login-pending.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        }
+      ]
+    },
+    {
+      "context": 5,
+      "startedUTC": "2026-09-25T00:53:45.482730+00:00",
+      "sourceCommit": "ed6b2a4229ebe36ef61bbfb2b6c174e7ac316e40",
+      "sourceFilesUnchanged": true,
+      "browser": "151.0.7922.34",
+      "python": "3.12.3",
+      "playwright": "1.62.0",
+      "captures": 130,
+      "pageErrors": 0,
+      "consoleErrors": 0,
+      "failedRequests": 0,
+      "blockedRequests": 0,
+      "stableMetricsIdentical": 130,
+      "pixelIdentical": 130,
+      "comparedPngs": 135,
+      "exactPixelCheck": "FAIL",
+      "differences": [
+        {
+          "file": "360x844/03-gallery-empty.png",
+          "bounds": [34, 404, 302, 430],
+          "pixels": 89,
+          "maxChannelDelta": 18
+        },
+        {
+          "file": "360x844/11-login-pending.png",
+          "bounds": [282, 19, 287, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/04-detail-public.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/06-detail-error-500.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        },
+        {
+          "file": "390x844/11-login-pending.png",
+          "bounds": [312, 19, 317, 38],
+          "pixels": 20,
+          "maxChannelDelta": 22
+        }
+      ]
+    }
+  ],
+  "aggregate": {
+    "freshContexts": 5,
+    "capturesPerRun": 130,
+    "stableMetricsIdenticalPerRun": 130,
+    "pageErrors": 0,
+    "consoleErrors": 0,
+    "failedRequests": 0,
+    "blockedRequests": 0,
+    "pixelIdenticalRange": [129, 131],
+    "uniqueImagesWithAnyDifference": 6,
+    "differenceFrequencyByImage": {
+      "1440x1000/13-edit-component.png": [
+        {
+          "run": 1,
+          "pixels": 9,
+          "maxChannelDelta": 5,
+          "bounds": [21, 454, 24, 482]
+        },
+        {
+          "run": 2,
+          "pixels": 9,
+          "maxChannelDelta": 5,
+          "bounds": [21, 454, 24, 482]
+        },
+        {
+          "run": 3,
+          "pixels": 9,
+          "maxChannelDelta": 5,
+          "bounds": [21, 454, 24, 482]
+        }
+      ],
+      "360x844/03-gallery-empty.png": [
+        {
+          "run": 1,
+          "pixels": 20,
+          "maxChannelDelta": 42,
+          "bounds": [27, 425, 64, 430]
+        },
+        {
+          "run": 2,
+          "pixels": 18,
+          "maxChannelDelta": 26,
+          "bounds": [28, 425, 59, 430]
+        },
+        {
+          "run": 3,
+          "pixels": 20,
+          "maxChannelDelta": 42,
+          "bounds": [27, 425, 64, 430]
+        },
+        {
+          "run": 5,
+          "pixels": 89,
+          "maxChannelDelta": 18,
+          "bounds": [34, 404, 302, 430]
+        }
+      ],
+      "360x844/11-login-pending.png": [
+        {
+          "run": 1,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [282, 19, 287, 38]
+        },
+        {
+          "run": 2,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [282, 19, 287, 38]
+        },
+        {
+          "run": 3,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [282, 19, 287, 38]
+        },
+        {
+          "run": 4,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [282, 19, 287, 38]
+        },
+        {
+          "run": 5,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [282, 19, 287, 38]
+        }
+      ],
+      "390x844/04-detail-public.png": [
+        {
+          "run": 1,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 2,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 3,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 4,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 5,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        }
+      ],
+      "390x844/06-detail-error-500.png": [
+        {
+          "run": 1,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 2,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 4,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 5,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        }
+      ],
+      "390x844/11-login-pending.png": [
+        {
+          "run": 1,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 2,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 3,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 4,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        },
+        {
+          "run": 5,
+          "pixels": 20,
+          "maxChannelDelta": 22,
+          "bounds": [312, 19, 317, 38]
+        }
+      ]
+    },
+    "rootCause": "INCOMPLETE: source mutation, runtime/HAR mismatch, recorded state/font differences, runtime/network errors, and post-blur wait timing for the 89-pixel outlier were ruled out; cross-context glyph raster cause remains unknown.",
+    "approval": "Pending DomineYH"
+  },
+  "causeInvestigation": {
+    "status": "INCOMPLETE",
+    "ruledOut": [
+      "Source mutation (11 hashes unchanged)",
+      "Runtime/HAR/browser mismatch",
+      "Recorded state, text, layout, or font-face differences",
+      "Page, console, or network errors"
+    ],
+    "controlledProbe": {
+      "postBlurWaitMs": [0, 100, 250, 400, 800],
+      "differentPixelsAgainstReference": [20, 20, 18, 18, 18],
+      "didNotReproduceRun5OutlierPixels": 89
+    },
+    "focusedAttempt": {
+      "target": "360x844/03-gallery-empty.png run-5 outlier",
+      "sourceDifferencePixels": 89,
+      "bounds": [34, 404, 302, 430],
+      "runOrder": [1, 2, 3, 4, 5],
+      "sourceReferenceDifferencePixelsByRun": [20, 18, 20, 0, 89],
+      "pairwiseDifferencePixelsByRun": [
+        [0, 25, 0, 20, 107],
+        [25, 0, 25, 18, 103],
+        [0, 25, 0, 20, 107],
+        [20, 18, 20, 0, 89],
+        [107, 103, 107, 89, 0]
+      ],
+      "mappedButtonTextRects": {
+        "전체": [34, 403.84375, 22, 15],
+        "수학": [91, 403.84375, 22, 15],
+        "과학": [149, 403.84375, 22, 15],
+        "영어": [207, 403.84375, 22, 15],
+        "역사": [265, 403.84375, 22, 15]
+      },
+      "changedPixelHitCounts": {
+        "전체": 16,
+        "수학": 18,
+        "과학": 18,
+        "영어": 18,
+        "역사": 18,
+        "filterRow": 1
+      },
+      "postBlurWaitMs": [400, 800],
+      "differentPixelsAtEachWait": [89, 89],
+      "focusedRerunPairwiseDifferentPixels": 0,
+      "alsoRuledOut": [
+        "Post-blur wait as the outlier cause",
+        "Focused element (body at capture)",
+        "Scrollbar (0 CSS pixels)",
+        "Caret (hidden)",
+        "CSS animation (disabled; computed animation none)",
+        "Image decode in the changed region (only filter text/container hit targets)"
+      ],
+      "unresolved": "The Korean filter-label glyph raster differs across fresh contexts; no source/runtime/state/font-face cause was found."
+    },
+    "unresolved": "Why identical source content and recorded styles yield context-dependent filter-glyph raster pixels remains unknown; see README for details."
+  }
+}

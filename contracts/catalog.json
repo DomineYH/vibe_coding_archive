@@ -1,0 +1,14 @@
+{
+  "subjects": ["수학", "과학", "영어", "역사", "국어", "사회", "정보", "기타"],
+  "grades": ["초1", "초2", "초3", "초4", "초5", "초6", "중1", "중2", "중3", "고1", "고2", "고3"],
+  "themes": [
+    { "id": "cloudDancer", "name": "Cloud Dancer", "pantone": "11-4201", "from": "#F4F2ED", "to": "#DDD8CD", "ink": "dark" },
+    { "id": "niagara", "name": "Niagara", "pantone": "17-4123", "from": "#4C7A96", "to": "#90B2C7", "ink": "light" },
+    { "id": "turquoise", "name": "Dusty Turquoise", "pantone": "17-5025", "from": "#4E8382", "to": "#90B6B2", "ink": "light" },
+    { "id": "sage", "name": "Sage", "pantone": "15-6414", "from": "#A2B187", "to": "#D0D8B8", "ink": "dark" },
+    { "id": "lavenderGray", "name": "Lavender Gray", "pantone": "17-3910", "from": "#7E6E82", "to": "#B5ABBA", "ink": "light" },
+    { "id": "butterum", "name": "Butterum", "pantone": "16-1341", "from": "#A9714B", "to": "#D3A57C", "ink": "light" },
+    { "id": "powderPink", "name": "Powder Pink", "pantone": "14-1511", "from": "#E0B2B0", "to": "#F2DCDA", "ink": "dark" },
+    { "id": "ironGate", "name": "Iron Gate", "pantone": "19-3910", "from": "#3A3A3E", "to": "#6F6E74", "ink": "light" }
+  ]
+}

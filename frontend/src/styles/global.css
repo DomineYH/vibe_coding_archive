@@ -1,0 +1,94 @@
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cloud-dancer: #f0eee9;
+  --accent: #4c7a96;
+  --radius-card: 22px;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: #eae7e2;
+  color: #232120;
+  font-family:
+    "Pretendard Variable",
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    system-ui,
+    "Apple SD Gothic Neo",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.acc-bg {
+  background-color: var(--accent);
+}
+
+.acc-text {
+  color: var(--accent);
+}
+
+.acc-soft {
+  background-color: color-mix(in srgb, var(--accent) 9%, var(--cloud-dancer));
+}
+
+.card-r {
+  border-radius: var(--radius-card);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 24%, var(--cloud-dancer));
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: color-mix(in srgb, var(--accent) 72%, #232120);
+}
+
+pre::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+pre::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 15%);
+  border-radius: 8px;
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
