@@ -1,0 +1,22 @@
+{
+  "state": "detail-copy-done",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/05-copy-done.png",
+  "screenshot": "detail-copy-done-390x844.png",
+  "width": 390,
+  "height": 1968,
+  "expectedWidth": 390,
+  "expectedHeight": 1968,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": {
+    "left": 281,
+    "top": 915.375,
+    "width": 69,
+    "height": 30
+  }
+}

@@ -101,7 +101,11 @@ function mapApiError(
       entry.code === fields.code,
   );
   if (!allowed) return apiContractError(httpStatus);
-  return new ServiceError(allowed.code, fields.message, {
+  const message =
+    endpoint === "GET /apps/{id}" && allowed.code === "NOT_FOUND"
+      ? "아카이브 앱을 찾을 수 없어요."
+      : fields.message;
+  return new ServiceError(allowed.code, message, {
     httpStatus,
     outcome: httpStatus === 404 ? "rejected" : "not_applicable",
     fields: fields.fields as Record<string, string> | undefined,

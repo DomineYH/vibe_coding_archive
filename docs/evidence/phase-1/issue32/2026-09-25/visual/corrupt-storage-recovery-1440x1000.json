@@ -1,0 +1,17 @@
+{
+  "state": "corrupt-storage-recovery",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/corrupt-storage-recovery-1440x1000.png",
+  "screenshot": "corrupt-storage-recovery-1440x1000.png",
+  "width": 1440,
+  "height": 1000,
+  "expectedWidth": 1440,
+  "expectedHeight": 1000,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}

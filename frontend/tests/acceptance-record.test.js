@@ -72,6 +72,40 @@ describe("issue 31 acceptance trace", () => {
     expect(ac10[9]).toMatch(/pending/i);
   });
 
+  it("records every issue 32 criterion with all ten acceptance fields", () => {
+    const lines = acceptance.split("\n");
+    const headerIndex = lines.findIndex((line) =>
+      line.startsWith("| Requirement / source"),
+    );
+    const headers = lines[headerIndex]
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    const records = lines
+      .slice(headerIndex + 2)
+      .filter((line) => line.startsWith("| #32 AC"));
+
+    expect(records).toHaveLength(10);
+    expect(
+      records.map((record) =>
+        Number(
+          record
+            .split("|")[1]
+            .trim()
+            .match(/^#32 AC(\d+)\b/)[1],
+        ),
+      ),
+    ).toEqual(Array.from({ length: 10 }, (_, index) => index + 1));
+    for (const record of records) {
+      const cells = record
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      expect(cells).toHaveLength(headers.length);
+      expect(cells.every(Boolean)).toBe(true);
+    }
+  });
+
   it("runs frontend checks, tests, builds, and preservation before visuals in CI", () => {
     const steps = workflow.jobs.frontend.steps;
     const commands = steps.map((step) => step.run);

@@ -30,9 +30,10 @@ test("public gallery opens a detail route and supports refresh and browser histo
   await expect(page.getByRole("main")).toBeFocused();
   const open = page.getByRole("link", { name: "앱 열기" });
   await expect(open).toHaveAccessibleName("앱 열기");
+  await expect(open).toHaveAttribute("target", "_blank");
   await expect(open).toHaveAttribute("rel", "noopener noreferrer");
   for (const [action, name] of [
-    [page.getByRole("link", { name: "갤러리로" }), "갤러리로"],
+    [page.getByRole("button", { name: "갤러리로" }), "갤러리로"],
     [page.getByRole("button", { name: "복사하기" }), "복사하기"],
     [page.getByRole("button", { name: "연결 다시 확인" }), "연결 다시 확인"],
   ]) {
@@ -97,6 +98,62 @@ test("opens public detail directly and rejects an unknown app", async ({
   await expect(back).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.locator("a.card-r")).toHaveCount(16);
+});
+
+test("preserves gallery filters through detail navigation, history, and reload", async ({
+  page,
+}) => {
+  await page.goto(
+    "/?q=%EB%B6%84%EC%88%98%20%ED%94%BC%EC%9E%90&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883",
+  );
+  const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+  const subject = page.getByRole("button", { name: "수학", exact: true });
+  const grade = page.getByRole("combobox", { name: "학년 필터" });
+  await expect(search).toHaveValue("분수 피자");
+  await expect(subject).toHaveAttribute("aria-pressed", "true");
+  await expect(grade).toHaveValue("초3");
+  await expect(page.locator("a.card-r")).toHaveCount(1);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.locator("a.card-r").click();
+  await expect(
+    page.getByRole("heading", { name: "분수 피자 가게" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "갤러리로" }).click();
+
+  await expect(page).toHaveURL(
+    /\/\?q=%EB%B6%84%EC%88%98\+%ED%94%BC%EC%9E%90&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883$/,
+  );
+  await expect(search).toHaveValue("분수 피자");
+  await expect(subject).toHaveAttribute("aria-pressed", "true");
+  await expect(grade).toHaveValue("초3");
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
+
+  await page.goForward();
+  await expect(
+    page.getByRole("heading", { name: "분수 피자 가게" }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(search).toHaveValue("분수 피자");
+  await page.reload();
+  await expect(search).toHaveValue("분수 피자");
+  await expect(subject).toHaveAttribute("aria-pressed", "true");
+  await expect(grade).toHaveValue("초3");
+});
+
+test("rejects invalid gallery query values and offers an explicit reset", async ({
+  page,
+}) => {
+  for (const query of ["?unknown=value", "?q=first&q=second", "?q=%E0%A4%A"]) {
+    await page.goto(`/${query}`);
+    await expect(page.getByRole("alert")).toContainText(
+      "검색 조건을 확인할 수 없어요",
+    );
+    await page.getByRole("button", { name: "조건 초기화" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator("a.card-r")).toHaveCount(16);
+  }
 });
 
 test("gallery navigation is keyboard reachable and controls have accessible names", async ({

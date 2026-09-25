@@ -1,5 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowUpRight, ChevronLeft, Copy, RefreshCw } from "lucide-react";
+import {
+  ArrowUpRight,
+  Check,
+  ChevronLeft,
+  Copy,
+  RefreshCw,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { formatCheckedAt, formatDate } from "../../components/presentation";
 import {
@@ -13,15 +19,31 @@ import {
 import { ServiceError } from "../../services/service-error";
 
 function CopyButton({ text }) {
-  const [state, setState] = useState("idle");
+  const [result, setResult] = useState(null);
+  const attempt = useRef(0);
+  const state = result?.text === text ? result.copied : null;
+  useEffect(
+    () => () => {
+      attempt.current += 1;
+    },
+    [],
+  );
+
   const copy = async () => {
+    const currentAttempt = ++attempt.current;
+    let copied = false;
     try {
       await navigator.clipboard.writeText(text);
-      setState("done");
+      copied = true;
     } catch {
-      setState("error");
+      if (currentAttempt !== attempt.current) return;
+      copied = copyWithFallback(text);
+    }
+    if (currentAttempt === attempt.current) {
+      setResult({ text, copied });
     }
   };
+
   return (
     <div className="flex items-center gap-2">
       <button
@@ -29,20 +51,85 @@ function CopyButton({ text }) {
         onClick={() => void copy()}
         className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1.5 text-[12px] font-semibold text-neutral-300 transition-colors hover:bg-white/20"
       >
-        {state === "done" ? (
-          <span aria-hidden="true">✓</span>
+        {state === true ? (
+          <Check size={13} className="text-[#3C7A72]" aria-hidden="true" />
         ) : (
           <Copy size={13} aria-hidden="true" />
         )}
-        <span>{state === "done" ? "복사됨" : "복사하기"}</span>
+        <span>{state === true ? "복사됨" : "복사하기"}</span>
       </button>
-      {state === "error" ? (
+      {state === true ? (
+        <span className="sr-only" role="status" aria-live="polite">
+          복사됨
+        </span>
+      ) : null}
+      {state === false ? (
         <span role="alert" className="text-[12px] text-red-300">
-          복사하지 못했어요.
+          복사하지 못했어요. 프롬프트를 선택해 직접 복사해 주세요.
         </span>
       ) : null}
     </div>
   );
+}
+
+function copyWithFallback(text) {
+  const activeElement =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+  let inputSelection = null;
+  if (
+    activeElement instanceof HTMLTextAreaElement ||
+    activeElement instanceof HTMLInputElement
+  ) {
+    try {
+      if (activeElement.selectionStart !== null)
+        inputSelection = [
+          activeElement.selectionStart,
+          activeElement.selectionEnd,
+          activeElement.selectionDirection,
+        ];
+    } catch {
+      // Some input types do not expose a text selection.
+    }
+  }
+  const selection = document.getSelection();
+  const ranges = selection
+    ? Array.from({ length: selection.rangeCount }, (_, index) =>
+        selection.getRangeAt(index).cloneRange(),
+      )
+    : [];
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("aria-hidden", "true");
+  textarea.tabIndex = -1;
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.style.opacity = "0";
+  document.body.append(textarea);
+
+  let copied = false;
+  try {
+    textarea.focus({ preventScroll: true });
+    textarea.select();
+    copied = document.execCommand("copy") === true;
+  } catch {
+    copied = false;
+  } finally {
+    textarea.remove();
+    if (activeElement?.isConnected) {
+      activeElement.focus({ preventScroll: true });
+      if (inputSelection) activeElement.setSelectionRange(...inputSelection);
+    }
+    if (selection) {
+      selection.removeAllRanges();
+      for (const range of ranges) {
+        if (range.startContainer.isConnected && range.endContainer.isConnected)
+          selection.addRange(range);
+      }
+    }
+  }
+  return copied;
 }
 
 function SpecCell({ label, value }) {
@@ -108,7 +195,7 @@ function StateView({ loading, error, retry }) {
   );
 }
 
-export function AppDetailView({ app, meta, loading, error, retry }) {
+export function AppDetailView({ app, meta, loading, error, retry, onBack }) {
   const [notice, setNotice] = useState("");
   const mainRef = useRef(null);
   useEffect(() => {
@@ -142,13 +229,14 @@ export function AppDetailView({ app, meta, loading, error, retry }) {
       data-screen-label="공개 앱 상세"
     >
       <div className="mb-6 flex items-center justify-between">
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={onBack}
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-800"
         >
           <ChevronLeft size={15} aria-hidden="true" />
           갤러리로
-        </Link>
+        </button>
         <span aria-hidden="true" />
       </div>
 
@@ -204,7 +292,7 @@ export function AppDetailView({ app, meta, loading, error, retry }) {
               <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-neutral-400">
                 핵심 프롬프트
               </div>
-              <CopyButton text={app.prompt} />
+              <CopyButton key={app.id} text={app.prompt} />
             </div>
             <pre className="max-h-[420px] overflow-auto whitespace-pre-wrap break-keep px-5 py-5 font-mono text-[13px] leading-[1.85] text-neutral-300">
               {app.prompt}

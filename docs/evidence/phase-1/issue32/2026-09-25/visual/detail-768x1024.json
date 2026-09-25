@@ -1,0 +1,17 @@
+{
+  "state": "detail",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/04-detail-public.png",
+  "screenshot": "detail-768x1024.png",
+  "width": 768,
+  "height": 1757,
+  "expectedWidth": 768,
+  "expectedHeight": 1757,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "comparedRegion": null
+}
