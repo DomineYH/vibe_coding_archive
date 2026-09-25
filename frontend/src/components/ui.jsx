@@ -60,7 +60,7 @@ export function StatusBadge({ state, size = "sm" }) {
   const label = state === "unchecked" ? "미검사" : healthy ? "정상" : "오류";
   return (
     <span
-      aria-label={`연결 상태: ${label}`}
+      aria-label={`연결 결과: ${label}`}
       className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${big ? "px-3 py-1 text-[13px]" : "px-2.5 py-0.5 text-[11.5px]"} ${healthy ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}
     >
       <span

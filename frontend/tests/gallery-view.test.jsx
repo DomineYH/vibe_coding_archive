@@ -2,8 +2,18 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { GalleryView } from "../src/features/gallery/view-gallery";
+import { StatusBadge } from "../src/components/ui";
 import { appsService } from "../src/services/mock/apps";
 import { ServiceError } from "../src/services/service-error";
+
+describe("connection result badge", () => {
+  it("uses the result terminology for speech and keeps the visible label", () => {
+    render(<StatusBadge state="healthy" />);
+
+    const badge = screen.getByLabelText("연결 결과: 정상");
+    expect(badge).toHaveTextContent("정상");
+  });
+});
 
 describe("public gallery states", () => {
   it("announces initial loading without showing the empty-results message", () => {
