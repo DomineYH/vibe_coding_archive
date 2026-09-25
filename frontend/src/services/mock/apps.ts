@@ -12,6 +12,7 @@ import { assertCurrentGeneration, getMockSnapshot } from "./state";
 type WireAppDetail = components["schemas"]["AppDetail"];
 type MockMeta = components["schemas"]["Meta"];
 const fixedTime = "2026-09-22T00:12:00.000Z";
+const listDelayMs = 300;
 const capabilities = {
   apps_read: { enabled: true, reasons: [] },
   auth_register: { enabled: false, reasons: ["not_implemented"] },
@@ -107,6 +108,10 @@ export const appsService: AppsService = {
         "SERVICE_UNAVAILABLE",
         "목록을 불러오지 못했어요. 다시 시도해 주세요.",
       );
+    }
+    if (state.scenario === "list_delayed") {
+      await new Promise((resolve) => setTimeout(resolve, listDelayMs));
+      assertCurrentGeneration(state.generation, signal);
     }
     const publicApps =
       state.scenario === "empty" ? [] : (state.apps as WireAppDetail[]);

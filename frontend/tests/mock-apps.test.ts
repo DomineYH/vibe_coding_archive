@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
-import { resetMockState, setMockScenario } from "../src/services/mock/state";
+import {
+  MOCK_STORAGE_KEY,
+  resetMockState,
+  setMockScenario,
+} from "../src/services/mock/state";
 
 describe("deterministic gallery mock", () => {
   beforeEach(() => {
@@ -40,7 +44,7 @@ describe("deterministic gallery mock", () => {
 
   it("rejects unsupported saved versions until explicit reset", async () => {
     localStorage.setItem(
-      "eduvibe-archive-mock-v1",
+      MOCK_STORAGE_KEY,
       JSON.stringify({
         version: 2,
         generation: 0,
@@ -51,6 +55,23 @@ describe("deterministic gallery mock", () => {
     await expect(
       appsService.list({ limit: 24, offset: 0 }),
     ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+    resetMockState();
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items,
+    ).toHaveLength(16);
+  });
+
+  it("rejects malformed saved app records without resetting them", async () => {
+    resetMockState();
+    const valid = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
+    const damaged = JSON.stringify({ ...valid, apps: [{}] });
+    localStorage.setItem(MOCK_STORAGE_KEY, damaged);
+
+    await expect(
+      appsService.list({ limit: 24, offset: 0 }),
+    ).rejects.toMatchObject({ code: "MOCK_STORAGE_ERROR" });
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(damaged);
+
     resetMockState();
     expect(
       (await appsService.list({ limit: 24, offset: 0 })).items,
@@ -81,5 +102,23 @@ describe("deterministic gallery mock", () => {
     expect(
       (await appsService.list({ limit: 24, offset: 0 })).items,
     ).toHaveLength(16);
+  });
+
+  it("keeps the list pending during its deterministic loading scenario", async () => {
+    vi.useFakeTimers();
+    try {
+      setMockScenario("list_delayed");
+      let settled = false;
+      const result = appsService.list({ limit: 24, offset: 0 }).then((page) => {
+        settled = true;
+        return page;
+      });
+      await Promise.resolve();
+      expect(settled).toBe(false);
+      await vi.runOnlyPendingTimersAsync();
+      expect((await result).items).toHaveLength(16);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

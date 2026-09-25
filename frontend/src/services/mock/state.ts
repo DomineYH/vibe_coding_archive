@@ -1,10 +1,12 @@
 import publicApps from "../../fixtures/public-apps.json";
+import { mapAppDetailResponse } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
 
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
 
-export type MockScenario = "original" | "empty" | "list_failure";
+export type MockScenario =
+  "original" | "empty" | "list_failure" | "list_delayed";
 type MockState = {
   version: 1;
   generation: number;
@@ -59,9 +61,21 @@ function readState(): MockState {
   if (
     state.version !== 1 ||
     !Number.isSafeInteger(state.generation) ||
-    !["original", "empty", "list_failure"].includes(String(state.scenario)) ||
+    !["original", "empty", "list_failure", "list_delayed"].includes(
+      String(state.scenario),
+    ) ||
     !Array.isArray(state.apps)
   ) {
+    throw storageError();
+  }
+  try {
+    for (const app of state.apps) {
+      mapAppDetailResponse({
+        item: app,
+        server_time: "2026-09-22T00:12:00.000Z",
+      });
+    }
+  } catch {
     throw storageError();
   }
   return state as MockState;
@@ -94,7 +108,7 @@ export function resetMockState(): void {
 }
 
 export function setMockScenario(scenario: MockScenario): void {
-  if (!["original", "empty", "list_failure"].includes(scenario))
+  if (!["original", "empty", "list_failure", "list_delayed"].includes(scenario))
     throw new TypeError("Unsupported mock scenario");
   const state = readState();
   resetGeneration = Math.max(resetGeneration + 1, state.generation + 1);

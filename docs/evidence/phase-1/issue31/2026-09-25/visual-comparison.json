@@ -44,6 +44,75 @@
       }
     },
     {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-1440x1000.png",
+      "screenshot": "gallery-loading-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/03-gallery-empty.png",
+      "screenshot": "gallery-empty-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 27620,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 112,
+        "top": 11,
+        "right": 1315,
+        "bottom": 827
+      }
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-1440x1000.png",
+      "screenshot": "gallery-failure-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/corrupt-storage-recovery-1440x1000.png",
+      "screenshot": "corrupt-storage-recovery-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
       "state": "gallery",
       "viewport": {
         "width": 1024,
@@ -84,6 +153,75 @@
         "right": 988,
         "bottom": 1306
       }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-1024x900.png",
+      "screenshot": "gallery-loading-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/03-gallery-empty.png",
+      "screenshot": "gallery-empty-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 27620,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 32,
+        "top": 11,
+        "right": 979,
+        "bottom": 827
+      }
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-1024x900.png",
+      "screenshot": "gallery-failure-1024x900.png",
+      "width": 1024,
+      "height": 918,
+      "expectedWidth": 1024,
+      "expectedHeight": 918,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/corrupt-storage-recovery-1024x900.png",
+      "screenshot": "corrupt-storage-recovery-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery",
@@ -128,6 +266,75 @@
       }
     },
     {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-768x1024.png",
+      "screenshot": "gallery-loading-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/03-gallery-empty.png",
+      "screenshot": "gallery-empty-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 27620,
+      "maxChannelDelta": 217,
+      "bounds": {
+        "left": 32,
+        "top": 11,
+        "right": 723,
+        "bottom": 827
+      }
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-768x1024.png",
+      "screenshot": "gallery-failure-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/corrupt-storage-recovery-768x1024.png",
+      "screenshot": "corrupt-storage-recovery-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
       "state": "gallery",
       "viewport": {
         "width": 390,
@@ -170,6 +377,70 @@
       }
     },
     {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-390x844.png",
+      "screenshot": "gallery-loading-390x844.png",
+      "width": 390,
+      "height": 865,
+      "expectedWidth": 390,
+      "expectedHeight": 865,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/03-gallery-empty.png",
+      "screenshot": "gallery-empty-390x844.png",
+      "width": 390,
+      "height": 865,
+      "expectedWidth": 390,
+      "expectedHeight": 905,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-390x844.png",
+      "screenshot": "gallery-failure-390x844.png",
+      "width": 390,
+      "height": 921,
+      "expectedWidth": 390,
+      "expectedHeight": 921,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/corrupt-storage-recovery-390x844.png",
+      "screenshot": "corrupt-storage-recovery-390x844.png",
+      "width": 390,
+      "height": 844,
+      "expectedWidth": 390,
+      "expectedHeight": 844,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
+    },
+    {
       "state": "gallery",
       "viewport": {
         "width": 360,
@@ -210,6 +481,80 @@
         "right": 351,
         "bottom": 1920
       }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-360x844.png",
+      "screenshot": "gallery-loading-360x844.png",
+      "width": 360,
+      "height": 904,
+      "expectedWidth": 360,
+      "expectedHeight": 904,
+      "differentPixels": 16,
+      "maxChannelDelta": 18,
+      "bounds": {
+        "left": 34,
+        "top": 396,
+        "right": 69,
+        "bottom": 429
+      }
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/03-gallery-empty.png",
+      "screenshot": "gallery-empty-360x844.png",
+      "width": 360,
+      "height": 925,
+      "expectedWidth": 360,
+      "expectedHeight": 965,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-360x844.png",
+      "screenshot": "gallery-failure-360x844.png",
+      "width": 360,
+      "height": 960,
+      "expectedWidth": 360,
+      "expectedHeight": 960,
+      "differentPixels": 16,
+      "maxChannelDelta": 18,
+      "bounds": {
+        "left": 34,
+        "top": 396,
+        "right": 69,
+        "bottom": 429
+      }
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/corrupt-storage-recovery-360x844.png",
+      "screenshot": "corrupt-storage-recovery-360x844.png",
+      "width": 360,
+      "height": 844,
+      "expectedWidth": 360,
+      "expectedHeight": 844,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null
     },
     {
       "state": "gallery-component",

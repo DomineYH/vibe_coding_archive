@@ -190,7 +190,18 @@ export interface components {
                 subjects_in_use: string[];
             };
         };
-        AppDetail: components["schemas"]["AppCard"] & {
+        AppDetail: {
+            /** Format: uuid */
+            id: string;
+            owner: components["schemas"]["Owner"];
+            name: string;
+            subject: string;
+            grades: string[];
+            is_public: boolean;
+            theme_id: string;
+            version: number;
+            url_version: number;
+            health: components["schemas"]["HealthView"];
             /** Format: uri */
             url: string;
             prompt: string;

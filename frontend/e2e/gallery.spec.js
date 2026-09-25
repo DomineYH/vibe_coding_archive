@@ -94,13 +94,16 @@ test("explicitly selects empty and failure scenarios, then lets the visitor retr
   );
 });
 
-test("damaged mock storage is reported until the visitor explicitly resets it", async ({
+test("damaged mock catalog is reported until the visitor explicitly resets it", async ({
   page,
 }) => {
   await page.goto("/");
-  await page.evaluate(() =>
-    localStorage.setItem("eduvibe-archive-mock-v1", "{"),
-  );
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const current = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(key, JSON.stringify({ ...current, apps: [{}] }));
+  });
   await page.reload();
   await expect(page.getByRole("alert")).toContainText(
     "개발용 저장 데이터를 읽거나 저장하지 못했어요",

@@ -76,6 +76,7 @@ export default function MockResetPage() {
           <option value="original">원본 비교 fixture</option>
           <option value="empty">정상 빈 결과</option>
           <option value="list_failure">목록 조회 실패</option>
+          <option value="list_delayed">목록 조회 지연</option>
         </select>
         {readFailed ? (
           <p className="mt-2 text-[13px] text-red-700" role="alert">

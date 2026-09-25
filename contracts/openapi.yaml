@@ -277,20 +277,29 @@ components:
           properties:
             subjects_in_use: { type: array, items: { type: string } }
     AppDetail:
-      allOf:
-        - $ref: "#/components/schemas/AppCard"
-        - type: object
-          required: [url, prompt, description, stack_db, stack_backend, stack_frontend, stack_hosting, created_at, updated_at]
-          properties:
-            url: { type: string, format: uri }
-            prompt: { type: string }
-            description: { type: string }
-            stack_db: { type: [string, "null"] }
-            stack_backend: { type: [string, "null"] }
-            stack_frontend: { type: [string, "null"] }
-            stack_hosting: { type: [string, "null"] }
-            created_at: { type: string, format: date-time }
-            updated_at: { type: string, format: date-time }
+      type: object
+      additionalProperties: false
+      required: [id, owner, name, subject, grades, is_public, theme_id, version, url_version, health, url, prompt, description, stack_db, stack_backend, stack_frontend, stack_hosting, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        owner: { $ref: "#/components/schemas/Owner" }
+        name: { type: string }
+        subject: { type: string }
+        grades: { type: array, items: { type: string } }
+        is_public: { type: boolean }
+        theme_id: { type: string }
+        version: { type: integer, minimum: 1 }
+        url_version: { type: integer, minimum: 1 }
+        health: { $ref: "#/components/schemas/HealthView" }
+        url: { type: string, format: uri }
+        prompt: { type: string }
+        description: { type: string }
+        stack_db: { type: [string, "null"] }
+        stack_backend: { type: [string, "null"] }
+        stack_frontend: { type: [string, "null"] }
+        stack_hosting: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     AppDetailResponse:
       type: object
       additionalProperties: false

@@ -18,20 +18,26 @@ try {
 }
 if (
   !files.includes("index.html") ||
-  !files.some((file) => file.startsWith("assets/"))
+  !files.some((file) => /^assets\/.+\.js$/i.test(file))
 )
   throw new Error("API dist is incomplete");
 if (
   files.some((file) =>
-    /(^|\/)(fixtures|mock|reference|research|evidence)(\/|$)|\.map$|\.thumbnail$|\.db(?:-wal|-shm)?$|\.bak$/i.test(
+    /(^|\/)(fixtures|mock|reference|research|evidence|basic_design)(\/|$)|(^|\/)\.env(?:$|[._-])|\.map$|\.thumbnail$|\.(?:db|sqlite)(?:-wal|-shm)?$|\.(?:bak|backup|old|orig|pem|key|p12|pfx)$/i.test(
       file,
     ),
   )
 ) {
   throw new Error("API dist contains an excluded asset or source map");
 }
-const bundle = files
-  .filter((file) => file.endsWith(".js"))
+const isAllowedOutput = (file) =>
+  file === "index.html" ||
+  file === "licenses/Pretendard-OFL.txt" ||
+  /^assets\/[^/]+\.(?:css|js|woff2)$/i.test(file);
+if (files.some((file) => !isAllowedOutput(file)))
+  throw new Error("API dist contains an unexpected file");
+const textAssets = files
+  .filter((file) => /\.(?:css|html|js|svg|txt|xml)$/i.test(file))
   .map((file) => readFileSync(path.join(root, file), "utf8"))
   .join("\n");
 for (const forbidden of [
@@ -43,8 +49,9 @@ for (const forbidden of [
   "TweaksPanel",
   "mockMeta",
   "list_failure",
+  "list_delayed",
 ]) {
-  if (bundle.includes(forbidden))
+  if (textAssets.includes(forbidden))
     throw new Error(`API bundle includes mock-only content: ${forbidden}`);
 }
 process.stdout.write(

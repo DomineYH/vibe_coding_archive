@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { defineConfig, loadEnv } from "vite";
@@ -18,7 +19,26 @@ export default defineConfig(({ command, mode: viteMode }) => {
     throw new Error("Mock mode cannot produce the API build");
 
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      ...(dataMode === "api"
+        ? [
+            {
+              name: "api-public-license",
+              apply: "build",
+              generateBundle() {
+                this.emitFile({
+                  type: "asset",
+                  fileName: "licenses/Pretendard-OFL.txt",
+                  source: readFileSync(
+                    path.join(root, "public/licenses/Pretendard-OFL.txt"),
+                  ),
+                });
+              },
+            },
+          ]
+        : []),
+    ],
     resolve: {
       alias: {
         "@services/apps": path.resolve(
@@ -40,7 +60,7 @@ export default defineConfig(({ command, mode: viteMode }) => {
       proxy:
         dataMode === "api" ? { "/api": "http://127.0.0.1:8000" } : undefined,
     },
-    build: { sourcemap: false },
+    build: { sourcemap: false, copyPublicDir: dataMode !== "api" },
     test: {
       globals: true,
       environment: "jsdom",

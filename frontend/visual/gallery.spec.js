@@ -7,6 +7,10 @@ const baselineRoot = path.join(
   root,
   "docs/evidence/basic-design-runtime-20260922/reference",
 );
+const stateBaselineRoot = path.join(
+  root,
+  "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines",
+);
 const outputRoot = path.resolve("test-results/visual/captures");
 const viewports = [
   { width: 1440, height: 1000 },
@@ -34,6 +38,13 @@ const components = [
     ),
   },
 ];
+const addedStates = [
+  "gallery-loading",
+  "gallery-empty",
+  "gallery-failure",
+  "corrupt-storage-recovery",
+];
+const states = ["gallery", "detail", ...addedStates];
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
 });
@@ -122,19 +133,70 @@ async function captureAndCompare(
   componentSelector,
 ) {
   await page.setViewportSize(viewport);
-  await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+  const captureTime = new Date("2026-09-22T00:12:00.000Z");
+  if (state === "gallery-loading") await page.clock.pauseAt(captureTime);
+  else await page.clock.install({ time: captureTime });
+  const scenarios = {
+    "gallery-loading": { scenario: "list_delayed", apps: [] },
+    "gallery-empty": { scenario: "empty", apps: [] },
+    "gallery-failure": { scenario: "list_failure", apps: [] },
+    "corrupt-storage-recovery": { scenario: "original", apps: [{}] },
+  };
+  const savedState = scenarios[state];
+  if (savedState) {
+    await page.addInitScript(
+      ({ key, value }) => localStorage.setItem(key, JSON.stringify(value)),
+      {
+        key: "eduvibe-archive-mock-v1",
+        value: { version: 1, generation: 0, ...savedState },
+      },
+    );
+  }
+  const detailState = state === "detail" || state === "detail-component";
   await page.goto(
-    state.startsWith("gallery")
-      ? "/"
-      : "/apps/00000000-0000-4000-8000-000000000001",
+    detailState
+      ? "/apps/00000000-0000-4000-8000-000000000001"
+      : state === "corrupt-storage-recovery"
+        ? "/__dev/mock-reset"
+        : "/",
   );
-  if (state.startsWith("gallery"))
+  if (state === "gallery" || state === "gallery-component")
     await expect(page.locator("a.card-r")).toHaveCount(16);
-  else
+  else if (detailState)
     await expect(
       page.getByRole("heading", { name: "분수 피자 가게" }),
     ).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
+  else if (state === "gallery-loading")
+    await expect(page.getByRole("status")).toContainText(
+      "공개 아카이브를 불러오는 중이에요",
+    );
+  else if (state === "gallery-empty")
+    await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+  else if (state === "gallery-failure") {
+    await expect(page.getByRole("alert")).toContainText(
+      "공개 아카이브를 불러오지 못했어요",
+    );
+    await expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible();
+  } else if (state === "corrupt-storage-recovery") {
+    await expect(page.getByRole("alert")).toContainText(
+      "저장된 mock을 읽지 못했습니다",
+    );
+    await expect(
+      page.getByRole("button", { name: "기본 fixture로 명시적 초기화" }),
+    ).toBeVisible();
+  }
+  if (state === "gallery-loading")
+    await page.evaluate(() => document.fonts.ready);
+  else
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+    });
+  if (state === "gallery-loading")
+    await expect(page.getByRole("status")).toContainText(
+      "공개 아카이브를 불러오는 중이에요",
+    );
   await page.mouse.move(0, 0);
   await page.evaluate(() => window.scrollTo(0, 0));
   const actual = componentSelector
@@ -147,6 +209,14 @@ async function captureAndCompare(
         animations: "disabled",
         caret: "hide",
       });
+  if (
+    process.env.VISUAL_BASELINE_CAPTURE === "1" &&
+    addedStates.includes(state) &&
+    state !== "gallery-empty"
+  ) {
+    mkdirSync(path.dirname(baselinePath), { recursive: true });
+    writeFileSync(baselinePath, actual);
+  }
   const expected = readFileSync(baselinePath);
   const comparison = await compareInPage(page, actual, expected);
   const name = `${state}-${viewport.width}x${viewport.height}.png`;
@@ -173,7 +243,7 @@ test.afterAll(() => {
   mkdirSync(outputRoot, { recursive: true });
   const paths = viewports
     .flatMap((viewport) =>
-      ["gallery", "detail"].map((state) =>
+      states.map((state) =>
         path.join(
           outputRoot,
           `${state}-${viewport.width}x${viewport.height}.json`,
@@ -191,7 +261,7 @@ test.afterAll(() => {
   if (!paths.every(existsSync)) return;
   const results = viewports
     .flatMap((viewport) =>
-      ["gallery", "detail"].map((state) =>
+      states.map((state) =>
         JSON.parse(
           readFileSync(
             path.join(
@@ -244,6 +314,21 @@ for (const viewport of viewports) {
       testInfo,
     );
   });
+}
+
+for (const state of addedStates) {
+  for (const viewport of viewports) {
+    const tag = `${viewport.width}x${viewport.height}`;
+    const baselinePath =
+      state === "gallery-empty"
+        ? path.join(baselineRoot, tag, "03-gallery-empty.png")
+        : path.join(stateBaselineRoot, `${state}-${tag}.png`);
+    test(`${state} matches its baseline at ${tag}`, async ({
+      page,
+    }, testInfo) => {
+      await captureAndCompare(page, state, viewport, baselinePath, testInfo);
+    });
+  }
 }
 
 for (const item of components) {

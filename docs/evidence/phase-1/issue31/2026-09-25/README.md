@@ -18,12 +18,14 @@ All frontend commands ran from `frontend/` unless noted.
 | `npm ci`                                                                                                                        | PASS; 349 packages, zero vulnerabilities reported                                                           |
 | `npm run openapi:generate`                                                                                                      | PASS; generated `src/contracts/api.d.ts` from `contracts/openapi.yaml`                                      |
 | `npm run check`                                                                                                                 | PASS; OpenAPI lint, generated type comparison, TypeScript, ESLint, and Prettier                             |
-| `npm test -- tests/mock-apps.test.ts`                                                                                           | PASS; 6/6 tests                                                                                             |
-| `npm test`                                                                                                                      | PASS; 3 files, 12/12 tests                                                                                  |
+| `npm test -- tests/mock-apps.test.ts`                                                                                           | PASS; 8/8 tests                                                                                             |
+| `npm test -- tests/openapi-contract.test.js`                                                                                    | PASS; all shipped detail fixtures satisfy `AppDetail`; required-field rejection is checked                 |
+| `npm test -- tests/check-dist.test.js`                                                                                          | PASS; valid output, `.env` and unapproved-asset rejection, and non-JS content scan                           |
+| `npm test`                                                                                                                      | PASS; 5 files, 20/20 tests                                                                                  |
 | `npm run test:e2e`                                                                                                              | PASS; 6/6 browser scenarios                                                                                 |
-| `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/dominelinux/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome npm run test:visual` | FAIL by contract; 0/12 cases pass the exact zero-pixel threshold                                            |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/dominelinux/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome npm run test:visual` | FAIL by contract; 13/32 cases pass the exact zero-pixel threshold                                           |
 | `npm run build:mock`                                                                                                            | PASS                                                                                                        |
-| `npm run build && npm run check:dist`                                                                                           | PASS; API `dist/` has 96 files and excludes mock fixtures, Tweaks, source/reference files, and source maps  |
+| API `npm run build` with a temporary `public/.env` sentinel; `npm run check:dist`                                               | PASS; sentinel excluded; API `dist/` has 96 files and excludes mock fixtures, Tweaks, source/reference files, and source maps |
 | `npm run check:reference`                                                                                                       | PASS; 11/11 preserved originals match SHA-256 and byte counts                                               |
 | `npm run mock:reset`                                                                                                            | PASS; prints the explicit browser reset route and instructions. Actual reset recovery was exercised in E2E. |
 
@@ -31,7 +33,7 @@ The first browser run exposed an empty public detail route: JSX state elements w
 
 ## Product screenshots and comparison
 
-The 12 PNGs in this directory are product captures produced by the exact Chromium visual suite. [`visual-comparison.json`](visual-comparison.json) contains each source path, image dimensions, differing-pixel count, channel delta, and bounds. Dimensions match for all 12 cases.
+The 32 PNGs in this directory are product captures produced by the exact Chromium visual suite. [`visual-comparison.json`](visual-comparison.json) contains each source path, image dimensions, differing-pixel count, channel delta, and bounds. The original gallery/detail and component results remain unchanged; 20 added-state captures cover four states at five viewports.
 
 | Viewport  | Gallery differing pixels | Public detail differing pixels |
 | --------- | -----------------------: | -----------------------------: |
@@ -41,7 +43,16 @@ The 12 PNGs in this directory are product captures produced by the exact Chromiu
 | 390×844   |                   67,167 |                         45,955 |
 | 360×844   |                   66,878 |                         40,509 |
 
-At 1440px the first-card component has 2,698 differing pixels and the detail aside has 8,531. The automated visual command correctly exits nonzero. No tolerance, mask, baseline rewrite, or human exception is applied; DomineYH visual review and local handover acceptance are pending.
+At 1440px the first-card component has 2,698 differing pixels and the detail aside has 8,531. The automated visual command correctly exits nonzero. No tolerance, mask, or source-baseline rewrite is applied; DomineYH visual review and local handover acceptance are pending.
+
+| Added state                 | Exact-pixel matches | Recorded result                                                                 |
+| --------------------------- | ------------------: | ------------------------------------------------------------------------------- |
+| Initial loading             |                 4/5 | 16 differing pixels at 360×844 in the shared rounded empty-state panel          |
+| Empty results               |                 0/5 | Compared with original source captures; 27,620 desktop/tablet pixels differ, and mobile output is 40px shorter |
+| Request failure and retry   |                 4/5 | 16 differing pixels at 360×844 in the shared rounded empty-state panel          |
+| Corrupt-storage recovery    |                 5/5 | Exact match to the recorded state captures at all five viewports                |
+
+The three states without source captures use [`visual-state-baselines/`](visual-state-baselines/) as initial regression captures, created only by the explicit `VISUAL_BASELINE_CAPTURE=1` mode. These references do not record human visual approval. Normal visual runs compare them without rewriting them; the original source captures and zero-pixel threshold were not changed.
 
 ## Original repeat evidence
 
