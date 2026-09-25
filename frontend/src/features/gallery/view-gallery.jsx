@@ -62,6 +62,7 @@ export function GalleryView({
       <div className="sticky top-[57px] z-20 -mx-5 mb-7 border-y border-neutral-200/70 bg-[#EAE7E2]/88 px-5 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
         <div className="flex flex-wrap items-center gap-2">
           <div
+            role="group"
             className="flex flex-wrap items-center gap-1.5"
             aria-label="과목 필터"
           >

@@ -218,8 +218,16 @@ export default function App() {
   }, [location.pathname]);
   useEffect(() => {
     const clearQueries = () => queryClient.clear();
+    const refreshQueries = (event) => {
+      if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1")
+        void queryClient.invalidateQueries();
+    };
     window.addEventListener("eduvibe:mock-reset", clearQueries);
-    return () => window.removeEventListener("eduvibe:mock-reset", clearQueries);
+    window.addEventListener("storage", refreshQueries);
+    return () => {
+      window.removeEventListener("eduvibe:mock-reset", clearQueries);
+      window.removeEventListener("storage", refreshQueries);
+    };
   }, [queryClient]);
   useEffect(() => {
     if (!toast) return undefined;

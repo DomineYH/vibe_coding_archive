@@ -450,13 +450,63 @@
         }
       ]
     },
-    "rootCause": "INCOMPLETE: source mutation, runtime/HAR mismatch, recorded state/font differences, and runtime/network errors were ruled out; timing/raster cause remains unknown.",
+    "rootCause": "INCOMPLETE: source mutation, runtime/HAR mismatch, recorded state/font differences, runtime/network errors, and post-blur wait timing for the 89-pixel outlier were ruled out; cross-context glyph raster cause remains unknown.",
     "approval": "Pending DomineYH"
   },
   "causeInvestigation": {
     "status": "INCOMPLETE",
-    "ruledOut": ["Source mutation (11 hashes unchanged)", "Runtime/HAR/browser mismatch", "Recorded state, text, layout, or font-face differences", "Page, console, or network errors"],
-    "controlledProbe": {"postBlurWaitMs": [0, 100, 250, 400, 800], "differentPixelsAgainstReference": [20, 20, 18, 18, 18], "didNotReproduceRun5OutlierPixels": 89},
-    "unresolved": "Capture timing, warmed-context, font rasterization, or compositor effects were not isolated; see README for details."
+    "ruledOut": [
+      "Source mutation (11 hashes unchanged)",
+      "Runtime/HAR/browser mismatch",
+      "Recorded state, text, layout, or font-face differences",
+      "Page, console, or network errors"
+    ],
+    "controlledProbe": {
+      "postBlurWaitMs": [0, 100, 250, 400, 800],
+      "differentPixelsAgainstReference": [20, 20, 18, 18, 18],
+      "didNotReproduceRun5OutlierPixels": 89
+    },
+    "focusedAttempt": {
+      "target": "360x844/03-gallery-empty.png run-5 outlier",
+      "sourceDifferencePixels": 89,
+      "bounds": [34, 404, 302, 430],
+      "runOrder": [1, 2, 3, 4, 5],
+      "sourceReferenceDifferencePixelsByRun": [20, 18, 20, 0, 89],
+      "pairwiseDifferencePixelsByRun": [
+        [0, 25, 0, 20, 107],
+        [25, 0, 25, 18, 103],
+        [0, 25, 0, 20, 107],
+        [20, 18, 20, 0, 89],
+        [107, 103, 107, 89, 0]
+      ],
+      "mappedButtonTextRects": {
+        "전체": [34, 403.84375, 22, 15],
+        "수학": [91, 403.84375, 22, 15],
+        "과학": [149, 403.84375, 22, 15],
+        "영어": [207, 403.84375, 22, 15],
+        "역사": [265, 403.84375, 22, 15]
+      },
+      "changedPixelHitCounts": {
+        "전체": 16,
+        "수학": 18,
+        "과학": 18,
+        "영어": 18,
+        "역사": 18,
+        "filterRow": 1
+      },
+      "postBlurWaitMs": [400, 800],
+      "differentPixelsAtEachWait": [89, 89],
+      "focusedRerunPairwiseDifferentPixels": 0,
+      "alsoRuledOut": [
+        "Post-blur wait as the outlier cause",
+        "Focused element (body at capture)",
+        "Scrollbar (0 CSS pixels)",
+        "Caret (hidden)",
+        "CSS animation (disabled; computed animation none)",
+        "Image decode in the changed region (only filter text/container hit targets)"
+      ],
+      "unresolved": "The Korean filter-label glyph raster differs across fresh contexts; no source/runtime/state/font-face cause was found."
+    },
+    "unresolved": "Why identical source content and recorded styles yield context-dependent filter-glyph raster pixels remains unknown; see README for details."
   }
 }
