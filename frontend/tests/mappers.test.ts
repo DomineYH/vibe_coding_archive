@@ -5,6 +5,7 @@ import {
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
+  mapRegisteredUser,
   mapSelf,
 } from "../src/contracts/mappers";
 
@@ -128,6 +129,29 @@ describe("response mappers", () => {
     expect(() => mapSelf({ ...valid, approved: false })).toThrowError(
       expect.objectContaining({ code: "CONTRACT_ERROR" }),
     );
+  });
+
+  it("maps a strict unapproved registration response without contact fields", () => {
+    const registered = {
+      id: "00000000-0000-4000-8000-000000000107",
+      login_id: "teacher_1",
+      nickname: "새 교사",
+      approved: false,
+      pending_expires_at: "2026-12-21T00:12:00.000Z",
+    };
+    expect(mapRegisteredUser(registered)).toEqual({
+      id: registered.id,
+      loginId: "teacher_1",
+      nickname: "새 교사",
+      approved: false,
+      pendingExpiresAt: registered.pending_expires_at,
+    });
+    expect(() => mapRegisteredUser({ ...registered, approved: true })).toThrow(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
+    expect(() =>
+      mapRegisteredUser({ ...registered, email: "x@example.invalid" }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 
   it("maps the catalog and snake-case app fields into display data", () => {

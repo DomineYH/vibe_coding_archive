@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a member registration for manual approval
+         * @description Creates an unapproved user and never signs the user in. The password_confirm field is not accepted. While contact collection is disabled, omitted, null, or normalized-empty email/phone values are accepted and non-empty values receive field validation errors. No partial account is created on validation failure.
+         */
+        post: operations["register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/logout": {
         parameters: {
             query?: never;
@@ -137,6 +157,27 @@ export interface components {
         LoginInput: {
             login_id: string;
             password: string;
+        };
+        /** @description login_id and nickname are trimmed and normalized to NFC; password is normalized to NFC without trimming. Lengths count Unicode code points. Password length is 15-128 and common-password checks use the fixed server-side local blocklist. email and phone are optional synthetic Phase 1 inputs; password_confirm is never part of this request. */
+        RegisterInput: {
+            login_id: string;
+            password: string;
+            /** @description Trimmed NFC text; no newline, control, or bidi controls. */
+            nickname: string;
+            /** @description One address; local part case is preserved and the domain is normalized. No DNS or SMTP verification is performed. */
+            email?: string | null;
+            /** @description ASCII digits with an optional leading plus, spaces, and hyphens; the digit count must be 7-15. */
+            phone?: string | null;
+        };
+        RegisteredUser: {
+            /** Format: uuid */
+            id: string;
+            login_id: string;
+            nickname: string;
+            /** @constant */
+            approved: false;
+            /** Format: date-time */
+            pending_expires_at: string;
         };
         Self: {
             /** Format: uuid */
@@ -425,6 +466,39 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    register: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterInput"];
+            };
+        };
+        responses: {
+            /** @description Unapproved account and calculated pending expiry. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredUser"];
+                };
+            };
+            400: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };

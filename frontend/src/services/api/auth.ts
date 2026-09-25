@@ -15,6 +15,9 @@ export const authService: AuthService = {
   async getCsrf() {
     throw unavailable();
   },
+  async register() {
+    throw unavailable();
+  },
   async login() {
     throw unavailable();
   },

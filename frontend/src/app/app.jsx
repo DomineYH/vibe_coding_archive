@@ -405,7 +405,7 @@ function NotFoundRoute() {
   );
 }
 
-function AuthRoute({ location, auth, onRetry, onLogin }) {
+function AuthRoute({ location, auth, onRetry, onLogin, onRegister }) {
   const route = readAuthRoute(location.search);
   return (
     <AuthView
@@ -415,6 +415,7 @@ function AuthRoute({ location, auth, onRetry, onLogin }) {
       authError={auth.error}
       onRetry={onRetry}
       onLogin={(input) => onLogin(input, route.returnTo)}
+      onRegister={onRegister}
     />
   );
 }
@@ -621,6 +622,7 @@ export default function App() {
               auth={auth}
               onRetry={restoreAuth}
               onLogin={login}
+              onRegister={(input) => authService.register(input)}
             />
           }
         />

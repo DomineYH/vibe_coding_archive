@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: EduVibe Archive API
   version: 1.0.0
-  description: Phase 1 public catalog reads and demo authentication contract.
+  description: Phase 1 public catalog reads and mock registration contract.
 servers:
   - url: /api/v1
 paths:
@@ -64,6 +64,51 @@ paths:
         "403":
           $ref: "#/components/responses/ServiceError"
         "409":
+          $ref: "#/components/responses/ServiceError"
+        "429":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
+  /auth/register:
+    post:
+      operationId: register
+      summary: Submit a member registration for manual approval
+      description: >-
+        Creates an unapproved user and never signs the user in. The
+        password_confirm field is not accepted. While contact collection is
+        disabled, omitted, null, or normalized-empty email/phone values are
+        accepted and non-empty values receive field validation errors. No
+        partial account is created on validation failure.
+      security:
+        - {}
+        - SessionCookie: []
+      parameters:
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Unapproved account and calculated pending expiry.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisteredUser"
+        "400":
+          $ref: "#/components/responses/ServiceError"
+        "403":
+          $ref: "#/components/responses/ServiceError"
+        "409":
+          $ref: "#/components/responses/ServiceError"
+        "413":
+          $ref: "#/components/responses/ServiceError"
+        "422":
           $ref: "#/components/responses/ServiceError"
         "429":
           $ref: "#/components/responses/ServiceError"
@@ -218,6 +263,53 @@ components:
           maxLength: 32
           pattern: "^[가-힣A-Za-z0-9_.-]+$"
         password: { type: string, minLength: 1 }
+    RegisterInput:
+      type: object
+      additionalProperties: false
+      required: [login_id, password, nickname]
+      description: >-
+        login_id and nickname are trimmed and normalized to NFC; password is
+        normalized to NFC without trimming. Lengths count Unicode code points.
+        Password length is 15-128 and common-password checks use the fixed
+        server-side local blocklist. email and phone are optional synthetic
+        Phase 1 inputs; password_confirm is never part of this request.
+      properties:
+        login_id:
+          type: string
+          minLength: 2
+          maxLength: 32
+          pattern: "^[가-힣A-Za-z0-9_.-]+$"
+        password:
+          type: string
+          minLength: 15
+          maxLength: 128
+        nickname:
+          type: string
+          minLength: 2
+          maxLength: 20
+          description: Trimmed NFC text; no newline, control, or bidi controls.
+        email:
+          type: [string, "null"]
+          maxLength: 254
+          description: >-
+            One address; local part case is preserved and the domain is
+            normalized. No DNS or SMTP verification is performed.
+        phone:
+          type: [string, "null"]
+          maxLength: 32
+          description: >-
+            ASCII digits with an optional leading plus, spaces, and hyphens;
+            the digit count must be 7-15.
+    RegisteredUser:
+      type: object
+      additionalProperties: false
+      required: [id, login_id, nickname, approved, pending_expires_at]
+      properties:
+        id: { type: string, format: uuid }
+        login_id: { type: string }
+        nickname: { type: string }
+        approved: { type: boolean, const: false }
+        pending_expires_at: { type: string, format: date-time }
     Self:
       type: object
       additionalProperties: false

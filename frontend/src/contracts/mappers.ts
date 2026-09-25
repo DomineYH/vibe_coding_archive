@@ -13,6 +13,7 @@ type WireCapability = Wire["Capability"];
 type WireSelf = Wire["Self"];
 type WireAuthResult = Wire["AuthResult"];
 type WireCsrfToken = Wire["CsrfToken"];
+type WireRegisteredUser = Wire["RegisteredUser"];
 
 export type Theme = Wire["Theme"];
 export type Subject = Wire["Subject"];
@@ -86,6 +87,13 @@ export type AuthUser = {
 };
 export type AuthResult = { user: AuthUser; csrfToken: string };
 export type CsrfToken = { csrfToken: string; expiresAt: string };
+export type RegisteredUser = {
+  id: string;
+  loginId: string;
+  nickname: string;
+  approved: false;
+  pendingExpiresAt: string;
+};
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -262,6 +270,32 @@ export function mapCsrfToken(value: unknown): CsrfToken {
   return {
     csrfToken: nonEmpty(item.csrf_token),
     expiresAt: dateTime(item.expires_at),
+  };
+}
+
+export function mapRegisteredUser(value: unknown): RegisteredUser {
+  const item = record(value) as unknown as Partial<WireRegisteredUser>;
+  if (
+    Object.keys(item).some(
+      (key) =>
+        ![
+          "id",
+          "login_id",
+          "nickname",
+          "approved",
+          "pending_expires_at",
+        ].includes(key),
+    )
+  )
+    throw contractError();
+  const id = nonEmpty(item.id);
+  if (!UUID.test(id) || item.approved !== false) throw contractError();
+  return {
+    id,
+    loginId: nonEmpty(item.login_id),
+    nickname: nonEmpty(item.nickname),
+    approved: false,
+    pendingExpiresAt: dateTime(item.pending_expires_at),
   };
 }
 
