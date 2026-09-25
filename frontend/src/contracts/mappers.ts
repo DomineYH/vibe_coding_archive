@@ -1,4 +1,5 @@
 import type { components } from "./api";
+import catalog from "../../../contracts/catalog.json";
 import { contractError } from "../services/service-error";
 
 type Wire = components["schemas"];
@@ -11,10 +12,12 @@ type WireReason = Wire["Reason"];
 type WireCapability = Wire["Capability"];
 
 export type Theme = Wire["Theme"];
+export type Subject = Wire["Subject"];
+export type Grade = Wire["Grade"];
 export type Capability = WireCapability;
 export type Meta = {
-  subjects: string[];
-  grades: string[];
+  subjects: Subject[];
+  grades: Grade[];
   themes: Theme[];
   serverTime: string;
   capabilities: Wire["Capabilities"];
@@ -32,8 +35,8 @@ export type AppCard = {
   ownerId: string;
   owner: string;
   name: string;
-  subject: string;
-  grades: string[];
+  subject: Subject;
+  grades: Grade[];
   isPublic: boolean;
   themeId: string;
   version: number;
@@ -49,7 +52,7 @@ export type AppPage = {
     hasMore: boolean;
   };
   serverTime: string;
-  facets: { subjectsInUse: string[] };
+  facets: { subjectsInUse: Subject[] };
 };
 export type AppDetail = AppCard & {
   url: string;
@@ -85,6 +88,8 @@ const HEALTH_STATES = [
   "blocked",
   "redirect_error",
 ] as const;
+const SUBJECTS = catalog.subjects as Subject[];
+const GRADES = catalog.grades as Grade[];
 
 function record(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -144,6 +149,31 @@ function integer(
 function stringArray(value: unknown): string[] {
   if (!Array.isArray(value)) throw contractError();
   return value.map((item) => string(item));
+}
+
+function catalogValues<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  complete = false,
+): T[] {
+  const values = stringArray(value);
+  const unique = new Set(values);
+  const ordered = allowed.filter((item) => unique.has(item));
+  if (
+    unique.size !== values.length ||
+    ordered.length !== values.length ||
+    ordered.some((item, index) => item !== values[index]) ||
+    (complete && values.length !== allowed.length)
+  )
+    throw contractError();
+  return ordered;
+}
+
+function catalogValue<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): T {
+  return catalogValues([value], allowed)[0]!;
 }
 
 function nullableString(value: unknown): string | null {
@@ -207,12 +237,7 @@ const CAPABILITY_KEYS: (keyof Wire["Capabilities"])[] = [
 export function mapMeta(value: unknown): Meta {
   const item = record(value) as unknown as Partial<WireMeta>;
   const themes = item.themes;
-  if (
-    !Array.isArray(item.subjects) ||
-    !Array.isArray(item.grades) ||
-    !Array.isArray(themes)
-  )
-    throw contractError();
+  if (!Array.isArray(themes)) throw contractError();
   const rawCapabilities = record(item.capabilities);
   const capabilities = Object.fromEntries(
     CAPABILITY_KEYS.map((key) => [key, mapCapability(rawCapabilities[key])]),
@@ -220,8 +245,8 @@ export function mapMeta(value: unknown): Meta {
   const support = record(item.support);
   const initialPendingDays = integer(item.initial_pending_days, 1);
   return {
-    subjects: stringArray(item.subjects),
-    grades: stringArray(item.grades),
+    subjects: catalogValues(item.subjects, SUBJECTS, true),
+    grades: catalogValues(item.grades, GRADES, true),
     themes: themes.map(mapTheme),
     serverTime: dateTime(item.server_time),
     capabilities,
@@ -278,8 +303,8 @@ function mapCard(value: unknown): AppCard {
     ownerId,
     owner: nonEmpty(owner.nickname),
     name: nonEmpty(item.name),
-    subject: nonEmpty(item.subject),
-    grades: stringArray(item.grades),
+    subject: catalogValue(item.subject, SUBJECTS),
+    grades: catalogValues(item.grades, GRADES),
     isPublic: item.is_public,
     themeId: nonEmpty(item.theme_id),
     version: integer(item.version, 1),
@@ -303,7 +328,7 @@ export function mapAppPage(value: unknown): AppPage {
     items,
     pagination: { limit, offset, total, hasMore: pagination.has_more },
     serverTime: dateTime(item.server_time),
-    facets: { subjectsInUse: stringArray(facets.subjects_in_use) },
+    facets: { subjectsInUse: catalogValues(facets.subjects_in_use, SUBJECTS) },
   };
 }
 

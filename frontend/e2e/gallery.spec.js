@@ -142,10 +142,76 @@ test("preserves gallery filters through detail navigation, history, and reload",
   await expect(grade).toHaveValue("초3");
 });
 
+test("search edits replace history while subject and grade filters remain navigable", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "수학", exact: true }).click();
+  await expect(page).toHaveURL(/\?subject=%EC%88%98%ED%95%99$/);
+  const grade = page.getByRole("combobox", { name: "학년 필터" });
+  await grade.selectOption("초3");
+  await expect(page).toHaveURL(/subject=%EC%88%98%ED%95%99&grade=%EC%B4%883$/);
+
+  const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+  await search.fill("분수 피자");
+  await expect(page).toHaveURL(/q=%EB%B6%84%EC%88%98\+%ED%94%BC%EC%9E%90/);
+  await search.fill("분수");
+  await expect(page).toHaveURL(/q=%EB%B6%84%EC%88%98&subject=/);
+
+  await page.goBack();
+  await expect(
+    page.getByRole("button", { name: "수학", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(grade).toHaveValue("");
+  await expect(search).toHaveValue("");
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await page.goForward();
+  await page.goForward();
+  await expect(search).toHaveValue("분수");
+  await expect(grade).toHaveValue("초3");
+});
+
+test("same-path filter history preserves the gallery position", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 450 });
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("long_list");
+  await page.getByRole("link", { name: "갤러리로" }).click();
+  const cards = page.locator("a.card-r");
+  await expect(cards).toHaveCount(24);
+  await page.evaluate(() => window.scrollTo(0, 1000));
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
+
+  await page.getByRole("button", { name: "수학", exact: true }).click();
+  await expect(page).toHaveURL(/\?subject=%EC%88%98%ED%95%99$/);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/$/);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
+});
+
 test("rejects invalid gallery query values and offers an explicit reset", async ({
   page,
 }) => {
-  for (const query of ["?unknown=value", "?q=first&q=second", "?q=%E0%A4%A"]) {
+  const foldedOverflow = encodeURIComponent("ß".repeat(51));
+  for (const query of [
+    "?unknown=value",
+    "?q=first&q=first",
+    "?subject=%EC%88%98%ED%95%99&subject=%EC%88%98%ED%95%99",
+    "?q=%",
+    "?q=%C0%AF",
+    "?q=%E0%A4%A",
+    "?subject=%EC%A0%84%EC%B2%B4",
+    `?q=${foldedOverflow}`,
+  ]) {
     await page.goto(`/${query}`);
     await expect(page.getByRole("alert")).toContainText(
       "검색 조건을 확인할 수 없어요",
@@ -154,6 +220,26 @@ test("rejects invalid gallery query values and offers an explicit reset", async 
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("a.card-r")).toHaveCount(16);
   }
+});
+
+test("canonicalizes empty filters and preserves valid zero-result conditions", async ({
+  page,
+}) => {
+  await page.goto("/?q=%20&subject=&grade=");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await expect(page).toHaveURL(/\/$/);
+
+  await page.goto(
+    "/?q=no+matching+app&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883",
+  );
+  await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "수학", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("combobox", { name: "학년 필터" })).toHaveValue(
+    "초3",
+  );
 });
 
 test("gallery navigation is keyboard reachable and controls have accessible names", async ({
@@ -220,7 +306,10 @@ test("gallery navigation is keyboard reachable and controls have accessible name
     await tabTo(page, card);
     await expect(card).toBeFocused();
   }
-  await tabTo(page, cards.nth(0));
+  const fractionApp = page.getByRole("link", {
+    name: "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+  });
+  await tabTo(page, fractionApp);
   await page.keyboard.press("Enter");
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
@@ -241,6 +330,61 @@ test("filters search by app, author, and description and distinguishes an empty 
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
+test("an unabortable stale search response cannot replace newer results", async ({
+  page,
+}) => {
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("list_delayed");
+  await page.getByRole("link", { name: "갤러리로" }).click();
+  const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+  const cards = page.locator("a.card-r");
+  await expect(cards).toHaveCount(16);
+
+  await search.fill("slow");
+  await expect(page).toHaveURL(/q=slow$/);
+  await expect(cards).toHaveCount(0);
+  await expect(page.getByRole("status")).toContainText(
+    "공개 아카이브를 불러오는 중이에요",
+  );
+  await search.fill("분수 피자");
+  await expect(page).toHaveURL(/q=%EB%B6%84%EC%88%98\+%ED%94%BC%EC%9E%90$/);
+  await expect(cards).toHaveCount(1);
+  await page.waitForTimeout(400);
+  await expect(cards).toHaveCount(1);
+  await expect(cards.first()).toHaveAccessibleName(
+    "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+  );
+});
+
+test("a same-range refetch failure hides previously loaded cards", async ({
+  page,
+}) => {
+  await page.goto("/");
+  const cards = page.locator("a.card-r");
+  await expect(cards).toHaveCount(16);
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        ...state,
+        scenario: "list_refetch_failure",
+        generation: state.generation + 1,
+      }),
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key }));
+  });
+
+  await expect(page.getByRole("status")).toContainText(
+    "공개 아카이브를 불러오는 중이에요",
+  );
+  await expect(cards).toHaveCount(0);
+  await expect(page.getByRole("alert")).toContainText(
+    "목록을 불러오지 못했어요",
+  );
+});
+
 test("selects long-list and long-copy mock states for deterministic layout review", async ({
   page,
 }) => {
@@ -249,7 +393,12 @@ test("selects long-list and long-copy mock states for deterministic layout revie
   await page.getByRole("link", { name: "갤러리로" }).click();
   const cards = page.locator("a.card-r");
   await expect(cards).toHaveCount(24);
-  await expect(cards.last()).toHaveAccessibleName(/긴 목록 8/);
+  await expect(cards.first()).toHaveAccessibleName(/긴 목록 1/);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(cards).toHaveCount(28);
+  await expect(page.getByRole("button", { name: "더 불러오기" })).toHaveCount(
+    0,
+  );
 
   await page.goto("/__dev/mock-reset");
   await page.getByLabel("갤러리 시나리오").selectOption("long_copy");
@@ -260,6 +409,44 @@ test("selects long-list and long-copy mock states for deterministic layout revie
   await expect
     .poll(() => page.locator("pre").evaluate((element) => element.scrollHeight))
     .toBeGreaterThan(420);
+});
+
+test("deduplicates duplicate pages and stops when a response cannot advance", async ({
+  page,
+}) => {
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("duplicate_pages");
+  await page.getByRole("link", { name: "갤러리로" }).click();
+  const cards = page.locator("a.card-r");
+  await expect(cards).toHaveCount(24);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(cards).toHaveCount(24);
+  const continueLoading = page.getByRole("button", { name: "계속 불러오기" });
+  await expect(continueLoading).toBeVisible();
+  await continueLoading.click();
+  await expect(cards).toHaveCount(28);
+
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("no_progress");
+  await page.getByRole("link", { name: "갤러리로" }).click();
+  await expect(cards).toHaveCount(24);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(page.getByRole("alert")).toContainText(
+    "추가 자료를 불러오지 못했어요",
+  );
+  await expect(cards).toHaveCount(24);
+  await expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible();
+
+  await page.goto("/__dev/mock-reset");
+  await page.getByLabel("갤러리 시나리오").selectOption("next_page_failure");
+  await page.getByRole("link", { name: "갤러리로" }).click();
+  await expect(cards).toHaveCount(24);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect(page.getByRole("alert")).toContainText(
+    "추가 자료를 불러오지 못했어요",
+  );
+  await expect(cards).toHaveCount(24);
+  await expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible();
 });
 
 test("explicitly selects empty and failure scenarios, then lets the visitor retry", async ({

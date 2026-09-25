@@ -73,11 +73,16 @@ export default function MockResetPage() {
           onChange={(event) => chooseScenario(event.target.value)}
           className="mt-1.5 h-10 w-full rounded-xl border border-neutral-200 bg-white px-3 text-[14px] text-neutral-800 outline-none focus-visible:ring-2 focus-visible:ring-[#4C7A96] disabled:bg-neutral-100"
         >
-          <option value="original">원본 비교 fixture</option>
+          <option value="original">API 정렬 fixture</option>
+          <option value="visual_fixture">원본 비교 fixture</option>
           <option value="empty">정상 빈 결과</option>
           <option value="list_failure">목록 조회 실패</option>
+          <option value="list_refetch_failure">목록 갱신 실패</option>
+          <option value="next_page_failure">추가 페이지 실패</option>
           <option value="list_delayed">목록 조회 지연</option>
           <option value="long_list">긴 목록</option>
+          <option value="duplicate_pages">중복뿐인 페이지</option>
+          <option value="no_progress">진행 불가능한 페이지</option>
           <option value="long_copy">긴 문구</option>
         </select>
         {readFailed ? (

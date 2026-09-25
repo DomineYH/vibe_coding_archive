@@ -8,7 +8,7 @@ const workflow = load(
   readFileSync(path.resolve("../.github/workflows/frontend-ci.yml"), "utf8"),
 );
 
-describe("issue 31 acceptance trace", () => {
+describe("Phase 1 acceptance traces", () => {
   it("records every AC row with all five decision-29 trace fields", () => {
     const lines = acceptance.split("\n");
     const headerIndex = lines.findIndex((line) =>
@@ -104,6 +104,48 @@ describe("issue 31 acceptance trace", () => {
       expect(cells).toHaveLength(headers.length);
       expect(cells.every(Boolean)).toBe(true);
     }
+  });
+
+  it("records every issue 33 criterion and its case evidence", () => {
+    const lines = acceptance.split("\n");
+    const headerIndex = lines.findIndex((line) =>
+      line.startsWith("| Requirement / source"),
+    );
+    const headers = lines[headerIndex]
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    const records = lines
+      .slice(headerIndex + 2)
+      .filter((line) => line.startsWith("| #33 AC"));
+
+    expect(records).toHaveLength(11);
+    expect(
+      records.map((record) =>
+        Number(
+          record
+            .split("|")[1]
+            .trim()
+            .match(/^#33 AC(\d+)\b/)[1],
+        ),
+      ),
+    ).toEqual(Array.from({ length: 11 }, (_, index) => index + 1));
+    for (const record of records) {
+      const cells = record
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      expect(cells).toHaveLength(headers.length);
+      expect(cells.every(Boolean)).toBe(true);
+    }
+
+    const evidence = readFileSync(
+      path.resolve("../docs/evidence/phase-1/issue33/2026-09-25/README.md"),
+      "utf8",
+    );
+    expect(evidence).toContain("#8 case trace");
+    expect(evidence).toContain("return_to");
+    expect(evidence).toContain("app-write return");
   });
 
   it("runs frontend checks, tests, builds, and preservation before visuals in CI", () => {

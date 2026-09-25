@@ -28,7 +28,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List public archive apps */
+        /**
+         * List public archive apps
+         * @description Returns publicly accessible apps ordered by created_at descending, then id descending. Subject facets describe the full accessible set and do not depend on search, grade, or page offset. Reject repeated and unknown query parameters.
+         */
         get: operations["listPublicApps"];
         put?: never;
         post?: never;
@@ -59,6 +62,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        Subject: "수학" | "과학" | "영어" | "역사" | "국어" | "사회" | "정보" | "기타";
+        /** @enum {string} */
+        Grade: "초1" | "초2" | "초3" | "초4" | "초5" | "초6" | "중1" | "중2" | "중3" | "고1" | "고2" | "고3";
         ErrorEnvelope: {
             error: {
                 code: string;
@@ -75,8 +82,8 @@ export interface components {
             };
         };
         Meta: {
-            subjects: string[];
-            grades: string[];
+            subjects: components["schemas"]["Subject"][];
+            grades: components["schemas"]["Grade"][];
             themes: components["schemas"]["Theme"][];
             /** Format: date-time */
             server_time: string;
@@ -173,8 +180,8 @@ export interface components {
             id: string;
             owner: components["schemas"]["Owner"];
             name: string;
-            subject: string;
-            grades: string[];
+            subject: components["schemas"]["Subject"];
+            grades: components["schemas"]["Grade"][];
             is_public: boolean;
             theme_id: string;
             version: number;
@@ -187,7 +194,7 @@ export interface components {
             /** Format: date-time */
             server_time: string;
             facets: {
-                subjects_in_use: string[];
+                subjects_in_use: components["schemas"]["Subject"][];
             };
         };
         AppDetail: {
@@ -195,8 +202,8 @@ export interface components {
             id: string;
             owner: components["schemas"]["Owner"];
             name: string;
-            subject: string;
-            grades: string[];
+            subject: components["schemas"]["Subject"];
+            grades: components["schemas"]["Grade"][];
             is_public: boolean;
             theme_id: string;
             version: number;
@@ -273,11 +280,15 @@ export interface operations {
     listPublicApps: {
         parameters: {
             query?: {
-                /** @description Search app name, author nickname, and description. */
+                /** @description Trim, normalize to NFC, then apply Unicode default case folding. Count the post-folded value in Unicode code points; reject values longer than 100 without truncation. Search name, author nickname, and description as separate substring fields. Treat percent and underscore literally; do not search login IDs or contact fields. */
                 q?: string;
-                subject?: string;
-                grade?: string;
+                /** @description Empty omits the filter; otherwise use one catalog value. */
+                subject?: "" | components["schemas"]["Subject"];
+                /** @description Empty omits the filter; otherwise use one catalog value. */
+                grade?: "" | components["schemas"]["Grade"];
+                /** @description Page size; defaults to 24 and cannot exceed 100. */
                 limit?: number;
+                /** @description Zero-based offset. A valid offset past the result count returns an empty page. */
                 offset?: number;
             };
             header?: never;

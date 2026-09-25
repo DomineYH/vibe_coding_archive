@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import catalog from "../../contracts/catalog.json";
 import publicApps from "../src/fixtures/public-apps.json";
 
 const root = path.resolve(
@@ -28,5 +29,17 @@ describe("OpenAPI app detail schema", () => {
     const incomplete = { ...publicApps[0] };
     delete incomplete.prompt;
     expect(validateAppDetail(incomplete)).toBe(false);
+  });
+
+  it("keeps public gallery filter values aligned with the catalog", () => {
+    const parameters = openapi.paths["/apps"].get.parameters;
+    const subject = parameters.find(({ name }) => name === "subject").schema;
+    const grade = parameters.find(({ name }) => name === "grade").schema;
+    expect(openapi.components.schemas.Subject.enum).toEqual(catalog.subjects);
+    expect(openapi.components.schemas.Grade.enum).toEqual(catalog.grades);
+    expect(subject.anyOf[0].enum).toEqual([""]);
+    expect(subject.anyOf[1].$ref).toBe("#/components/schemas/Subject");
+    expect(grade.anyOf[0].enum).toEqual([""]);
+    expect(grade.anyOf[1].$ref).toBe("#/components/schemas/Grade");
   });
 });

@@ -26,23 +26,45 @@ paths:
     get:
       operationId: listPublicApps
       summary: List public archive apps
+      description: >-
+        Returns publicly accessible apps ordered by created_at descending, then
+        id descending. Subject facets describe the full accessible set and do
+        not depend on search, grade, or page offset. Reject repeated and unknown
+        query parameters.
       security: []
       parameters:
         - name: q
           in: query
-          description: Search app name, author nickname, and description.
-          schema: { type: string, maxLength: 100 }
+          description: >-
+            Trim, normalize to NFC, then apply Unicode default case folding.
+            Count the post-folded value in Unicode code points; reject values
+            longer than 100 without truncation. Search name, author nickname,
+            and description as separate substring fields. Treat percent and
+            underscore literally; do not search login IDs or contact fields.
+          schema: { type: string }
         - name: subject
           in: query
-          schema: { type: string }
+          description: Empty omits the filter; otherwise use one catalog value.
+          schema:
+            anyOf:
+              - type: string
+                enum: [""]
+              - $ref: "#/components/schemas/Subject"
         - name: grade
           in: query
-          schema: { type: string }
+          description: Empty omits the filter; otherwise use one catalog value.
+          schema:
+            anyOf:
+              - type: string
+                enum: [""]
+              - $ref: "#/components/schemas/Grade"
         - name: limit
           in: query
+          description: Page size; defaults to 24 and cannot exceed 100.
           schema: { type: integer, minimum: 1, maximum: 100, default: 24 }
         - name: offset
           in: query
+          description: Zero-based offset. A valid offset past the result count returns an empty page.
           schema: { type: integer, minimum: 0, default: 0 }
       responses:
         "200":
@@ -91,6 +113,12 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
   schemas:
+    Subject:
+      type: string
+      enum: [수학, 과학, 영어, 역사, 국어, 사회, 정보, 기타]
+    Grade:
+      type: string
+      enum: [초1, 초2, 초3, 초4, 초5, 초6, 중1, 중2, 중3, 고1, 고2, 고3]
     ErrorEnvelope:
       type: object
       additionalProperties: false
@@ -111,10 +139,20 @@ components:
     Meta:
       type: object
       additionalProperties: false
-      required: [subjects, grades, themes, server_time, capabilities, support, initial_pending_days]
+      required:
+        [
+          subjects,
+          grades,
+          themes,
+          server_time,
+          capabilities,
+          support,
+          initial_pending_days,
+        ]
       properties:
-        subjects: { type: array, items: { type: string } }
-        grades: { type: array, items: { type: string } }
+        subjects:
+          { type: array, items: { $ref: "#/components/schemas/Subject" } }
+        grades: { type: array, items: { $ref: "#/components/schemas/Grade" } }
         themes:
           type: array
           items: { $ref: "#/components/schemas/Theme" }
@@ -135,7 +173,13 @@ components:
         ink: { type: string, enum: [dark, light] }
     Reason:
       type: string
-      enum: [not_implemented, verification_pending, operational_restriction, collection_disabled]
+      enum:
+        [
+          not_implemented,
+          verification_pending,
+          operational_restriction,
+          collection_disabled,
+        ]
     Capability:
       type: object
       additionalProperties: false
@@ -216,7 +260,16 @@ components:
         has_more: { type: boolean }
     HealthState:
       type: string
-      enum: [unchecked, healthy, http_error, timeout, network_error, blocked, redirect_error]
+      enum:
+        [
+          unchecked,
+          healthy,
+          http_error,
+          timeout,
+          network_error,
+          blocked,
+          redirect_error,
+        ]
     HealthResult:
       type: object
       additionalProperties: false
@@ -242,7 +295,11 @@ components:
       required: [id, status, created_at, started_at, finished_at, failure_code]
       properties:
         id: { type: string, format: uuid }
-        status: { type: string, enum: [queued, running, completed, failed, cancelled] }
+        status:
+          {
+            type: string,
+            enum: [queued, running, completed, failed, cancelled],
+          }
         created_at: { type: string, format: date-time }
         started_at: { type: [string, "null"], format: date-time }
         finished_at: { type: [string, "null"], format: date-time }
@@ -250,13 +307,25 @@ components:
     AppCard:
       type: object
       additionalProperties: false
-      required: [id, owner, name, subject, grades, is_public, theme_id, version, url_version, health]
+      required:
+        [
+          id,
+          owner,
+          name,
+          subject,
+          grades,
+          is_public,
+          theme_id,
+          version,
+          url_version,
+          health,
+        ]
       properties:
         id: { type: string, format: uuid }
         owner: { $ref: "#/components/schemas/Owner" }
         name: { type: string }
-        subject: { type: string }
-        grades: { type: array, items: { type: string } }
+        subject: { $ref: "#/components/schemas/Subject" }
+        grades: { type: array, items: { $ref: "#/components/schemas/Grade" } }
         is_public: { type: boolean }
         theme_id: { type: string }
         version: { type: integer, minimum: 1 }
@@ -275,17 +344,39 @@ components:
           additionalProperties: false
           required: [subjects_in_use]
           properties:
-            subjects_in_use: { type: array, items: { type: string } }
+            subjects_in_use:
+              { type: array, items: { $ref: "#/components/schemas/Subject" } }
     AppDetail:
       type: object
       additionalProperties: false
-      required: [id, owner, name, subject, grades, is_public, theme_id, version, url_version, health, url, prompt, description, stack_db, stack_backend, stack_frontend, stack_hosting, created_at, updated_at]
+      required:
+        [
+          id,
+          owner,
+          name,
+          subject,
+          grades,
+          is_public,
+          theme_id,
+          version,
+          url_version,
+          health,
+          url,
+          prompt,
+          description,
+          stack_db,
+          stack_backend,
+          stack_frontend,
+          stack_hosting,
+          created_at,
+          updated_at,
+        ]
       properties:
         id: { type: string, format: uuid }
         owner: { $ref: "#/components/schemas/Owner" }
         name: { type: string }
-        subject: { type: string }
-        grades: { type: array, items: { type: string } }
+        subject: { $ref: "#/components/schemas/Subject" }
+        grades: { type: array, items: { $ref: "#/components/schemas/Grade" } }
         is_public: { type: boolean }
         theme_id: { type: string }
         version: { type: integer, minimum: 1 }

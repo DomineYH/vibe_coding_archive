@@ -30,13 +30,31 @@ describe("deterministic gallery mock", () => {
     });
   });
 
-  it("keeps original public fixture order and filters only public search fields", async () => {
+  it("uses API creation order while preserving the original visual fixture order", async () => {
     const first = await appsService.list({ limit: 24, offset: 0 });
     const again = await appsService.list({ limit: 24, offset: 0 });
     expect(first.items.map((item) => item.name)).toEqual(
       again.items.map((item) => item.name),
     );
     expect(first.items).toHaveLength(16);
+    expect(first.items.map((item) => item.id)).toEqual([
+      "00000000-0000-4000-8000-000000000016",
+      "00000000-0000-4000-8000-000000000012",
+      "00000000-0000-4000-8000-000000000008",
+      "00000000-0000-4000-8000-000000000004",
+      "00000000-0000-4000-8000-000000000011",
+      "00000000-0000-4000-8000-000000000015",
+      "00000000-0000-4000-8000-000000000007",
+      "00000000-0000-4000-8000-000000000003",
+      "00000000-0000-4000-8000-000000000010",
+      "00000000-0000-4000-8000-000000000014",
+      "00000000-0000-4000-8000-000000000006",
+      "00000000-0000-4000-8000-000000000002",
+      "00000000-0000-4000-8000-000000000009",
+      "00000000-0000-4000-8000-000000000005",
+      "00000000-0000-4000-8000-000000000013",
+      "00000000-0000-4000-8000-000000000001",
+    ]);
     expect(
       (await appsService.list({ q: "교사김코딩", limit: 24, offset: 0 })).items
         .length,
@@ -44,6 +62,55 @@ describe("deterministic gallery mock", () => {
     expect(
       (await appsService.list({ q: "app-01", limit: 24, offset: 0 })).items,
     ).toHaveLength(0);
+
+    const filtered = await appsService.list({
+      q: "분수",
+      grade: "초3",
+      subject: "수학",
+      limit: 24,
+      offset: 0,
+    });
+    expect(filtered.items).toHaveLength(1);
+    expect(filtered.facets.subjectsInUse).toEqual([
+      "수학",
+      "과학",
+      "영어",
+      "역사",
+    ]);
+    expect((await appsService.list({ offset: 100 })).items).toHaveLength(0);
+
+    setMockScenario("visual_fixture");
+    expect(
+      (await appsService.list({ limit: 24, offset: 0 })).items.map(
+        (item) => item.id,
+      ),
+    ).toEqual(
+      Array.from(
+        { length: 16 },
+        (_, index) =>
+          `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+      ),
+    );
+  });
+
+  it("normalizes each searchable field and treats percent and underscore literally", async () => {
+    await appsService.list();
+    const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
+    const app = saved.apps[0];
+    app.name = "Boundary";
+    app.owner.nickname = "Author";
+    app.description = "Straße 100%_ literal";
+    saved.apps = [app];
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(saved));
+
+    expect((await appsService.list({ q: "STRASSE 100%_" })).items).toHaveLength(
+      1,
+    );
+    expect(
+      (await appsService.list({ q: "BoundaryAuthor" })).items,
+    ).toHaveLength(0);
+    expect((await appsService.list({ q: "%" })).items).toHaveLength(1);
+    expect((await appsService.list({ q: "_" })).items).toHaveLength(1);
   });
 
   it("selects deterministic long-list and long-copy scenarios without changing original data", async () => {
@@ -56,9 +123,24 @@ describe("deterministic gallery mock", () => {
     const allLongList = await appsService.list({ limit: 100, offset: 0 });
     expect(longList.pagination.total).toBe(28);
     expect(longList.items).toHaveLength(24);
-    expect(longList.items.at(-1)?.name).toContain("긴 목록 8");
+    expect(longList.items.slice(0, 12).map((item) => item.name)).toEqual(
+      Array.from({ length: 12 }, (_, index) =>
+        expect.stringContaining(`긴 목록 ${index + 1}`),
+      ),
+    );
     expect(allLongList.items).toHaveLength(28);
     expect(new Set(allLongList.items.map((item) => item.id)).size).toBe(28);
+
+    setMockScenario("duplicate_pages");
+    const firstPage = await appsService.list({ limit: 24, offset: 0 });
+    const duplicatePage = await appsService.list({ limit: 24, offset: 24 });
+    const lastPage = await appsService.list({ limit: 24, offset: 48 });
+    expect(duplicatePage.items).toHaveLength(24);
+    expect(new Set(duplicatePage.items.map((item) => item.id))).toEqual(
+      new Set(firstPage.items.map((item) => item.id)),
+    );
+    expect(lastPage.items).toHaveLength(4);
+    expect(lastPage.pagination.hasMore).toBe(false);
 
     setMockScenario("long_copy");
     const longCopy = await appsService.get(originalDetail.id);
