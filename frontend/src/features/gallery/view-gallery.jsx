@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppCard, Btn, EmptyState } from "../../components/ui";
@@ -14,9 +14,30 @@ export function GalleryView({
 }) {
   const [subject, setSubject] = useState("");
   const [grade, setGrade] = useState("");
+  const gradeFilter = useRef(null);
   const [search, setSearch] = useState("");
   const [committedSearch, setCommittedSearch] = useState("");
   const [composing, setComposing] = useState(false);
+
+  useEffect(() => {
+    const filter = gradeFilter.current;
+    if (!filter || !document.fonts || !window.matchMedia) return;
+
+    const smallViewport = window.matchMedia("(max-width: 639px)");
+    let fontReady = false;
+    const applyFont = () => {
+      if (!fontReady) return;
+      filter.style.fontFamily = smallViewport.matches
+        ? '"Pretendard Variable"'
+        : "";
+    };
+    smallViewport.addEventListener("change", applyFont);
+    document.fonts.ready.then(() => {
+      fontReady = true;
+      applyFont();
+    });
+    return () => smallViewport.removeEventListener("change", applyFont);
+  }, []);
 
   const changeSearch = (value) => {
     setSearch(value);
@@ -86,6 +107,7 @@ export function GalleryView({
               학년 필터
             </label>
             <select
+              ref={gradeFilter}
               id="grade-filter"
               value={grade}
               onChange={(event) => setGrade(event.target.value)}

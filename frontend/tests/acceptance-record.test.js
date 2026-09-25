@@ -30,6 +30,9 @@ describe("issue 31 acceptance trace", () => {
       "Test layer",
       "Reproduction command",
       "Execution evidence",
+      "Expected result",
+      "Actual result",
+      "Review / acceptance",
     ]);
     expect(records).toHaveLength(10);
     for (const record of records) {
@@ -40,10 +43,29 @@ describe("issue 31 acceptance trace", () => {
       expect(cells).toHaveLength(headers.length);
       expect(cells.slice(2).every(Boolean)).toBe(true);
     }
+
+    const ac9 = records
+      .find((record) => record.startsWith("| #31 AC9"))
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    expect(ac9[8]).toContain("36102435411");
+    expect(ac9[8]).toContain("36105283727");
+    expect(ac9[8]).toContain("FAIL");
+    expect(ac9[9]).toContain("Docker");
+
+    const ac10 = records
+      .find((record) => record.startsWith("| #31 AC10"))
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    expect(ac10[9]).toContain("DomineYH");
+    expect(ac10[9]).toMatch(/pending/i);
   });
 
   it("runs frontend checks, tests, builds, and preservation before visuals in CI", () => {
-    const commands = workflow.jobs.frontend.steps.map((step) => step.run);
+    const steps = workflow.jobs.frontend.steps;
+    const commands = steps.map((step) => step.run);
     const required = [
       "npm run check",
       "npm test",
@@ -57,5 +79,16 @@ describe("issue 31 acceptance trace", () => {
 
     expect(positions.every((position) => position >= 0)).toBe(true);
     expect(positions).toEqual([...positions].sort((a, b) => a - b));
+
+    const fontPin = steps.find(
+      (step) => step.name === "Install source-reference CJK font",
+    );
+    expect(fontPin.run).toContain("monospace:lang=ko");
+    expect(fontPin.run).toContain("Noto Sans CJK KR:lang=ko");
+    expect(fontPin.run).toContain("Expected Noto Sans CJK JP");
+    expect(
+      steps.find((step) => step.name === "Visual comparisons").env
+        .FONTCONFIG_FILE,
+    ).toBe("${{ github.workspace }}/frontend/visual/fontconfig.conf");
   });
 });

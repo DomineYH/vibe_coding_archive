@@ -26,7 +26,15 @@ jobs:
         run: |
           sudo apt-get install --yes fonts-noto-cjk
           sudo apt-get remove --yes fonts-wqy-zenhei
-          fc-cache --force
+          fontconfig="$GITHUB_WORKSPACE/frontend/visual/fontconfig.conf"
+          FONTCONFIG_FILE="$fontconfig" fc-cache --force
+          for pattern in 'monospace:lang=ko' 'Noto Sans CJK KR:lang=ko'; do
+            family="$(FONTCONFIG_FILE="$fontconfig" fc-match --format='%{family}' "$pattern")"
+            if [ "$family" != "Noto Sans CJK JP" ]; then
+              echo "::error::Expected Noto Sans CJK JP for $pattern; received $family"
+              exit 1
+            fi
+          done
       - name: Install pinned visual Chromium
         run: |
           curl --fail --location --silent --show-error https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-headless-shell-linux64.zip --output "$RUNNER_TEMP/chrome-151.zip"
@@ -53,4 +61,6 @@ jobs:
         run: npm run check:reference
       - name: Visual comparisons
         working-directory: frontend
+        env:
+          FONTCONFIG_FILE: ${{ github.workspace }}/frontend/visual/fontconfig.conf
         run: npm run test:visual
