@@ -21,7 +21,9 @@ All frontend commands ran from `frontend/` unless noted.
 | `npm test -- tests/mock-apps.test.ts`                                                                                                                                        | PASS; 8/8 tests                                                                                                               |
 | `npm test -- tests/openapi-contract.test.js`                                                                                                                                 | PASS; all shipped detail fixtures satisfy `AppDetail`; required-field rejection is checked                                    |
 | `npm test -- tests/check-dist.test.js`                                                                                                                                       | PASS; valid output, `.env` and unapproved-asset rejection, and non-JS content scan                                            |
-| `npm test`                                                                                                                                                                   | PASS; 6 files, 22/22 tests                                                                                                    |
+| `npm test`                                                                                                                                                                   | PASS; 7 files, 23/23 tests                                                                                                    |
+| `npm test -- tests/vite-config.test.js`                                                                                                                                      | PASS; rejects `VITE_API_KEY` at config load                                                                                   |
+| `VITE_API_KEY=issue31-test-value npm run build`                                                                                                                              | PASS; API build rejected the forbidden key at config load                                                                     |
 | `npm run test:e2e`                                                                                                                                                           | PASS; 6/6 browser scenarios                                                                                                   |
 | `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/home/dominelinux/.cache/ms-playwright/chromium_headless_shell-1234/chrome-headless-shell-linux64/chrome-headless-shell npm run test:visual` | PASS; 32/32 comparisons meet the exact zero-pixel threshold                                                                   |
 | `npm run build:mock`                                                                                                                                                         | PASS                                                                                                                          |
@@ -58,7 +60,13 @@ The three states without source captures use [`visual-state-baselines/`](visual-
 
 ## Original repeat evidence
 
-[`original-repeat-summary.json`](original-repeat-summary.json) retains five fresh browser-context replays of the unchanged original using the preserved CDN HAR and `capture.py`/`verify.py`. Each completed 130 states with unchanged sources, stable state metrics, and no page, console, failed-request, or blocked-request errors. Strict pixel identity varied by context (129, 129, 130, 131, and 130 of 135 PNGs). The previously varied captures do not produce source/product deltas in the final pinned visual run, which reproduces the original capture sequence exactly.
+[`original-repeat-summary.json`](original-repeat-summary.json) retains five fresh browser-context replays of the unchanged original using the preserved CDN HAR and `capture.py`/`verify.py`. Each completed 130 states with unchanged sources, stable state metrics, and no page, console, failed-request, or blocked-request errors. Strict pixel identity against the preserved source reference varied by context (129, 129, 130, 131, and 130 of 135 PNGs). These source-to-source failures remain history; the separate product visual run is 32/32 exact against the source references.
+
+### Cause investigation: INCOMPLETE
+
+The five runs used the same Chromium `151.0.7922.34` executable, Python/Playwright versions, WSL2 host, viewport/DPR/locale/time settings, source hashes, and preserved HAR. All 130 captures per run matched the recorded screen/text/state/layout metrics. Every run also matched all 15 loaded Pretendard face declarations and the actual heading font records; page, console, failed-request, and blocked-request errors were all zero. This rules out source changes, a browser/HAR/version mismatch, missing font faces, recorded state/text/layout differences, and runtime/network failures.
+
+Pairwise PNG inspection shows small edge/glyph-region deltas: the 390px detail/login outputs are mutually exact but each has the same 20-pixel delta against the preserved reference; the edit-component edge differs by 9 pixels in runs 1–3 only; the 360px empty-gallery text-region delta ranges from 18–20 pixels in runs 1–3, is absent in run 4, and reaches 89 pixels in run 5. A controlled empty-gallery probe with 0/100/250/400/800ms post-blur waits produced 20/20/18/18/18 differing pixels and did not reproduce the 89-pixel outlier. The input width remained between 192px and 190.42px during the probe, but this does not establish that transition progress caused the changed text pixels. Archived metrics lack per-element rectangles/computed styles at screenshot time. Therefore no unique cause is claimed; transition progress, warmed-context effects, font rasterization, and compositor state remain unisolated. See the JSON for the ruled-out factors and next evidence needed. Zero tolerance and all five historical failures remain unchanged.
 
 The original replay command for each fresh context was:
 
@@ -76,6 +84,7 @@ python3 docs/evidence/basic-design-runtime-20260922/verify.py \
 ## Remaining unverified work
 
 - Hosted CI execution and local handover acceptance.
+- Replay raster-cause investigation remains incomplete; see the preceding section.
 - Real API/backend/database behavior, auth/session/cookie protection, actual health probes, and operational or release approval.
 - Physical mobile devices and assistive-technology review; viewport and keyboard checks used desktop Chromium.
 - Phase 1 auth, submit, and admin screens owned by other implementation tickets, and all Phase 2–7 work.

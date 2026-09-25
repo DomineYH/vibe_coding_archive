@@ -450,7 +450,13 @@
         }
       ]
     },
-    "rootCause": "Undetermined. Differences and pixel counts varied across fresh contexts; no tolerance or exception was approved.",
+    "rootCause": "INCOMPLETE: source mutation, runtime/HAR mismatch, recorded state/font differences, and runtime/network errors were ruled out; timing/raster cause remains unknown.",
     "approval": "Pending DomineYH"
+  },
+  "causeInvestigation": {
+    "status": "INCOMPLETE",
+    "ruledOut": ["Source mutation (11 hashes unchanged)", "Runtime/HAR/browser mismatch", "Recorded state, text, layout, or font-face differences", "Page, console, or network errors"],
+    "controlledProbe": {"postBlurWaitMs": [0, 100, 250, 400, 800], "differentPixelsAgainstReference": [20, 20, 18, 18, 18], "didNotReproduceRun5OutlierPixels": 89},
+    "unresolved": "Capture timing, warmed-context, font rasterization, or compositor effects were not isolated; see README for details."
   }
 }

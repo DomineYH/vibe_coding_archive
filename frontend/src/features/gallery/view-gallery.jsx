@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AppCard, Btn, EmptyState, SearchIcon } from "../../components/ui";
+import { AppCard, Btn, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
 
 export function GalleryView({
@@ -98,7 +99,7 @@ export function GalleryView({
             </select>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
-                <SearchIcon />
+                <Search size={13} aria-hidden="true" />
               </span>
               <label className="sr-only" htmlFor="gallery-search">
                 앱·작성자 검색

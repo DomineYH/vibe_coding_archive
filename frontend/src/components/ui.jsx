@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, Copy, Lock, Search, SearchX } from "lucide-react";
+import { Lock, SearchX } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function Btn({
@@ -195,21 +195,5 @@ export function EmptyState({ title, desc, children }) {
       ) : null}
       {children ? <div className="mt-4">{children}</div> : null}
     </div>
-  );
-}
-
-export function SearchIcon() {
-  return <Search size={13} aria-hidden="true" />;
-}
-
-export function ExternalLinkIcon() {
-  return <ArrowUpRight size={16} aria-hidden="true" />;
-}
-
-export function CopyIcon({ done = false }) {
-  return done ? (
-    <Check size={13} aria-hidden="true" />
-  ) : (
-    <Copy size={13} aria-hidden="true" />
   );
 }

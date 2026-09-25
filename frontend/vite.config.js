@@ -7,9 +7,17 @@ import react from "@vitejs/plugin-react";
 const root = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(({ command, mode: viteMode }) => {
-  const configured =
-    process.env.VITE_DATA_MODE ||
-    loadEnv(viteMode, root, "VITE_").VITE_DATA_MODE;
+  const env = loadEnv(viteMode, root, "VITE_");
+  const unsupported = new Set(
+    [...Object.keys(env), ...Object.keys(process.env)].filter(
+      (key) => key.startsWith("VITE_") && key !== "VITE_DATA_MODE",
+    ),
+  );
+  if (unsupported.size)
+    throw new Error(
+      `Unsupported VITE_* environment variables: ${[...unsupported].join(", ")}`,
+    );
+  const configured = process.env.VITE_DATA_MODE || env.VITE_DATA_MODE;
   const dataMode = configured || (command === "serve" ? "mock" : "api");
   if (dataMode !== "mock" && dataMode !== "api")
     throw new Error("VITE_DATA_MODE must be mock or api");
