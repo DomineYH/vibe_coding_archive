@@ -44,7 +44,12 @@ function job(state: StoredState): StoredObject {
 
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 6)],
+  ["unsupported state version", (state) => (state.version = 7)],
+  ["invalid mock clock", (state) => (state.mock_now = "not a date")],
+  [
+    "missing principal session",
+    (state) => (state.principal_id = "00000000-0000-4000-8000-000000000101"),
+  ],
   ["missing auth flow context", (state) => delete state.auth_flow],
   [
     "invalid auth flow sequence",
@@ -204,7 +209,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 5,
+      version: 6,
       principal_id: null,
       private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
       registered_accounts: [],
@@ -226,6 +231,9 @@ describe("persisted mock state validation", () => {
     delete v2.admin_users;
     delete v2.approval_operations;
     delete v2.approval_operation_sequence;
+    delete v2.mock_now;
+    delete v2.credential_overrides;
+    delete v2.principal_session;
     v2.principal_id = "00000000-0000-4000-8000-000000000101";
     localStorage.setItem(
       MOCK_STORAGE_KEY,
@@ -236,7 +244,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 5,
+      version: 6,
       registered_accounts: [],
       principal_id: "00000000-0000-4000-8000-000000000101",
       admin_users: expect.any(Array),
@@ -255,6 +263,9 @@ describe("persisted mock state validation", () => {
     delete previous.admin_users;
     delete previous.approval_operations;
     delete previous.approval_operation_sequence;
+    delete previous.mock_now;
+    delete previous.credential_overrides;
+    delete previous.principal_session;
     localStorage.setItem(
       MOCK_STORAGE_KEY,
       JSON.stringify({ ...previous, version: 3 }),
@@ -264,10 +275,49 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 5,
+      version: 6,
       observation_generation: 0,
       auth_flow: { revision: "0", last_identity_change_revision: "0" },
       admin_users: expect.any(Array),
+    });
+  });
+
+  it("migrates version 5 auth state while preserving the admin directory", async () => {
+    resetMockState();
+    const current = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    const previous = { ...current } as Record<string, unknown>;
+    delete previous.mock_now;
+    delete previous.credential_overrides;
+    delete previous.principal_session;
+    previous.version = 5;
+    previous.admin_users = (previous.admin_users as StoredObject[]).filter(
+      (user) =>
+        user.id !== "00000000-0000-4000-8000-000000000900" &&
+        user.id !== "00000000-0000-4000-8000-000000000901",
+    );
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(previous));
+
+    await appsService.list();
+
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
+    ).toMatchObject({
+      version: 6,
+      mock_now: "2026-09-22T00:12:00.000Z",
+      credential_overrides: [],
+      principal_session: null,
+      admin_users: expect.arrayContaining([
+        expect.objectContaining({
+          id: "00000000-0000-4000-8000-000000000900",
+          approved: true,
+        }),
+        expect.objectContaining({
+          id: "00000000-0000-4000-8000-000000000901",
+          approved: true,
+        }),
+      ]),
     });
   });
 });

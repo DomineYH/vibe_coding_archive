@@ -166,6 +166,30 @@ describe("response mappers", () => {
     );
   });
 
+  it("maps only approved change-only sessions without full-session metadata", () => {
+    const changeOnly = {
+      id: "00000000-0000-4000-8000-000000000107",
+      login_id: "temporary-teacher",
+      nickname: "임시 계정 교사",
+      role: "user",
+      approved: true,
+      must_change_password: true,
+      session_kind: "change_only",
+      expires_at: "2026-09-22T00:27:00.000Z",
+    };
+    expect(mapSelf(changeOnly)).toMatchObject({
+      mustChangePassword: true,
+      sessionKind: "change_only",
+      expiresAt: changeOnly.expires_at,
+      email: null,
+      phone: null,
+      recentAuthUntil: null,
+    });
+    expect(() => mapSelf({ ...changeOnly, approved: false })).toThrowError(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
+  });
+
   it("maps a strict unapproved registration response without contact fields", () => {
     const registered = {
       id: "00000000-0000-4000-8000-000000000107",

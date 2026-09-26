@@ -14,6 +14,7 @@ export type AuthRegisterInput = {
   email?: string | null;
   phone?: string | null;
 };
+export type AuthChangePasswordInput = { password: string };
 export type AuthRequestOptions = { signal?: AbortSignal };
 export type CurrentAuthState = {
   user: AuthUser | null;
@@ -26,5 +27,6 @@ export type AuthService = {
   getCsrf(options?: AuthRequestOptions): Promise<CsrfToken>;
   register(input: AuthRegisterInput): Promise<RegisteredUser>;
   login(input: AuthLoginInput): Promise<AuthResult>;
+  changePassword(input: AuthChangePasswordInput): Promise<AuthResult>;
   logout(): Promise<void>;
 };

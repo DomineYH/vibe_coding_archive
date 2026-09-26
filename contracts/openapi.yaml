@@ -143,6 +143,43 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+  /auth/password:
+    post:
+      operationId: changePassword
+      summary: Replace the temporary password in a change-only session
+      description: >-
+        Requires a valid change-only session. The password is normalized to NFC
+        without trimming; confirmation stays in the browser and is not sent.
+        The request is rejected when the temporary credential or session has
+        expired, including at the exact expiry boundary.
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: X-CSRF-Token
+          in: header
+          required: true
+          schema: { type: string, minLength: 1 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: The temporary credential is consumed and a full session is issued.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResult"
+        "401":
+          $ref: "#/components/responses/ServiceError"
+        "403":
+          $ref: "#/components/responses/ServiceError"
+        "422":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
   /auth/logout:
     post:
       operationId: logout
@@ -527,6 +564,22 @@ components:
           maxLength: 32
           pattern: "^[가-힣A-Za-z0-9_.-]+$"
         password: { type: string, minLength: 1 }
+    ChangePasswordInput:
+      type: object
+      additionalProperties: false
+      required: [password]
+      description: >-
+        A new password of 15-128 Unicode code points. Normalize to NFC without
+        trimming or truncation; compare the full normalized value against the
+        versioned local common-password blocklist. Do not send it to an external
+        service. The Phase 1 mock does not apply this check while list
+        redistribution rights remain unresolved. The browser confirmation is
+        never sent.
+      properties:
+        password:
+          type: string
+          minLength: 15
+          maxLength: 128
     RegisterInput:
       type: object
       additionalProperties: false
@@ -534,9 +587,11 @@ components:
       description: >-
         login_id and nickname are trimmed and normalized to NFC; password is
         normalized to NFC without trimming. Lengths count Unicode code points.
-        Password length is 15-128 and common-password checks use the fixed
-        server-side local blocklist. email and phone are optional synthetic
-        Phase 1 inputs; password_confirm is never part of this request.
+        Password length is 15-128. The production contract checks the full
+        normalized value against the versioned local common-password blocklist;
+        the Phase 1 mock does not apply the check while list redistribution
+        rights remain unresolved. email and phone are optional synthetic Phase
+        1 inputs; password_confirm is never part of this request.
       properties:
         login_id:
           type: string

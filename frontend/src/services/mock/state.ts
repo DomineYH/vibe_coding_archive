@@ -7,7 +7,7 @@ import {
   mapRegisteredUser,
 } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
-import { DEMO_ACCOUNTS } from "./accounts";
+import { MOCK_ACCOUNTS } from "./accounts";
 
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
@@ -44,11 +44,17 @@ const V2_STATE_KEYS = [
 ];
 const V3_STATE_KEYS = [...V2_STATE_KEYS, "registered_accounts"];
 const V4_STATE_KEYS = [...V3_STATE_KEYS, "auth_flow", "observation_generation"];
-const STATE_KEYS = [
+const V5_STATE_KEYS = [
   ...V4_STATE_KEYS,
   "admin_users",
   "approval_operations",
   "approval_operation_sequence",
+];
+const STATE_KEYS = [
+  ...V5_STATE_KEYS,
+  "mock_now",
+  "credential_overrides",
+  "principal_session",
 ];
 const AUTH_FLOW_KEYS = [
   "flow_id",
@@ -58,6 +64,7 @@ const AUTH_FLOW_KEYS = [
   "issued_session_generation",
 ];
 const MOCK_FLOW_ID = "00000000-0000-4000-8000-000000000200";
+const MOCK_INITIAL_TIME = "2026-09-22T00:12:00.000Z";
 const LEGACY_STATE_KEYS = ["version", "generation", "scenario", "apps"];
 const REGISTERED_ACCOUNT_KEYS = [
   "id",
@@ -86,6 +93,17 @@ const APPROVAL_OPERATION_KEYS = [
   "applied_approved",
   "finalized_at",
   "rejection_code",
+];
+const CREDENTIAL_OVERRIDE_KEYS = [
+  "account_id",
+  "password",
+  "must_change_password",
+  "temporary_password_expires_at",
+];
+const PRINCIPAL_SESSION_KEYS = [
+  "session_kind",
+  "expires_at",
+  "recent_auth_until",
 ];
 const APP_KEYS = [
   "id",
@@ -144,8 +162,19 @@ export type MockApprovalOperation = {
   finalized_at: string | null;
   rejection_code: string | null;
 };
+export type MockCredentialOverride = {
+  account_id: string;
+  password: string;
+  must_change_password: boolean;
+  temporary_password_expires_at: string | null;
+};
+export type MockPrincipalSession = {
+  session_kind: "full" | "change_only";
+  expires_at: string;
+  recent_auth_until: string | null;
+};
 export type MockState = {
-  version: 5;
+  version: 6;
   generation: number;
   observation_generation: number;
   scenario: MockScenario;
@@ -156,6 +185,9 @@ export type MockState = {
   admin_users: MockAdminUserState[];
   approval_operations: MockApprovalOperation[];
   approval_operation_sequence: number;
+  mock_now: string;
+  credential_overrides: MockCredentialOverride[];
+  principal_session: MockPrincipalSession | null;
   auth_flow: {
     flow_id: string;
     revision: string;
@@ -231,16 +263,16 @@ function validateApps(apps: unknown[], isPublic: boolean): void {
     ownerNames.set(item.ownerId, item.owner);
     if (
       !isPublic &&
-      !DEMO_ACCOUNTS.some((account) => account.id === item.ownerId)
+      !MOCK_ACCOUNTS.some((account) => account.id === item.ownerId)
     )
       throw storageError();
   }
 }
 
 function validateRegisteredAccounts(accounts: unknown[]): void {
-  const ids = new Set<string>(DEMO_ACCOUNTS.map((account) => account.id));
+  const ids = new Set<string>(MOCK_ACCOUNTS.map((account) => account.id));
   const loginIds = new Set<string>(
-    DEMO_ACCOUNTS.map((account) => account.loginId.toLowerCase()),
+    MOCK_ACCOUNTS.map((account) => account.loginId.toLowerCase()),
   );
   for (const account of accounts) {
     if (!hasExactKeys(account, REGISTERED_ACCOUNT_KEYS)) throw storageError();
@@ -274,7 +306,7 @@ function validateAdminUsers(
   registeredAccounts: MockRegisteredAccount[],
 ): void {
   const expected = new Set([
-    ...DEMO_ACCOUNTS.map((account) => account.id),
+    ...MOCK_ACCOUNTS.map((account) => account.id),
     ...registeredAccounts.map((account) => account.id),
   ]);
   const seen = new Set<string>();
@@ -299,7 +331,7 @@ function validateAdminUsers(
 function validateApprovalOperations(operations: unknown[]): void {
   const keys = new Set<string>();
   const adminIds = new Set<string>(
-    DEMO_ACCOUNTS.filter((account) => account.role === "admin").map(
+    MOCK_ACCOUNTS.filter((account) => account.role === "admin").map(
       (account) => account.id,
     ),
   );
@@ -344,6 +376,48 @@ function validateApprovalOperations(operations: unknown[]): void {
   }
 }
 
+function validateCredentialOverrides(
+  overrides: unknown[],
+  registeredAccounts: MockRegisteredAccount[],
+): void {
+  const accountIds = new Set([
+    ...MOCK_ACCOUNTS.map((account) => account.id),
+    ...registeredAccounts.map((account) => account.id),
+  ]);
+  const seen = new Set<string>();
+  for (const value of overrides) {
+    if (!hasExactKeys(value, CREDENTIAL_OVERRIDE_KEYS)) throw storageError();
+    const override = value as unknown as MockCredentialOverride;
+    if (
+      !accountIds.has(override.account_id) ||
+      seen.has(override.account_id) ||
+      typeof override.password !== "string" ||
+      Array.from(override.password).length < 15 ||
+      Array.from(override.password).length > 128 ||
+      typeof override.must_change_password !== "boolean" ||
+      (override.temporary_password_expires_at !== null &&
+        !isDateTime(override.temporary_password_expires_at)) ||
+      override.must_change_password !==
+        (override.temporary_password_expires_at !== null)
+    )
+      throw storageError();
+    seen.add(override.account_id);
+  }
+}
+
+function initialPrincipalSession(
+  principalId: unknown,
+): MockPrincipalSession | null {
+  if (typeof principalId !== "string") return null;
+  return {
+    session_kind: "full",
+    expires_at: new Date(
+      Date.parse(MOCK_INITIAL_TIME) + 8 * 60 * 60 * 1000,
+    ).toISOString(),
+    recent_auth_until: null,
+  };
+}
+
 function nextGeneration(currentGeneration: number): number {
   const current = Math.max(currentGeneration, resetGeneration);
   return current >= Number.MAX_SAFE_INTEGER ? 0 : current + 1;
@@ -353,7 +427,7 @@ function initialAdminUsers(
   registeredAccounts: MockRegisteredAccount[] = [],
 ): MockAdminUserState[] {
   return [
-    ...DEMO_ACCOUNTS.map((account) => ({
+    ...MOCK_ACCOUNTS.map((account) => ({
       id: account.id,
       approved: account.approved,
       account_version: 1,
@@ -373,7 +447,7 @@ function initialAdminUsers(
 }
 
 const initialState = (): MockState => ({
-  version: 5,
+  version: 6,
   generation: resetGeneration,
   observation_generation: 0,
   scenario: "original",
@@ -384,6 +458,9 @@ const initialState = (): MockState => ({
   admin_users: initialAdminUsers(),
   approval_operations: [],
   approval_operation_sequence: 0,
+  mock_now: MOCK_INITIAL_TIME,
+  credential_overrides: [],
+  principal_session: null,
   auth_flow: {
     flow_id: MOCK_FLOW_ID,
     revision: "0",
@@ -428,10 +505,11 @@ function readState(): MockState {
   }
   let state: Record<string, unknown>;
   let needsMigration = false;
+  let preserveAdminUsers = false;
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 5,
+      version: 6,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
@@ -440,47 +518,76 @@ function readState(): MockState {
       admin_users: [],
       approval_operations: [],
       approval_operation_sequence: 0,
+      mock_now: MOCK_INITIAL_TIME,
+      credential_overrides: [],
+      principal_session: null,
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
     state = {
       ...value,
-      version: 5,
+      version: 6,
       registered_accounts: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
       admin_users: [],
       approval_operations: [],
       approval_operation_sequence: 0,
+      mock_now: MOCK_INITIAL_TIME,
+      credential_overrides: [],
+      principal_session: initialPrincipalSession(value.principal_id),
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
     state = {
       ...value,
-      version: 5,
+      version: 6,
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
       admin_users: [],
       approval_operations: [],
       approval_operation_sequence: 0,
+      mock_now: MOCK_INITIAL_TIME,
+      credential_overrides: [],
+      principal_session: initialPrincipalSession(value.principal_id),
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V4_STATE_KEYS) && value.version === 4) {
     state = {
       ...value,
-      version: 5,
+      version: 6,
       admin_users: [],
       approval_operations: [],
       approval_operation_sequence: 0,
+      mock_now: MOCK_INITIAL_TIME,
+      credential_overrides: [],
+      principal_session: initialPrincipalSession(value.principal_id),
     };
     needsMigration = true;
+  } else if (hasExactKeys(value, V5_STATE_KEYS) && value.version === 5) {
+    const previousUsers = value.admin_users as MockAdminUserState[];
+    const addedUsers = initialAdminUsers(
+      value.registered_accounts as MockRegisteredAccount[],
+    ).filter(
+      (user) => !previousUsers.some((previous) => previous.id === user.id),
+    );
+    state = {
+      ...value,
+      version: 6,
+      mock_now: MOCK_INITIAL_TIME,
+      credential_overrides: [],
+      principal_session: initialPrincipalSession(value.principal_id),
+      admin_users: [...previousUsers, ...addedUsers],
+    };
+    needsMigration = true;
+    preserveAdminUsers = true;
   } else if (hasExactKeys(value, STATE_KEYS)) {
     state = value;
   } else {
     throw storageError();
   }
   if (
-    state.version !== 5 ||
+    state.version !== 6 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -488,6 +595,8 @@ function readState(): MockState {
     !Array.isArray(state.apps) ||
     !Array.isArray(state.private_apps) ||
     !Array.isArray(state.registered_accounts) ||
+    !Array.isArray(state.credential_overrides) ||
+    !isDateTime(state.mock_now) ||
     typeof state.observation_generation !== "number" ||
     !Number.isSafeInteger(state.observation_generation) ||
     state.observation_generation < 0 ||
@@ -498,7 +607,10 @@ function readState(): MockState {
         !Number.isSafeInteger(state.approval_operation_sequence) ||
         state.approval_operation_sequence < 0)) ||
     !hasExactKeys(state.auth_flow, AUTH_FLOW_KEYS) ||
-    (state.principal_id !== null && typeof state.principal_id !== "string")
+    (state.principal_id !== null && typeof state.principal_id !== "string") ||
+    (state.principal_session !== null &&
+      !hasExactKeys(state.principal_session, PRINCIPAL_SESSION_KEYS)) ||
+    (state.principal_id === null) !== (state.principal_session === null)
   ) {
     throw storageError();
   }
@@ -521,24 +633,45 @@ function readState(): MockState {
     } catch {
       throw storageError();
     }
-    validState.admin_users = initialAdminUsers(validState.registered_accounts);
-    validState.approval_operations = [];
-    validState.approval_operation_sequence = 0;
+    if (!preserveAdminUsers) {
+      validState.admin_users = initialAdminUsers(
+        validState.registered_accounts,
+      );
+      validState.approval_operations = [];
+      validState.approval_operation_sequence = 0;
+    }
   }
   try {
     validateRegisteredAccounts(state.registered_accounts);
     validateAdminUsers(validState.admin_users, validState.registered_accounts);
     validateApprovalOperations(validState.approval_operations);
+    validateCredentialOverrides(
+      validState.credential_overrides,
+      validState.registered_accounts,
+    );
     validateApps(state.apps, true);
     validateApps(state.private_apps, false);
   } catch {
     throw storageError();
   }
+  if (validState.principal_session !== null) {
+    const session = validState.principal_session;
+    if (
+      (session.session_kind !== "full" &&
+        session.session_kind !== "change_only") ||
+      !isDateTime(session.expires_at) ||
+      (session.recent_auth_until !== null &&
+        !isDateTime(session.recent_auth_until)) ||
+      (session.session_kind === "change_only" &&
+        session.recent_auth_until !== null)
+    )
+      throw storageError();
+  }
   const ids = new Set(state.apps.map((app) => app.id));
   if (state.private_apps.some((app) => ids.has(app.id))) throw storageError();
   if (
     state.principal_id !== null &&
-    !DEMO_ACCOUNTS.some((account) => account.id === state.principal_id) &&
+    !MOCK_ACCOUNTS.some((account) => account.id === state.principal_id) &&
     !state.registered_accounts.some(
       (account) => account.id === state.principal_id,
     )
@@ -564,6 +697,21 @@ export function getMockSnapshot(): MockState {
   return readState();
 }
 
+export function getMockNow(state = readState()): string {
+  return state.mock_now;
+}
+
+export function setMockClock(value: string): void {
+  const date = new Date(value);
+  if (!isDateTime(value) || !Number.isFinite(date.getTime()))
+    throw new TypeError("Unsupported mock time");
+  const state = readState();
+  const generation = nextGeneration(state.generation);
+  writeState({ ...state, mock_now: date.toISOString(), generation });
+  resetGeneration = generation;
+  window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+}
+
 export type MockAccountRecord = {
   id: string;
   loginId: string;
@@ -571,24 +719,48 @@ export type MockAccountRecord = {
   password: string;
   role: "admin" | "user";
   approved: boolean;
+  mustChangePassword: boolean;
+  temporaryPasswordExpiresAt: string | null;
   accountVersion: number;
   createdAt: string;
   firstApprovedAt: string | null;
   pendingExpiresAt: string | null;
 };
 
-export function getMockAccounts(state = readState()): MockAccountRecord[] {
-  const bases = [...DEMO_ACCOUNTS, ...state.registered_accounts];
+export function getMockAccounts(
+  state = readState(),
+  includeTemporaryFixtures = false,
+): MockAccountRecord[] {
+  const demoAccounts = MOCK_ACCOUNTS.filter(
+    (account) =>
+      !("temporaryDemoFixture" in account) ||
+      includeTemporaryFixtures ||
+      state.credential_overrides.some(
+        (item) => item.account_id === account.id && !item.must_change_password,
+      ),
+  );
+  const bases = [...demoAccounts, ...state.registered_accounts];
   return bases.map((base) => {
     const status = state.admin_users.find((user) => user.id === base.id);
+    const override = state.credential_overrides.find(
+      (item) => item.account_id === base.id,
+    );
     if (!status) throw storageError();
     return {
       id: base.id,
       loginId: base.loginId,
       nickname: base.nickname,
-      password: base.password,
+      password: override?.password ?? base.password,
       role: "role" in base ? base.role : "user",
       approved: status.approved,
+      mustChangePassword:
+        override?.must_change_password ??
+        ("mustChangePassword" in base && base.mustChangePassword === true),
+      temporaryPasswordExpiresAt: override
+        ? override.temporary_password_expires_at
+        : "temporaryPasswordExpiresAt" in base
+          ? base.temporaryPasswordExpiresAt
+          : null,
       accountVersion: status.account_version,
       createdAt: status.created_at,
       firstApprovedAt: status.first_approved_at,
@@ -766,8 +938,13 @@ export function readMockScenario(): MockScenario {
 export function setMockPrincipal(
   principalId: string | null,
   expectedGeneration?: number,
+  session?: MockPrincipalSession,
 ): void {
   const state = readState();
+  const nextSession =
+    principalId === null
+      ? null
+      : (session ?? initialPrincipalSession(principalId));
   if (
     expectedGeneration !== undefined &&
     state.generation !== expectedGeneration
@@ -775,11 +952,13 @@ export function setMockPrincipal(
     throw new DOMException("Mock state changed", "AbortError");
   if (
     principalId !== null &&
-    !getMockAccounts(state).some(
+    !getMockAccounts(state, true).some(
       (account) => account.id === principalId && account.approved,
     )
   )
     throw new TypeError("Unsupported mock member");
+  if (principalId !== null && !nextSession)
+    throw new TypeError("A mock session is required for a principal");
   if (state.principal_id === principalId) return;
   const generation = nextGeneration(state.generation);
   const revision = (BigInt(state.auth_flow.revision) + 1n).toString();
@@ -789,6 +968,7 @@ export function setMockPrincipal(
   writeState({
     ...state,
     principal_id: principalId,
+    principal_session: nextSession,
     generation,
     observation_generation:
       state.observation_generation >= Number.MAX_SAFE_INTEGER
@@ -806,6 +986,99 @@ export function setMockPrincipal(
   resetGeneration = generation;
 }
 
+export function completeMockPasswordChange(input: {
+  accountId: string;
+  password: string;
+  expectedGeneration: number;
+}): void {
+  // ponytail: one localStorage principal only; the production API owns cross-device credential/session rotation.
+  const state = readState();
+  if (state.generation !== input.expectedGeneration)
+    throw new DOMException("Mock state changed", "AbortError");
+  const session = state.principal_session;
+  const account = getMockAccounts(state, true).find(
+    (item) => item.id === input.accountId,
+  );
+  if (
+    state.principal_id !== input.accountId ||
+    !account?.mustChangePassword ||
+    session?.session_kind !== "change_only"
+  )
+    throw new ServiceError(
+      "SESSION_KIND_NOT_ALLOWED",
+      "임시 비밀번호 로그인 상태에서만 변경할 수 있어요.",
+      { httpStatus: 403, outcome: "rejected" },
+    );
+  const now = Date.parse(state.mock_now);
+  if (
+    now >= Date.parse(session.expires_at) ||
+    !account.temporaryPasswordExpiresAt ||
+    now >= Date.parse(account.temporaryPasswordExpiresAt)
+  ) {
+    setMockPrincipal(null, state.generation);
+    throw new ServiceError(
+      "AUTH_REQUIRED",
+      "변경 전용 로그인이 만료되었어요. 다시 로그인해 주세요.",
+      { httpStatus: 401, outcome: "rejected" },
+    );
+  }
+  const current = state.admin_users.find((item) => item.id === account.id);
+  if (!current || current.account_version >= Number.MAX_SAFE_INTEGER)
+    throw new ServiceError(
+      "SERVICE_UNAVAILABLE",
+      "비밀번호를 변경할 수 없어요.",
+      { httpStatus: 503 },
+    );
+
+  const revision = (BigInt(state.auth_flow.revision) + 1n).toString();
+  const sessionGeneration = (
+    BigInt(state.auth_flow.issued_session_generation) + 1n
+  ).toString();
+  const recentAuthUntil =
+    account.role === "admin"
+      ? new Date(now + 15 * 60 * 1000).toISOString()
+      : null;
+  const generation = nextGeneration(state.generation);
+  const override: MockCredentialOverride = {
+    account_id: account.id,
+    password: input.password,
+    must_change_password: false,
+    temporary_password_expires_at: null,
+  };
+  writeState({
+    ...state,
+    credential_overrides: [
+      ...state.credential_overrides.filter(
+        (item) => item.account_id !== account.id,
+      ),
+      override,
+    ],
+    admin_users: state.admin_users.map((item) =>
+      item.id === account.id
+        ? { ...item, account_version: item.account_version + 1 }
+        : item,
+    ),
+    principal_session: {
+      session_kind: "full",
+      expires_at: new Date(now + 8 * 60 * 60 * 1000).toISOString(),
+      recent_auth_until: recentAuthUntil,
+    },
+    generation,
+    observation_generation:
+      state.observation_generation >= Number.MAX_SAFE_INTEGER
+        ? 0
+        : state.observation_generation + 1,
+    auth_flow: {
+      ...state.auth_flow,
+      revision,
+      session_generation: sessionGeneration,
+      last_identity_change_revision: revision,
+      issued_session_generation: sessionGeneration,
+    },
+  });
+  resetGeneration = generation;
+}
+
 export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
   const state = readState();
   if (
@@ -814,7 +1087,7 @@ export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
         item.id === account.id ||
         item.loginId.toLowerCase() === account.loginId.toLowerCase(),
     ) ||
-    DEMO_ACCOUNTS.some(
+    MOCK_ACCOUNTS.some(
       (item) =>
         item.id === account.id ||
         item.loginId.toLowerCase() === account.loginId.toLowerCase(),
@@ -827,7 +1100,7 @@ export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
     registered_accounts: [...state.registered_accounts, account],
     admin_users: [
       ...state.admin_users,
-      ...initialAdminUsers([account]).slice(DEMO_ACCOUNTS.length),
+      ...initialAdminUsers([account]).slice(MOCK_ACCOUNTS.length),
     ],
     generation,
   });

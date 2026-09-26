@@ -24,6 +24,9 @@ export const authService: AuthService = {
   async login() {
     throw unavailable();
   },
+  async changePassword() {
+    throw unavailable();
+  },
   async logout() {
     throw unavailable();
   },

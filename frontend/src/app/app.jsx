@@ -123,7 +123,9 @@ function Header({
           </Link>
           {auth.status === "ready" &&
           !auth.concealed &&
-          auth.user?.role === "admin" ? (
+          auth.user?.role === "admin" &&
+          auth.user.sessionKind === "full" &&
+          !auth.user.mustChangePassword ? (
             <Link
               to="/admin"
               aria-current={active === "admin" ? "page" : undefined}
@@ -439,18 +441,30 @@ function NotFoundRoute() {
   );
 }
 
-function AuthRoute({ location, auth, onRetry, onLogin, onRegister }) {
+function AuthRoute({
+  location,
+  auth,
+  onRetry,
+  onLogin,
+  onRegister,
+  onChangePassword,
+}) {
   const route = readAuthRoute(location.search);
+  const authUser =
+    auth.status === "ready" && !auth.concealed ? auth.user : null;
+  const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
   return (
     <AuthView
-      key={route.mode}
-      mode={route.mode}
+      key={mode}
+      mode={mode}
+      authUser={authUser}
       routeError={route.invalid}
-      authStatus={auth.status}
+      authStatus={auth.concealed ? "checking" : auth.status}
       authError={auth.error}
       onRetry={onRetry}
       onLogin={(input) => onLogin(input, route.returnTo)}
       onRegister={onRegister}
+      onChangePassword={(input) => onChangePassword(input, route.returnTo)}
     />
   );
 }
@@ -499,6 +513,13 @@ function AdminRoute({ auth, onRetry }) {
     return (
       <Navigate
         to={`/auth?mode=login&return_to=${encodeURIComponent("/admin")}`}
+        replace
+      />
+    );
+  if (auth.user.sessionKind === "change_only" || auth.user.mustChangePassword)
+    return (
+      <Navigate
+        to={`/auth?mode=password-change&return_to=${encodeURIComponent("/admin")}`}
         replace
       />
     );
@@ -679,6 +700,13 @@ export default function App() {
               "로그인 상태를 확인할 수 없습니다. 다시 확인해 주세요.",
             )
           );
+        if (result.user.mustChangePassword) {
+          navigate(
+            `/auth?mode=password-change&return_to=${encodeURIComponent(returnTo)}`,
+            { replace: true },
+          );
+          return;
+        }
         const appMatch = returnTo.match(/^\/apps\/([0-9a-f-]+)$/i);
         if (appMatch) {
           try {
@@ -688,6 +716,37 @@ export default function App() {
           }
         }
         navigate(returnTo, { replace: true });
+      } catch (error) {
+        if (!confirmed) await restoreAuth();
+        throw error;
+      }
+    },
+    [beginAuthTransition, navigate, restoreAuth],
+  );
+
+  const changePassword = useCallback(
+    async (input, returnTo) => {
+      await beginAuthTransition();
+      let confirmed = false;
+      try {
+        const result = await authService.changePassword(input);
+        const current = await restoreAuth();
+        if (
+          current?.status !== "ready" ||
+          current.user?.id !== result.user.id ||
+          current.user.sessionKind !== "full" ||
+          current.user.mustChangePassword
+        )
+          throw (
+            current?.error ??
+            new ServiceError(
+              "SERVICE_UNAVAILABLE",
+              "비밀번호 변경 상태를 확인할 수 없습니다. 다시 확인해 주세요.",
+            )
+          );
+        confirmed = true;
+        navigate(returnTo, { replace: true });
+        setToast("비밀번호를 변경했어요.");
       } catch (error) {
         if (!confirmed) await restoreAuth();
         throw error;
@@ -802,6 +861,7 @@ export default function App() {
               auth={auth}
               onRetry={() => restoreAuth()}
               onLogin={login}
+              onChangePassword={changePassword}
               onRegister={(input) => authService.register(input)}
             />
           }

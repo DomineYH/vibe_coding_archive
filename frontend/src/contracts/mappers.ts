@@ -283,7 +283,7 @@ export function mapSelf(value: unknown): AuthUser {
   const fullSession = sessionKind === "full";
   if (
     (fullSession && (!item.approved || item.must_change_password)) ||
-    (!fullSession && !item.must_change_password)
+    (!fullSession && (!item.approved || !item.must_change_password))
   )
     throw contractError();
   if (
