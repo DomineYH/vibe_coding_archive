@@ -1,13 +1,26 @@
 import {
   isDateTime,
+  mapAppWriteOperation,
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
 } from "../../contracts/mappers";
 import { ServiceError, type ServiceErrorCode } from "../service-error";
-import { normalizeQueryForService, type AppsService } from "../apps-service";
+import {
+  appInputToWire,
+  normalizeAppInput,
+  normalizeQueryForService,
+  type AppsService,
+} from "../apps-service";
+import { authService } from "./auth";
 
-type ApiEndpoint = "GET /meta" | "GET /apps" | "GET /apps/{id}";
+type ApiEndpoint =
+  | "GET /meta"
+  | "GET /apps"
+  | "GET /apps/{id}"
+  | "POST /write-operations"
+  | "POST /apps"
+  | "GET /write-operations/{key}";
 
 const API_ERROR_TRIPLES = [
   { endpoint: "GET /meta", status: 503, code: "FEATURE_UNAVAILABLE" },
@@ -29,6 +42,105 @@ const API_ERROR_TRIPLES = [
   },
   { endpoint: "GET /apps/{id}", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /apps/{id}", status: 503, code: "SERVICE_UNAVAILABLE" },
+  { endpoint: "POST /write-operations", status: 400, code: "VALIDATION_ERROR" },
+  { endpoint: "POST /write-operations", status: 401, code: "AUTH_REQUIRED" },
+  { endpoint: "POST /write-operations", status: 403, code: "FORBIDDEN" },
+  {
+    endpoint: "POST /write-operations",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "POST /write-operations",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  { endpoint: "POST /write-operations", status: 403, code: "CSRF_INVALID" },
+  { endpoint: "POST /write-operations", status: 403, code: "ORIGIN_REJECTED" },
+  {
+    endpoint: "POST /write-operations",
+    status: 409,
+    code: "AUTH_STATE_CHANGED",
+  },
+  {
+    endpoint: "POST /write-operations",
+    status: 409,
+    code: "AUTH_TRANSITION_PENDING",
+  },
+  { endpoint: "POST /write-operations", status: 422, code: "VALIDATION_ERROR" },
+  {
+    endpoint: "POST /write-operations",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  { endpoint: "POST /write-operations", status: 503, code: "DB_BUSY" },
+  { endpoint: "POST /write-operations", status: 503, code: "AUTH_BUSY" },
+  { endpoint: "POST /apps", status: 400, code: "VALIDATION_ERROR" },
+  { endpoint: "POST /apps", status: 401, code: "AUTH_REQUIRED" },
+  { endpoint: "POST /apps", status: 403, code: "FORBIDDEN" },
+  { endpoint: "POST /apps", status: 403, code: "PASSWORD_CHANGE_REQUIRED" },
+  { endpoint: "POST /apps", status: 403, code: "SESSION_KIND_NOT_ALLOWED" },
+  { endpoint: "POST /apps", status: 403, code: "CSRF_INVALID" },
+  { endpoint: "POST /apps", status: 403, code: "ORIGIN_REJECTED" },
+  { endpoint: "POST /apps", status: 404, code: "OPERATION_NOT_FOUND" },
+  { endpoint: "POST /apps", status: 409, code: "OPERATION_KEY_MISMATCH" },
+  {
+    endpoint: "POST /apps",
+    status: 409,
+    code: "OPERATION_ALREADY_RESOLVED",
+  },
+  { endpoint: "POST /apps", status: 409, code: "OPERATION_INVALIDATED" },
+  { endpoint: "POST /apps", status: 409, code: "AUTH_STATE_CHANGED" },
+  { endpoint: "POST /apps", status: 409, code: "AUTH_TRANSITION_PENDING" },
+  { endpoint: "POST /apps", status: 410, code: "OPERATION_EXPIRED" },
+  { endpoint: "POST /apps", status: 422, code: "VALIDATION_ERROR" },
+  { endpoint: "POST /apps", status: 429, code: "RATE_LIMITED" },
+  { endpoint: "POST /apps", status: 503, code: "SERVICE_UNAVAILABLE" },
+  { endpoint: "POST /apps", status: 503, code: "DB_BUSY" },
+  { endpoint: "POST /apps", status: 503, code: "AUTH_BUSY" },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 401,
+    code: "AUTH_REQUIRED",
+  },
+  { endpoint: "GET /write-operations/{key}", status: 403, code: "FORBIDDEN" },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 404,
+    code: "OPERATION_NOT_FOUND",
+  },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 409,
+    code: "AUTH_STATE_CHANGED",
+  },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 409,
+    code: "AUTH_TRANSITION_PENDING",
+  },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 410,
+    code: "OPERATION_EXPIRED",
+  },
+  {
+    endpoint: "GET /write-operations/{key}",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  { endpoint: "GET /write-operations/{key}", status: 503, code: "DB_BUSY" },
+  { endpoint: "GET /write-operations/{key}", status: 503, code: "AUTH_BUSY" },
 ] as const satisfies readonly {
   endpoint: ApiEndpoint;
   status: number;
@@ -38,13 +150,62 @@ const API_ERROR_TRIPLES = [
 async function getJson(
   endpoint: ApiEndpoint,
   path: string,
-  signal?: AbortSignal,
+  {
+    signal,
+    method = "GET",
+    requestBody,
+    authenticated = false,
+    write = false,
+    idempotencyKey,
+    uncertain = false,
+  }: {
+    signal?: AbortSignal;
+    method?: "GET" | "POST";
+    requestBody?: unknown;
+    authenticated?: boolean;
+    write?: boolean;
+    idempotencyKey?: string;
+    uncertain?: boolean;
+  } = {},
 ): Promise<unknown> {
+  const headers = new Headers({ Accept: "application/json" });
+  if (authenticated || write) {
+    const auth = await authService.getCurrentAuthState({ signal });
+    const user = auth.user;
+    if (auth.status !== "ready" || !user || !user.approved)
+      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+        outcome: "rejected",
+        httpStatus: 401,
+      });
+    if (user.mustChangePassword || user.sessionKind === "change_only")
+      throw new ServiceError(
+        "PASSWORD_CHANGE_REQUIRED",
+        "회원 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
+        { outcome: "rejected", httpStatus: 403 },
+      );
+    if (!auth.flow.sessionGeneration)
+      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+        outcome: "rejected",
+        httpStatus: 401,
+      });
+    headers.set("X-EduVibe-Flow-Id", auth.flow.flowId);
+    headers.set("X-EduVibe-Auth-Revision", auth.flow.revision);
+    headers.set("X-EduVibe-Session-Generation", auth.flow.sessionGeneration);
+    if (write) {
+      const csrf = await authService.getCsrf({ signal });
+      headers.set("X-CSRF-Token", csrf.csrfToken);
+    }
+  }
+  if (requestBody !== undefined)
+    headers.set("Content-Type", "application/json");
+  if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
   let response: Response;
   try {
     response = await fetch(`/api/v1${path}`, {
+      method,
       credentials: "include",
-      headers: { Accept: "application/json" },
+      headers,
+      body: requestBody === undefined ? undefined : JSON.stringify(requestBody),
       signal,
     });
   } catch (error) {
@@ -53,36 +214,44 @@ async function getJson(
       (error instanceof DOMException && error.name === "AbortError")
     )
       throw error;
-    throw new ServiceError("NETWORK_ERROR", "서비스에 연결할 수 없어요.");
+    throw new ServiceError("NETWORK_ERROR", "서비스에 연결할 수 없어요.", {
+      outcome: uncertain ? "unknown" : "not_applicable",
+    });
   }
 
-  let body: unknown;
+  let responseBody: unknown;
   try {
-    body = await response.json();
+    responseBody = await response.json();
   } catch {
     throw new ServiceError(
       "CONTRACT_ERROR",
       "서비스 응답 형식을 확인할 수 없어요.",
-      { httpStatus: response.status },
+      {
+        httpStatus: response.status,
+        outcome: uncertain ? "unknown" : "not_applicable",
+      },
     );
   }
-  if (!response.ok) throw mapApiError(endpoint, body, response.status);
-  return body;
+  if (!response.ok)
+    throw mapApiError(endpoint, responseBody, response.status, uncertain);
+  return responseBody;
 }
 
 function mapApiError(
   endpoint: ApiEndpoint,
   body: unknown,
   httpStatus: number,
+  uncertain = false,
 ): ServiceError {
   if (body === null || typeof body !== "object" || Array.isArray(body)) {
-    return apiContractError(httpStatus);
+    return apiContractError(httpStatus, uncertain);
   }
   const envelope = body as Record<string, unknown>;
-  if (!hasOnlyKeys(envelope, ["error"])) return apiContractError(httpStatus);
+  if (!hasOnlyKeys(envelope, ["error"]))
+    return apiContractError(httpStatus, uncertain);
   const error = (body as { error?: unknown }).error;
   if (error === null || typeof error !== "object" || Array.isArray(error)) {
-    return apiContractError(httpStatus);
+    return apiContractError(httpStatus, uncertain);
   }
   const fields = error as Record<string, unknown>;
   if (
@@ -104,7 +273,7 @@ function mapApiError(
     (fields.server_time !== undefined &&
       !isNullableDateTime(fields.server_time))
   ) {
-    return apiContractError(httpStatus);
+    return apiContractError(httpStatus, uncertain);
   }
   const allowed = API_ERROR_TRIPLES.find(
     (entry) =>
@@ -112,14 +281,21 @@ function mapApiError(
       entry.status === httpStatus &&
       entry.code === fields.code,
   );
-  if (!allowed) return apiContractError(httpStatus);
+  if (!allowed) return apiContractError(httpStatus, uncertain);
   const message =
     endpoint === "GET /apps/{id}" && allowed.code === "NOT_FOUND"
       ? "아카이브 앱을 찾을 수 없어요."
       : fields.message;
   return new ServiceError(allowed.code, message, {
     httpStatus,
-    outcome: httpStatus === 404 ? "rejected" : "not_applicable",
+    outcome:
+      (endpoint === "POST /apps" &&
+        allowed.code === "OPERATION_ALREADY_RESOLVED") ||
+      (uncertain && httpStatus >= 500)
+        ? "unknown"
+        : httpStatus === 404 || httpStatus === 409 || httpStatus === 410
+          ? "rejected"
+          : "not_applicable",
     fields: fields.fields as Record<string, string> | undefined,
     requestId: fields.request_id as string | null,
     reasons: fields.reasons as string[] | undefined,
@@ -128,12 +304,26 @@ function mapApiError(
   });
 }
 
-function apiContractError(httpStatus: number): ServiceError {
+function apiContractError(httpStatus: number, uncertain = false): ServiceError {
   return new ServiceError(
     "CONTRACT_ERROR",
     "서비스 오류 응답 형식을 확인할 수 없어요.",
-    { httpStatus },
+    { httpStatus, outcome: uncertain ? "unknown" : "not_applicable" },
   );
+}
+
+function mapWriteResult<T>(mapper: (value: unknown) => T, value: unknown): T {
+  try {
+    return mapper(value);
+  } catch (error) {
+    if (error instanceof ServiceError && error.code === "CONTRACT_ERROR")
+      throw new ServiceError(
+        "CONTRACT_ERROR",
+        "서비스 응답 형식을 확인할 수 없어요.",
+        { httpStatus: 201, outcome: "unknown" },
+      );
+    throw error;
+  }
 }
 
 function hasOnlyKeys(value: Record<string, unknown>, allowed: string[]) {
@@ -161,7 +351,7 @@ function isNullableDateTime(value: unknown): value is string | null {
 
 export const appsService: AppsService = {
   async getMeta({ signal } = {}) {
-    return mapMeta(await getJson("GET /meta", "/meta", signal));
+    return mapMeta(await getJson("GET /meta", "/meta", { signal }));
   },
 
   async list(query, { signal } = {}) {
@@ -172,16 +362,61 @@ export const appsService: AppsService = {
     if (normalized.grade) params.set("grade", normalized.grade);
     params.set("limit", String(normalized.limit));
     params.set("offset", String(normalized.offset));
-    return mapAppPage(await getJson("GET /apps", `/apps?${params}`, signal));
+    return mapAppPage(
+      await getJson("GET /apps", `/apps?${params}`, { signal }),
+    );
   },
 
   async get(id, { signal } = {}) {
     return mapAppDetailResponse(
-      await getJson(
-        "GET /apps/{id}",
-        `/apps/${encodeURIComponent(id)}`,
+      await getJson("GET /apps/{id}", `/apps/${encodeURIComponent(id)}`, {
         signal,
-      ),
+      }),
     ).item;
+  },
+
+  async issueCreateOperation(input) {
+    const normalized = normalizeAppInput(input);
+    return mapAppWriteOperation(
+      await getJson("POST /write-operations", "/write-operations", {
+        method: "POST",
+        write: true,
+        requestBody: {
+          kind: "app_create",
+          input: appInputToWire(normalized),
+        },
+      }),
+    );
+  },
+
+  async create(input, operationKey) {
+    if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu.test(operationKey))
+      throw new ServiceError("VALIDATION_ERROR", "저장 작업을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    return mapWriteResult(
+      (value) => mapAppDetailResponse(value).item,
+      await getJson("POST /apps", "/apps", {
+        method: "POST",
+        write: true,
+        uncertain: true,
+        idempotencyKey: operationKey,
+        requestBody: appInputToWire(input),
+      }),
+    );
+  },
+
+  async getCreateOperation(key, { signal } = {}) {
+    if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu.test(key))
+      throw new ServiceError("VALIDATION_ERROR", "저장 작업을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    return mapAppWriteOperation(
+      await getJson(
+        "GET /write-operations/{key}",
+        `/write-operations/${encodeURIComponent(key)}`,
+        { authenticated: true, signal },
+      ),
+    );
   },
 };

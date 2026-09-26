@@ -36,6 +36,7 @@ type WireAdminUser = Wire["AdminUser"];
 type WireAdminStats = Wire["AdminStats"];
 type WireAdminUserPage = Wire["AdminUserPage"];
 type WireApprovalOperation = Wire["ApprovalOperation"];
+type WireAppWriteOperation = Wire["AppWriteOperation"];
 
 export type Theme = Wire["Theme"];
 export type Subject = Wire["Subject"];
@@ -92,6 +93,19 @@ export type AppDetail = AppCard & {
   };
   createdAt: string;
   updatedAt: string;
+  serverTime: string;
+};
+export type AppWriteOperation = {
+  key: string;
+  kind: "app_create";
+  targetId: string | null;
+  issuedAt: string;
+  expiresAt: string;
+  state: "unresolved" | "succeeded" | "rejected";
+  dbAppliedAt: string | null;
+  finalizedAt: string | null;
+  resultVersion: number | null;
+  rejectionCode: string | null;
   serverTime: string;
 };
 export type AuthUser = {
@@ -948,6 +962,77 @@ export function mapApprovalOperation(value: unknown): ApprovalOperation {
     appliedApproved,
     finalizedAt,
     rejectionCode,
+  };
+}
+
+export function mapAppWriteOperation(value: unknown): AppWriteOperation {
+  const item = record(value) as unknown as Partial<WireAppWriteOperation>;
+  if (
+    !hasOnlyKeys(item, [
+      "key",
+      "kind",
+      "target_id",
+      "issued_at",
+      "expires_at",
+      "state",
+      "db_applied_at",
+      "finalized_at",
+      "result_version",
+      "rejection_code",
+      "server_time",
+    ]) ||
+    item.kind !== "app_create" ||
+    !["unresolved", "succeeded", "rejected"].includes(String(item.state))
+  )
+    throw contractError();
+
+  const key = nonEmpty(item.key);
+  const targetId = nullableString(item.target_id);
+  if (!UUID.test(key) || (targetId !== null && !UUID.test(targetId)))
+    throw contractError();
+  const issuedAt = dateTime(item.issued_at);
+  const expiresAt = dateTime(item.expires_at);
+  const state = item.state as AppWriteOperation["state"];
+  const dbAppliedAt = nullableDateTime(item.db_applied_at);
+  const finalizedAt = nullableDateTime(item.finalized_at);
+  const resultVersion =
+    item.result_version === null ? null : integer(item.result_version, 1);
+  const rejectionCode = nullableString(item.rejection_code);
+  if (
+    (rejectionCode !== null && !rejectionCode) ||
+    Date.parse(expiresAt) <= Date.parse(issuedAt) ||
+    (state === "unresolved" &&
+      (targetId !== null ||
+        dbAppliedAt !== null ||
+        finalizedAt !== null ||
+        resultVersion !== null ||
+        rejectionCode !== null)) ||
+    (state === "succeeded" &&
+      (targetId === null ||
+        dbAppliedAt === null ||
+        finalizedAt === null ||
+        resultVersion === null ||
+        rejectionCode !== null)) ||
+    (state === "rejected" &&
+      (targetId !== null ||
+        dbAppliedAt !== null ||
+        finalizedAt === null ||
+        resultVersion !== null ||
+        rejectionCode === null))
+  )
+    throw contractError();
+  return {
+    key,
+    kind: "app_create",
+    targetId,
+    issuedAt,
+    expiresAt,
+    state,
+    dbAppliedAt,
+    finalizedAt,
+    resultVersion,
+    rejectionCode,
+    serverTime: dateTime(item.server_time),
   };
 }
 

@@ -119,6 +119,11 @@ export default function MockResetPage() {
           <option value="auth_observation_error">인증 상태 확인 실패</option>
           <option value="auth_network_error">로그인 통신 실패</option>
           <option value="detail_delayed">상세 조회 지연</option>
+          <option value="app_key_issue_failure">앱 저장 준비 실패</option>
+          <option value="app_create_failure">앱 저장 명시적 실패</option>
+          <option value="app_create_unknown">앱 저장 응답 유실</option>
+          <option value="app_create_unresolved">앱 저장 결과 미확정</option>
+          <option value="app_create_delayed">앱 저장 지연</option>
         </select>
         <label
           className="mt-5 block text-[13px] font-semibold text-neutral-800"

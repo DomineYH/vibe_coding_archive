@@ -14,6 +14,8 @@ import { normalizeSearch } from "../../services/apps-service";
 export function GalleryView({
   meta,
   page,
+  canCreate = false,
+  onCreate,
   onQueryChange,
   initialFilters = {},
   detailLinkState,
@@ -136,24 +138,33 @@ export function GalleryView({
       data-screen-label="갤러리"
     >
       <section className="flex flex-col items-start gap-5 pb-8 pt-12 sm:pt-16">
-        <span className="acc-text text-[11.5px] font-bold uppercase tracking-[0.22em]">
-          Teachers&rsquo; Vibe Coding Archive
-        </span>
-        <h1
-          className="max-w-2xl break-keep text-[34px] font-extrabold leading-[1.15] tracking-tight text-neutral-900 sm:text-[44px]"
-          style={{ textWrap: "balance" }}
-        >
-          수업을 바꾼 앱과
-          <br className="sm:hidden" /> 그 앱을 만든{" "}
-          <span className="acc-text">프롬프트</span>까지.
-        </h1>
-        <p
-          className="max-w-xl break-keep text-[14.5px] leading-relaxed text-neutral-500"
-          style={{ textWrap: "pretty" }}
-        >
-          AI로 만든 교육용 웹 앱을 프롬프트와 함께 공유해요. 마음에 드는 앱은
-          프롬프트를 복사해 우리 반에 맞게 다시 만들 수 있어요.
-        </p>
+        <div className="flex w-full flex-col items-start gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col items-start gap-5">
+            <span className="acc-text text-[11.5px] font-bold uppercase tracking-[0.22em]">
+              Teachers&rsquo; Vibe Coding Archive
+            </span>
+            <h1
+              className="max-w-2xl break-keep text-[34px] font-extrabold leading-[1.15] tracking-tight text-neutral-900 sm:text-[44px]"
+              style={{ textWrap: "balance" }}
+            >
+              수업을 바꾼 앱과
+              <br className="sm:hidden" /> 그 앱을 만든{" "}
+              <span className="acc-text">프롬프트</span>까지.
+            </h1>
+            <p
+              className="max-w-xl break-keep text-[14.5px] leading-relaxed text-neutral-500"
+              style={{ textWrap: "pretty" }}
+            >
+              AI로 만든 교육용 웹 앱을 프롬프트와 함께 공유해요. 마음에 드는
+              앱은 프롬프트를 복사해 우리 반에 맞게 다시 만들 수 있어요.
+            </p>
+          </div>
+          {canCreate ? (
+            <Btn onClick={onCreate} className="shrink-0">
+              내 앱 등록하기
+            </Btn>
+          ) : null}
+        </div>
       </section>
 
       <div className="sticky top-[57px] z-20 -mx-5 mb-7 border-y border-neutral-200/70 bg-[#EAE7E2]/88 px-5 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8">
