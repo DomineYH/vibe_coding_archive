@@ -395,7 +395,11 @@ test("owner confirms a delayed delete once and returns to a refreshed gallery", 
     prompt.getByRole("button", { name: "삭제 중…", exact: true }),
   ).toBeDisabled();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+  await expect(
+    page.getByRole("status").filter({
+      hasText: /^앱을 삭제했어요\.$/,
+    }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: new RegExp(name) })).toHaveCount(
     0,
   );
@@ -429,7 +433,11 @@ test("unknown delete result stays on detail until the issued key confirms succes
     .getByRole("button", { name: "삭제 결과 확인", exact: true })
     .click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+  await expect(
+    page.getByRole("status").filter({
+      hasText: /^앱을 삭제했어요\.$/,
+    }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: new RegExp(name) })).toHaveCount(
     0,
   );
@@ -466,5 +474,9 @@ test("unresolved deletion warns before refresh and keeps its key when the author
     .getByRole("button", { name: "같은 삭제 요청 다시 보내기", exact: true })
     .click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+  await expect(
+    page.getByRole("status").filter({
+      hasText: /^앱을 삭제했어요\.$/,
+    }),
+  ).toBeVisible();
 });
