@@ -16,6 +16,8 @@ import { MOCK_ACCOUNTS } from "./accounts";
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
 export const MOCK_AUTH_STATE_EVENT = "eduvibe:mock-auth-state";
+export const MOCK_WRITE_OPERATIONS_RESET_EVENT =
+  "eduvibe:mock-write-operations-reset";
 
 const MOCK_SCENARIOS = [
   "original",
@@ -42,6 +44,11 @@ const MOCK_SCENARIOS = [
   "admin_write_unknown",
   "admin_write_unresolved",
   "admin_write_delayed",
+  "app_key_issue_failure",
+  "app_create_failure",
+  "app_create_unknown",
+  "app_create_unresolved",
+  "app_create_delayed",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
@@ -881,6 +888,38 @@ export function getMockSnapshot(): MockState {
   return readState();
 }
 
+export function createMockApp(
+  input: Omit<
+    import("../../contracts/api").components["schemas"]["AppDetail"],
+    "id"
+  >,
+) {
+  const state = readState();
+  const ids = [...state.apps, ...state.private_apps].map((app) =>
+    Number(app.id.slice(-12)),
+  );
+  const lastId = Math.max(100, ...ids);
+  if (lastId >= 999_999_999_999)
+    throw new ServiceError("SERVICE_UNAVAILABLE", "앱을 등록할 수 없어요.");
+  const id = `00000000-0000-4000-8000-${String(lastId + 1).padStart(12, "0")}`;
+  const app = { id, ...input };
+  const generation = nextGeneration(state.generation);
+  const updated = {
+    ...state,
+    apps: (app.is_public
+      ? [...state.apps, app]
+      : state.apps) as MockState["apps"],
+    private_apps: (app.is_public
+      ? state.private_apps
+      : [...state.private_apps, app]) as MockState["private_apps"],
+    generation,
+  };
+  writeState(updated);
+  resetGeneration = generation;
+  window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+  return app;
+}
+
 export function getMockNow(state = readState()): string {
   return state.mock_now;
 }
@@ -1103,6 +1142,7 @@ export function resetMockState(): void {
   writeState({ ...initialState(), generation: next });
   resetGeneration = next;
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+  window.dispatchEvent(new Event(MOCK_WRITE_OPERATIONS_RESET_EVENT));
 }
 
 export function setMockScenario(scenario: MockScenario): void {

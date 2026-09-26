@@ -27,6 +27,7 @@ import { Avatar, Btn, EmptyState } from "../components/ui";
 import { AuthView } from "../features/auth/view-auth";
 import { readAuthRoute } from "../features/auth/auth-route";
 import { AdminView } from "../features/admin/view-admin";
+import { SubmitView } from "../features/submit/view-submit";
 
 const galleryQueryKeys = new Set(["q", "subject", "grade"]);
 
@@ -121,6 +122,20 @@ function Header({
           >
             갤러리
           </Link>
+          {auth.status === "ready" &&
+          !auth.concealed &&
+          auth.user?.role === "user" &&
+          auth.user.approved &&
+          auth.user.sessionKind === "full" &&
+          !auth.user.mustChangePassword ? (
+            <Link
+              to="/apps/new"
+              aria-current={active === "submit" ? "page" : undefined}
+              className={`inline-flex items-center justify-center ${navButton(active === "submit")}`}
+            >
+              앱 등록
+            </Link>
+          ) : null}
           {auth.status === "ready" &&
           !auth.concealed &&
           auth.user?.role === "admin" &&
@@ -234,8 +249,9 @@ function authScopeIdentity(auth) {
   ]);
 }
 
-function GalleryRoute() {
+function GalleryRoute({ auth }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
   const filters = query.filters;
@@ -336,6 +352,16 @@ function GalleryRoute() {
     <GalleryView
       meta={access.meta}
       page={page}
+      canCreate={
+        auth.status === "ready" &&
+        !auth.concealed &&
+        auth.user?.role === "user" &&
+        auth.user.approved &&
+        auth.user.sessionKind === "full" &&
+        !auth.user.mustChangePassword &&
+        access.meta?.capabilities.apps_create.enabled === true
+      }
+      onCreate={() => navigate("/apps/new")}
       onQueryChange={onQueryChange}
       initialFilters={filters}
       detailLinkState={{ fromGallery: true }}
@@ -425,6 +451,139 @@ function DetailRoute({ auth, onRetryAuth }) {
       onBack={() => navigate(location.state?.fromGallery === true ? -1 : "/")}
     />
   );
+}
+
+function SubmitRoute({ auth, onRetryAuth, onCreated }) {
+  const access = usePublicMetadata();
+  const [wasAvailable, setWasAvailable] = useState(false);
+  const scopeKey = authScopeIdentity(auth);
+  const member =
+    auth.status === "ready" &&
+    !auth.concealed &&
+    auth.user?.role === "user" &&
+    auth.user.approved &&
+    auth.user.sessionKind === "full" &&
+    !auth.user.mustChangePassword;
+  const canCreate =
+    member &&
+    !access.loading &&
+    !access.error &&
+    access.meta?.capabilities.apps_create.enabled === true;
+  useEffect(() => {
+    if (canCreate) setWasAvailable(true);
+  }, [canCreate]);
+  const keepFormMounted =
+    canCreate ||
+    (wasAvailable &&
+      (auth.concealed || auth.status !== "ready") &&
+      access.meta?.capabilities.apps_create.enabled === true);
+  const form = keepFormMounted ? (
+    <div hidden={!canCreate} aria-hidden={!canCreate}>
+      <SubmitView key={scopeKey} meta={access.meta} onCreated={onCreated} />
+    </div>
+  ) : null;
+  if (auth.concealed || auth.status === "checking")
+    return (
+      <>
+        {form}
+        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+          <div role="status" aria-live="polite">
+            <EmptyState title="로그인 상태를 확인하고 있어요" />
+          </div>
+        </main>
+      </>
+    );
+  if (auth.status === "error")
+    return (
+      <>
+        {form}
+        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+          <div role="alert" aria-live="assertive">
+            <EmptyState
+              title="로그인 상태를 확인할 수 없어요"
+              desc={auth.error?.message}
+            >
+              <Btn onClick={onRetryAuth}>다시 확인</Btn>
+            </EmptyState>
+          </div>
+        </main>
+      </>
+    );
+  if (auth.status !== "ready")
+    return (
+      <>
+        {form}
+        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+          <div role="status" aria-live="polite">
+            <EmptyState title="인증 상태를 복구해 주세요">
+              <Link
+                to="/auth?mode=login"
+                className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+              >
+                인증 복구
+              </Link>
+            </EmptyState>
+          </div>
+        </main>
+      </>
+    );
+  if (!auth.user) return <Navigate to="/auth?mode=login" replace />;
+  if (auth.user.mustChangePassword || auth.user.sessionKind !== "full")
+    return <Navigate to="/auth?mode=password-change" replace />;
+  if (!auth.user.approved || auth.user.role !== "user")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="alert" aria-live="assertive">
+          <EmptyState
+            title="승인된 회원만 앱을 등록할 수 있어요"
+            desc="갤러리는 계속 둘러볼 수 있습니다."
+          >
+            <Link
+              to="/"
+              className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+            >
+              갤러리로
+            </Link>
+          </EmptyState>
+        </div>
+      </main>
+    );
+  if (access.loading)
+    return (
+      <>
+        {form}
+        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+          <div role="status" aria-live="polite">
+            <EmptyState title="등록 기능을 확인하고 있어요" />
+          </div>
+        </main>
+      </>
+    );
+  if (access.error || !access.meta?.capabilities.apps_create.enabled)
+    return (
+      <>
+        {form}
+        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+          <div role="alert" aria-live="assertive">
+            <EmptyState
+              title="앱 등록 기능을 사용할 수 없어요"
+              desc={access.error?.message ?? "잠시 후 다시 확인해 주세요."}
+            >
+              {access.error ? (
+                <Btn onClick={() => access.retry(() => {})}>다시 확인</Btn>
+              ) : null}
+              <Link
+                to="/"
+                className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+              >
+                갤러리로
+              </Link>
+            </EmptyState>
+          </div>
+        </main>
+      </>
+    );
+  return form;
 }
 
 function NotFoundRoute() {
@@ -582,6 +741,20 @@ export default function App() {
     concealed: document.visibilityState === "hidden",
   });
   const [logoutPending, setLogoutPending] = useState(false);
+
+  const onAppCreated = useCallback(
+    (id) => {
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
+      navigate(`/apps/${id}`, {
+        replace: true,
+        state: { fromGallery: true },
+      });
+      setToast("앱을 등록했어요.");
+    },
+    [navigate, queryClient],
+  );
 
   const isProtectedQuery = useCallback((query) => {
     const key = query.queryKey;
@@ -926,11 +1099,14 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const active = location.pathname.startsWith("/apps/")
-    ? "detail"
-    : location.pathname === "/admin"
-      ? "admin"
-      : "gallery";
+  const active =
+    location.pathname === "/apps/new"
+      ? "submit"
+      : location.pathname.startsWith("/apps/")
+        ? "detail"
+        : location.pathname === "/admin"
+          ? "admin"
+          : "gallery";
   return (
     <div className="min-h-screen">
       <Header
@@ -942,7 +1118,17 @@ export default function App() {
         logoutPending={logoutPending}
       />
       <Routes>
-        <Route path="/" element={<GalleryRoute />} />
+        <Route path="/" element={<GalleryRoute auth={auth} />} />
+        <Route
+          path="/apps/new"
+          element={
+            <SubmitRoute
+              auth={auth}
+              onRetryAuth={() => restoreAuth()}
+              onCreated={onAppCreated}
+            />
+          }
+        />
         <Route
           path="/apps/:id"
           element={<DetailRoute auth={auth} onRetryAuth={restoreAuth} />}

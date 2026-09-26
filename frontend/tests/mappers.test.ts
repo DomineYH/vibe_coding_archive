@@ -6,6 +6,7 @@ import {
   mapAuthFlowState,
   mapAppDetailResponse,
   mapAppPage,
+  mapAppWriteOperation,
   mapMeta,
   mapRegisteredUser,
   mapSelf,
@@ -83,7 +84,69 @@ const page = {
   facets: { subjects_in_use: ["수학"] },
 };
 
+const appWriteOperation = {
+  key: "00000000-0000-4000-8000-000000000201",
+  kind: "app_create",
+  target_id: null,
+  issued_at: "2026-09-22T00:12:00.000Z",
+  expires_at: "2026-09-23T00:12:00.000Z",
+  state: "unresolved",
+  db_applied_at: null,
+  finalized_at: null,
+  result_version: null,
+  rejection_code: null,
+  server_time: "2026-09-22T00:12:00.000Z",
+};
+
 describe("response mappers", () => {
+  it("maps an issued create key as unresolved, not saved", () => {
+    expect(mapAppWriteOperation(appWriteOperation)).toEqual({
+      key: appWriteOperation.key,
+      kind: "app_create",
+      targetId: null,
+      issuedAt: appWriteOperation.issued_at,
+      expiresAt: appWriteOperation.expires_at,
+      state: "unresolved",
+      dbAppliedAt: null,
+      finalizedAt: null,
+      resultVersion: null,
+      rejectionCode: null,
+      serverTime: appWriteOperation.server_time,
+    });
+  });
+
+  it("requires an app ID and version only after create persistence is confirmed", () => {
+    expect(
+      mapAppWriteOperation({
+        ...appWriteOperation,
+        target_id: card.id,
+        state: "succeeded",
+        db_applied_at: appWriteOperation.server_time,
+        finalized_at: appWriteOperation.server_time,
+        result_version: 1,
+      }),
+    ).toMatchObject({
+      state: "succeeded",
+      targetId: card.id,
+      resultVersion: 1,
+    });
+    expect(() =>
+      mapAppWriteOperation({
+        ...appWriteOperation,
+        state: "succeeded",
+      }),
+    ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
+  it("rejects malformed or non-app create operation results", () => {
+    expect(() =>
+      mapAppWriteOperation({ ...appWriteOperation, kind: "app_update" }),
+    ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    expect(() =>
+      mapAppWriteOperation({ ...appWriteOperation, unexpected: true }),
+    ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
   it("maps authentication flow identity and sequence metadata", () => {
     const flow = {
       flow_id: "00000000-0000-4000-8000-000000000200",

@@ -403,7 +403,8 @@ export interface paths {
          */
         get: operations["listPublicApps"];
         put?: never;
-        post?: never;
+        /** Create an archive app with an issued operation key */
+        post: operations["createApp"];
         delete?: never;
         options?: never;
         head?: never;
@@ -473,8 +474,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Issue an approval operation key */
-        post: operations["createApprovalOperation"];
+        /** Issue a write operation key without changing app or account data */
+        post: operations["createWriteOperation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -505,8 +506,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read the minimal result for an approval key */
-        get: operations["getApprovalOperation"];
+        /** Read the minimal result for a write operation key */
+        get: operations["getWriteOperation"];
         put?: never;
         post?: never;
         delete?: never;
@@ -596,6 +597,12 @@ export interface components {
             expected_account_version: number;
             approved: boolean;
         };
+        CreateAppWriteOperation: {
+            /** @constant */
+            kind: "app_create";
+            input: components["schemas"]["AppInput"];
+        };
+        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreateAppWriteOperation"];
         SetApprovalInput: {
             approved: boolean;
             expected_account_version: number;
@@ -618,6 +625,28 @@ export interface components {
             /** Format: date-time */
             finalized_at: string | null;
             rejection_code: string | null;
+        };
+        AppWriteOperation: {
+            /** Format: uuid */
+            key: string;
+            /** @constant */
+            kind: "app_create";
+            /** Format: uuid */
+            target_id: string | null;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** @enum {string} */
+            state: "unresolved" | "succeeded" | "rejected";
+            /** Format: date-time */
+            db_applied_at: string | null;
+            /** Format: date-time */
+            finalized_at: string | null;
+            result_version: number | null;
+            rejection_code: string | null;
+            /** Format: date-time */
+            server_time: string;
         };
         RegisteredUser: {
             /** Format: uuid */
@@ -962,6 +991,21 @@ export interface components {
             /** Format: date-time */
             server_time: string;
         };
+        AppInput: {
+            name: string;
+            /** Format: uri */
+            url: string;
+            prompt: string;
+            description: string;
+            subject: components["schemas"]["Subject"];
+            grades: components["schemas"]["Grade"][];
+            is_public: boolean;
+            theme_id: string;
+            stack_db: string | null;
+            stack_backend: string | null;
+            stack_frontend: string | null;
+            stack_hosting: string | null;
+        };
     };
     responses: {
         /** @description The app does not exist or is not accessible to the current member. */
@@ -984,6 +1028,7 @@ export interface components {
         };
     };
     parameters: {
+        IdempotencyKey: string;
         FlowPathId: string;
         TransitionPathId: string;
         Origin: string;
@@ -1693,6 +1738,47 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
+    createApp: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppInput"];
+            };
+        };
+        responses: {
+            /** @description The persisted app and its current owner. */
+            201: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppDetailResponse"];
+                };
+            };
+            400: components["responses"]["ServiceError"];
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            410: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
     getApp: {
         parameters: {
             query?: never;
@@ -1783,7 +1869,7 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
-    createApprovalOperation: {
+    createWriteOperation: {
         parameters: {
             query?: never;
             header: {
@@ -1798,7 +1884,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateApprovalOperation"];
+                "application/json": components["schemas"]["CreateWriteOperation"];
             };
         };
         responses: {
@@ -1809,7 +1895,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["AppWriteOperation"];
                 };
             };
             400: components["responses"]["ServiceError"];
@@ -1862,7 +1948,7 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
-    getApprovalOperation: {
+    getWriteOperation: {
         parameters: {
             query?: never;
             header: {
@@ -1884,7 +1970,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["AppWriteOperation"];
                 };
             };
             401: components["responses"]["ServiceError"];

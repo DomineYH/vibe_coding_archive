@@ -1,5 +1,6 @@
 import catalog from "../../../../contracts/catalog.json";
 import {
+  mapAppWriteOperation,
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
@@ -7,12 +8,19 @@ import {
 import type { components } from "../../contracts/api";
 import { ServiceError } from "../service-error";
 import {
+  appInputToWire,
   caseFold,
+  normalizeAppInput,
   normalizeQueryForService,
   type AppsService,
 } from "../apps-service";
-import { assertCurrentGeneration, getMockSnapshot } from "./state";
-import { DEMO_ACCOUNTS } from "./accounts";
+import {
+  assertCurrentGeneration,
+  createMockApp,
+  getMockAccounts,
+  getMockSnapshot,
+  MOCK_WRITE_OPERATIONS_RESET_EVENT,
+} from "./state";
 
 type WireAppDetail = components["schemas"]["AppDetail"];
 type MockMeta = components["schemas"]["Meta"];
@@ -20,6 +28,25 @@ const subjects = catalog.subjects as MockMeta["subjects"];
 const grades = catalog.grades as MockMeta["grades"];
 const fixedTime = "2026-09-22T00:12:00.000Z";
 const readDelayMs = 300;
+const createDelayMs = 500;
+const operationLifetimeMs = 24 * 60 * 60 * 1000;
+type MockCreateOperation = {
+  key: string;
+  actorId: string;
+  input: ReturnType<typeof normalizeAppInput>;
+  issuedAt: string;
+  expiresAt: string;
+  state: "unresolved" | "succeeded" | "rejected";
+  targetId: string | null;
+  dbAppliedAt: string | null;
+  finalizedAt: string | null;
+  resultVersion: number | null;
+  rejectionCode: string | null;
+};
+const createOperations = new Map<string, MockCreateOperation>();
+window.addEventListener(MOCK_WRITE_OPERATIONS_RESET_EVENT, () =>
+  createOperations.clear(),
+);
 const longCopy = Array.from(
   { length: 32 },
   (_, index) =>
@@ -34,7 +61,7 @@ const capabilities = {
   admin_users_read: { enabled: false, reasons: ["not_implemented"] },
   admin_approval: { enabled: false, reasons: ["not_implemented"] },
   admin_summary: { enabled: false, reasons: ["not_implemented"] },
-  apps_create: { enabled: false, reasons: ["not_implemented"] },
+  apps_create: { enabled: true, reasons: [] },
   apps_update_own: { enabled: false, reasons: ["not_implemented"] },
   apps_delete_own: { enabled: false, reasons: ["not_implemented"] },
   admin_apps_read: { enabled: false, reasons: ["not_implemented"] },
@@ -159,6 +186,123 @@ async function beginRead(signal?: AbortSignal) {
   return state;
 }
 
+function currentMember() {
+  const state = getMockSnapshot();
+  const session = state.principal_session;
+  if (
+    !state.auth_flow.recovery_ready ||
+    Date.parse(state.mock_now) >= Date.parse(state.auth_flow.expires_at) ||
+    !state.auth_flow.session_cookie_present ||
+    state.auth_flow.pending_transition ||
+    state.auth_flow.unresolved_transition_id ||
+    !session ||
+    Date.parse(state.mock_now) >= Date.parse(session.expires_at)
+  )
+    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+      httpStatus: 401,
+      outcome: "rejected",
+    });
+  if (session.session_kind !== "full")
+    throw new ServiceError(
+      "PASSWORD_CHANGE_REQUIRED",
+      "회원 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
+      { httpStatus: 403, outcome: "rejected" },
+    );
+  const account = getMockAccounts(state).find(
+    (item) => item.id === state.principal_id,
+  );
+  if (!account || !account.approved)
+    throw new ServiceError(
+      "FORBIDDEN",
+      "승인된 회원만 앱을 등록할 수 있어요.",
+      {
+        httpStatus: 403,
+        outcome: "rejected",
+      },
+    );
+  if (account.mustChangePassword)
+    throw new ServiceError(
+      "PASSWORD_CHANGE_REQUIRED",
+      "비밀번호를 먼저 변경해 주세요.",
+      { httpStatus: 403, outcome: "rejected" },
+    );
+  return { state, account };
+}
+
+function operationWire(operation: MockCreateOperation) {
+  return mapAppWriteOperation({
+    key: operation.key,
+    kind: "app_create",
+    target_id: operation.targetId,
+    issued_at: operation.issuedAt,
+    expires_at: operation.expiresAt,
+    state: operation.state,
+    db_applied_at: operation.dbAppliedAt,
+    finalized_at: operation.finalizedAt,
+    result_version: operation.resultVersion,
+    rejection_code: operation.rejectionCode,
+    server_time: getMockSnapshot().mock_now,
+  });
+}
+
+function ownedOperation(key: string, actorId: string) {
+  const operation = createOperations.get(key);
+  if (!operation || operation.actorId !== actorId)
+    throw new ServiceError(
+      "OPERATION_NOT_FOUND",
+      "저장 작업을 찾을 수 없어요.",
+      {
+        httpStatus: 404,
+        outcome: "rejected",
+      },
+    );
+  return operation;
+}
+
+function writeApp(
+  input: ReturnType<typeof normalizeAppInput>,
+  owner: {
+    id: string;
+    nickname: string;
+  },
+  now: string,
+) {
+  const wire = appInputToWire(input);
+  const app = createMockApp({
+    owner: { id: owner.id, nickname: owner.nickname },
+    name: wire.name,
+    subject: wire.subject,
+    grades: wire.grades,
+    is_public: wire.is_public,
+    theme_id: wire.theme_id,
+    version: 1,
+    url_version: 1,
+    health: {
+      result: { state: "unchecked", checked_at: null, fresh_until: null },
+      latest_job: null,
+      next_check_at: null,
+    },
+    url: wire.url,
+    prompt: wire.prompt,
+    description: wire.description,
+    stack_db: wire.stack_db,
+    stack_backend: wire.stack_backend,
+    stack_frontend: wire.stack_frontend,
+    stack_hosting: wire.stack_hosting,
+    created_at: now,
+    updated_at: now,
+  });
+  return app;
+}
+
+function failUnknown() {
+  throw new ServiceError(
+    "SERVICE_UNAVAILABLE",
+    "저장 결과를 확인할 수 없어요. 먼저 작업 결과를 확인해 주세요.",
+    { httpStatus: 503, outcome: "unknown" },
+  );
+}
+
 export const appsService: AppsService = {
   async getMeta({ signal } = {}) {
     checkSignal(signal);
@@ -247,7 +391,7 @@ export const appsService: AppsService = {
     const app = [...scenarioApps(state), ...state.private_apps].find(
       (item) => item.id === id,
     );
-    const account = DEMO_ACCOUNTS.find(
+    const account = getMockAccounts(state).find(
       (item) => item.id === state.principal_id,
     );
     const session = state.principal_session;
@@ -276,6 +420,117 @@ export const appsService: AppsService = {
       server_time: fixedTime,
     }).item;
     return result;
+  },
+
+  async issueCreateOperation(value) {
+    const input = normalizeAppInput(value);
+    const { state, account } = currentMember();
+    if (state.scenario === "app_key_issue_failure")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "저장 작업을 준비하지 못했어요.",
+        {
+          httpStatus: 503,
+          outcome: "rejected",
+        },
+      );
+    const issuedAt = state.mock_now;
+    const operation: MockCreateOperation = {
+      key: crypto.randomUUID(),
+      actorId: account.id,
+      input,
+      issuedAt,
+      expiresAt: new Date(
+        Date.parse(issuedAt) + operationLifetimeMs,
+      ).toISOString(),
+      state: "unresolved",
+      targetId: null,
+      dbAppliedAt: null,
+      finalizedAt: null,
+      resultVersion: null,
+      rejectionCode: null,
+    };
+    createOperations.set(operation.key, operation);
+    return operationWire(operation);
+  },
+
+  async create(value, key) {
+    const input = normalizeAppInput(value);
+    const { state, account } = currentMember();
+    let operation = ownedOperation(key, account.id);
+    if (JSON.stringify(input) !== JSON.stringify(operation.input))
+      throw new ServiceError(
+        "OPERATION_KEY_MISMATCH",
+        "저장 요청 내용이 작업 키와 달라요.",
+        { httpStatus: 409, outcome: "rejected" },
+      );
+    if (Date.parse(state.mock_now) >= Date.parse(operation.expiresAt))
+      throw new ServiceError("OPERATION_EXPIRED", "저장 작업이 만료되었어요.", {
+        httpStatus: 410,
+        outcome: "rejected",
+      });
+    if (operation.state !== "unresolved")
+      throw new ServiceError(
+        "OPERATION_ALREADY_RESOLVED",
+        "저장 작업 결과를 먼저 확인해 주세요.",
+        { httpStatus: 409, outcome: "unknown" },
+      );
+    if (state.scenario === "app_create_unresolved") failUnknown();
+    if (state.scenario === "app_create_failure") {
+      operation = {
+        ...operation,
+        state: "rejected",
+        finalizedAt: state.mock_now,
+        rejectionCode: "VALIDATION_ERROR",
+      };
+      createOperations.set(key, operation);
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        "앱을 등록하지 못했어요. 입력 내용을 확인해 주세요.",
+        { httpStatus: 422, outcome: "rejected" },
+      );
+    }
+    if (state.scenario === "app_create_delayed") {
+      const flow = state.auth_flow;
+      await new Promise((resolve) => setTimeout(resolve, createDelayMs));
+      const current = currentMember();
+      if (
+        current.account.id !== account.id ||
+        current.state.auth_flow.flow_id !== flow.flow_id ||
+        current.state.auth_flow.revision !== flow.revision ||
+        current.state.auth_flow.session_generation !== flow.session_generation
+      )
+        throw new ServiceError(
+          "AUTH_STATE_CHANGED",
+          "인증 상태가 바뀌어 앱을 등록하지 않았어요.",
+          { httpStatus: 409, outcome: "rejected" },
+        );
+      operation = ownedOperation(key, account.id);
+      if (operation.state !== "unresolved")
+        throw new ServiceError(
+          "OPERATION_ALREADY_RESOLVED",
+          "저장 작업 결과를 먼저 확인해 주세요.",
+          { httpStatus: 409, outcome: "unknown" },
+        );
+    }
+    const now = getMockSnapshot().mock_now;
+    const app = writeApp(input, account, now);
+    operation = {
+      ...operation,
+      state: "succeeded",
+      targetId: app.id,
+      dbAppliedAt: now,
+      finalizedAt: now,
+      resultVersion: 1,
+    };
+    createOperations.set(key, operation);
+    if (state.scenario === "app_create_unknown") failUnknown();
+    return mapAppDetailResponse({ item: app, server_time: now }).item;
+  },
+
+  async getCreateOperation(key) {
+    const { account } = currentMember();
+    return operationWire(ownedOperation(key, account.id));
   },
 };
 

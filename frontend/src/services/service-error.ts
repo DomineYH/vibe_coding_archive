@@ -31,7 +31,8 @@ export type ServiceErrorCode =
   | "AUTH_TRANSITION_PENDING"
   | "CSRF_INVALID"
   | "ORIGIN_REJECTED"
-  | "REAUTH_REQUIRED";
+  | "REAUTH_REQUIRED"
+  | "RATE_LIMITED";
 
 export type ErrorOutcome = "not_applicable" | "rejected" | "unknown";
 

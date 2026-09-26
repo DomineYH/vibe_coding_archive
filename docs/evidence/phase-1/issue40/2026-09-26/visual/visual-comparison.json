@@ -1,0 +1,325 @@
+{
+  "thresholdPixels": 0,
+  "results": [
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-1440x1000.png",
+      "width": 1440,
+      "height": 1517,
+      "expectedWidth": 1440,
+      "expectedHeight": 1528,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-1440x1000.png",
+      "width": 1440,
+      "height": 1726,
+      "expectedWidth": 1440,
+      "expectedHeight": 1594,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-1440x1000.png",
+      "width": 1440,
+      "height": 1582,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-1440x1000.png",
+      "width": 1440,
+      "height": 1582,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-1024x900.png",
+      "width": 1024,
+      "height": 1517,
+      "expectedWidth": 1024,
+      "expectedHeight": 1528,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-1024x900.png",
+      "width": 1024,
+      "height": 1726,
+      "expectedWidth": 1024,
+      "expectedHeight": 1594,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-1024x900.png",
+      "width": 1024,
+      "height": 1582,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-1024x900.png",
+      "width": 1024,
+      "height": 1582,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-768x1024.png",
+      "width": 768,
+      "height": 2566,
+      "expectedWidth": 768,
+      "expectedHeight": 2577,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-768x1024.png",
+      "width": 768,
+      "height": 2775,
+      "expectedWidth": 768,
+      "expectedHeight": 2643,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-768x1024.png",
+      "width": 768,
+      "height": 2631,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-768x1024.png",
+      "width": 768,
+      "height": 2790,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-390x844.png",
+      "width": 390,
+      "height": 2477,
+      "expectedWidth": 390,
+      "expectedHeight": 2512,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-390x844.png",
+      "width": 390,
+      "height": 2686,
+      "expectedWidth": 390,
+      "expectedHeight": 2597,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-390x844.png",
+      "width": 390,
+      "height": 2542,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-390x844.png",
+      "width": 390,
+      "height": 2701,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-360x844.png",
+      "width": 360,
+      "height": 2443,
+      "expectedWidth": 360,
+      "expectedHeight": 2478,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-360x844.png",
+      "width": 360,
+      "height": 2652,
+      "expectedWidth": 360,
+      "expectedHeight": 2563,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-360x844.png",
+      "width": 360,
+      "height": 2508,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-360x844.png",
+      "width": 360,
+      "height": 2707,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    }
+  ]
+}
