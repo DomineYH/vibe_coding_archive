@@ -313,6 +313,47 @@ describe("Phase 1 acceptance traces", () => {
     expect(evidence).toContain("Open and unverified");
   });
 
+  it("records every issue 42 criterion and its local run evidence", () => {
+    const lines = acceptance.split("\n");
+    const headerIndex = lines.findIndex((line) =>
+      line.startsWith("| Requirement / source"),
+    );
+    const headers = lines[headerIndex]
+      .split("|")
+      .slice(1, -1)
+      .map((cell) => cell.trim());
+    const records = lines
+      .slice(headerIndex + 2)
+      .filter((line) => line.startsWith("| #42 AC"));
+
+    expect(records).toHaveLength(10);
+    expect(
+      records.map((record) =>
+        Number(
+          record
+            .split("|")[1]
+            .trim()
+            .match(/^#42 AC(\d+)\b/)[1],
+        ),
+      ),
+    ).toEqual(Array.from({ length: 10 }, (_, index) => index + 1));
+    for (const record of records) {
+      const cells = record
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim());
+      expect(cells).toHaveLength(headers.length);
+      expect(cells.every(Boolean)).toBe(true);
+    }
+
+    const evidence = readFileSync(
+      path.resolve("../docs/evidence/phase-1/issue42/2026-09-27/README.md"),
+      "utf8",
+    );
+    expect(evidence).toContain("#42 local run evidence");
+    expect(evidence).toContain("Open and unverified");
+  });
+
   it("runs frontend checks, tests, builds, and preservation before visuals in CI", () => {
     const steps = workflow.jobs.frontend.steps;
     const commands = steps.map((step) => step.run);

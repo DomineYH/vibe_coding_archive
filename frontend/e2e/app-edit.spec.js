@@ -338,3 +338,133 @@ test("keyboard privacy control and field errors have accessible state", async ({
   await expect(name).toHaveAttribute("aria-describedby", "app-name-error");
   await expect(form.locator("#app-name-error")).toBeVisible();
 });
+
+test("owner cancels the inline delete prompt without changing the app", async ({
+  page,
+}) => {
+  const name = "삭제 취소 확인 대상";
+  const id = await createOwnedApp(page, name);
+  const detail = page.locator('[data-screen-label="공개 앱 상세"]');
+  const prompt = page.getByRole("group", {
+    name: `‘${name}’을 아카이브에서 삭제할까요?`,
+    exact: true,
+  });
+
+  await detail.getByRole("button", { name: "삭제", exact: true }).click();
+  await expect(prompt).toBeVisible();
+  await expect(
+    prompt.getByRole("button", { name: "취소", exact: true }),
+  ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(prompt).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/apps/${id}$`));
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+});
+
+test("a different approved member can view a public app but cannot delete it", async ({
+  page,
+}) => {
+  const id = await createOwnedApp(page, "작성자 전용 삭제 대상");
+  await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+  await loginAs(page, "과학덕후박샘");
+  await page.goto(`/apps/${id}`);
+  const detail = page.locator('[data-screen-label="공개 앱 상세"]');
+  await expect(detail).toBeVisible();
+  await expect(
+    detail.getByRole("button", { name: "삭제", exact: true }),
+  ).toHaveCount(0);
+});
+
+test("owner confirms a delayed delete once and returns to a refreshed gallery", async ({
+  page,
+}) => {
+  const name = "삭제 확정 후 갱신 대상";
+  const id = await createOwnedApp(page, name);
+  await setScenario(page, "app_delete_delayed");
+  const detail = page.locator('[data-screen-label="공개 앱 상세"]');
+  await detail.getByRole("button", { name: "삭제", exact: true }).click();
+  const prompt = page.getByRole("group", {
+    name: `‘${name}’을 아카이브에서 삭제할까요?`,
+    exact: true,
+  });
+  await expect(prompt).toBeVisible();
+  await prompt.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(prompt.getByRole("status")).toContainText("삭제 요청 처리 중");
+  await expect(prompt.getByRole("status")).toBeFocused();
+  await expect(
+    prompt.getByRole("button", { name: "삭제 중…", exact: true }),
+  ).toBeDisabled();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+  await expect(page.getByRole("link", { name: new RegExp(name) })).toHaveCount(
+    0,
+  );
+  await expect(page).not.toHaveURL(new RegExp(`/apps/${id}$`));
+});
+
+test("unknown delete result stays on detail until the issued key confirms success", async ({
+  page,
+}) => {
+  const name = "응답 유실 삭제 대상";
+  const id = await createOwnedApp(page, name);
+  await setScenario(page, "app_delete_unknown");
+  const detail = page.locator('[data-screen-label="공개 앱 상세"]');
+  await detail.getByRole("button", { name: "삭제", exact: true }).click();
+  const prompt = page.getByRole("group", {
+    name: `‘${name}’을 아카이브에서 삭제할까요?`,
+    exact: true,
+  });
+  await expect(prompt).toBeVisible();
+  await prompt.getByRole("button", { name: "삭제 확인", exact: true }).click();
+
+  await expect(prompt.getByRole("alert")).toContainText(
+    "삭제 결과를 확인할 수 없어요",
+  );
+  await expect(
+    prompt.getByRole("button", { name: "삭제 결과 확인", exact: true }),
+  ).toBeFocused();
+  await expect(page).toHaveURL(new RegExp(`/apps/${id}$`));
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await prompt
+    .getByRole("button", { name: "삭제 결과 확인", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+  await expect(page.getByRole("link", { name: new RegExp(name) })).toHaveCount(
+    0,
+  );
+});
+
+test("unresolved deletion warns before refresh and keeps its key when the author stays", async ({
+  page,
+}) => {
+  const name = "새로고침 전 결과 확인 대상";
+  const id = await createOwnedApp(page, name);
+  await setScenario(page, "app_delete_unresolved");
+  const detail = page.locator('[data-screen-label="공개 앱 상세"]');
+  await detail.getByRole("button", { name: "삭제", exact: true }).click();
+  const prompt = page.getByRole("group", {
+    name: `‘${name}’을 아카이브에서 삭제할까요?`,
+    exact: true,
+  });
+  await expect(prompt).toBeVisible();
+  await prompt.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(prompt.getByRole("alert")).toContainText(
+    "삭제 결과를 확인할 수 없어요",
+  );
+
+  const dialogPromise = page.waitForEvent("dialog");
+  void page.reload().catch(() => {});
+  const dialog = await dialogPromise;
+  expect(dialog.type()).toBe("beforeunload");
+  await dialog.dismiss();
+  await expect(prompt).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/apps/${id}$`));
+
+  await setScenario(page, "original");
+  await prompt
+    .getByRole("button", { name: "같은 삭제 요청 다시 보내기", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+});

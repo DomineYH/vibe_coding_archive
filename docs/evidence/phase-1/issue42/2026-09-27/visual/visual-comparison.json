@@ -1,0 +1,565 @@
+{
+  "thresholdPixels": 0,
+  "results": [
+    {
+      "state": "delete-cancel",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "15-delete-cancel.png",
+      "screenshot": "delete-cancel-1440x1000.png",
+      "width": 1440,
+      "height": 1399,
+      "expectedWidth": 1440,
+      "expectedHeight": 1361,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirm",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "14-delete-confirm.png",
+      "screenshot": "delete-confirm-1440x1000.png",
+      "width": 1440,
+      "height": 1495,
+      "expectedWidth": 1440,
+      "expectedHeight": 1456,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-key-rejected",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "delete-key-rejected-1440x1000.png",
+      "width": 1440,
+      "height": 1563,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unresolved",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "delete-unresolved-1440x1000.png",
+      "width": 1440,
+      "height": 1563,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-pending-confirmation",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "delete-pending-confirmation-1440x1000.png",
+      "width": 1440,
+      "height": 1563,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirming",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "delete-confirming-1440x1000.png",
+      "width": 1440,
+      "height": 1563,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unknown",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "delete-unknown-1440x1000.png",
+      "width": 1440,
+      "height": 1563,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-cancel",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "15-delete-cancel.png",
+      "screenshot": "delete-cancel-1024x900.png",
+      "width": 1024,
+      "height": 1380,
+      "expectedWidth": 1024,
+      "expectedHeight": 1341,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirm",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "14-delete-confirm.png",
+      "screenshot": "delete-confirm-1024x900.png",
+      "width": 1024,
+      "height": 1476,
+      "expectedWidth": 1024,
+      "expectedHeight": 1437,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-key-rejected",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "delete-key-rejected-1024x900.png",
+      "width": 1024,
+      "height": 1543,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unresolved",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "delete-unresolved-1024x900.png",
+      "width": 1024,
+      "height": 1543,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-pending-confirmation",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "delete-pending-confirmation-1024x900.png",
+      "width": 1024,
+      "height": 1543,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirming",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "delete-confirming-1024x900.png",
+      "width": 1024,
+      "height": 1543,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unknown",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "delete-unknown-1024x900.png",
+      "width": 1024,
+      "height": 1543,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-cancel",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "15-delete-cancel.png",
+      "screenshot": "delete-cancel-768x1024.png",
+      "width": 768,
+      "height": 1772,
+      "expectedWidth": 768,
+      "expectedHeight": 1733,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirm",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "14-delete-confirm.png",
+      "screenshot": "delete-confirm-768x1024.png",
+      "width": 768,
+      "height": 1868,
+      "expectedWidth": 768,
+      "expectedHeight": 1829,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-key-rejected",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "delete-key-rejected-768x1024.png",
+      "width": 768,
+      "height": 1935,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unresolved",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "delete-unresolved-768x1024.png",
+      "width": 768,
+      "height": 1935,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-pending-confirmation",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "delete-pending-confirmation-768x1024.png",
+      "width": 768,
+      "height": 1935,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirming",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "delete-confirming-768x1024.png",
+      "width": 768,
+      "height": 1935,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unknown",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "delete-unknown-768x1024.png",
+      "width": 768,
+      "height": 1935,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-cancel",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "15-delete-cancel.png",
+      "screenshot": "delete-cancel-390x844.png",
+      "width": 390,
+      "height": 1883,
+      "expectedWidth": 390,
+      "expectedHeight": 1844,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirm",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "14-delete-confirm.png",
+      "screenshot": "delete-confirm-390x844.png",
+      "width": 390,
+      "height": 2058,
+      "expectedWidth": 390,
+      "expectedHeight": 2019,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-key-rejected",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-key-rejected-390x844.png",
+      "width": 390,
+      "height": 2066,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unresolved",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-unresolved-390x844.png",
+      "width": 390,
+      "height": 2086,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-pending-confirmation",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-pending-confirmation-390x844.png",
+      "width": 390,
+      "height": 2066,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirming",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-confirming-390x844.png",
+      "width": 390,
+      "height": 2066,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unknown",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-unknown-390x844.png",
+      "width": 390,
+      "height": 2066,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-cancel",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "15-delete-cancel.png",
+      "screenshot": "delete-cancel-360x844.png",
+      "width": 360,
+      "height": 1944,
+      "expectedWidth": 360,
+      "expectedHeight": 1939,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirm",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "14-delete-confirm.png",
+      "screenshot": "delete-confirm-360x844.png",
+      "width": 360,
+      "height": 2100,
+      "expectedWidth": 360,
+      "expectedHeight": 2095,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-key-rejected",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-key-rejected-360x844.png",
+      "width": 360,
+      "height": 2127,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unresolved",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-unresolved-360x844.png",
+      "width": 360,
+      "height": 2147,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-pending-confirmation",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-pending-confirmation-360x844.png",
+      "width": 360,
+      "height": 2127,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-confirming",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-confirming-360x844.png",
+      "width": 360,
+      "height": 2127,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    },
+    {
+      "state": "delete-unknown",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "delete-unknown-360x844.png",
+      "width": 360,
+      "height": 2147,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null
+    }
+  ]
+}

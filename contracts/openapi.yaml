@@ -724,6 +724,44 @@ paths:
         "422": { $ref: "#/components/responses/ServiceError" }
         "429": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+    delete:
+      operationId: deleteApp
+      summary: Delete an owned archive app at its expected version
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeleteAppInput" }
+      responses:
+        "204":
+          description: The app and its related health result and jobs were deleted.
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "410": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "429": { $ref: "#/components/responses/ServiceError" }
+        "503":
+          $ref: "#/components/responses/ServiceError"
+          description: >-
+            Includes DELETION_CONFIRMATION_PENDING when the app deletion is
+            committed but its related deletion record is not yet confirmed.
+            Check the existing operation key; do not submit a new key.
   /admin/users:
     get:
       operationId: listAdminUsers
@@ -1167,11 +1205,32 @@ components:
           minimum: 1
           maximum: 9007199254740991
         input: { $ref: "#/components/schemas/AppPatch" }
+    CreateAppDeleteOperation:
+      type: object
+      additionalProperties: false
+      required: [kind, target_id, expected_version]
+      properties:
+        kind: { type: string, const: app_delete }
+        target_id: { type: string, format: uuid }
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
     CreateWriteOperation:
       oneOf:
         - $ref: "#/components/schemas/CreateApprovalOperation"
         - $ref: "#/components/schemas/CreateAppWriteOperation"
         - $ref: "#/components/schemas/CreateAppUpdateOperation"
+        - $ref: "#/components/schemas/CreateAppDeleteOperation"
+    DeleteAppInput:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
     AppPatch:
       type: object
       additionalProperties: false
@@ -1278,15 +1337,20 @@ components:
         ]
       properties:
         key: { type: string, format: uuid }
-        kind: { type: string, enum: [app_create, app_update] }
+        kind: { type: string, enum: [app_create, app_update, app_delete] }
         target_id: { type: [string, "null"], format: uuid }
         issued_at: { type: string, format: date-time }
         expires_at: { type: string, format: date-time }
-        state: { type: string, enum: [unresolved, succeeded, rejected] }
+        state:
+          type: string
+          enum: [unresolved, confirming_deletion, succeeded, rejected]
         db_applied_at: { type: [string, "null"], format: date-time }
         finalized_at: { type: [string, "null"], format: date-time }
         result_version:
-          { type: [integer, "null"], minimum: 1, maximum: 9007199254740991 }
+          description: Set only for a confirmed app create or update.
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 9007199254740991
         rejection_code: { type: [string, "null"] }
         server_time: { type: string, format: date-time }
     RegisteredUser:

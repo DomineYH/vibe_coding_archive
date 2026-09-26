@@ -19,6 +19,7 @@ import {
 import {
   assertCurrentGeneration,
   createMockApp,
+  deleteMockApp,
   getMockAccounts,
   getMockSnapshot,
   MOCK_WRITE_OPERATIONS_RESET_EVENT,
@@ -35,14 +36,16 @@ const createDelayMs = 500;
 const operationLifetimeMs = 24 * 60 * 60 * 1000;
 type MockAppWriteOperation = {
   key: string;
-  kind: "app_create" | "app_update";
+  kind: "app_create" | "app_update" | "app_delete";
   actorId: string;
   input:
-    ReturnType<typeof normalizeAppInput> | ReturnType<typeof normalizeAppPatch>;
+    | ReturnType<typeof normalizeAppInput>
+    | ReturnType<typeof normalizeAppPatch>
+    | null;
   expectedVersion: number | null;
   issuedAt: string;
   expiresAt: string;
-  state: "unresolved" | "succeeded" | "rejected";
+  state: "unresolved" | "confirming_deletion" | "succeeded" | "rejected";
   targetId: string | null;
   dbAppliedAt: string | null;
   finalizedAt: string | null;
@@ -69,7 +72,7 @@ const capabilities = {
   admin_summary: { enabled: false, reasons: ["not_implemented"] },
   apps_create: { enabled: true, reasons: [] },
   apps_update_own: { enabled: true, reasons: [] },
-  apps_delete_own: { enabled: false, reasons: ["not_implemented"] },
+  apps_delete_own: { enabled: true, reasons: [] },
   admin_apps_read: { enabled: false, reasons: ["not_implemented"] },
   admin_apps_manage: { enabled: false, reasons: ["not_implemented"] },
   admin_reauth: { enabled: false, reasons: ["not_implemented"] },
@@ -322,12 +325,13 @@ function writeApp(
   return app;
 }
 
-function failUnknown() {
-  throw new ServiceError(
-    "SERVICE_UNAVAILABLE",
-    "저장 결과를 확인할 수 없어요. 먼저 작업 결과를 확인해 주세요.",
-    { httpStatus: 503, outcome: "unknown" },
-  );
+function failUnknown(
+  message = "저장 결과를 확인할 수 없어요. 먼저 작업 결과를 확인해 주세요.",
+) {
+  throw new ServiceError("SERVICE_UNAVAILABLE", message, {
+    httpStatus: 503,
+    outcome: "unknown",
+  });
 }
 
 export const appsService: AppsService = {
@@ -733,6 +737,150 @@ export const appsService: AppsService = {
           httpStatus: 404,
           outcome: "rejected",
         },
+      );
+    return operationWire(operation);
+  },
+
+  async issueDeleteOperation(id, expectedVersion) {
+    const { state, account } = currentMember();
+    const app = ownedApp(id, account.id);
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1)
+      throw new ServiceError("VALIDATION_ERROR", "삭제 요청을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    if (app.version !== expectedVersion) throw versionConflict();
+    if (state.scenario === "app_key_issue_failure")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "삭제 작업을 준비하지 못했어요.",
+        { httpStatus: 503, outcome: "rejected" },
+      );
+    const issuedAt = state.mock_now;
+    const operation: MockAppWriteOperation = {
+      key: crypto.randomUUID(),
+      kind: "app_delete",
+      actorId: account.id,
+      input: null,
+      expectedVersion,
+      issuedAt,
+      expiresAt: new Date(
+        Date.parse(issuedAt) + operationLifetimeMs,
+      ).toISOString(),
+      state: "unresolved",
+      targetId: id,
+      dbAppliedAt: null,
+      finalizedAt: null,
+      resultVersion: null,
+      rejectionCode: null,
+    };
+    appWriteOperations.set(operation.key, operation);
+    return operationWire(operation);
+  },
+
+  async delete(id, expectedVersion, key) {
+    const { state, account } = currentMember();
+    let operation = ownedOperation(key, account.id);
+    if (
+      operation.kind !== "app_delete" ||
+      operation.targetId !== id ||
+      operation.expectedVersion !== expectedVersion
+    )
+      throw new ServiceError(
+        "OPERATION_KEY_MISMATCH",
+        "삭제 요청이 작업 키와 달라요.",
+        { httpStatus: 409, outcome: "rejected" },
+      );
+    if (Date.parse(state.mock_now) >= Date.parse(operation.expiresAt))
+      throw new ServiceError("OPERATION_EXPIRED", "삭제 작업이 만료되었어요.", {
+        httpStatus: 410,
+        outcome: "rejected",
+      });
+    if (operation.state === "succeeded") return;
+    if (operation.state === "confirming_deletion") {
+      operation = {
+        ...operation,
+        state: "succeeded",
+        finalizedAt: state.mock_now,
+      };
+      appWriteOperations.set(key, operation);
+      return;
+    }
+    if (operation.state !== "unresolved")
+      throw new ServiceError(
+        "OPERATION_ALREADY_RESOLVED",
+        "삭제 작업 결과를 먼저 확인해 주세요.",
+        { httpStatus: 409, outcome: "unknown" },
+      );
+    if (state.scenario === "app_delete_unresolved")
+      failUnknown(
+        "삭제 결과를 확인할 수 없어요. 먼저 삭제 작업 결과를 확인해 주세요.",
+      );
+    if (state.scenario === "app_delete_delayed") {
+      const flow = state.auth_flow;
+      await new Promise((resolve) => setTimeout(resolve, createDelayMs));
+      assertCurrentGeneration(state.generation);
+      const current = currentMember();
+      if (
+        current.account.id !== account.id ||
+        current.state.auth_flow.flow_id !== flow.flow_id ||
+        current.state.auth_flow.revision !== flow.revision ||
+        current.state.auth_flow.session_generation !== flow.session_generation
+      )
+        throw new ServiceError(
+          "AUTH_STATE_CHANGED",
+          "인증 상태가 바뀌어 앱을 삭제하지 않았어요.",
+          { httpStatus: 409, outcome: "rejected" },
+        );
+      operation = ownedOperation(key, account.id);
+      if (operation.state === "succeeded") return;
+      if (operation.state !== "unresolved")
+        throw new ServiceError(
+          "OPERATION_ALREADY_RESOLVED",
+          "삭제 작업 결과를 먼저 확인해 주세요.",
+          { httpStatus: 409, outcome: "unknown" },
+        );
+    }
+    const app = ownedApp(id, account.id);
+    if (app.version !== expectedVersion) {
+      operation = {
+        ...operation,
+        state: "rejected",
+        finalizedAt: getMockSnapshot().mock_now,
+        rejectionCode: "VERSION_CONFLICT",
+      };
+      appWriteOperations.set(key, operation);
+      throw versionConflict();
+    }
+    const now = getMockSnapshot().mock_now;
+    const confirming = state.scenario === "app_delete_pending_confirmation";
+    deleteMockApp(id);
+    operation = {
+      ...operation,
+      state: confirming ? "confirming_deletion" : "succeeded",
+      dbAppliedAt: now,
+      finalizedAt: confirming ? null : now,
+    };
+    appWriteOperations.set(key, operation);
+    if (confirming)
+      throw new ServiceError(
+        "DELETION_CONFIRMATION_PENDING",
+        "앱 삭제는 반영되었고 결과 확인을 기다리고 있어요.",
+        { httpStatus: 503, outcome: "unknown" },
+      );
+    if (state.scenario === "app_delete_unknown")
+      failUnknown(
+        "삭제 결과를 확인할 수 없어요. 먼저 삭제 작업 결과를 확인해 주세요.",
+      );
+  },
+
+  async getDeleteOperation(key) {
+    const { account } = currentMember();
+    const operation = ownedOperation(key, account.id);
+    if (operation.kind !== "app_delete")
+      throw new ServiceError(
+        "OPERATION_NOT_FOUND",
+        "삭제 작업을 찾을 수 없어요.",
+        { httpStatus: 404, outcome: "rejected" },
       );
     return operationWire(operation);
   },

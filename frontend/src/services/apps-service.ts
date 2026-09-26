@@ -483,6 +483,19 @@ export type AppsService = {
     key: string,
     options?: RequestOptions,
   ): Promise<AppWriteOperation>;
+  issueDeleteOperation(
+    id: string,
+    expectedVersion: number,
+  ): Promise<AppWriteOperation>;
+  delete(
+    id: string,
+    expectedVersion: number,
+    operationKey: string,
+  ): Promise<void>;
+  getDeleteOperation(
+    key: string,
+    options?: RequestOptions,
+  ): Promise<AppWriteOperation>;
 };
 
 export function normalizeQuery(query: ListAppsQuery = {}) {
