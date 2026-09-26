@@ -362,11 +362,9 @@ async function captureAndCompare(
       page.getByRole("button", { name: "기본 fixture로 명시적 초기화" }),
     ).toBeVisible();
   }
-  if (state === "gallery-loading") {
+  if (state === "gallery-loading")
     await page.evaluate(() => document.fonts.ready);
-    // pauseAt freezes requestAnimationFrame too; advance two frames before capture.
-    await page.clock.runFor(32);
-  } else
+  else
     await page.evaluate(async () => {
       await document.fonts.ready;
       await new Promise(requestAnimationFrame);
