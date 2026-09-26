@@ -19,6 +19,13 @@ describe("authentication route parameters", () => {
     });
     expect(readAuthRoute("?mode=signup").mode).toBe("signup");
     expect(
+      readAuthRoute("?mode=password-change&return_to=%2Fadmin"),
+    ).toMatchObject({
+      mode: "password-change",
+      returnTo: "/admin",
+      invalid: false,
+    });
+    expect(
       readAuthRoute(
         "?return_to=%2F%3Fsubject%3D%25EC%2588%2598%25ED%2595%2599",
       ),

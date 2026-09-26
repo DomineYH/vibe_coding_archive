@@ -31,14 +31,173 @@ function formatPendingExpiry(value) {
   }).format(new Date(value));
 }
 
+function PasswordChangeCard({ expiresAt, onChangePassword }) {
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [message, setMessage] = useState("");
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
+
+  async function submit(event) {
+    event.preventDefault();
+    if (submitting.current || pending) return;
+    const nextPassword = password.normalize("NFC");
+    const confirmation = passwordConfirm.normalize("NFC");
+    const errors = {};
+    const length = Array.from(nextPassword).length;
+    if (length < 15 || length > 128)
+      errors.password = "비밀번호는 15~128자로 입력해 주세요.";
+    if (!confirmation)
+      errors.passwordConfirm = "비밀번호를 한 번 더 입력해 주세요.";
+    else if (nextPassword !== confirmation)
+      errors.passwordConfirm = "비밀번호 확인이 일치하지 않습니다.";
+    setFieldErrors(errors);
+    setMessage("");
+    if (Object.keys(errors).length) return;
+
+    submitting.current = true;
+    setPending(true);
+    try {
+      await onChangePassword({ password });
+    } catch (error) {
+      const passwordError =
+        error instanceof ServiceError ? error.fields?.password : null;
+      setFieldErrors(passwordError ? { password: passwordError } : {});
+      setMessage(
+        passwordError
+          ? ""
+          : error instanceof ServiceError
+            ? error.message
+            : "비밀번호를 변경하지 못했어요. 다시 시도해 주세요.",
+      );
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
+  }
+
+  return (
+    <main
+      className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
+      data-screen-label="비밀번호 변경"
+    >
+      <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
+        <span className="text-[17px] font-extrabold tracking-tight">EV</span>
+      </span>
+      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+        비밀번호를 변경해 주세요
+      </h1>
+      <p className="mt-1.5 text-center text-[13.5px] leading-relaxed text-neutral-500">
+        임시 비밀번호를 대신할 본인 비밀번호를 정한 뒤 회원 기능을 사용할 수
+        있습니다.
+      </p>
+      <p
+        className="mt-4 rounded-xl bg-[#4C7A96]/[0.06] px-3.5 py-2.5 text-center text-[12px] leading-relaxed text-neutral-600"
+        role="status"
+      >
+        변경 전용 로그인은 {formatPendingExpiry(expiresAt)}까지 유효합니다.
+      </p>
+      <form
+        onSubmit={submit}
+        aria-busy={pending}
+        className="mt-5 flex w-full flex-col gap-3.5 rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)]"
+      >
+        <div>
+          <label
+            htmlFor="new-password"
+            className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+          >
+            새 비밀번호{" "}
+            <span className="font-normal text-neutral-400">(필수)</span>
+          </label>
+          <input
+            id="new-password"
+            type="password"
+            className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={pending}
+            autoComplete="new-password"
+            aria-required="true"
+            aria-invalid={fieldErrors.password ? "true" : undefined}
+            aria-describedby={`new-password-hint${fieldErrors.password ? " new-password-error" : ""}`}
+          />
+          <p
+            id="new-password-hint"
+            className="mt-1 text-[11px] text-neutral-400"
+          >
+            15~128자 · 공백은 유지되며 NFC로 정규화됩니다.
+          </p>
+          {fieldErrors.password ? (
+            <p
+              id="new-password-error"
+              className="mt-1 text-[12px] text-red-700"
+            >
+              {fieldErrors.password}
+            </p>
+          ) : null}
+        </div>
+        <div>
+          <label
+            htmlFor="new-password-confirm"
+            className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+          >
+            새 비밀번호 확인{" "}
+            <span className="font-normal text-neutral-400">(필수)</span>
+          </label>
+          <input
+            id="new-password-confirm"
+            type="password"
+            className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+            value={passwordConfirm}
+            onChange={(event) => setPasswordConfirm(event.target.value)}
+            disabled={pending}
+            autoComplete="new-password"
+            aria-required="true"
+            aria-invalid={fieldErrors.passwordConfirm ? "true" : undefined}
+            aria-describedby={
+              fieldErrors.passwordConfirm
+                ? "new-password-confirm-error"
+                : undefined
+            }
+          />
+          {fieldErrors.passwordConfirm ? (
+            <p
+              id="new-password-confirm-error"
+              className="mt-1 text-[12px] text-red-700"
+            >
+              {fieldErrors.passwordConfirm}
+            </p>
+          ) : null}
+        </div>
+        {message ? (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="text-[12.5px] text-red-700"
+          >
+            {message}
+          </div>
+        ) : null}
+        <Btn type="submit" size="lg" className="mt-1 w-full" disabled={pending}>
+          {pending ? "비밀번호 변경 중…" : "비밀번호 변경"}
+        </Btn>
+      </form>
+    </main>
+  );
+}
+
 export function AuthView({
   mode,
+  authUser,
   routeError,
   authStatus,
   authError,
   onRetry,
   onLogin,
   onRegister,
+  onChangePassword,
 }) {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -97,6 +256,34 @@ export function AuthView({
           </EmptyState>
         </div>
       </main>
+    );
+  }
+
+  if (mode === "password-change") {
+    if (authUser?.sessionKind !== "change_only" || !authUser.mustChangePassword)
+      return (
+        <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+          <div role="status" aria-live="polite">
+            <EmptyState
+              title="비밀번호 변경 전용 로그인이 필요해요"
+              desc="임시 비밀번호로 로그인한 뒤 본인 비밀번호를 변경할 수 있습니다."
+            >
+              <Link
+                to="/auth?mode=login"
+                className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+              >
+                로그인 화면으로
+              </Link>
+            </EmptyState>
+          </div>
+        </main>
+      );
+    return (
+      <PasswordChangeCard
+        key={authUser.id}
+        expiresAt={authUser.expiresAt}
+        onChangePassword={onChangePassword}
+      />
     );
   }
 
@@ -230,15 +417,18 @@ export function AuthView({
       await onLogin({ loginId: normalizedLoginId, password });
     } catch (error) {
       const text =
-        error instanceof ServiceError && error.code === "INVALID_CREDENTIALS"
-          ? "로그인 아이디 또는 비밀번호를 확인해 주세요."
+        error instanceof ServiceError && error.code === "TEMP_PASSWORD_EXPIRED"
+          ? error.message
           : error instanceof ServiceError &&
-              error.code === "ACCOUNT_NOT_APPROVED"
-            ? error.message
+              error.code === "INVALID_CREDENTIALS"
+            ? "로그인 아이디 또는 비밀번호를 확인해 주세요."
             : error instanceof ServiceError &&
-                error.code === "ALREADY_AUTHENTICATED"
+                error.code === "ACCOUNT_NOT_APPROVED"
               ? error.message
-              : "로그인하지 못했어요. 연결을 확인해 주세요.";
+              : error instanceof ServiceError &&
+                  error.code === "ALREADY_AUTHENTICATED"
+                ? error.message
+                : "로그인하지 못했어요. 연결을 확인해 주세요.";
       setMessage(text);
     } finally {
       submitting.current = false;

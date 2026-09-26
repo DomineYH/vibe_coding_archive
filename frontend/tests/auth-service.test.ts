@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
 import { authService } from "../src/services/mock/auth";
-import { resetMockState, setMockScenario } from "../src/services/mock/state";
+import { adminService } from "../src/services/mock/admin";
+import {
+  MOCK_STORAGE_KEY,
+  resetMockState,
+  setMockClock,
+  setMockScenario,
+} from "../src/services/mock/state";
 
 const privateMemberApp = "00000000-0000-4000-8000-000000000091";
 
@@ -40,6 +46,191 @@ describe("demo authentication and protected reads", () => {
       code: "AUTH_REQUIRED",
       httpStatus: 401,
     });
+  });
+
+  it("signs the prepared temporary member into the bounded change-only session", async () => {
+    const result = await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+
+    expect(result.user).toMatchObject({
+      role: "user",
+      approved: true,
+      mustChangePassword: true,
+      sessionKind: "change_only",
+      expiresAt: "2026-09-22T00:27:00.000Z",
+      email: null,
+      phone: null,
+      recentAuthUntil: null,
+    });
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      user: result.user,
+    });
+    await expect(appsService.get(privateMemberApp)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      httpStatus: 404,
+    });
+  });
+
+  it("caps change-only expiry at fifteen minutes or the temporary credential expiry", async () => {
+    const normal = await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+    expect(normal.user.expiresAt).toBe("2026-09-22T00:27:00.000Z");
+    await authService.logout();
+
+    setMockClock("2026-09-22T23:59:00.000Z");
+    const nearCredentialExpiry = await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+    expect(nearCredentialExpiry.user.expiresAt).toBe(
+      "2026-09-23T00:12:00.000Z",
+    );
+    await authService.logout();
+
+    setMockClock("2026-09-23T00:12:00.000Z");
+    await expect(
+      authService.login({
+        loginId: "임시교사38",
+        password: "Temporary Demo Password 38",
+      }),
+    ).rejects.toMatchObject({
+      code: "TEMP_PASSWORD_EXPIRED",
+      httpStatus: 403,
+    });
+    expect((await authService.getCurrentAuthState()).user).toBeNull();
+  });
+
+  it("checks approval before reporting an expired temporary password", async () => {
+    const state = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as {
+      admin_users: {
+        id: string;
+        approved: boolean;
+        first_approved_at: string | null;
+      }[];
+    };
+    const temporaryUser = state.admin_users.find(
+      (user) => user.id === "00000000-0000-4000-8000-000000000900",
+    )!;
+    temporaryUser.approved = false;
+    temporaryUser.first_approved_at = null;
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+    setMockClock("2026-09-23T00:12:00.000Z");
+
+    await expect(
+      authService.login({
+        loginId: "임시교사38",
+        password: "Temporary Demo Password 38",
+      }),
+    ).rejects.toMatchObject({ code: "ACCOUNT_NOT_APPROVED", httpStatus: 403 });
+  });
+
+  it("consumes the temporary password and preserves NFC and surrounding spaces", async () => {
+    await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+    const password = "  Cafe\u0301 training phrase 38  ";
+    const changed = await authService.changePassword({ password });
+
+    expect(changed.user).toMatchObject({
+      mustChangePassword: false,
+      sessionKind: "full",
+      expiresAt: "2026-09-22T08:12:00.000Z",
+    });
+    expect(await authService.getMe()).toEqual(changed.user);
+    await expect(
+      authService.changePassword({ password: "another training phrase 38" }),
+    ).rejects.toMatchObject({ code: "SESSION_KIND_NOT_ALLOWED" });
+
+    await authService.logout();
+    await expect(
+      authService.login({
+        loginId: "임시교사38",
+        password: "Temporary Demo Password 38",
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    await expect(
+      authService.login({
+        loginId: "임시교사38",
+        password: "  Café training phrase 38  ",
+      }),
+    ).resolves.toMatchObject({ user: { sessionKind: "full" } });
+  });
+
+  it("rejects a change at the exact session expiry without changing the password", async () => {
+    await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+    setMockClock("2026-09-22T00:27:00.000Z");
+
+    await expect(
+      authService.changePassword({ password: "New phrase after expiry 38" }),
+    ).rejects.toMatchObject({ code: "AUTH_REQUIRED", httpStatus: 401 });
+    expect((await authService.getCurrentAuthState()).user).toBeNull();
+    await expect(
+      authService.login({
+        loginId: "임시교사38",
+        password: "Temporary Demo Password 38",
+      }),
+    ).resolves.toMatchObject({ user: { sessionKind: "change_only" } });
+  });
+
+  it("starts an administrator full and recent-auth window after the first change", async () => {
+    await authService.login({
+      loginId: "임시관리자38",
+      password: "Temporary Admin Password 38",
+    });
+    const changed = await authService.changePassword({
+      password: "New administrator phrase 38",
+    });
+
+    expect(changed.user).toMatchObject({
+      role: "admin",
+      sessionKind: "full",
+      mustChangePassword: false,
+      expiresAt: "2026-09-22T08:12:00.000Z",
+      recentAuthUntil: "2026-09-22T00:27:00.000Z",
+    });
+    await expect(
+      adminService.listUsers({ limit: 24, offset: 0 }),
+    ).resolves.toBeDefined();
+  });
+
+  it("discards a delayed password change after logout", async () => {
+    vi.useFakeTimers();
+    try {
+      await authService.login({
+        loginId: "임시교사38",
+        password: "Temporary Demo Password 38",
+      });
+      setMockScenario("auth_delayed");
+      const pending = authService.changePassword({
+        password: "New password for delayed flow 38",
+      });
+      const rejected = expect(pending).rejects.toMatchObject({
+        name: "AbortError",
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      await authService.logout();
+      await vi.advanceTimersByTimeAsync(300);
+      await rejected;
+      setMockScenario("original");
+      await expect(
+        authService.login({
+          loginId: "임시교사38",
+          password: "New password for delayed flow 38",
+        }),
+      ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("preserves auth transition history when the same member returns", async () => {
@@ -105,7 +296,7 @@ describe("demo authentication and protected reads", () => {
       });
       await vi.advanceTimersByTimeAsync(0);
       resetMockState();
-      await vi.advanceTimersByTimeAsync(300);
+      await vi.advanceTimersByTimeAsync(1000);
       await rejected;
       expect((await authService.getCurrentAuthState()).user).toBeNull();
     } finally {

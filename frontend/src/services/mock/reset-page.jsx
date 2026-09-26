@@ -2,7 +2,20 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { Btn } from "../../components/ui";
-import { readMockScenario, resetMockState, setMockScenario } from "./state";
+import {
+  getMockNow,
+  readMockScenario,
+  resetMockState,
+  setMockClock,
+  setMockScenario,
+} from "./state";
+
+function localDateTime(value) {
+  const date = new Date(value);
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+}
 
 export default function MockResetPage() {
   const queryClient = useQueryClient();
@@ -12,6 +25,13 @@ export default function MockResetPage() {
       return readMockScenario();
     } catch {
       return "original";
+    }
+  });
+  const [mockTime, setMockTime] = useState(() => {
+    try {
+      return localDateTime(getMockNow());
+    } catch {
+      return "";
     }
   });
   const [message, setMessage] = useState("");
@@ -38,10 +58,21 @@ export default function MockResetPage() {
   const reset = () => {
     try {
       resetMockState();
+      setMockTime(localDateTime(getMockNow()));
       queryClient.clear();
       navigate("/");
     } catch (error) {
       setMessage(error.message || "mock 저장 데이터를 초기화하지 못했어요.");
+    }
+  };
+
+  const saveMockTime = () => {
+    try {
+      setMockClock(new Date(mockTime).toISOString());
+      setReadFailed(false);
+      setMessage("mock 시각을 저장했어요.");
+    } catch (error) {
+      setMessage(error.message || "mock 시각을 저장하지 못했어요.");
     }
   };
 
@@ -89,6 +120,25 @@ export default function MockResetPage() {
           <option value="auth_network_error">로그인 통신 실패</option>
           <option value="detail_delayed">상세 조회 지연</option>
         </select>
+        <label
+          className="mt-5 block text-[13px] font-semibold text-neutral-800"
+          htmlFor="mock-clock"
+        >
+          개발용 mock 시각
+        </label>
+        <div className="mt-1.5 flex gap-2">
+          <input
+            id="mock-clock"
+            type="datetime-local"
+            value={mockTime}
+            disabled={readFailed}
+            onChange={(event) => setMockTime(event.target.value)}
+            className="h-10 min-w-0 flex-1 rounded-xl border border-neutral-200 bg-white px-3 text-[14px] text-neutral-800 outline-none focus-visible:ring-2 focus-visible:ring-[#4C7A96] disabled:bg-neutral-100"
+          />
+          <Btn onClick={saveMockTime} disabled={readFailed || !mockTime}>
+            시각 저장
+          </Btn>
+        </div>
         {readFailed ? (
           <p className="mt-2 text-[13px] text-red-700" role="alert">
             저장된 mock을 읽지 못했습니다. 아래의 명시적 초기화만 사용할 수

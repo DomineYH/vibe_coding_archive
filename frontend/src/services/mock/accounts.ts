@@ -63,3 +63,32 @@ export const DEMO_ACCOUNTS = [
     createdAt: "2026-06-09T00:12:00.000Z",
   },
 ] as const;
+
+export const TEMPORARY_DEMO_ACCOUNTS = [
+  {
+    id: "00000000-0000-4000-8000-000000000900",
+    loginId: "임시교사38",
+    password: "Temporary Demo Password 38",
+    nickname: "임시 계정 교사",
+    role: "user",
+    approved: true,
+    createdAt: "2026-09-22T00:12:00.000Z",
+    mustChangePassword: true,
+    temporaryPasswordExpiresAt: "2026-09-23T00:12:00.000Z",
+    temporaryDemoFixture: true,
+  },
+  {
+    id: "00000000-0000-4000-8000-000000000901",
+    loginId: "임시관리자38",
+    password: "Temporary Admin Password 38",
+    nickname: "임시 관리자",
+    role: "admin",
+    approved: true,
+    createdAt: "2026-09-22T00:12:00.000Z",
+    mustChangePassword: true,
+    temporaryPasswordExpiresAt: "2026-09-23T00:12:00.000Z",
+    temporaryDemoFixture: true,
+  },
+] as const;
+
+export const MOCK_ACCOUNTS = [...DEMO_ACCOUNTS, ...TEMPORARY_DEMO_ACCOUNTS];

@@ -392,5 +392,24 @@ for (const viewport of viewports) {
     await expect(
       page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
     ).toBeVisible();
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=login");
+    const temporaryLoginForm = page.locator(
+      '[data-screen-label="로그인"] form',
+    );
+    await expect(temporaryLoginForm).toBeVisible();
+    await temporaryLoginForm.locator("#login-id").fill("임시교사38");
+    await temporaryLoginForm
+      .locator("#login-password")
+      .fill("Temporary Demo Password 38");
+    await temporaryLoginForm
+      .getByRole("button", { name: "로그인", exact: true })
+      .click();
+    await expect(page).toHaveURL(/mode=password-change/);
+    const passwordChange = page.locator('[data-screen-label="비밀번호 변경"]');
+    await expect(passwordChange).toBeVisible();
+    await expect(passwordChange.locator("#new-password")).toBeVisible();
+    await capture(page, "auth-password-change", viewport, testInfo);
   });
 }

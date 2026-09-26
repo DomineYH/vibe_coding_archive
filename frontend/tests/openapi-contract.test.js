@@ -73,6 +73,12 @@ describe("OpenAPI app detail schema", () => {
     ]);
     expect(registerInput.additionalProperties).toBe(false);
     expect(registerInput.properties).not.toHaveProperty("password_confirm");
+    expect(registerInput.description).toContain(
+      "versioned local common-password blocklist",
+    );
+    expect(registerInput.description).toContain(
+      "Phase 1 mock does not apply the check",
+    );
     expect(
       openapi.components.schemas.RegisteredUser.properties.approved.const,
     ).toBe(false);
@@ -82,6 +88,35 @@ describe("OpenAPI app detail schema", () => {
     expect(
       openapi.components.schemas.RegisteredUser.properties,
     ).not.toHaveProperty("phone");
+  });
+
+  it("defines password change only for the authenticated change-only session", () => {
+    const operation = openapi.paths["/auth/password"].post;
+    const input = openapi.components.schemas.ChangePasswordInput;
+    expect(operation.security).toEqual([{ SessionCookie: [] }]);
+    expect(operation.parameters).toContainEqual(
+      expect.objectContaining({
+        name: "X-CSRF-Token",
+        in: "header",
+        required: true,
+      }),
+    );
+    expect(input.required).toEqual(["password"]);
+    expect(input.additionalProperties).toBe(false);
+    expect(input.properties.password).toMatchObject({
+      minLength: 15,
+      maxLength: 128,
+    });
+    expect(input.properties).not.toHaveProperty("password_confirm");
+    expect(input.description).toContain(
+      "versioned local common-password blocklist",
+    );
+    expect(input.description).toContain(
+      "Phase 1 mock does not apply this check",
+    );
+    expect(
+      operation.responses["200"].content["application/json"].schema.$ref,
+    ).toBe("#/components/schemas/AuthResult");
   });
 
   it("defines admin pages, aggregate stats, and contact-free approval targets", () => {

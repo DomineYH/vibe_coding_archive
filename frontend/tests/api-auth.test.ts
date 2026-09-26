@@ -22,6 +22,9 @@ describe("Phase 1 API auth boundary", () => {
     await expect(
       authService.login({ loginId: "admin", password: "admin123" }),
     ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
+    await expect(
+      authService.changePassword({ password: "new demo password phrase" }),
+    ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
     await expect(authService.logout()).rejects.toMatchObject({
       code: "FEATURE_UNAVAILABLE",
     });

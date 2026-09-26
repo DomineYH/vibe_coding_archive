@@ -31,6 +31,15 @@ function fail(
 
 function currentAdmin() {
   const state = getMockSnapshot();
+  const session = state.principal_session;
+  if (!session || Date.parse(state.mock_now) >= Date.parse(session.expires_at))
+    throw fail("AUTH_REQUIRED", "로그인이 필요해요.", 401);
+  if (session.session_kind !== "full")
+    throw fail(
+      "PASSWORD_CHANGE_REQUIRED",
+      "회원 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
+      403,
+    );
   const account = getMockAccounts(state).find(
     (item) => item.id === state.principal_id,
   );

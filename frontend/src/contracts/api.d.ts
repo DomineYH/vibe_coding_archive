@@ -95,6 +95,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the temporary password in a change-only session
+         * @description Requires a valid change-only session. The password is normalized to NFC without trimming; confirmation stays in the browser and is not sent. The request is rejected when the temporary credential or session has expired, including at the exact expiry boundary.
+         */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/logout": {
         parameters: {
             query?: never;
@@ -283,7 +303,11 @@ export interface components {
             login_id: string;
             password: string;
         };
-        /** @description login_id and nickname are trimmed and normalized to NFC; password is normalized to NFC without trimming. Lengths count Unicode code points. Password length is 15-128 and common-password checks use the fixed server-side local blocklist. email and phone are optional synthetic Phase 1 inputs; password_confirm is never part of this request. */
+        /** @description A new password of 15-128 Unicode code points. Normalize to NFC without trimming or truncation; compare the full normalized value against the versioned local common-password blocklist. Do not send it to an external service. The Phase 1 mock does not apply this check while list redistribution rights remain unresolved. The browser confirmation is never sent. */
+        ChangePasswordInput: {
+            password: string;
+        };
+        /** @description login_id and nickname are trimmed and normalized to NFC; password is normalized to NFC without trimming. Lengths count Unicode code points. Password length is 15-128. The production contract checks the full normalized value against the versioned local common-password blocklist; the Phase 1 mock does not apply the check while list redistribution rights remain unresolved. email and phone are optional synthetic Phase 1 inputs; password_confirm is never part of this request. */
         RegisterInput: {
             login_id: string;
             password: string;
@@ -724,6 +748,36 @@ export interface operations {
             413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-CSRF-Token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordInput"];
+            };
+        };
+        responses: {
+            /** @description The temporary credential is consumed and a full session is issued. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

@@ -30,7 +30,7 @@ const capabilities = {
   auth_register: { enabled: true, reasons: [] },
   auth_login: { enabled: true, reasons: [] },
   auth_logout: { enabled: true, reasons: [] },
-  auth_password_change: { enabled: false, reasons: ["not_implemented"] },
+  auth_password_change: { enabled: true, reasons: [] },
   admin_users_read: { enabled: false, reasons: ["not_implemented"] },
   admin_approval: { enabled: false, reasons: ["not_implemented"] },
   admin_summary: { enabled: false, reasons: ["not_implemented"] },
@@ -250,9 +250,14 @@ export const appsService: AppsService = {
     const account = DEMO_ACCOUNTS.find(
       (item) => item.id === state.principal_id,
     );
+    const session = state.principal_session;
+    const fullSession =
+      session?.session_kind === "full" &&
+      Date.parse(state.mock_now) < Date.parse(session.expires_at);
     const canReadPrivate =
       app?.is_public ||
-      (account !== undefined &&
+      (fullSession &&
+        account !== undefined &&
         (account.role === "admin" || app?.owner.id === account.id));
     if (!app || !canReadPrivate)
       throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
