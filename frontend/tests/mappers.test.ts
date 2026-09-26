@@ -138,6 +138,20 @@ describe("response mappers", () => {
     ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 
+  it("maps an unresolved update key with its existing target ID", () => {
+    expect(
+      mapAppWriteOperation({
+        ...appWriteOperation,
+        kind: "app_update",
+        target_id: card.id,
+      }),
+    ).toMatchObject({
+      kind: "app_update",
+      targetId: card.id,
+      state: "unresolved",
+    });
+  });
+
   it("rejects malformed or non-app create operation results", () => {
     expect(() =>
       mapAppWriteOperation({ ...appWriteOperation, kind: "app_update" }),

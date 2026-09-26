@@ -425,7 +425,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update an owned archive app at its expected version */
+        patch: operations["updateApp"];
         trace?: never;
     };
     "/admin/users": {
@@ -602,7 +603,46 @@ export interface components {
             kind: "app_create";
             input: components["schemas"]["AppInput"];
         };
-        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreateAppWriteOperation"];
+        CreateAppUpdateOperation: {
+            /** @constant */
+            kind: "app_update";
+            /** Format: uuid */
+            target_id: string;
+            expected_version: number;
+            input: components["schemas"]["AppPatch"];
+        };
+        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"];
+        AppPatch: {
+            name?: string;
+            /** Format: uri */
+            url?: string;
+            prompt?: string;
+            description?: string;
+            subject?: components["schemas"]["Subject"];
+            grades?: components["schemas"]["Grade"][];
+            is_public?: boolean;
+            theme_id?: string;
+            stack_db?: string | null;
+            stack_backend?: string | null;
+            stack_frontend?: string | null;
+            stack_hosting?: string | null;
+        };
+        UpdateAppInput: {
+            expected_version: number;
+            name?: string;
+            /** Format: uri */
+            url?: string;
+            prompt?: string;
+            description?: string;
+            subject?: components["schemas"]["Subject"];
+            grades?: components["schemas"]["Grade"][];
+            is_public?: boolean;
+            theme_id?: string;
+            stack_db?: string | null;
+            stack_backend?: string | null;
+            stack_frontend?: string | null;
+            stack_hosting?: string | null;
+        };
         SetApprovalInput: {
             approved: boolean;
             expected_account_version: number;
@@ -629,8 +669,8 @@ export interface components {
         AppWriteOperation: {
             /** Format: uuid */
             key: string;
-            /** @constant */
-            kind: "app_create";
+            /** @enum {string} */
+            kind: "app_create" | "app_update";
             /** Format: uuid */
             target_id: string | null;
             /** Format: date-time */
@@ -1802,6 +1842,49 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    updateApp: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAppInput"];
+            };
+        };
+        responses: {
+            /** @description The persisted app at its new version. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppDetailResponse"];
+                };
+            };
+            400: components["responses"]["ServiceError"];
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            410: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

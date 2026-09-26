@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  appPatchToWire,
   isAppInputDirty,
   normalizeAppInput,
+  normalizeAppPatch,
   normalizeQuery,
   normalizeQueryForService,
   type AppInput,
@@ -136,4 +138,31 @@ describe("app input contract", () => {
       }),
     ).toBe(true);
   });
+
+  it("keeps omitted patch fields unchanged and treats null stack values as clears", () => {
+    expect(
+      normalizeAppPatch({
+        prompt: "질문\r\n답변 ",
+        stack: { db: null, frontend: "  React  " },
+      }),
+    ).toEqual({
+      prompt: "질문\n답변 ",
+      stack: { db: null, frontend: "React" },
+    });
+    expect(
+      appPatchToWire({ prompt: "질문\r\n답변 ", stack: { db: null } }),
+    ).toEqual({ prompt: "질문\n답변 ", stack_db: null });
+  });
+
+  it.each([{}, { ownerId: "another member" }, { stack: { unknown: "x" } }])(
+    "rejects an empty or unsupported patch: %o",
+    (patch) => {
+      expect(() => normalizeAppPatch(patch)).toThrowError(
+        expect.objectContaining({
+          code: "VALIDATION_ERROR",
+          outcome: "rejected",
+        }),
+      );
+    },
+  );
 });

@@ -434,6 +434,15 @@ function DetailRoute({ auth, onRetryAuth }) {
   });
   const app = detail.data;
   const protectedDetail = app?.isPublic !== true;
+  const canEdit =
+    Boolean(app) &&
+    auth.status === "ready" &&
+    !auth.concealed &&
+    auth.user?.id === app?.ownerId &&
+    auth.user.approved &&
+    auth.user.sessionKind === "full" &&
+    !auth.user.mustChangePassword &&
+    access.meta?.capabilities.apps_update_own.enabled === true;
   const authError =
     __DATA_MODE__ === "mock" && protectedDetail && auth.status === "error";
   return (
@@ -448,9 +457,166 @@ function DetailRoute({ auth, onRetryAuth }) {
       loading={access.loading || (!authError && detail.isPending)}
       error={access.error ?? detail.error}
       retry={authError ? onRetryAuth : () => access.retry(detail.refetch)}
-      onBack={() => navigate(location.state?.fromGallery === true ? -1 : "/")}
+      canEdit={canEdit}
+      fromGallery={location.state?.fromGallery === true}
+      onBack={() =>
+        navigate(
+          location.state?.fromEdit === true &&
+            location.state?.fromGallery === true
+            ? -2
+            : location.state?.fromGallery === true
+              ? -1
+              : "/",
+        )
+      }
     />
   );
+}
+
+function EditRoute({ auth, onRetryAuth, onSaved }) {
+  const { id = "" } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const access = usePublicMetadata();
+  const member = auth.user;
+  const readyMember =
+    auth.status === "ready" &&
+    !auth.concealed &&
+    member?.approved &&
+    member.sessionKind === "full" &&
+    !member.mustChangePassword &&
+    (member.role === "user" || member.role === "admin");
+  const detail = useQuery({
+    queryKey: [__DATA_MODE__, "apps", "detail", id],
+    enabled: access.canRead && readyMember,
+    queryFn: async ({ signal }) => {
+      const app = await appsService.get(id, { signal });
+      if (app.ownerId !== member?.id)
+        throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.");
+      assertThemeIds(access.meta, [app]);
+      return app;
+    },
+  });
+  const canEdit =
+    readyMember &&
+    Boolean(detail.data) &&
+    detail.data?.ownerId === member?.id &&
+    access.meta?.capabilities.apps_update_own.enabled === true;
+  const [wasEditable, setWasEditable] = useState(false);
+  const ownerId = useRef(null);
+  const lastApp = useRef(null);
+  if (detail.data) lastApp.current = detail.data;
+  if (canEdit) ownerId.current = member?.id;
+  const formApp =
+    detail.data ?? (lastApp.current?.id === id ? lastApp.current : null);
+  useEffect(() => {
+    if (canEdit) setWasEditable(true);
+  }, [canEdit]);
+  const keepDraft =
+    canEdit ||
+    (wasEditable && Boolean(member?.id) && member?.id === ownerId.current);
+  const form = keepDraft ? (
+    <div hidden={!canEdit} aria-hidden={!canEdit}>
+      <SubmitView
+        key={`${authScopeIdentity(auth)}:${id}`}
+        app={formApp}
+        meta={access.meta}
+        onSaved={onSaved}
+        onLatest={(app) =>
+          queryClient.setQueryData([__DATA_MODE__, "apps", "detail", id], app)
+        }
+        onCancel={() =>
+          location.state?.fromDetail === true
+            ? navigate(-1)
+            : navigate(`/apps/${id}`, { replace: true })
+        }
+      />
+    </div>
+  ) : null;
+  const message = (title, description, action) => (
+    <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <div
+        role={action ? "alert" : "status"}
+        aria-live={action ? "assertive" : "polite"}
+      >
+        <EmptyState title={title} desc={description}>
+          {action}
+        </EmptyState>
+      </div>
+    </main>
+  );
+
+  if (auth.concealed || auth.status === "checking")
+    return (
+      <>
+        {form}
+        {message("로그인 상태를 확인하고 있어요")}
+      </>
+    );
+  if (auth.status === "error")
+    return (
+      <>
+        {form}
+        {message(
+          "로그인 상태를 확인할 수 없어요",
+          auth.error?.message,
+          <Btn onClick={onRetryAuth}>다시 확인</Btn>,
+        )}
+      </>
+    );
+  if (!member)
+    return (
+      <Navigate
+        to={`/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`}
+        replace
+      />
+    );
+  if (!readyMember)
+    return message(
+      "승인된 회원만 앱을 수정할 수 있어요",
+      "앱 등록·수정에는 전체 회원 권한이 필요해요.",
+    );
+  if (access.loading || detail.isPending)
+    return (
+      <>
+        {form}
+        {message("앱 정보를 확인하고 있어요")}
+      </>
+    );
+  if (access.error)
+    return (
+      <>
+        {form}
+        {message(
+          "앱 수정 기능을 확인할 수 없어요",
+          access.error.message,
+          <Btn onClick={() => access.retry(detail.refetch)}>다시 확인</Btn>,
+        )}
+      </>
+    );
+  if (detail.error || !detail.data)
+    return (
+      <>
+        {form}
+        {message(
+          "앱을 수정할 수 없어요",
+          detail.error?.message ?? "앱을 찾을 수 없어요.",
+          <Btn onClick={() => void detail.refetch()}>다시 확인</Btn>,
+        )}
+      </>
+    );
+  if (detail.data.ownerId !== member.id)
+    return message(
+      "본인 앱만 수정할 수 있어요",
+      "다른 회원의 앱은 수정할 수 없습니다.",
+    );
+  if (!access.meta?.capabilities.apps_update_own.enabled)
+    return message(
+      "앱 수정 기능을 사용할 수 없어요",
+      "잠시 후 다시 확인해 주세요.",
+    );
+  return form;
 }
 
 function SubmitRoute({ auth, onRetryAuth, onCreated }) {
@@ -755,6 +921,26 @@ export default function App() {
     },
     [navigate, queryClient],
   );
+  const onAppUpdated = useCallback(
+    (app) => {
+      queryClient.setQueryData([__DATA_MODE__, "apps", "detail", app.id], app);
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "admin"],
+      });
+      navigate(`/apps/${app.id}`, {
+        replace: true,
+        state: {
+          fromGallery: location.state?.fromGallery === true,
+          fromEdit: true,
+        },
+      });
+      setToast("앱을 수정했어요.");
+    },
+    [location.state, navigate, queryClient],
+  );
 
   const isProtectedQuery = useCallback((query) => {
     const key = query.queryKey;
@@ -832,6 +1018,13 @@ export default function App() {
 
   const refreshMockState = useCallback(async () => {
     await restoreAuth({ concealed: true });
+    queryClient.removeQueries({
+      predicate: (query) =>
+        __DATA_MODE__ === "mock" &&
+        query.queryKey[0] === __DATA_MODE__ &&
+        query.queryKey[1] === "apps" &&
+        query.queryKey[2] === "detail",
+    });
     await queryClient.invalidateQueries({
       predicate: (query) => {
         const key = query.queryKey;
@@ -1126,6 +1319,16 @@ export default function App() {
               auth={auth}
               onRetryAuth={() => restoreAuth()}
               onCreated={onAppCreated}
+            />
+          }
+        />
+        <Route
+          path="/apps/:id/edit"
+          element={
+            <EditRoute
+              auth={auth}
+              onRetryAuth={restoreAuth}
+              onSaved={onAppUpdated}
             />
           }
         />

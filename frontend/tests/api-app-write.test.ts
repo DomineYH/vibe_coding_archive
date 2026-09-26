@@ -41,6 +41,11 @@ const issued = {
   rejection_code: null,
   server_time: "2026-09-22T00:12:00.000Z",
 };
+const updateIssued = {
+  ...issued,
+  kind: "app_update",
+  target_id: appId,
+};
 const created = {
   item: {
     id: appId,
@@ -158,6 +163,82 @@ describe("app write API", () => {
     expect(init?.method).toBe("POST");
     expect(new Headers(init?.headers).get("Idempotency-Key")).toBe(key);
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("issues an update key, then PATCHes only supplied fields with the expected version", async () => {
+    const updated = {
+      ...created,
+      item: { ...created.item, is_public: false, version: 2 },
+    };
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(updateIssued), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(updated), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+
+    const operation = await appsService.issueUpdateOperation(
+      appId,
+      { isPublic: false, stack: { db: null } },
+      1,
+    );
+    expect(operation).toMatchObject({
+      kind: "app_update",
+      targetId: appId,
+      state: "unresolved",
+    });
+    await expect(
+      appsService.update(
+        appId,
+        { isPublic: false, stack: { db: null } },
+        1,
+        key,
+      ),
+    ).resolves.toMatchObject({ id: appId, isPublic: false, version: 2 });
+
+    const [operationUrl, operationInit] = fetch.mock.calls[0];
+    expect(operationUrl).toBe("/api/v1/write-operations");
+    expect(JSON.parse(String(operationInit?.body))).toEqual({
+      kind: "app_update",
+      target_id: appId,
+      expected_version: 1,
+      input: { is_public: false, stack_db: null },
+    });
+    const [url, init] = fetch.mock.calls[1];
+    expect(url).toBe(`/api/v1/apps/${appId}`);
+    expect(init?.method).toBe("PATCH");
+    expect(JSON.parse(String(init?.body))).toEqual({
+      expected_version: 1,
+      is_public: false,
+      stack_db: null,
+    });
+    expect(new Headers(init?.headers).get("Idempotency-Key")).toBe(key);
+  });
+
+  it("reports an expected-version conflict as a confirmed rejection", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "VERSION_CONFLICT",
+              message: "앱이 다른 내용으로 수정되었어요.",
+              request_id: null,
+            },
+          }),
+          { status: 409 },
+        ),
+      ),
+    );
+
+    await expect(
+      appsService.update(appId, { name: "다른 이름" }, 1, key),
+    ).rejects.toMatchObject({ code: "VERSION_CONFLICT", outcome: "rejected" });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("preserves an unknown create outcome and never retries automatically", async () => {

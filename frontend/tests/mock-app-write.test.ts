@@ -3,6 +3,7 @@ import { authService } from "../src/services/mock/auth";
 import { appsService } from "../src/services/mock/apps";
 import {
   getMockSnapshot,
+  MOCK_STORAGE_KEY,
   resetMockState,
   setMockScenario,
 } from "../src/services/mock/state";
@@ -144,5 +145,248 @@ describe("mock app creation", () => {
     ).resolves.toMatchObject({
       state: "succeeded",
     });
+  });
+});
+
+describe("mock app updates", () => {
+  it("issues a versioned key and increments the owned app exactly once", async () => {
+    await loginMember();
+    const createKey = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, createKey.key);
+    const beforeUpdate = getMockSnapshot().apps.length;
+    const patch = { name: "수정한 수업 도구" };
+    const operation = await appsService.issueUpdateOperation(
+      created.id,
+      patch,
+      created.version,
+    );
+
+    expect(operation).toMatchObject({
+      kind: "app_update",
+      targetId: created.id,
+      state: "unresolved",
+    });
+    expect(getMockSnapshot().apps).toHaveLength(beforeUpdate);
+
+    const updated = await appsService.update(
+      created.id,
+      patch,
+      created.version,
+      operation.key,
+    );
+    expect(updated).toMatchObject({
+      id: created.id,
+      name: patch.name,
+      version: 2,
+      urlVersion: 1,
+      health: { result: { state: "unchecked" } },
+    });
+    await expect(
+      appsService.getUpdateOperation(operation.key),
+    ).resolves.toMatchObject({
+      state: "succeeded",
+      targetId: created.id,
+      resultVersion: 2,
+    });
+    expect(getMockSnapshot().apps).toHaveLength(beforeUpdate);
+    await expect(
+      appsService.update(created.id, patch, created.version, operation.key),
+    ).rejects.toMatchObject({
+      code: "OPERATION_ALREADY_RESOLVED",
+      outcome: "unknown",
+    });
+  });
+
+  it("invalidates results only when the URL changes beyond its fragment", async () => {
+    await loginMember();
+    const create = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, create.key);
+    const state = getMockSnapshot();
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({
+        ...state,
+        apps: state.apps.map((app) =>
+          app.id === created.id
+            ? {
+                ...app,
+                health: {
+                  ...app.health,
+                  next_check_at: "2026-09-22T00:20:00.000Z",
+                },
+              }
+            : app,
+        ),
+      }),
+    );
+
+    const changedUrl = "https://example.org/changed#first";
+    const urlOperation = await appsService.issueUpdateOperation(
+      created.id,
+      { url: changedUrl },
+      1,
+    );
+    const changed = await appsService.update(
+      created.id,
+      { url: changedUrl },
+      1,
+      urlOperation.key,
+    );
+    expect(changed).toMatchObject({
+      version: 2,
+      urlVersion: 2,
+      url: changedUrl,
+      health: {
+        result: { state: "unchecked", checked_at: null, fresh_until: null },
+        latestJob: null,
+        nextCheckAt: "2026-09-22T00:20:00.000Z",
+      },
+    });
+
+    const fragmentOnly = "https://example.org/changed#second";
+    const fragmentOperation = await appsService.issueUpdateOperation(
+      created.id,
+      { url: fragmentOnly },
+      changed.version,
+    );
+    const withFragment = await appsService.update(
+      created.id,
+      { url: fragmentOnly },
+      changed.version,
+      fragmentOperation.key,
+    );
+    expect(withFragment.version).toBe(3);
+    expect(withFragment.urlVersion).toBe(2);
+    expect(withFragment.health).toEqual(changed.health);
+  });
+
+  it("rejects a stale update without applying it", async () => {
+    await loginMember();
+    const create = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, create.key);
+    const first = await appsService.issueUpdateOperation(
+      created.id,
+      { name: "첫 번째 수정" },
+      created.version,
+    );
+    const stale = await appsService.issueUpdateOperation(
+      created.id,
+      { name: "오래된 수정" },
+      created.version,
+    );
+    await appsService.update(
+      created.id,
+      { name: "첫 번째 수정" },
+      1,
+      first.key,
+    );
+
+    await expect(
+      appsService.update(created.id, { name: "오래된 수정" }, 1, stale.key),
+    ).rejects.toMatchObject({ code: "VERSION_CONFLICT", outcome: "rejected" });
+    await expect(
+      appsService.getUpdateOperation(stale.key),
+    ).resolves.toMatchObject({
+      state: "rejected",
+      rejectionCode: "VERSION_CONFLICT",
+    });
+    await expect(appsService.get(created.id)).resolves.toMatchObject({
+      name: "첫 번째 수정",
+      version: 2,
+    });
+  });
+
+  it("rejects a delayed update when the auth flow changes before it completes", async () => {
+    await loginMember();
+    const create = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, create.key);
+    const patch = { name: "인증 변경 후 도착한 응답" };
+    const operation = await appsService.issueUpdateOperation(
+      created.id,
+      patch,
+      created.version,
+    );
+    setMockScenario("app_update_delayed");
+
+    const pendingUpdate = appsService.update(
+      created.id,
+      patch,
+      created.version,
+      operation.key,
+    );
+    await authService.logout();
+    await loginMember();
+
+    await expect(pendingUpdate).rejects.toMatchObject({
+      code: "AUTH_STATE_CHANGED",
+      outcome: "rejected",
+    });
+    await expect(appsService.get(created.id)).resolves.toMatchObject({
+      name: input.name,
+      version: 1,
+    });
+    await expect(
+      appsService.getUpdateOperation(operation.key),
+    ).resolves.toMatchObject({ state: "unresolved" });
+  });
+
+  it("removes an app from public reads when the owner makes it private", async () => {
+    await loginMember();
+    const create = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, create.key);
+    const update = await appsService.issueUpdateOperation(
+      created.id,
+      { isPublic: false },
+      created.version,
+    );
+    const madePrivate = await appsService.update(
+      created.id,
+      { isPublic: false },
+      created.version,
+      update.key,
+    );
+
+    expect(getMockSnapshot().apps.some((app) => app.id === created.id)).toBe(
+      false,
+    );
+    expect(
+      getMockSnapshot().private_apps.some((app) => app.id === created.id),
+    ).toBe(true);
+    await authService.logout();
+    await authService.login({ loginId: "과학덕후박샘", password: "1234" });
+    await expect(appsService.get(created.id)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+    expect((await appsService.list()).items).not.toContainEqual(
+      expect.objectContaining({ id: madePrivate.id }),
+    );
+  });
+
+  it("keeps unresolved edits locked until an explicit same-key retry or result check", async () => {
+    await loginMember();
+    const create = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, create.key);
+    const patch = { name: "미확정 수정" };
+    const operation = await appsService.issueUpdateOperation(
+      created.id,
+      patch,
+      created.version,
+    );
+    setMockScenario("app_update_unresolved");
+
+    await expect(
+      appsService.update(created.id, patch, created.version, operation.key),
+    ).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
+    await expect(
+      appsService.getUpdateOperation(operation.key),
+    ).resolves.toMatchObject({ state: "unresolved" });
+    expect(await appsService.get(created.id)).toMatchObject({ version: 1 });
+    setMockScenario("original");
+    await expect(
+      appsService.update(created.id, patch, created.version, operation.key),
+    ).resolves.toMatchObject({ name: patch.name, version: 2 });
   });
 });

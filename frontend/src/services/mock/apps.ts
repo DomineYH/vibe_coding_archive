@@ -8,9 +8,11 @@ import {
 import type { components } from "../../contracts/api";
 import { ServiceError } from "../service-error";
 import {
+  appPatchToWire,
   appInputToWire,
   caseFold,
   normalizeAppInput,
+  normalizeAppPatch,
   normalizeQueryForService,
   type AppsService,
 } from "../apps-service";
@@ -20,6 +22,7 @@ import {
   getMockAccounts,
   getMockSnapshot,
   MOCK_WRITE_OPERATIONS_RESET_EVENT,
+  updateMockApp,
 } from "./state";
 
 type WireAppDetail = components["schemas"]["AppDetail"];
@@ -30,10 +33,13 @@ const fixedTime = "2026-09-22T00:12:00.000Z";
 const readDelayMs = 300;
 const createDelayMs = 500;
 const operationLifetimeMs = 24 * 60 * 60 * 1000;
-type MockCreateOperation = {
+type MockAppWriteOperation = {
   key: string;
+  kind: "app_create" | "app_update";
   actorId: string;
-  input: ReturnType<typeof normalizeAppInput>;
+  input:
+    ReturnType<typeof normalizeAppInput> | ReturnType<typeof normalizeAppPatch>;
+  expectedVersion: number | null;
   issuedAt: string;
   expiresAt: string;
   state: "unresolved" | "succeeded" | "rejected";
@@ -43,9 +49,9 @@ type MockCreateOperation = {
   resultVersion: number | null;
   rejectionCode: string | null;
 };
-const createOperations = new Map<string, MockCreateOperation>();
+const appWriteOperations = new Map<string, MockAppWriteOperation>();
 window.addEventListener(MOCK_WRITE_OPERATIONS_RESET_EVENT, () =>
-  createOperations.clear(),
+  appWriteOperations.clear(),
 );
 const longCopy = Array.from(
   { length: 32 },
@@ -62,7 +68,7 @@ const capabilities = {
   admin_approval: { enabled: false, reasons: ["not_implemented"] },
   admin_summary: { enabled: false, reasons: ["not_implemented"] },
   apps_create: { enabled: true, reasons: [] },
-  apps_update_own: { enabled: false, reasons: ["not_implemented"] },
+  apps_update_own: { enabled: true, reasons: [] },
   apps_delete_own: { enabled: false, reasons: ["not_implemented"] },
   admin_apps_read: { enabled: false, reasons: ["not_implemented"] },
   admin_apps_manage: { enabled: false, reasons: ["not_implemented"] },
@@ -229,10 +235,10 @@ function currentMember() {
   return { state, account };
 }
 
-function operationWire(operation: MockCreateOperation) {
+function operationWire(operation: MockAppWriteOperation) {
   return mapAppWriteOperation({
     key: operation.key,
-    kind: "app_create",
+    kind: operation.kind,
     target_id: operation.targetId,
     issued_at: operation.issuedAt,
     expires_at: operation.expiresAt,
@@ -246,7 +252,7 @@ function operationWire(operation: MockCreateOperation) {
 }
 
 function ownedOperation(key: string, actorId: string) {
-  const operation = createOperations.get(key);
+  const operation = appWriteOperations.get(key);
   if (!operation || operation.actorId !== actorId)
     throw new ServiceError(
       "OPERATION_NOT_FOUND",
@@ -257,6 +263,27 @@ function ownedOperation(key: string, actorId: string) {
       },
     );
   return operation;
+}
+
+function ownedApp(id: string, actorId: string) {
+  const state = getMockSnapshot();
+  const app = [...state.apps, ...state.private_apps].find(
+    (item) => item.id === id && item.owner.id === actorId,
+  );
+  if (!app)
+    throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
+      httpStatus: 404,
+      outcome: "rejected",
+    });
+  return app;
+}
+
+function versionConflict() {
+  return new ServiceError(
+    "VERSION_CONFLICT",
+    "앱이 다른 내용으로 수정되었어요. 최신 내용을 확인해 주세요.",
+    { httpStatus: 409, outcome: "rejected" },
+  );
 }
 
 function writeApp(
@@ -435,10 +462,12 @@ export const appsService: AppsService = {
         },
       );
     const issuedAt = state.mock_now;
-    const operation: MockCreateOperation = {
+    const operation: MockAppWriteOperation = {
       key: crypto.randomUUID(),
+      kind: "app_create",
       actorId: account.id,
       input,
+      expectedVersion: null,
       issuedAt,
       expiresAt: new Date(
         Date.parse(issuedAt) + operationLifetimeMs,
@@ -450,7 +479,7 @@ export const appsService: AppsService = {
       resultVersion: null,
       rejectionCode: null,
     };
-    createOperations.set(operation.key, operation);
+    appWriteOperations.set(operation.key, operation);
     return operationWire(operation);
   },
 
@@ -458,7 +487,10 @@ export const appsService: AppsService = {
     const input = normalizeAppInput(value);
     const { state, account } = currentMember();
     let operation = ownedOperation(key, account.id);
-    if (JSON.stringify(input) !== JSON.stringify(operation.input))
+    if (
+      operation.kind !== "app_create" ||
+      JSON.stringify(input) !== JSON.stringify(operation.input)
+    )
       throw new ServiceError(
         "OPERATION_KEY_MISMATCH",
         "저장 요청 내용이 작업 키와 달라요.",
@@ -483,7 +515,7 @@ export const appsService: AppsService = {
         finalizedAt: state.mock_now,
         rejectionCode: "VALIDATION_ERROR",
       };
-      createOperations.set(key, operation);
+      appWriteOperations.set(key, operation);
       throw new ServiceError(
         "VALIDATION_ERROR",
         "앱을 등록하지 못했어요. 입력 내용을 확인해 주세요.",
@@ -523,15 +555,191 @@ export const appsService: AppsService = {
       finalizedAt: now,
       resultVersion: 1,
     };
-    createOperations.set(key, operation);
+    appWriteOperations.set(key, operation);
     if (state.scenario === "app_create_unknown") failUnknown();
     return mapAppDetailResponse({ item: app, server_time: now }).item;
   },
 
+  async issueUpdateOperation(id, value, expectedVersion) {
+    const input = normalizeAppPatch(value);
+    const { state, account } = currentMember();
+    const app = ownedApp(id, account.id);
+    if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1)
+      throw new ServiceError("VALIDATION_ERROR", "수정 요청을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    if (app.version !== expectedVersion) throw versionConflict();
+    if (state.scenario === "app_key_issue_failure")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "저장 작업을 준비하지 못했어요.",
+        { httpStatus: 503, outcome: "rejected" },
+      );
+    const issuedAt = state.mock_now;
+    const operation: MockAppWriteOperation = {
+      key: crypto.randomUUID(),
+      kind: "app_update",
+      actorId: account.id,
+      input,
+      expectedVersion,
+      issuedAt,
+      expiresAt: new Date(
+        Date.parse(issuedAt) + operationLifetimeMs,
+      ).toISOString(),
+      state: "unresolved",
+      targetId: id,
+      dbAppliedAt: null,
+      finalizedAt: null,
+      resultVersion: null,
+      rejectionCode: null,
+    };
+    appWriteOperations.set(operation.key, operation);
+    return operationWire(operation);
+  },
+
+  async update(id, value, expectedVersion, key) {
+    const input = normalizeAppPatch(value);
+    const { state, account } = currentMember();
+    let operation = ownedOperation(key, account.id);
+    if (
+      operation.kind !== "app_update" ||
+      operation.targetId !== id ||
+      operation.expectedVersion !== expectedVersion ||
+      JSON.stringify(input) !== JSON.stringify(operation.input)
+    )
+      throw new ServiceError(
+        "OPERATION_KEY_MISMATCH",
+        "저장 요청 내용이 작업 키와 달라요.",
+        { httpStatus: 409, outcome: "rejected" },
+      );
+    if (Date.parse(state.mock_now) >= Date.parse(operation.expiresAt))
+      throw new ServiceError("OPERATION_EXPIRED", "저장 작업이 만료되었어요.", {
+        httpStatus: 410,
+        outcome: "rejected",
+      });
+    if (operation.state !== "unresolved")
+      throw new ServiceError(
+        "OPERATION_ALREADY_RESOLVED",
+        "저장 작업 결과를 먼저 확인해 주세요.",
+        { httpStatus: 409, outcome: "unknown" },
+      );
+    if (state.scenario === "app_update_unresolved") failUnknown();
+    if (state.scenario === "app_update_failure") {
+      operation = {
+        ...operation,
+        state: "rejected",
+        finalizedAt: state.mock_now,
+        rejectionCode: "VALIDATION_ERROR",
+      };
+      appWriteOperations.set(key, operation);
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        "앱을 수정하지 못했어요. 입력 내용을 확인해 주세요.",
+        { httpStatus: 422, outcome: "rejected" },
+      );
+    }
+    if (state.scenario === "app_update_delayed") {
+      const flow = state.auth_flow;
+      await new Promise((resolve) => setTimeout(resolve, createDelayMs));
+      const current = currentMember();
+      if (
+        current.account.id !== account.id ||
+        current.state.auth_flow.flow_id !== flow.flow_id ||
+        current.state.auth_flow.revision !== flow.revision ||
+        current.state.auth_flow.session_generation !== flow.session_generation
+      )
+        throw new ServiceError(
+          "AUTH_STATE_CHANGED",
+          "인증 상태가 바뀌어 앱을 수정하지 않았어요.",
+          { httpStatus: 409, outcome: "rejected" },
+        );
+      operation = ownedOperation(key, account.id);
+      if (operation.state !== "unresolved")
+        throw new ServiceError(
+          "OPERATION_ALREADY_RESOLVED",
+          "저장 작업 결과를 먼저 확인해 주세요.",
+          { httpStatus: 409, outcome: "unknown" },
+        );
+    }
+    const app = ownedApp(id, account.id);
+    if (app.version !== expectedVersion) {
+      operation = {
+        ...operation,
+        state: "rejected",
+        finalizedAt: getMockSnapshot().mock_now,
+        rejectionCode: "VERSION_CONFLICT",
+      };
+      appWriteOperations.set(key, operation);
+      throw versionConflict();
+    }
+    const patch = appPatchToWire(input);
+    const nextUrl = patch.url ?? app.url;
+    const urlChanged = withoutFragment(nextUrl) !== withoutFragment(app.url);
+    const now = getMockSnapshot().mock_now;
+    const updatedApp = {
+      ...app,
+      ...patch,
+      version: app.version + 1,
+      url_version: urlChanged ? app.url_version + 1 : app.url_version,
+      health: urlChanged
+        ? {
+            ...app.health,
+            result: {
+              state: "unchecked" as const,
+              checked_at: null,
+              fresh_until: null,
+            },
+            latest_job: null,
+          }
+        : app.health,
+      updated_at: now,
+    } as WireAppDetail;
+    updateMockApp(updatedApp);
+    operation = {
+      ...operation,
+      state: "succeeded",
+      dbAppliedAt: now,
+      finalizedAt: now,
+      resultVersion: updatedApp.version,
+    };
+    appWriteOperations.set(key, operation);
+    if (state.scenario === "app_update_unknown") failUnknown();
+    return mapAppDetailResponse({ item: updatedApp, server_time: now }).item;
+  },
+
   async getCreateOperation(key) {
     const { account } = currentMember();
-    return operationWire(ownedOperation(key, account.id));
+    const operation = ownedOperation(key, account.id);
+    if (operation.kind !== "app_create")
+      throw new ServiceError(
+        "OPERATION_NOT_FOUND",
+        "저장 작업을 찾을 수 없어요.",
+        {
+          httpStatus: 404,
+          outcome: "rejected",
+        },
+      );
+    return operationWire(operation);
+  },
+
+  async getUpdateOperation(key) {
+    const { account } = currentMember();
+    const operation = ownedOperation(key, account.id);
+    if (operation.kind !== "app_update")
+      throw new ServiceError(
+        "OPERATION_NOT_FOUND",
+        "저장 작업을 찾을 수 없어요.",
+        {
+          httpStatus: 404,
+          outcome: "rejected",
+        },
+      );
+    return operationWire(operation);
   },
 };
+
+function withoutFragment(url: string): string {
+  return url.split("#", 1)[0]!;
+}
 
 export const mockMetaWire = mockMeta;
