@@ -291,6 +291,61 @@ for (const viewport of viewports) {
 
     await reset(page, viewport);
     await page.goto("/auth?mode=login");
+    const lostResponseForm = page.locator('[data-screen-label="로그인"] form');
+    await expect(lostResponseForm).toBeVisible();
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, scenario: "auth_response_lost" }),
+      );
+    });
+    await lostResponseForm
+      .getByLabel("로그인 아이디", { exact: true })
+      .fill("교사김코딩");
+    await lostResponseForm.getByLabel("비밀번호", { exact: true }).fill("1234");
+    await lostResponseForm
+      .getByRole("button", { name: "로그인", exact: true })
+      .click();
+    await expect(page.getByRole("main").getByRole("status")).toContainText(
+      "인증 결과를 확인할 수 없어요",
+    );
+    await capture(page, "auth-result-unresolved", viewport, testInfo);
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=login");
+    const missingSessionForm = page.locator(
+      '[data-screen-label="로그인"] form',
+    );
+    await expect(missingSessionForm).toBeVisible();
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, scenario: "auth_session_cookie_lost" }),
+      );
+    });
+    await missingSessionForm
+      .getByLabel("로그인 아이디", { exact: true })
+      .fill("교사김코딩");
+    await missingSessionForm
+      .getByLabel("비밀번호", { exact: true })
+      .fill("1234");
+    await missingSessionForm
+      .getByRole("button", { name: "로그인", exact: true })
+      .click();
+    await expect(
+      page.getByRole("main").getByRole("button", {
+        name: "받지 못한 세션 버리기",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await capture(page, "auth-missing-session-cookie", viewport, testInfo);
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=login");
     await login(page);
     await page.goto(memberApp);
     await expect(

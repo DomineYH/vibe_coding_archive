@@ -1,10 +1,22 @@
 import {
+  mapAnonymousSessionResult,
   mapAuthResult,
+  mapAuthFlowCreated,
   mapAuthFlowContext,
+  mapAuthFlowState,
+  mapAuthTransitionPermit,
+  mapFlowRevision,
+  mapRecoveryContext,
+  mapRecoveryCookieResult,
+  mapRecoveryCsrf,
+  mapRecoveryReady,
+  mapRestartEligibility,
+  mapSettledAuthTransition,
   mapCsrfToken,
   mapRegisteredUser,
   mapSelf,
 } from "../../contracts/mappers";
+import type { AuthTransitionKind } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
 import type {
   AuthChangePasswordInput,
@@ -15,12 +27,29 @@ import { mockMetaWire } from "./apps";
 import { DEMO_ACCOUNTS } from "./accounts";
 import {
   addMockRegisteredAccount,
+  abandonMockAuthFlow,
+  commitMockAnonymousSession,
   assertCurrentGeneration,
+  completeMockReauthentication,
+  confirmMockRecoveryCookie,
   completeMockPasswordChange,
+  createMockAuthFlow,
+  discardMockAuthSession,
   getMockNow,
   getMockAccounts,
   getMockSnapshot,
+  getMockAuthFlowState,
+  getMockRecoveryContext,
+  getMockRecoveryCsrf,
+  getMockRestartEligibility,
+  admitMockAuthTransition,
+  issueMockRecoveryCookie,
+  resetMockAuthFlow,
+  rotateMockRecoveryCookie,
+  settleMockAuthTransition,
+  finishMockAuthTransition,
   setMockPrincipal,
+  MOCK_AUTH_STATE_EVENT,
   type MockPrincipalSession,
   type MockRegisteredAccount,
 } from "./state";
@@ -109,6 +138,135 @@ function unavailable(): ServiceError {
     "로그인하지 못했어요. 연결을 확인해 주세요.",
     { httpStatus: 503 },
   );
+}
+
+function unknownAuthOutcome(): ServiceError {
+  return new ServiceError(
+    "NETWORK_ERROR",
+    "이전 인증 요청의 결과를 확인할 수 없습니다. 공개 열람은 계속할 수 있어요.",
+    { outcome: "unknown" },
+  );
+}
+
+function waitForAuthGate(expectedGeneration: number): Promise<void> {
+  const state = getMockSnapshot();
+  if (state.auth_flow.gate_open) return Promise.resolve();
+  if (state.scenario !== "auth_transition_gate") return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      window.removeEventListener("eduvibe:mock-auth-gate-open", inspect);
+      window.removeEventListener("eduvibe:mock-reset", reset);
+      window.removeEventListener(MOCK_AUTH_STATE_EVENT, inspect);
+      window.removeEventListener("storage", storage);
+    };
+    const reset = () => {
+      cleanup();
+      reject(new DOMException("Mock auth transition reset", "AbortError"));
+    };
+    const inspect = () => {
+      try {
+        const latest = getMockSnapshot();
+        if (latest.generation !== expectedGeneration) return reset();
+        if (!latest.auth_flow.gate_open) return;
+        cleanup();
+        resolve();
+      } catch (error) {
+        cleanup();
+        reject(error);
+      }
+    };
+    const storage = (event: StorageEvent) => {
+      if (event.key === "eduvibe-archive-mock-v1") inspect();
+    };
+    window.addEventListener("eduvibe:mock-auth-gate-open", inspect);
+    window.addEventListener("eduvibe:mock-reset", reset);
+    window.addEventListener(MOCK_AUTH_STATE_EVENT, inspect);
+    window.addEventListener("storage", storage);
+    inspect();
+  });
+}
+
+async function runAuthTransition<T>(
+  kind: AuthTransitionKind,
+  execute: (input: {
+    transitionId: string;
+    generation: number;
+    scenario: ReturnType<typeof getMockSnapshot>["scenario"];
+  }) => { value: T; identityChanged?: boolean },
+  expected?: { flowId: string; expectedRevision: string; transitionId: string },
+): Promise<T> {
+  const before = getMockSnapshot();
+  const flow = before.auth_flow;
+  const transitionId =
+    expected?.transitionId ?? `${flow.flow_id}.${flow.revision}`;
+  admitMockAuthTransition({
+    flowId: expected?.flowId ?? flow.flow_id,
+    transitionId,
+    kind,
+    expectedRevision: expected?.expectedRevision ?? flow.revision,
+    expectedSessionGeneration: flow.session_generation,
+  });
+  const admitted = getMockSnapshot();
+  const simulatedAuthRequest = kind !== "anonymous_session";
+  try {
+    if (simulatedAuthRequest) await waitForAuthGate(admitted.generation);
+    if (simulatedAuthRequest && admitted.scenario === "auth_delayed") {
+      await new Promise((resolve) =>
+        setTimeout(resolve, kind === "login" ? 1000 : 300),
+      );
+      assertCurrentGeneration(admitted.generation);
+    }
+    if (simulatedAuthRequest && admitted.scenario === "auth_network_error")
+      throw unavailable();
+    const current = getMockSnapshot();
+    assertCurrentGeneration(admitted.generation);
+    const outcome = execute({
+      transitionId,
+      generation: current.generation,
+      scenario: current.scenario,
+    });
+    const latest = getMockSnapshot();
+    const loseResult =
+      simulatedAuthRequest && admitted.scenario === "auth_result_unavailable";
+    const lostCookie =
+      simulatedAuthRequest &&
+      admitted.scenario === "auth_session_cookie_lost" &&
+      (kind === "login" || kind === "password_change");
+    const responseLost =
+      simulatedAuthRequest &&
+      (loseResult || lostCookie || admitted.scenario === "auth_response_lost");
+    finishMockAuthTransition({
+      transitionId,
+      expectedGeneration: latest.generation,
+      state: "succeeded",
+      resultSessionGeneration: latest.auth_flow.session_generation,
+      identityChanged: outcome.identityChanged,
+      loseResult,
+      responseLost,
+    });
+    if (responseLost) throw unknownAuthOutcome();
+    if (kind === "anonymous_session" && outcome.value !== null) {
+      const finalFlow = getMockSnapshot().auth_flow;
+      return {
+        ...(outcome.value as object),
+        revision: finalFlow.revision,
+      } as T;
+    }
+    return outcome.value;
+  } catch (error) {
+    if (!(error instanceof DOMException && error.name === "AbortError")) {
+      const current = getMockSnapshot();
+      if (current.auth_flow.pending_transition?.transition_id === transitionId)
+        finishMockAuthTransition({
+          transitionId,
+          expectedGeneration: current.generation,
+          state: "failed",
+          failureCode:
+            error instanceof ServiceError ? error.code : "AUTH_REQUEST_FAILED",
+        });
+    }
+    throw error;
+  }
 }
 
 function invalidRegistration(fields: Record<string, string>): ServiceError {
@@ -260,15 +418,41 @@ export const authService: AuthService = {
     }
     let account: MockAccount | undefined | null = accountFromState(state);
     let session = state.principal_session;
-    if (account && session && isExpired(account, session, getMockNow(state))) {
+    if (
+      account &&
+      session &&
+      !state.auth_flow.pending_transition &&
+      !state.auth_flow.unresolved_transition_id &&
+      isExpired(account, session, getMockNow(state))
+    ) {
       setMockPrincipal(null, state.generation);
       state = getMockSnapshot();
       account = null;
       session = null;
     }
     const flow = state.auth_flow;
+    const unresolvedTransitionId =
+      flow.pending_transition?.transition_id ?? flow.unresolved_transition_id;
+    const observedFlow = mapAuthFlowState(
+      getMockAuthFlowState(unresolvedTransitionId ?? undefined),
+    );
+    const authStatus =
+      unresolvedTransitionId ||
+      !observedFlow.recoveryReady ||
+      Date.parse(observedFlow.serverTime) >=
+        Date.parse(observedFlow.expiresAt) ||
+      (!observedFlow.sessionCookiePresent &&
+        observedFlow.sessionGeneration !== null)
+        ? "unresolved"
+        : "ready";
     return {
-      user: account && session ? mapSelf(asSelf(account, session)) : null,
+      user:
+        account &&
+        session &&
+        observedFlow.sessionCookiePresent &&
+        authStatus === "ready"
+          ? mapSelf(asSelf(account, session))
+          : null,
       flow: mapAuthFlowContext({
         flow_id: flow.flow_id,
         revision: flow.revision,
@@ -276,12 +460,98 @@ export const authService: AuthService = {
         last_identity_change_revision: flow.last_identity_change_revision,
       }),
       observationGeneration: state.observation_generation,
+      sessionCookiePresent: observedFlow.sessionCookiePresent,
+      status: authStatus,
+      unresolvedTransitionId,
     };
+  },
+
+  async getFlowState(transitionId, { signal } = {}) {
+    checkSignal(signal);
+    return mapAuthFlowState(getMockAuthFlowState(transitionId));
+  },
+
+  async createFlow(input) {
+    return mapAuthFlowCreated(createMockAuthFlow(input.restartFrom));
+  },
+
+  async issueRecoveryCookie(flowId) {
+    return mapRecoveryCookieResult(issueMockRecoveryCookie(flowId));
+  },
+
+  async confirmRecoveryCookie(flowId, input) {
+    return mapRecoveryReady(
+      confirmMockRecoveryCookie(flowId, input.expectedRevision),
+    );
+  },
+
+  async abandonFlow(flowId) {
+    return mapRestartEligibility(abandonMockAuthFlow(flowId));
+  },
+
+  async getRecoveryContext() {
+    return mapRecoveryContext(getMockRecoveryContext());
+  },
+
+  async getRecoveryCsrf(flowId) {
+    return mapRecoveryCsrf(getMockRecoveryCsrf(flowId));
+  },
+
+  async rotateRecoveryCookie(flowId, input) {
+    return mapRecoveryCookieResult(
+      rotateMockRecoveryCookie({ flowId, ...input }),
+    );
+  },
+
+  async getRestartEligibility(flowId) {
+    return mapRestartEligibility(getMockRestartEligibility(flowId));
+  },
+
+  async admitTransition(input) {
+    return mapAuthTransitionPermit(admitMockAuthTransition(input));
+  },
+
+  async settleTransition(transitionId, input) {
+    return mapSettledAuthTransition(
+      settleMockAuthTransition({ transitionId, ...input }),
+    );
+  },
+
+  async issueAnonymousSession(input) {
+    return mapAnonymousSessionResult(
+      await runAuthTransition(
+        "anonymous_session",
+        ({ transitionId, generation, scenario }) => ({
+          value: commitMockAnonymousSession({
+            transitionId,
+            expectedGeneration: generation,
+            sessionCookiePresent: scenario !== "auth_session_cookie_lost",
+          }),
+        }),
+        input,
+      ),
+    );
+  },
+
+  async discardSession(transitionId, input) {
+    return mapFlowRevision(discardMockAuthSession({ transitionId, ...input }));
+  },
+
+  async resetFlow(flowId, input) {
+    return mapRestartEligibility(resetMockAuthFlow({ flowId, ...input }));
   },
 
   async getMe({ signal } = {}) {
     checkSignal(signal);
     const state = getMockSnapshot();
+    if (
+      state.auth_flow.pending_transition ||
+      state.auth_flow.unresolved_transition_id ||
+      !state.auth_flow.recovery_ready ||
+      Date.parse(state.mock_now) >= Date.parse(state.auth_flow.expires_at) ||
+      !state.auth_flow.session_cookie_present
+    )
+      throw authRequired();
     const account = accountFromState(state);
     const session = state.principal_session;
     if (!account || !session) throw authRequired();
@@ -294,6 +564,14 @@ export const authService: AuthService = {
 
   async getCsrf({ signal } = {}) {
     checkSignal(signal);
+    const state = getMockSnapshot();
+    if (
+      !state.auth_flow.session_cookie_present ||
+      state.auth_flow.pending_transition ||
+      state.auth_flow.unresolved_transition_id ||
+      Date.parse(state.mock_now) >= Date.parse(state.auth_flow.expires_at)
+    )
+      throw authRequired();
     return mapCsrfToken({
       csrf_token: "mock-only-csrf-token",
       expires_at: csrfExpiresAt,
@@ -302,6 +580,17 @@ export const authService: AuthService = {
 
   async register(input) {
     const state = getMockSnapshot();
+    if (
+      state.auth_flow.pending_transition ||
+      state.auth_flow.unresolved_transition_id ||
+      !state.auth_flow.recovery_ready ||
+      Date.parse(state.mock_now) >= Date.parse(state.auth_flow.expires_at)
+    )
+      throw new ServiceError(
+        "AUTH_TRANSITION_PENDING",
+        "인증 결과를 확인하거나 흐름을 초기화한 뒤 다시 시도해 주세요.",
+        { httpStatus: 409, outcome: "rejected" },
+      );
     if (state.scenario === "auth_network_error") throw unavailable();
     if (state.scenario === "auth_delayed") {
       await new Promise((resolve) => setTimeout(resolve, 300));
@@ -353,10 +642,6 @@ export const authService: AuthService = {
 
   async login(input) {
     let state = getMockSnapshot();
-    if (state.scenario === "auth_network_error") throw unavailable();
-    if (state.scenario === "auth_delayed")
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    assertCurrentGeneration(state.generation);
     if (state.principal_id !== null) {
       const activeAccount = accountFromState(state);
       if (
@@ -366,112 +651,178 @@ export const authService: AuthService = {
       ) {
         setMockPrincipal(null, state.generation);
         state = getMockSnapshot();
-      } else {
-        throw new ServiceError(
-          "ALREADY_AUTHENTICATED",
-          "다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.",
-          { httpStatus: 409, outcome: "rejected" },
-        );
       }
     }
-    if (
-      !input ||
-      typeof input.loginId !== "string" ||
-      typeof input.password !== "string"
-    )
-      throw new ServiceError("VALIDATION_ERROR", "입력값을 확인해 주세요.", {
-        outcome: "rejected",
-      });
+    return runAuthTransition(
+      "login",
+      ({ transitionId, generation, scenario }) => {
+        const current = getMockSnapshot();
+        assertCurrentGeneration(generation);
+        if (current.principal_id !== null)
+          throw new ServiceError(
+            "ALREADY_AUTHENTICATED",
+            "다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.",
+            { httpStatus: 409, outcome: "rejected" },
+          );
+        if (
+          !input ||
+          typeof input.loginId !== "string" ||
+          typeof input.password !== "string"
+        )
+          throw new ServiceError(
+            "VALIDATION_ERROR",
+            "입력값을 확인해 주세요.",
+            {
+              outcome: "rejected",
+            },
+          );
 
-    const loginId = input.loginId.trim().normalize("NFC").toLowerCase();
-    const account = getMockAccounts(state, true).find(
-      (item) => item.loginId.toLowerCase() === loginId,
+        const loginId = input.loginId.trim().normalize("NFC").toLowerCase();
+        const account = getMockAccounts(current, true).find(
+          (item) => item.loginId.toLowerCase() === loginId,
+        );
+        if (!account || account.password !== input.password.normalize("NFC"))
+          throw new ServiceError(
+            "INVALID_CREDENTIALS",
+            "로그인 아이디 또는 비밀번호를 확인해 주세요.",
+            { httpStatus: 401, outcome: "rejected" },
+          );
+        if (!account.approved)
+          throw new ServiceError(
+            "ACCOUNT_NOT_APPROVED",
+            "승인 대기 중인 계정입니다. 관리자 승인 후 로그인해 주세요.",
+            { httpStatus: 403, outcome: "rejected" },
+          );
+        const now = getMockNow(current);
+        if (
+          account.mustChangePassword &&
+          (!account.temporaryPasswordExpiresAt ||
+            Date.parse(now) >= Date.parse(account.temporaryPasswordExpiresAt))
+        )
+          throw new ServiceError(
+            "TEMP_PASSWORD_EXPIRED",
+            "임시 비밀번호가 만료되었어요. 관리자에게 다시 요청해 주세요.",
+            { httpStatus: 403, outcome: "rejected" },
+          );
+        const session = account.mustChangePassword
+          ? changeOnlySession(now, account.temporaryPasswordExpiresAt!)
+          : fullSession(now);
+        setMockPrincipal(account.id, generation, session, {
+          transitionId,
+          sessionCookiePresent: scenario !== "auth_session_cookie_lost",
+        });
+        return {
+          value: mapAuthResult({
+            user: asSelf(account, session),
+            csrf_token: "mock-only-csrf-token",
+          }),
+          identityChanged: true,
+        };
+      },
     );
-    if (!account || account.password !== input.password.normalize("NFC"))
-      throw new ServiceError(
-        "INVALID_CREDENTIALS",
-        "로그인 아이디 또는 비밀번호를 확인해 주세요.",
-        { httpStatus: 401, outcome: "rejected" },
-      );
-    if (!account.approved)
-      throw new ServiceError(
-        "ACCOUNT_NOT_APPROVED",
-        "승인 대기 중인 계정입니다. 관리자 승인 후 로그인해 주세요.",
-        { httpStatus: 403, outcome: "rejected" },
-      );
-    const now = getMockNow(state);
-    if (
-      account.mustChangePassword &&
-      (!account.temporaryPasswordExpiresAt ||
-        Date.parse(now) >= Date.parse(account.temporaryPasswordExpiresAt))
-    )
-      throw new ServiceError(
-        "TEMP_PASSWORD_EXPIRED",
-        "임시 비밀번호가 만료되었어요. 관리자에게 다시 요청해 주세요.",
-        { httpStatus: 403, outcome: "rejected" },
-      );
-    const session = account.mustChangePassword
-      ? changeOnlySession(now, account.temporaryPasswordExpiresAt!)
-      : fullSession(now);
-    setMockPrincipal(account.id, state.generation, session);
-    return mapAuthResult({
-      user: asSelf(account, session),
-      csrf_token: "mock-only-csrf-token",
-    });
   },
 
   async changePassword(input: AuthChangePasswordInput) {
-    const state = getMockSnapshot();
-    if (state.scenario === "auth_network_error") throw unavailable();
-    if (state.scenario === "auth_delayed")
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    assertCurrentGeneration(state.generation);
-    const current = getMockSnapshot();
-    const account = accountFromState(current);
-    const session = current.principal_session;
-    if (!account || !session) throw authRequired();
-    if (session.session_kind !== "change_only")
-      throw new ServiceError(
-        "SESSION_KIND_NOT_ALLOWED",
-        "임시 비밀번호 로그인 상태에서만 변경할 수 있어요.",
-        { httpStatus: 403, outcome: "rejected" },
-      );
-    if (isExpired(account, session, getMockNow(current))) {
-      setMockPrincipal(null, current.generation);
-      throw authRequired();
-    }
-    if (!input || typeof input.password !== "string")
-      throw invalidRegistration({ password: "새 비밀번호를 확인해 주세요." });
+    return runAuthTransition(
+      "password_change",
+      ({ transitionId, generation, scenario }) => {
+        const current = getMockSnapshot();
+        const account = accountFromState(current);
+        const session = current.principal_session;
+        if (!account || !session) throw authRequired();
+        if (session.session_kind !== "change_only")
+          throw new ServiceError(
+            "SESSION_KIND_NOT_ALLOWED",
+            "임시 비밀번호 로그인 상태에서만 변경할 수 있어요.",
+            { httpStatus: 403, outcome: "rejected" },
+          );
+        if (isExpired(account, session, getMockNow(current))) {
+          throw authRequired();
+        }
+        if (!input || typeof input.password !== "string")
+          throw invalidRegistration({
+            password: "새 비밀번호를 확인해 주세요.",
+          });
 
-    const password = input.password.normalize("NFC");
-    const passwordLength = codePointLength(password);
-    if (passwordLength < 15 || passwordLength > 128)
-      throw invalidRegistration({
-        password: "비밀번호는 15~128자로 입력해 주세요.",
-      });
-    if (password === account.password.normalize("NFC"))
-      throw invalidRegistration({
-        password: "새 비밀번호는 임시 비밀번호와 달라야 해요.",
-      });
+        const password = input.password.normalize("NFC");
+        const passwordLength = codePointLength(password);
+        if (passwordLength < 15 || passwordLength > 128)
+          throw invalidRegistration({
+            password: "비밀번호는 15~128자로 입력해 주세요.",
+          });
+        if (password === account.password.normalize("NFC"))
+          throw invalidRegistration({
+            password: "새 비밀번호는 임시 비밀번호와 달라야 해요.",
+          });
 
-    completeMockPasswordChange({
-      accountId: account.id,
-      password,
-      expectedGeneration: current.generation,
-    });
-    const updated = getMockSnapshot();
-    const updatedAccount = accountFromState(updated);
-    const updatedSession = updated.principal_session;
-    if (!updatedAccount || !updatedSession) throw authRequired();
-    return mapAuthResult({
-      user: asSelf(updatedAccount, updatedSession),
-      csrf_token: "mock-only-csrf-token",
-    });
+        completeMockPasswordChange({
+          accountId: account.id,
+          password,
+          expectedGeneration: generation,
+          transitionId,
+          sessionCookiePresent: scenario !== "auth_session_cookie_lost",
+        });
+        const updated = getMockSnapshot();
+        const updatedAccount = accountFromState(updated);
+        const updatedSession = updated.principal_session;
+        if (!updatedAccount || !updatedSession) throw authRequired();
+        return {
+          value: mapAuthResult({
+            user: asSelf(updatedAccount, updatedSession),
+            csrf_token: "mock-only-csrf-token",
+          }),
+        };
+      },
+    );
+  },
+
+  async reauthenticate(input) {
+    return runAuthTransition(
+      "reauthenticate",
+      ({ transitionId, generation }) => {
+        const current = getMockSnapshot();
+        const account = accountFromState(current);
+        const session = current.principal_session;
+        if (!account || !session || session.session_kind !== "full")
+          throw authRequired();
+        if (isExpired(account, session, getMockNow(current)))
+          throw authRequired();
+        if (
+          typeof input?.password !== "string" ||
+          account.password !== input.password.normalize("NFC")
+        )
+          throw new ServiceError(
+            "INVALID_CREDENTIALS",
+            "비밀번호를 확인해 주세요.",
+            { httpStatus: 401, outcome: "rejected" },
+          );
+        completeMockReauthentication({
+          accountId: account.id,
+          expectedGeneration: generation,
+          transitionId,
+        });
+        const updated = getMockSnapshot();
+        const updatedAccount = accountFromState(updated);
+        const updatedSession = updated.principal_session;
+        if (!updatedAccount || !updatedSession) throw authRequired();
+        return {
+          value: mapAuthResult({
+            user: asSelf(updatedAccount, updatedSession),
+            csrf_token: "mock-only-csrf-token",
+          }),
+        };
+      },
+    );
   },
 
   async logout() {
-    const state = getMockSnapshot();
-    if (state.scenario === "auth_network_error") throw unavailable();
-    setMockPrincipal(null, state.generation);
+    return runAuthTransition("logout", ({ generation, transitionId }) => {
+      const current = getMockSnapshot();
+      setMockPrincipal(null, generation, undefined, { transitionId });
+      return {
+        value: undefined,
+        identityChanged: current.principal_id !== null,
+      };
+    });
   },
 };

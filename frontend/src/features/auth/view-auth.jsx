@@ -198,6 +198,10 @@ export function AuthView({
   onLogin,
   onRegister,
   onChangePassword,
+  onResolveAuth,
+  onResetAuth,
+  onDiscardMissingSession,
+  canDiscardMissingSession,
 }) {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
@@ -253,6 +257,31 @@ export function AuthView({
             {authStatus === "error" ? (
               <Btn onClick={onRetry}>다시 확인</Btn>
             ) : null}
+          </EmptyState>
+        </div>
+      </main>
+    );
+  }
+
+  if (authStatus === "unresolved") {
+    return (
+      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="인증 결과를 확인할 수 없어요"
+            desc="보호된 화면은 잠겨 있습니다. 결과를 다시 확인하거나 인증 흐름을 초기화해 주세요."
+          >
+            <div className="flex flex-wrap justify-center gap-2">
+              <Btn onClick={onResolveAuth}>결과 확인</Btn>
+              {canDiscardMissingSession ? (
+                <Btn variant="line" onClick={onDiscardMissingSession}>
+                  받지 못한 세션 버리기
+                </Btn>
+              ) : null}
+              <Btn variant="line" onClick={onResetAuth}>
+                인증 흐름 초기화
+              </Btn>
+            </div>
           </EmptyState>
         </div>
       </main>

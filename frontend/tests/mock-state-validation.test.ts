@@ -42,9 +42,22 @@ function job(state: StoredState): StoredObject {
   return nested(health(state).latest_job);
 }
 
+function authFlowV6Shape(value: unknown): StoredObject {
+  const flow = nested(value);
+  return Object.fromEntries(
+    [
+      "flow_id",
+      "revision",
+      "session_generation",
+      "last_identity_change_revision",
+      "issued_session_generation",
+    ].map((key) => [key, flow[key]]),
+  );
+}
+
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 7)],
+  ["unsupported state version", (state) => (state.version = 8)],
   ["invalid mock clock", (state) => (state.mock_now = "not a date")],
   [
     "missing principal session",
@@ -209,7 +222,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 6,
+      version: 7,
       principal_id: null,
       private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
       registered_accounts: [],
@@ -244,7 +257,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 6,
+      version: 7,
       registered_accounts: [],
       principal_id: "00000000-0000-4000-8000-000000000101",
       admin_users: expect.any(Array),
@@ -275,7 +288,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 6,
+      version: 7,
       observation_generation: 0,
       auth_flow: { revision: "0", last_identity_change_revision: "0" },
       admin_users: expect.any(Array),
@@ -291,6 +304,7 @@ describe("persisted mock state validation", () => {
     delete previous.mock_now;
     delete previous.credential_overrides;
     delete previous.principal_session;
+    previous.auth_flow = authFlowV6Shape(previous.auth_flow);
     previous.version = 5;
     previous.admin_users = (previous.admin_users as StoredObject[]).filter(
       (user) =>
@@ -304,7 +318,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 6,
+      version: 7,
       mock_now: "2026-09-22T00:12:00.000Z",
       credential_overrides: [],
       principal_session: null,
@@ -318,6 +332,32 @@ describe("persisted mock state validation", () => {
           approved: true,
         }),
       ]),
+    });
+  });
+
+  it("migrates version 6 auth flow metadata", async () => {
+    resetMockState();
+    const current = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    const previous = { ...current } as Record<string, unknown>;
+    previous.auth_flow = authFlowV6Shape(previous.auth_flow);
+    previous.version = 6;
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(previous));
+
+    await appsService.list();
+
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
+    ).toMatchObject({
+      version: 7,
+      auth_flow: {
+        flow_sequence: 0,
+        recovery_ready: true,
+        recovery_cookie_generation: "1",
+        session_cookie_present: false,
+        transitions: [],
+      },
     });
   });
 });

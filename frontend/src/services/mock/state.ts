@@ -7,10 +7,15 @@ import {
   mapRegisteredUser,
 } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
+import type {
+  AuthTransitionKind,
+  AuthTransitionState,
+} from "../../contracts/mappers";
 import { MOCK_ACCOUNTS } from "./accounts";
 
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
+export const MOCK_AUTH_STATE_EVENT = "eduvibe:mock-auth-state";
 
 const MOCK_SCENARIOS = [
   "original",
@@ -27,6 +32,10 @@ const MOCK_SCENARIOS = [
   "auth_delayed",
   "auth_observation_error",
   "auth_network_error",
+  "auth_transition_gate",
+  "auth_response_lost",
+  "auth_session_cookie_lost",
+  "auth_result_unavailable",
   "detail_delayed",
   "admin_list_failure",
   "admin_more_failure",
@@ -50,21 +59,47 @@ const V5_STATE_KEYS = [
   "approval_operations",
   "approval_operation_sequence",
 ];
-const STATE_KEYS = [
+const V6_STATE_KEYS = [
   ...V5_STATE_KEYS,
   "mock_now",
   "credential_overrides",
   "principal_session",
 ];
-const AUTH_FLOW_KEYS = [
+const STATE_KEYS = V6_STATE_KEYS;
+const AUTH_FLOW_V6_KEYS = [
   "flow_id",
   "revision",
   "session_generation",
   "last_identity_change_revision",
   "issued_session_generation",
 ];
+const AUTH_FLOW_KEYS = [
+  ...AUTH_FLOW_V6_KEYS,
+  "flow_sequence",
+  "expires_at",
+  "recovery_ready",
+  "recovery_cookie_generation",
+  "recovery_cookie_present",
+  "session_cookie_present",
+  "pending_transition",
+  "transitions",
+  "blocked_transition_ids",
+  "unresolved_transition_id",
+  "restart_eligible",
+  "gate_open",
+];
+const AUTH_TRANSITION_KEYS = [
+  "transition_id",
+  "kind",
+  "state",
+  "permit_expires_at",
+  "result_session_generation",
+  "failure_code",
+  "result_available_until",
+];
 const MOCK_FLOW_ID = "00000000-0000-4000-8000-000000000200";
 const MOCK_INITIAL_TIME = "2026-09-22T00:12:00.000Z";
+const MOCK_FLOW_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
 const LEGACY_STATE_KEYS = ["version", "generation", "scenario", "apps"];
 const REGISTERED_ACCOUNT_KEYS = [
   "id",
@@ -105,6 +140,21 @@ const PRINCIPAL_SESSION_KEYS = [
   "expires_at",
   "recent_auth_until",
 ];
+const AUTH_TRANSITION_KINDS = [
+  "anonymous_session",
+  "login",
+  "logout",
+  "password_change",
+  "reauthenticate",
+] as const;
+const AUTH_TRANSITION_STATES = [
+  "admitted",
+  "executing",
+  "succeeded",
+  "failed",
+  "cancelled",
+  "expired",
+] as const;
 const APP_KEYS = [
   "id",
   "owner",
@@ -174,7 +224,7 @@ export type MockPrincipalSession = {
   recent_auth_until: string | null;
 };
 export type MockState = {
-  version: 6;
+  version: 7;
   generation: number;
   observation_generation: number;
   scenario: MockScenario;
@@ -188,13 +238,35 @@ export type MockState = {
   mock_now: string;
   credential_overrides: MockCredentialOverride[];
   principal_session: MockPrincipalSession | null;
-  auth_flow: {
-    flow_id: string;
-    revision: string;
-    session_generation: string | null;
-    last_identity_change_revision: string;
-    issued_session_generation: string;
-  };
+  auth_flow: MockAuthFlow;
+};
+export type MockAuthTransition = {
+  transition_id: string;
+  kind: AuthTransitionKind;
+  state: AuthTransitionState;
+  permit_expires_at: string;
+  result_session_generation: string | null;
+  failure_code: string | null;
+  result_available_until: string;
+};
+export type MockAuthFlow = {
+  flow_id: string;
+  revision: string;
+  session_generation: string | null;
+  last_identity_change_revision: string;
+  issued_session_generation: string;
+  flow_sequence: number;
+  expires_at: string;
+  recovery_ready: boolean;
+  recovery_cookie_generation: string;
+  recovery_cookie_present: boolean;
+  session_cookie_present: boolean;
+  pending_transition: MockAuthTransition | null;
+  transitions: MockAuthTransition[];
+  blocked_transition_ids: string[];
+  unresolved_transition_id: string | null;
+  restart_eligible: boolean;
+  gate_open: boolean;
 };
 export type MockRegisteredAccount = {
   id: string;
@@ -221,6 +293,35 @@ function hasExactKeys(
     !Array.isArray(value) &&
     Object.keys(value).length === expected.length &&
     expected.every((key) => Object.prototype.hasOwnProperty.call(value, key))
+  );
+}
+
+function validSequence(value: unknown): value is string {
+  return typeof value === "string" && /^(0|[1-9][0-9]*)$/.test(value);
+}
+
+function validTransition(
+  value: unknown,
+  flowId: string,
+): value is MockAuthTransition {
+  if (!hasExactKeys(value, AUTH_TRANSITION_KEYS)) return false;
+  const transition = value;
+  const transitionId = transition.transition_id;
+  return (
+    typeof transitionId === "string" &&
+    transitionId.startsWith(`${flowId}.`) &&
+    validSequence(transitionId.slice(flowId.length + 1)) &&
+    typeof transition.kind === "string" &&
+    AUTH_TRANSITION_KINDS.includes(transition.kind as AuthTransitionKind) &&
+    typeof transition.state === "string" &&
+    AUTH_TRANSITION_STATES.includes(transition.state as AuthTransitionState) &&
+    isDateTime(transition.permit_expires_at) &&
+    (transition.result_session_generation === null ||
+      validSequence(transition.result_session_generation)) &&
+    (transition.failure_code === null ||
+      (typeof transition.failure_code === "string" &&
+        transition.failure_code.length > 0)) &&
+    isDateTime(transition.result_available_until)
   );
 }
 
@@ -446,8 +547,51 @@ function initialAdminUsers(
   ];
 }
 
+function mockFlowId(sequence: number): string {
+  return `00000000-0000-4000-8000-${String(200 + sequence).padStart(12, "0")}`;
+}
+
+function initialAuthFlow(): MockAuthFlow {
+  return {
+    flow_id: MOCK_FLOW_ID,
+    revision: "0",
+    session_generation: "0",
+    last_identity_change_revision: "0",
+    issued_session_generation: "0",
+    flow_sequence: 0,
+    expires_at: new Date(
+      Date.parse(MOCK_INITIAL_TIME) + MOCK_FLOW_LIFETIME_MS,
+    ).toISOString(),
+    recovery_ready: true,
+    recovery_cookie_generation: "1",
+    recovery_cookie_present: true,
+    session_cookie_present: true,
+    pending_transition: null,
+    transitions: [],
+    blocked_transition_ids: [],
+    unresolved_transition_id: null,
+    restart_eligible: false,
+    gate_open: false,
+  };
+}
+
+function migrateAuthFlow(value: unknown, hasPrincipal: boolean): MockAuthFlow {
+  if (!hasExactKeys(value, AUTH_FLOW_V6_KEYS)) throw storageError();
+  const flow = value;
+  const base = initialAuthFlow();
+  return {
+    ...base,
+    flow_id: flow.flow_id as string,
+    revision: flow.revision as string,
+    session_generation: flow.session_generation as string | null,
+    last_identity_change_revision: flow.last_identity_change_revision as string,
+    issued_session_generation: flow.issued_session_generation as string,
+    session_cookie_present: hasPrincipal && flow.session_generation !== null,
+  };
+}
+
 const initialState = (): MockState => ({
-  version: 6,
+  version: 7,
   generation: resetGeneration,
   observation_generation: 0,
   scenario: "original",
@@ -461,13 +605,7 @@ const initialState = (): MockState => ({
   mock_now: MOCK_INITIAL_TIME,
   credential_overrides: [],
   principal_session: null,
-  auth_flow: {
-    flow_id: MOCK_FLOW_ID,
-    revision: "0",
-    session_generation: null,
-    last_identity_change_revision: "0",
-    issued_session_generation: "0",
-  },
+  auth_flow: initialAuthFlow(),
 });
 
 function storage(): Storage {
@@ -509,7 +647,7 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 6,
+      version: 7,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
@@ -526,7 +664,7 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
     state = {
       ...value,
-      version: 6,
+      version: 7,
       registered_accounts: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
@@ -541,7 +679,7 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
     state = {
       ...value,
-      version: 6,
+      version: 7,
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
       admin_users: [],
@@ -555,7 +693,8 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V4_STATE_KEYS) && value.version === 4) {
     state = {
       ...value,
-      version: 6,
+      version: 7,
+      auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       admin_users: [],
       approval_operations: [],
       approval_operation_sequence: 0,
@@ -573,7 +712,8 @@ function readState(): MockState {
     );
     state = {
       ...value,
-      version: 6,
+      version: 7,
+      auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
       principal_session: initialPrincipalSession(value.principal_id),
@@ -581,13 +721,21 @@ function readState(): MockState {
     };
     needsMigration = true;
     preserveAdminUsers = true;
-  } else if (hasExactKeys(value, STATE_KEYS)) {
+  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 6) {
+    state = {
+      ...value,
+      version: 7,
+      auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
+    };
+    needsMigration = true;
+    preserveAdminUsers = true;
+  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 7) {
     state = value;
   } else {
     throw storageError();
   }
   if (
-    state.version !== 6 ||
+    state.version !== 7 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -615,15 +763,51 @@ function readState(): MockState {
     throw storageError();
   }
   const flow = state.auth_flow as Record<string, unknown>;
-  const validSequence = (value: unknown) =>
-    typeof value === "string" && /^(0|[1-9][0-9]*)$/.test(value);
+  const flowId = flow.flow_id;
+  const pendingTransition = flow.pending_transition;
+  const transitions = flow.transitions;
+  const blockedTransitionIds = flow.blocked_transition_ids;
+  const transitionIdIsValid = (value: unknown) =>
+    typeof value === "string" &&
+    value.startsWith(`${String(flowId)}.`) &&
+    validSequence(value.slice(String(flowId).length + 1));
   if (
-    flow.flow_id !== MOCK_FLOW_ID ||
+    typeof flow.flow_sequence !== "number" ||
+    !Number.isSafeInteger(flow.flow_sequence) ||
+    flow.flow_sequence < 0 ||
+    flowId !== mockFlowId(flow.flow_sequence) ||
     !validSequence(flow.revision) ||
     (flow.session_generation !== null &&
       !validSequence(flow.session_generation)) ||
     !validSequence(flow.last_identity_change_revision) ||
-    !validSequence(flow.issued_session_generation)
+    !validSequence(flow.issued_session_generation) ||
+    !isDateTime(flow.expires_at) ||
+    typeof flow.recovery_ready !== "boolean" ||
+    !validSequence(flow.recovery_cookie_generation) ||
+    typeof flow.recovery_cookie_present !== "boolean" ||
+    typeof flow.session_cookie_present !== "boolean" ||
+    (flow.session_cookie_present && flow.session_generation === null) ||
+    (flow.session_generation !== null &&
+      BigInt(flow.session_generation) >
+        BigInt(flow.issued_session_generation)) ||
+    BigInt(flow.last_identity_change_revision) > BigInt(flow.revision) ||
+    (pendingTransition !== null &&
+      (!validTransition(pendingTransition, String(flowId)) ||
+        (pendingTransition.state !== "admitted" &&
+          pendingTransition.state !== "executing"))) ||
+    !Array.isArray(transitions) ||
+    !transitions.every((item) => validTransition(item, String(flowId))) ||
+    (pendingTransition !== null &&
+      transitions.some(
+        (item) => item.transition_id === pendingTransition.transition_id,
+      )) ||
+    !Array.isArray(blockedTransitionIds) ||
+    !blockedTransitionIds.every(transitionIdIsValid) ||
+    new Set(blockedTransitionIds).size !== blockedTransitionIds.length ||
+    (flow.unresolved_transition_id !== null &&
+      !transitionIdIsValid(flow.unresolved_transition_id)) ||
+    typeof flow.restart_eligible !== "boolean" ||
+    typeof flow.gate_open !== "boolean"
   )
     throw storageError();
   const validState = state as unknown as MockState;
@@ -935,10 +1119,704 @@ export function readMockScenario(): MockScenario {
   return readState().scenario;
 }
 
+function nextFlowRevision(flow: MockAuthFlow): string {
+  return (BigInt(flow.revision) + 1n).toString();
+}
+
+function boundedUnique(values: string[], value: string): string[] {
+  return [...values.filter((item) => item !== value), value].slice(-100);
+}
+
+function transitionLookup(
+  flow: MockAuthFlow,
+  transitionId: string,
+  now: string,
+) {
+  const transition =
+    flow.pending_transition?.transition_id === transitionId
+      ? flow.pending_transition
+      : flow.transitions.find((item) => item.transition_id === transitionId);
+  if (
+    transition &&
+    (flow.pending_transition === transition ||
+      Date.parse(now) < Date.parse(transition.result_available_until))
+  )
+    return {
+      transition_id: transition.transition_id,
+      availability: "available" as const,
+      execution_blocked: null,
+      kind: transition.kind,
+      state: transition.state,
+      permit_expires_at: transition.permit_expires_at,
+      result_session_generation: transition.result_session_generation,
+      failure_code: transition.failure_code,
+    };
+  return {
+    transition_id: transitionId,
+    availability: "unavailable" as const,
+    execution_blocked: flow.blocked_transition_ids.includes(transitionId),
+    kind: null,
+    state: null,
+    permit_expires_at: null,
+    result_session_generation: null,
+    failure_code: null,
+  };
+}
+
+export function getMockAuthFlowState(transitionId?: string) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    transitionId !== undefined &&
+    (!transitionId.startsWith(`${flow.flow_id}.`) ||
+      !validSequence(transitionId.slice(flow.flow_id.length + 1)))
+  )
+    throw new ServiceError(
+      "AUTH_STATE_CHANGED",
+      "이전 인증 요청의 흐름이 바뀌었습니다. 현재 상태를 다시 확인해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  const now = getMockNow(state);
+  const canStart =
+    flow.recovery_ready &&
+    flow.pending_transition === null &&
+    flow.unresolved_transition_id === null &&
+    Date.parse(now) < Date.parse(flow.expires_at);
+  return {
+    flow_id: flow.flow_id,
+    revision: flow.revision,
+    server_time: now,
+    expires_at: flow.expires_at,
+    recovery_ready: flow.recovery_ready,
+    session_generation: flow.session_generation,
+    session_cookie_present: flow.session_cookie_present,
+    last_identity_change_revision: flow.last_identity_change_revision,
+    pending_transition: flow.pending_transition
+      ? transitionLookup(flow, flow.pending_transition.transition_id, now)
+      : null,
+    requested_transition:
+      transitionId === undefined
+        ? null
+        : transitionLookup(flow, transitionId, now),
+    next_transition_id: canStart ? `${flow.flow_id}.${flow.revision}` : null,
+  };
+}
+
+function authFlowConflict(): ServiceError {
+  return new ServiceError(
+    "AUTH_STATE_CHANGED",
+    "인증 흐름이 바뀌었습니다. 현재 상태를 다시 확인해 주세요.",
+    { httpStatus: 409, outcome: "rejected" },
+  );
+}
+
+export function createMockAuthFlow(restartFrom: string[]) {
+  const state = readState();
+  const previous = state.auth_flow;
+  if (
+    !previous.restart_eligible ||
+    !restartFrom.includes(previous.flow_id) ||
+    new Set(restartFrom).size !== restartFrom.length
+  )
+    throw authFlowConflict();
+  const flowSequence = previous.flow_sequence + 1;
+  if (!Number.isSafeInteger(flowSequence)) throw authFlowConflict();
+  const base = initialAuthFlow();
+  const flow: MockAuthFlow = {
+    ...base,
+    flow_id: mockFlowId(flowSequence),
+    flow_sequence: flowSequence,
+    session_generation: null,
+    session_cookie_present: false,
+    recovery_ready: false,
+    recovery_cookie_generation: "0",
+    recovery_cookie_present: false,
+    expires_at: new Date(
+      Date.parse(state.mock_now) + MOCK_FLOW_LIFETIME_MS,
+    ).toISOString(),
+  };
+  const generation = nextGeneration(state.generation);
+  writeState({ ...state, generation, auth_flow: flow });
+  resetGeneration = generation;
+  return {
+    flow_id: flow.flow_id,
+    revision: flow.revision,
+    expires_at: flow.expires_at,
+  };
+}
+
+export function issueMockRecoveryCookie(flowId: string) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    flow.flow_id !== flowId ||
+    flow.recovery_ready ||
+    flow.recovery_cookie_present
+  )
+    throw authFlowConflict();
+  const revision = nextFlowRevision(flow);
+  const recoveryCookieGeneration = (
+    BigInt(flow.recovery_cookie_generation) + 1n
+  ).toString();
+  const expiresAt = flow.expires_at;
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    generation,
+    auth_flow: {
+      ...flow,
+      revision,
+      recovery_cookie_generation: recoveryCookieGeneration,
+      recovery_cookie_present: true,
+    },
+  });
+  resetGeneration = generation;
+  return {
+    flow_id: flowId,
+    revision,
+    recovery_csrf_token: `mock-only-recovery-csrf-${flowId}-${recoveryCookieGeneration}`,
+    expires_at: expiresAt,
+  };
+}
+
+export function confirmMockRecoveryCookie(
+  flowId: string,
+  expectedRevision: string,
+) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    flow.flow_id !== flowId ||
+    flow.revision !== expectedRevision ||
+    !flow.recovery_cookie_present ||
+    flow.recovery_ready ||
+    Date.parse(state.mock_now) >= Date.parse(flow.expires_at)
+  )
+    throw authFlowConflict();
+  const revision = nextFlowRevision(flow);
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    generation,
+    auth_flow: { ...flow, revision, recovery_ready: true },
+  });
+  resetGeneration = generation;
+  return {
+    flow_id: flowId,
+    revision,
+    expires_at: flow.expires_at,
+    ready: true as const,
+  };
+}
+
+export function abandonMockAuthFlow(flowId: string) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    flow.flow_id !== flowId ||
+    flow.recovery_ready ||
+    flow.session_cookie_present ||
+    flow.pending_transition
+  )
+    throw authFlowConflict();
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    generation,
+    auth_flow: { ...flow, restart_eligible: true },
+  });
+  resetGeneration = generation;
+  return { restart_eligible: true };
+}
+
+export function getMockRecoveryContext() {
+  const { auth_flow: flow } = readState();
+  const proofKind = flow.recovery_cookie_present
+    ? "recovery"
+    : flow.session_cookie_present
+      ? "session"
+      : null;
+  return {
+    items: proofKind
+      ? [
+          {
+            flow_id: flow.flow_id,
+            revision: flow.revision,
+            proof_kind: proofKind,
+          },
+        ]
+      : [],
+  };
+}
+
+export function getMockRecoveryCsrf(flowId: string) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    flow.flow_id !== flowId ||
+    !flow.recovery_cookie_present ||
+    Date.parse(state.mock_now) >= Date.parse(flow.expires_at)
+  )
+    throw new ServiceError("AUTH_REQUIRED", "복구 상태를 확인해 주세요.", {
+      httpStatus: 401,
+      outcome: "rejected",
+    });
+  return {
+    flow_id: flow.flow_id,
+    revision: flow.revision,
+    recovery_csrf_token: `mock-only-recovery-csrf-${flow.flow_id}-${flow.recovery_cookie_generation}`,
+    expires_at: flow.expires_at,
+  };
+}
+
+export function rotateMockRecoveryCookie(input: {
+  flowId: string;
+  expectedRevision: string;
+  expectedSessionGeneration: string;
+}) {
+  const state = readState();
+  const flow = state.auth_flow;
+  const session = state.principal_session;
+  if (flow.pending_transition || flow.unresolved_transition_id)
+    throw new ServiceError(
+      "AUTH_TRANSITION_PENDING",
+      "현재 인증 결과를 먼저 확인해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  if (
+    flow.flow_id !== input.flowId ||
+    flow.revision !== input.expectedRevision ||
+    flow.session_generation !== input.expectedSessionGeneration ||
+    !flow.session_cookie_present ||
+    Date.parse(state.mock_now) >= Date.parse(flow.expires_at) ||
+    state.principal_id === null ||
+    session?.session_kind !== "full"
+  )
+    throw authFlowConflict();
+  const revision = nextFlowRevision(flow);
+  const recoveryCookieGeneration = (
+    BigInt(flow.recovery_cookie_generation) + 1n
+  ).toString();
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    generation,
+    auth_flow: {
+      ...flow,
+      revision,
+      recovery_cookie_generation: recoveryCookieGeneration,
+      recovery_cookie_present: true,
+    },
+  });
+  resetGeneration = generation;
+  return {
+    flow_id: flow.flow_id,
+    revision,
+    recovery_csrf_token: `mock-only-recovery-csrf-${flow.flow_id}-${recoveryCookieGeneration}`,
+    expires_at: flow.expires_at,
+  };
+}
+
+export function getMockRestartEligibility(flowId: string) {
+  const { auth_flow: flow } = readState();
+  if (flow.flow_id !== flowId)
+    throw new ServiceError("NOT_FOUND", "인증 흐름을 찾을 수 없어요.", {
+      httpStatus: 404,
+      outcome: "rejected",
+    });
+  return { restart_eligible: flow.restart_eligible };
+}
+
+export function admitMockAuthTransition(input: {
+  flowId: string;
+  transitionId: string;
+  kind: AuthTransitionKind;
+  expectedRevision: string;
+  expectedSessionGeneration: string | null;
+}) {
+  const state = readState();
+  const flow = state.auth_flow;
+  const conflict = (code: "AUTH_STATE_CHANGED" | "AUTH_TRANSITION_PENDING") =>
+    new ServiceError(
+      code,
+      "인증 상태가 바뀌었습니다. 현재 상태를 다시 확인해 주세요.",
+      {
+        httpStatus: 409,
+        outcome: "rejected",
+      },
+    );
+  if (
+    flow.flow_id !== input.flowId ||
+    flow.revision !== input.expectedRevision ||
+    input.transitionId !== `${flow.flow_id}.${flow.revision}` ||
+    flow.session_generation !== input.expectedSessionGeneration
+  )
+    throw conflict("AUTH_STATE_CHANGED");
+  if (
+    flow.pending_transition !== null ||
+    flow.unresolved_transition_id !== null
+  )
+    throw conflict("AUTH_TRANSITION_PENDING");
+  if (
+    !flow.recovery_ready ||
+    !flow.recovery_cookie_present ||
+    Date.parse(state.mock_now) >= Date.parse(flow.expires_at)
+  )
+    throw new ServiceError(
+      "AUTH_STATE_CHANGED",
+      "인증 흐름을 복구한 뒤 다시 시도해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  const permitExpiresAt = new Date(
+    Date.parse(state.mock_now) + 60_000,
+  ).toISOString();
+  const transition: MockAuthTransition = {
+    transition_id: input.transitionId,
+    kind: input.kind,
+    state: "admitted",
+    permit_expires_at: permitExpiresAt,
+    result_session_generation: null,
+    failure_code: null,
+    result_available_until: new Date(
+      Date.parse(state.mock_now) + 30 * 60_000,
+    ).toISOString(),
+  };
+  const revision = nextFlowRevision(flow);
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    generation,
+    auth_flow: {
+      ...flow,
+      revision,
+      pending_transition: transition,
+      gate_open: false,
+    },
+  });
+  resetGeneration = generation;
+  return {
+    flow_id: flow.flow_id,
+    transition_id: transition.transition_id,
+    kind: transition.kind,
+    revision,
+    permit_expires_at: permitExpiresAt,
+  };
+}
+
+export function finishMockAuthTransition(input: {
+  transitionId: string;
+  expectedGeneration: number;
+  state: Exclude<AuthTransitionState, "admitted" | "executing">;
+  resultSessionGeneration?: string | null;
+  failureCode?: string | null;
+  identityChanged?: boolean;
+  loseResult?: boolean;
+  responseLost?: boolean;
+}): MockAuthTransition {
+  const state = readState();
+  const flow = state.auth_flow;
+  const pending = flow.pending_transition;
+  if (
+    state.generation !== input.expectedGeneration ||
+    !pending ||
+    pending.transition_id !== input.transitionId ||
+    Date.parse(state.mock_now) >= Date.parse(pending.permit_expires_at)
+  )
+    throw new DOMException("Mock auth transition changed", "AbortError");
+  const revision = nextFlowRevision(flow);
+  const completed: MockAuthTransition = {
+    ...pending,
+    state: input.state,
+    result_session_generation: input.resultSessionGeneration ?? null,
+    failure_code: input.failureCode ?? null,
+  };
+  const unavailable = input.loseResult === true;
+  const unresolved = input.responseLost || unavailable;
+  const generation = nextGeneration(state.generation);
+  const transitions = unavailable
+    ? flow.transitions
+    : [...flow.transitions, completed].slice(-30);
+  writeState({
+    ...state,
+    generation,
+    observation_generation: input.identityChanged
+      ? state.observation_generation >= Number.MAX_SAFE_INTEGER
+        ? 0
+        : state.observation_generation + 1
+      : state.observation_generation,
+    auth_flow: {
+      ...flow,
+      revision,
+      last_identity_change_revision: input.identityChanged
+        ? revision
+        : flow.last_identity_change_revision,
+      pending_transition: null,
+      transitions,
+      blocked_transition_ids: flow.blocked_transition_ids,
+      unresolved_transition_id: unresolved ? input.transitionId : null,
+      gate_open: false,
+    },
+  });
+  resetGeneration = generation;
+  return completed;
+}
+
+export function settleMockAuthTransition(input: {
+  transitionId: string;
+  flowId: string;
+  expectedRevision: string;
+}): {
+  flow_id: string;
+  revision: string;
+  transition_id: string;
+  result: ReturnType<typeof transitionLookup>;
+} {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    flow.flow_id !== input.flowId ||
+    flow.revision !== input.expectedRevision ||
+    !input.transitionId.startsWith(`${flow.flow_id}.`) ||
+    !validSequence(input.transitionId.slice(flow.flow_id.length + 1))
+  )
+    throw new ServiceError(
+      "AUTH_STATE_CHANGED",
+      "인증 흐름이 바뀌었습니다. 현재 상태를 다시 확인해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  if (
+    flow.pending_transition &&
+    flow.pending_transition.transition_id !== input.transitionId
+  )
+    throw new ServiceError(
+      "AUTH_TRANSITION_PENDING",
+      "다른 인증 요청의 결과를 먼저 확인해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  const pending = flow.pending_transition;
+  if (pending) {
+    const revision = nextFlowRevision(flow);
+    const cancelled = {
+      ...pending,
+      state:
+        Date.parse(state.mock_now) >= Date.parse(pending.permit_expires_at)
+          ? ("expired" as const)
+          : ("cancelled" as const),
+      failure_code: null,
+    };
+    const generation = nextGeneration(state.generation);
+    const nextFlow: MockAuthFlow = {
+      ...flow,
+      revision,
+      pending_transition: null,
+      transitions: [...flow.transitions, cancelled].slice(-30),
+      blocked_transition_ids: boundedUnique(
+        flow.blocked_transition_ids,
+        input.transitionId,
+      ),
+      unresolved_transition_id: null,
+      gate_open: false,
+    };
+    writeState({ ...state, generation, auth_flow: nextFlow });
+    resetGeneration = generation;
+    window.dispatchEvent(new Event(MOCK_AUTH_STATE_EVENT));
+    return {
+      flow_id: flow.flow_id,
+      revision,
+      transition_id: input.transitionId,
+      result: transitionLookup(nextFlow, input.transitionId, state.mock_now),
+    };
+  }
+
+  const existing = transitionLookup(flow, input.transitionId, state.mock_now);
+  const unavailable = existing.availability === "unavailable";
+  const missingIssuedSession =
+    existing.availability === "available" &&
+    existing.state === "succeeded" &&
+    existing.result_session_generation !== null &&
+    flow.session_generation === existing.result_session_generation &&
+    !flow.session_cookie_present;
+  let nextFlow = flow;
+  if (unavailable && !existing.execution_blocked) {
+    const revision = nextFlowRevision(flow);
+    nextFlow = {
+      ...flow,
+      revision,
+      blocked_transition_ids: boundedUnique(
+        flow.blocked_transition_ids,
+        input.transitionId,
+      ),
+      unresolved_transition_id: input.transitionId,
+    };
+  } else if (unavailable) {
+    nextFlow = flow;
+  } else if (!missingIssuedSession && flow.unresolved_transition_id !== null) {
+    nextFlow = { ...flow, unresolved_transition_id: null };
+  }
+  if (nextFlow !== flow) {
+    const generation = nextGeneration(state.generation);
+    writeState({ ...state, generation, auth_flow: nextFlow });
+    resetGeneration = generation;
+  }
+  return {
+    flow_id: flow.flow_id,
+    revision: nextFlow.revision,
+    transition_id: input.transitionId,
+    result: transitionLookup(nextFlow, input.transitionId, state.mock_now),
+  };
+}
+
+export function setMockAuthGateOpen(): void {
+  const state = readState();
+  if (state.scenario !== "auth_transition_gate") return;
+  writeState({ ...state, auth_flow: { ...state.auth_flow, gate_open: true } });
+  window.dispatchEvent(new Event("eduvibe:mock-auth-gate-open"));
+}
+
+export function commitMockAnonymousSession(input: {
+  transitionId: string;
+  expectedGeneration: number;
+  sessionCookiePresent?: boolean;
+}) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    state.generation !== input.expectedGeneration ||
+    flow.pending_transition?.transition_id !== input.transitionId ||
+    flow.pending_transition.kind !== "anonymous_session" ||
+    state.principal_id !== null ||
+    !flow.recovery_ready ||
+    !flow.recovery_cookie_present ||
+    flow.session_generation !== null
+  )
+    throw new DOMException("Mock auth transition changed", "AbortError");
+  const sessionGeneration = (
+    BigInt(flow.issued_session_generation) + 1n
+  ).toString();
+  const generation = nextGeneration(state.generation);
+  const expiresAt = flow.expires_at;
+  writeState({
+    ...state,
+    generation,
+    auth_flow: {
+      ...flow,
+      session_generation: sessionGeneration,
+      issued_session_generation: sessionGeneration,
+      session_cookie_present: input.sessionCookiePresent ?? true,
+      expires_at: expiresAt,
+    },
+  });
+  resetGeneration = generation;
+  return {
+    flow_id: flow.flow_id,
+    session_generation: sessionGeneration,
+    csrf_token: "mock-only-csrf-token",
+    expires_at: expiresAt,
+  };
+}
+
+export function discardMockAuthSession(input: {
+  transitionId: string;
+  flowId: string;
+  expectedRevision: string;
+  expectedSessionGeneration: string;
+}) {
+  const state = readState();
+  const flow = state.auth_flow;
+  const transition = transitionLookup(flow, input.transitionId, state.mock_now);
+  if (
+    flow.flow_id !== input.flowId ||
+    flow.revision !== input.expectedRevision ||
+    flow.session_generation !== input.expectedSessionGeneration ||
+    flow.session_cookie_present ||
+    transition.availability !== "available" ||
+    transition.state !== "succeeded" ||
+    transition.result_session_generation !== input.expectedSessionGeneration
+  )
+    throw authFlowConflict();
+  const revision = nextFlowRevision(flow);
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    principal_id: null,
+    principal_session: null,
+    generation,
+    observation_generation:
+      state.principal_id === null
+        ? state.observation_generation
+        : state.observation_generation >= Number.MAX_SAFE_INTEGER
+          ? 0
+          : state.observation_generation + 1,
+    auth_flow: {
+      ...flow,
+      revision,
+      session_generation: null,
+      session_cookie_present: false,
+      unresolved_transition_id: null,
+      blocked_transition_ids: boundedUnique(
+        flow.blocked_transition_ids,
+        input.transitionId,
+      ),
+    },
+  });
+  resetGeneration = generation;
+  return { flow_id: flow.flow_id, revision };
+}
+
+export function resetMockAuthFlow(input: {
+  flowId: string;
+  expectedRevision: string;
+  expectedSessionGeneration?: string | null;
+}) {
+  const state = readState();
+  const flow = state.auth_flow;
+  if (
+    flow.flow_id !== input.flowId ||
+    flow.revision !== input.expectedRevision ||
+    (input.expectedSessionGeneration !== undefined &&
+      input.expectedSessionGeneration !== flow.session_generation) ||
+    (!flow.recovery_cookie_present && !flow.session_cookie_present)
+  )
+    throw authFlowConflict();
+  const revision = nextFlowRevision(flow);
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    principal_id: null,
+    principal_session: null,
+    generation,
+    observation_generation:
+      state.principal_id === null
+        ? state.observation_generation
+        : state.observation_generation >= Number.MAX_SAFE_INTEGER
+          ? 0
+          : state.observation_generation + 1,
+    auth_flow: {
+      ...flow,
+      revision,
+      session_generation: null,
+      session_cookie_present: false,
+      recovery_ready: false,
+      recovery_cookie_generation: "0",
+      recovery_cookie_present: false,
+      pending_transition: null,
+      transitions: [],
+      blocked_transition_ids: [],
+      unresolved_transition_id: null,
+      restart_eligible: true,
+      gate_open: false,
+    },
+  });
+  resetGeneration = generation;
+  window.dispatchEvent(new Event(MOCK_AUTH_STATE_EVENT));
+  return { restart_eligible: true };
+}
+
 export function setMockPrincipal(
   principalId: string | null,
   expectedGeneration?: number,
   session?: MockPrincipalSession,
+  options: { transitionId?: string; sessionCookiePresent?: boolean } = {},
 ): void {
   const state = readState();
   const nextSession =
@@ -959,9 +1837,20 @@ export function setMockPrincipal(
     throw new TypeError("Unsupported mock member");
   if (principalId !== null && !nextSession)
     throw new TypeError("A mock session is required for a principal");
-  if (state.principal_id === principalId) return;
+  const pending = state.auth_flow.pending_transition;
+  if (
+    options.transitionId !== undefined &&
+    pending?.transition_id !== options.transitionId
+  )
+    throw new DOMException("Mock auth transition changed", "AbortError");
+  if (state.principal_id === principalId && options.transitionId === undefined)
+    return;
   const generation = nextGeneration(state.generation);
-  const revision = (BigInt(state.auth_flow.revision) + 1n).toString();
+  const inTransition = options.transitionId !== undefined;
+  const principalChanged = state.principal_id !== principalId;
+  const revision = inTransition
+    ? state.auth_flow.revision
+    : nextFlowRevision(state.auth_flow);
   const sessionGeneration = principalId
     ? (BigInt(state.auth_flow.issued_session_generation) + 1n).toString()
     : null;
@@ -971,16 +1860,22 @@ export function setMockPrincipal(
     principal_session: nextSession,
     generation,
     observation_generation:
-      state.observation_generation >= Number.MAX_SAFE_INTEGER
-        ? 0
-        : state.observation_generation + 1,
+      principalChanged && !inTransition
+        ? state.observation_generation >= Number.MAX_SAFE_INTEGER
+          ? 0
+          : state.observation_generation + 1
+        : state.observation_generation,
     auth_flow: {
       ...state.auth_flow,
       revision,
       session_generation: sessionGeneration,
-      last_identity_change_revision: revision,
+      last_identity_change_revision: inTransition
+        ? state.auth_flow.last_identity_change_revision
+        : revision,
       issued_session_generation:
         sessionGeneration ?? state.auth_flow.issued_session_generation,
+      session_cookie_present:
+        principalId !== null && (options.sessionCookiePresent ?? true),
     },
   });
   resetGeneration = generation;
@@ -990,11 +1885,18 @@ export function completeMockPasswordChange(input: {
   accountId: string;
   password: string;
   expectedGeneration: number;
+  transitionId?: string;
+  sessionCookiePresent?: boolean;
 }): void {
   // ponytail: one localStorage principal only; the production API owns cross-device credential/session rotation.
   const state = readState();
   if (state.generation !== input.expectedGeneration)
     throw new DOMException("Mock state changed", "AbortError");
+  if (
+    input.transitionId !== undefined &&
+    state.auth_flow.pending_transition?.transition_id !== input.transitionId
+  )
+    throw new DOMException("Mock auth transition changed", "AbortError");
   const session = state.principal_session;
   const account = getMockAccounts(state, true).find(
     (item) => item.id === input.accountId,
@@ -1030,7 +1932,10 @@ export function completeMockPasswordChange(input: {
       { httpStatus: 503 },
     );
 
-  const revision = (BigInt(state.auth_flow.revision) + 1n).toString();
+  const inTransition = input.transitionId !== undefined;
+  const revision = inTransition
+    ? state.auth_flow.revision
+    : nextFlowRevision(state.auth_flow);
   const sessionGeneration = (
     BigInt(state.auth_flow.issued_session_generation) + 1n
   ).toString();
@@ -1072,8 +1977,45 @@ export function completeMockPasswordChange(input: {
       ...state.auth_flow,
       revision,
       session_generation: sessionGeneration,
-      last_identity_change_revision: revision,
+      last_identity_change_revision: inTransition
+        ? state.auth_flow.last_identity_change_revision
+        : revision,
       issued_session_generation: sessionGeneration,
+      session_cookie_present: input.sessionCookiePresent ?? true,
+    },
+  });
+  resetGeneration = generation;
+}
+
+export function completeMockReauthentication(input: {
+  accountId: string;
+  expectedGeneration: number;
+  transitionId: string;
+}): void {
+  const state = readState();
+  const session = state.principal_session;
+  const account = getMockAccounts(state).find(
+    (item) => item.id === input.accountId,
+  );
+  if (
+    state.generation !== input.expectedGeneration ||
+    state.auth_flow.pending_transition?.transition_id !== input.transitionId ||
+    state.principal_id !== input.accountId ||
+    !session ||
+    session.session_kind !== "full" ||
+    !account
+  )
+    throw new DOMException("Mock auth transition changed", "AbortError");
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    generation,
+    principal_session: {
+      ...session,
+      recent_auth_until:
+        account.role === "admin"
+          ? new Date(Date.parse(state.mock_now) + 15 * 60 * 1000).toISOString()
+          : null,
     },
   });
   resetGeneration = generation;

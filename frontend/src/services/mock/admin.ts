@@ -32,7 +32,15 @@ function fail(
 function currentAdmin() {
   const state = getMockSnapshot();
   const session = state.principal_session;
-  if (!session || Date.parse(state.mock_now) >= Date.parse(session.expires_at))
+  if (
+    !state.auth_flow.recovery_ready ||
+    Date.parse(state.mock_now) >= Date.parse(state.auth_flow.expires_at) ||
+    !state.auth_flow.session_cookie_present ||
+    state.auth_flow.pending_transition ||
+    state.auth_flow.unresolved_transition_id ||
+    !session ||
+    Date.parse(state.mock_now) >= Date.parse(session.expires_at)
+  )
     throw fail("AUTH_REQUIRED", "로그인이 필요해요.", 401);
   if (session.session_kind !== "full")
     throw fail(

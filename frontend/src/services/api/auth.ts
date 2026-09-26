@@ -12,6 +12,48 @@ export const authService: AuthService = {
   async getCurrentAuthState() {
     throw unavailable();
   },
+  async getFlowState() {
+    throw unavailable();
+  },
+  async createFlow() {
+    throw unavailable();
+  },
+  async issueRecoveryCookie() {
+    throw unavailable();
+  },
+  async confirmRecoveryCookie() {
+    throw unavailable();
+  },
+  async abandonFlow() {
+    throw unavailable();
+  },
+  async getRecoveryContext() {
+    throw unavailable();
+  },
+  async getRecoveryCsrf() {
+    throw unavailable();
+  },
+  async rotateRecoveryCookie() {
+    throw unavailable();
+  },
+  async getRestartEligibility() {
+    throw unavailable();
+  },
+  async admitTransition() {
+    throw unavailable();
+  },
+  async issueAnonymousSession() {
+    throw unavailable();
+  },
+  async settleTransition() {
+    throw unavailable();
+  },
+  async discardSession() {
+    throw unavailable();
+  },
+  async resetFlow() {
+    throw unavailable();
+  },
   async getMe() {
     throw unavailable();
   },
@@ -25,6 +67,9 @@ export const authService: AuthService = {
     throw unavailable();
   },
   async changePassword() {
+    throw unavailable();
+  },
+  async reauthenticate() {
     throw unavailable();
   },
   async logout() {

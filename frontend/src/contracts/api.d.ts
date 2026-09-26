@@ -4,6 +4,227 @@
  */
 
 export interface paths {
+    "/auth/flows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Allocate a new mockable authentication flow identity */
+        post: operations["createAuthFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/recovery-cookie": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue the first recovery credential for an unprepared flow */
+        post: operations["issueRecoveryCookie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm that the current recovery cookie was received */
+        post: operations["confirmRecoveryCookie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/abandon": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Abandon only a flow that was never marked ready */
+        post: operations["abandonAuthFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/recovery-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find only flows proved by a current recovery or session credential */
+        get: operations["getAuthRecoveryContext"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/recovery-csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the existing recovery CSRF token without rotating it */
+        get: operations["getRecoveryCsrf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/recovery-cookie/rotate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Rotate recovery proof using the current full session */
+        post: operations["rotateRecoveryCookie"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/restart-eligibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Check whether an unproved flow can safely be replaced */
+        get: operations["getRestartEligibility"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Admit one authentication transition at an expected flow revision */
+        post: operations["admitAuthTransition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/transitions/{transition_id}/settle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Block late execution and settle or report an unavailable result */
+        post: operations["settleAuthTransition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/transitions/{transition_id}/discard-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Discard only the session issued by a successful transition but not received */
+        post: operations["discardAuthTransitionSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/flows/{flow_id}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Explicitly reset only the flow proved by the supplied cookie */
+        post: operations["resetAuthFlow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/anonymous-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue the first anonymous session after recovery preparation */
+        post: operations["issueAnonymousSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/csrf": {
         parameters: {
             query?: never;
@@ -11,7 +232,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read the current session CSRF token */
+        /**
+         * Read the current session CSRF token without starting a new session
+         * @description Reads only an existing valid session. Initial anonymous-session preparation uses POST /auth/anonymous-session.
+         */
         get: operations["getAuthCsrf"];
         put?: never;
         post?: never;
@@ -47,7 +271,7 @@ export interface paths {
         };
         /**
          * Read current authentication flow metadata
-         * @description Phase 1 view of the normal flow identity and sequence fields. Recovery and pending-transition details remain outside this response. The recovery-cookie name contains the flow ID and issued sequence.
+         * @description Reads the current flow, selected session, pending transition, and an optional requested transition result. Unavailable results are distinct from terminal transition states.
          */
         get: operations["getAuthFlowState"];
         put?: never;
@@ -126,6 +350,23 @@ export interface paths {
         put?: never;
         /** Sign out the current browser session */
         post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/reauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reauthenticate the current administrator without extending the absolute session expiry */
+        post: operations["reauthenticate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -404,13 +645,148 @@ export interface components {
             /** Format: date-time */
             recent_auth_until?: string | null;
         } & (unknown & unknown);
-        /** @description Phase 1 view of the identity and sequence fields from the approved authentication flow-state contract. Recovery and pending-transition details remain outside this view type. */
-        AuthFlowContext: {
+        AuthTransition: {
+            transition_id: string;
+            /** @enum {string} */
+            availability: "available" | "unavailable";
+            execution_blocked: boolean | null;
+            /** @enum {string|null} */
+            kind: "anonymous_session" | "login" | "logout" | "password_change" | "reauthenticate" | null;
+            /** @enum {string|null} */
+            state: "admitted" | "executing" | "succeeded" | "failed" | "cancelled" | "expired" | null;
+            /** Format: date-time */
+            permit_expires_at: string | null;
+            result_session_generation: string | null;
+            failure_code: string | null;
+        };
+        AuthFlowState: {
             /** Format: uuid */
             flow_id: string;
             revision: string;
+            /** Format: date-time */
+            server_time: string;
+            /** Format: date-time */
+            expires_at: string;
+            recovery_ready: boolean;
             session_generation: string | null;
+            session_cookie_present: boolean;
             last_identity_change_revision: string;
+            pending_transition: components["schemas"]["AuthTransition"] | null;
+            requested_transition: components["schemas"]["AuthTransition"] | null;
+            next_transition_id: string | null;
+        };
+        CreateAuthFlowInput: {
+            restart_from: string[];
+        };
+        AuthFlowCreated: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        FlowRevision: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+        };
+        RecoveryCookieResult: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            recovery_csrf_token: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        RecoveryReady: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** @constant */
+            ready: true;
+        };
+        RestartEligibility: {
+            restart_eligible: boolean;
+        };
+        RecoveryContext: {
+            items: components["schemas"]["RecoveryContextItem"][];
+        };
+        RecoveryContextItem: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            /** @enum {string} */
+            proof_kind: "recovery" | "session";
+        };
+        RecoveryCsrf: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            recovery_csrf_token: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        ExpectedRevisionInput: {
+            expected_revision: string;
+        };
+        RotateRecoveryCookieInput: {
+            expected_revision: string;
+            expected_session_generation: string;
+        };
+        AuthTransitionAdmissionInput: {
+            /** Format: uuid */
+            flow_id: string;
+            transition_id: string;
+            /** @enum {string} */
+            kind: "anonymous_session" | "login" | "logout" | "password_change" | "reauthenticate";
+            expected_revision: string;
+            expected_session_generation: string | null;
+        };
+        AuthTransitionPermit: {
+            /** Format: uuid */
+            flow_id: string;
+            transition_id: string;
+            /** @enum {string} */
+            kind: "anonymous_session" | "login" | "logout" | "password_change" | "reauthenticate";
+            revision: string;
+            /** Format: date-time */
+            permit_expires_at: string;
+        };
+        SettleAuthTransitionInput: {
+            /** Format: uuid */
+            flow_id: string;
+            expected_revision: string;
+        };
+        SettledAuthTransition: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            transition_id: string;
+            result: components["schemas"]["AuthTransition"];
+        };
+        DiscardAuthSessionInput: {
+            /** Format: uuid */
+            flow_id: string;
+            expected_revision: string;
+            expected_session_generation: string;
+        };
+        ResetAuthFlowInput: {
+            expected_revision: string;
+            expected_session_generation?: string | null;
+        };
+        AnonymousSessionResult: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            session_generation: string;
+            csrf_token: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        ReauthenticateInput: {
+            password: string;
         };
         AuthResult: {
             user: components["schemas"]["Self"];
@@ -608,11 +984,14 @@ export interface components {
         };
     };
     parameters: {
+        FlowPathId: string;
+        TransitionPathId: string;
         Origin: string;
         CsrfToken: string;
         AuthFlowId: string;
         AuthRevision: string;
         SessionGeneration: string;
+        TransitionId: string;
     };
     requestBodies: never;
     headers: never;
@@ -620,7 +999,122 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    getAuthCsrf: {
+    createAuthFlow: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAuthFlowInput"];
+            };
+        };
+        responses: {
+            /** @description New flow identity; no credential is issued. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthFlowCreated"];
+                };
+            };
+            409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    issueRecoveryCookie: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+            };
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A new non-persistent recovery cookie was issued. */
+            201: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCookieResult"];
+                };
+            };
+            409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    confirmRecoveryCookie: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpectedRevisionInput"];
+            };
+        };
+        responses: {
+            /** @description Recovery credential receipt confirmed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryReady"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    abandonAuthFlow: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+            };
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The unprepared flow may be replaced. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestartEligibility"];
+                };
+            };
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getAuthRecoveryContext: {
         parameters: {
             query?: never;
             header?: never;
@@ -629,9 +1123,284 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Proved flow IDs only; no member or transition result data. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryContext"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getRecoveryCsrf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Existing recovery CSRF token; no lifetime extension. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCsrf"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    rotateRecoveryCookie: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RotateRecoveryCookieInput"];
+            };
+        };
+        responses: {
+            /** @description A new recovery credential; current session and expiry are preserved. */
+            201: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecoveryCookieResult"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getRestartEligibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Eligibility only; no flow mutation or result lookup. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestartEligibility"];
+                };
+            };
+            404: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    admitAuthTransition: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthTransitionAdmissionInput"];
+            };
+        };
+        responses: {
+            /** @description One-use transition permit; credentials and request body are not stored. */
+            201: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthTransitionPermit"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    settleAuthTransition: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                transition_id: components["parameters"]["TransitionPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettleAuthTransitionInput"];
+            };
+        };
+        responses: {
+            /** @description Safe terminal summary; prior success is never rolled back. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettledAuthTransition"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    discardAuthTransitionSession: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                transition_id: components["parameters"]["TransitionPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiscardAuthSessionInput"];
+            };
+        };
+        responses: {
+            /** @description The exact missing session was discarded; other generations are unchanged. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlowRevision"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    resetAuthFlow: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+            };
+            path: {
+                flow_id: components["parameters"]["FlowPathId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetAuthFlowInput"];
+            };
+        };
+        responses: {
+            /** @description The proved flow was ended and can be restarted. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestartEligibility"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    issueAnonymousSession: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Transition-Id": components["parameters"]["TransitionId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExpectedRevisionInput"];
+            };
+        };
+        responses: {
+            /** @description Anonymous session and its current CSRF token. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnonymousSessionResult"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getAuthCsrf: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             /** @description Current CSRF token and expiry. */
             200: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -645,7 +1414,11 @@ export interface operations {
     getAuthMe: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -654,6 +1427,10 @@ export interface operations {
             /** @description The current member; contact fields are excluded or null. */
             200: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -666,7 +1443,9 @@ export interface operations {
     };
     getAuthFlowState: {
         parameters: {
-            query?: never;
+            query?: {
+                transition_id?: string;
+            };
             header: {
                 "X-EduVibe-Flow-Id": string;
             };
@@ -682,7 +1461,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AuthFlowContext"];
+                    "application/json": components["schemas"]["AuthFlowState"];
                 };
             };
             401: components["responses"]["ServiceError"];
@@ -692,7 +1471,14 @@ export interface operations {
     login: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+                "X-EduVibe-Transition-Id": components["parameters"]["TransitionId"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -722,7 +1508,11 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-CSRF-Token": string;
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
             };
             path?: never;
             cookie?: never;
@@ -755,7 +1545,12 @@ export interface operations {
         parameters: {
             query?: never;
             header: {
-                "X-CSRF-Token": string;
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+                "X-EduVibe-Transition-Id": components["parameters"]["TransitionId"];
             };
             path?: never;
             cookie?: never;
@@ -784,7 +1579,14 @@ export interface operations {
     logout: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+                "X-EduVibe-Transition-Id": components["parameters"]["TransitionId"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -798,6 +1600,41 @@ export interface operations {
                 content?: never;
             };
             403: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    reauthenticate: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+                "X-EduVibe-Transition-Id": components["parameters"]["TransitionId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReauthenticateInput"];
+            };
+        };
+        responses: {
+            /** @description Current administrator session and CSRF are rotated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResult"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
