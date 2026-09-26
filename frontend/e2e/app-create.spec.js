@@ -90,7 +90,9 @@ test("approved member registers, refreshes, and returns to the updated gallery",
   await expect(
     page.getByRole("heading", { name: "새 수업 도구 e2e", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("앱을 등록했어요.");
+  await expect(
+    page.getByRole("status").filter({ hasText: /^앱을 등록했어요\.$/ }),
+  ).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "새 수업 도구 e2e", exact: true }),

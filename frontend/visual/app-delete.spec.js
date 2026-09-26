@@ -170,6 +170,9 @@ for (const viewport of viewports) {
     test.setTimeout(180000);
     await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
     await page.setViewportSize(viewport);
+    const deletionToast = page.getByRole("status").filter({
+      hasText: /^앱을 삭제했어요\.$/,
+    });
     let detail = await openOwnerDetail(page);
     await capture(
       page,
@@ -232,7 +235,7 @@ for (const viewport of viewports) {
       .getByRole("button", { name: "같은 삭제 요청 다시 보내기", exact: true })
       .click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+    await expect(deletionToast).toBeVisible();
 
     detail = await openOwnerDetail(page);
     await setScenario(page, "app_delete_pending_confirmation");
@@ -257,7 +260,7 @@ for (const viewport of viewports) {
       .getByRole("button", { name: "같은 삭제 요청 다시 보내기", exact: true })
       .click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+    await expect(deletionToast).toBeVisible();
 
     detail = await openOwnerDetail(page);
     await setScenario(page, "app_delete_unknown");
@@ -275,6 +278,6 @@ for (const viewport of viewports) {
       .getByRole("button", { name: "삭제 결과 확인", exact: true })
       .click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole("status")).toContainText("앱을 삭제했어요.");
+    await expect(deletionToast).toBeVisible();
   });
 }

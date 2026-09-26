@@ -89,7 +89,9 @@ test("owner edits an app, changes visibility, and the gallery no longer lists it
   await expect(
     page.locator('[data-screen-label="비공개 앱 상세"]'),
   ).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("앱을 수정했어요.");
+  await expect(
+    page.getByRole("status").filter({ hasText: /^앱을 수정했어요\.$/ }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "갤러리로", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(

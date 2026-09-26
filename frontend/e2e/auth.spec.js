@@ -74,7 +74,9 @@ test("private detail is hidden until auth restore, then available to its owner a
   await expect(
     page.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
   ).toBeVisible();
-  await expect(page.getByText("교사김코딩", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByText("교사김코딩", { exact: true }),
+  ).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
