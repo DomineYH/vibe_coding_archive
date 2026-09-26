@@ -249,6 +249,32 @@ function authScopeIdentity(auth) {
   ]);
 }
 
+function isUuid(value) {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
+}
+
+function adminResetResumeState(value) {
+  const pendingReset = value?.adminReset;
+  if (!isUuid(pendingReset?.targetId)) return null;
+  const operationKey = pendingReset.operationKey;
+  const expectedAccountVersion = pendingReset.expectedAccountVersion;
+  return {
+    adminReset: {
+      targetId: pendingReset.targetId,
+      ...(isUuid(operationKey) &&
+      Number.isSafeInteger(expectedAccountVersion) &&
+      expectedAccountVersion >= 1
+        ? { operationKey, expectedAccountVersion }
+        : {}),
+    },
+  };
+}
+
 function GalleryRoute({ auth }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -924,11 +950,13 @@ function AuthRoute({
   onLogin,
   onRegister,
   onChangePassword,
+  onReauthenticate,
   onResolveAuth,
   onResetAuth,
   onDiscardMissingSession,
 }) {
   const route = readAuthRoute(location.search);
+  const reauthState = adminResetResumeState(location.state);
   const authUser =
     auth.status === "ready" && !auth.concealed ? auth.user : null;
   const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
@@ -944,6 +972,9 @@ function AuthRoute({
       onLogin={(input) => onLogin(input, route.returnTo)}
       onRegister={onRegister}
       onChangePassword={(input) => onChangePassword(input, route.returnTo)}
+      onReauthenticate={onReauthenticate}
+      returnTo={route.returnTo}
+      reauthState={reauthState}
       onResolveAuth={onResolveAuth}
       onResetAuth={onResetAuth}
       onDiscardMissingSession={onDiscardMissingSession}
@@ -1307,6 +1338,65 @@ export default function App() {
     [beginAuthTransition, navigate, restoreAuth],
   );
 
+  const reauthenticate = useCallback(
+    async (input, returnTo, resumeState) => {
+      const previous = authSnapshot.current;
+      const actor = previous.user;
+      if (
+        previous.status !== "ready" ||
+        !actor ||
+        actor.role !== "admin" ||
+        !actor.approved ||
+        actor.sessionKind !== "full" ||
+        actor.mustChangePassword
+      )
+        throw new ServiceError(
+          "FORBIDDEN",
+          "현재 로그인한 관리자가 필요해요.",
+          { httpStatus: 403, outcome: "rejected" },
+        );
+      await beginAuthTransition();
+      let confirmed = false;
+      try {
+        const result = await authService.reauthenticate(input);
+        const current = await restoreAuth();
+        if (
+          current?.status !== "ready" ||
+          current.user?.id !== actor.id ||
+          result.user.id !== actor.id ||
+          current.user.role !== "admin" ||
+          !current.user.approved ||
+          current.user.sessionKind !== "full" ||
+          current.user.mustChangePassword ||
+          !current.user.recentAuthUntil ||
+          current.flow.flowId !== previous.flow.flowId ||
+          current.flow.revision === previous.flow.revision ||
+          current.flow.sessionGeneration === previous.flow.sessionGeneration ||
+          current.flow.lastIdentityChangeRevision !==
+            previous.flow.lastIdentityChangeRevision
+        )
+          throw (
+            current?.error ??
+            new ServiceError(
+              "AUTH_STATE_CHANGED",
+              "관리자 인증 상태를 다시 확인해 주세요.",
+              { httpStatus: 409, outcome: "rejected" },
+            )
+          );
+        confirmed = true;
+        const safeResumeState = adminResetResumeState(resumeState);
+        navigate(returnTo, {
+          replace: true,
+          state: safeResumeState,
+        });
+      } catch (error) {
+        if (!confirmed) await restoreAuth();
+        throw error;
+      }
+    },
+    [beginAuthTransition, navigate, restoreAuth],
+  );
+
   const logout = useCallback(async () => {
     if (logoutPending) return;
     setLogoutPending(true);
@@ -1560,6 +1650,7 @@ export default function App() {
               onRetry={() => restoreAuth()}
               onLogin={login}
               onChangePassword={changePassword}
+              onReauthenticate={reauthenticate}
               onRegister={(input) => authService.register(input)}
               onResolveAuth={resolveAuth}
               onResetAuth={resetAuth}

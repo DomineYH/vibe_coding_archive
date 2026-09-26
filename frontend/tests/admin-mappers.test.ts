@@ -3,6 +3,7 @@ import {
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
+  mapPasswordResetOperation,
 } from "../src/contracts/mappers";
 
 const adminUser = {
@@ -82,6 +83,7 @@ describe("admin contract mappers", () => {
       applied_approved: true,
       finalized_at: "2026-09-22T00:12:03.000Z",
       rejection_code: null,
+      server_time: "2026-09-22T00:12:03.000Z",
     });
     expect(result).toMatchObject({
       key: "00000000-0000-4000-8000-000000000201",
@@ -101,6 +103,52 @@ describe("admin contract mappers", () => {
         applied_approved: true,
         finalized_at: "2026-09-22T00:12:03.000Z",
         rejection_code: null,
+        server_time: "2026-09-22T00:12:03.000Z",
+        new_password: "must never be returned",
+      }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
+  it("maps a password reset result without exposing the temporary password", () => {
+    const result = mapPasswordResetOperation({
+      key: "00000000-0000-4000-8000-000000000201",
+      kind: "user_password_reset",
+      target_id: adminUser.id,
+      issued_at: "2026-09-22T00:12:00.000Z",
+      expires_at: "2026-09-23T00:12:00.000Z",
+      state: "succeeded",
+      applied_account_version: 2,
+      temporary_password_expires_at: "2026-09-23T00:12:03.000Z",
+      finalized_at: "2026-09-22T00:12:03.000Z",
+      rejection_code: null,
+      server_time: "2026-09-22T00:12:03.000Z",
+    });
+    expect(result).toEqual({
+      key: "00000000-0000-4000-8000-000000000201",
+      kind: "user_password_reset",
+      targetId: adminUser.id,
+      issuedAt: "2026-09-22T00:12:00.000Z",
+      expiresAt: "2026-09-23T00:12:00.000Z",
+      state: "succeeded",
+      appliedAccountVersion: 2,
+      temporaryPasswordExpiresAt: "2026-09-23T00:12:03.000Z",
+      finalizedAt: "2026-09-22T00:12:03.000Z",
+      rejectionCode: null,
+      serverTime: "2026-09-22T00:12:03.000Z",
+    });
+    expect(() =>
+      mapPasswordResetOperation({
+        key: result.key,
+        kind: result.kind,
+        target_id: result.targetId,
+        issued_at: result.issuedAt,
+        expires_at: result.expiresAt,
+        state: "unresolved",
+        applied_account_version: null,
+        temporary_password_expires_at: null,
+        finalized_at: null,
+        rejection_code: null,
+        server_time: result.serverTime,
         new_password: "must never be returned",
       }),
     ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));

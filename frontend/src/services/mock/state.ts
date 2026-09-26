@@ -295,6 +295,8 @@ export type MockRegisteredAccount = {
 };
 
 let resetGeneration = 0;
+const mockTemporaryPasswords = new Map<string, string>();
+const MOCK_TEMP_PASSWORD_PLACEHOLDER = "phase1-mock-password-placeholder";
 
 function isMockScenario(value: unknown): value is MockScenario {
   return MOCK_SCENARIOS.includes(value as MockScenario);
@@ -1013,11 +1015,20 @@ export function getMockAccounts(
       (item) => item.account_id === base.id,
     );
     if (!status) throw storageError();
+    if (
+      override?.must_change_password &&
+      override.temporary_password_expires_at &&
+      Date.parse(state.mock_now) >=
+        Date.parse(override.temporary_password_expires_at)
+    )
+      mockTemporaryPasswords.delete(base.id);
     return {
       id: base.id,
       loginId: base.loginId,
       nickname: base.nickname,
-      password: override?.password ?? base.password,
+      password: override?.must_change_password
+        ? (mockTemporaryPasswords.get(base.id) ?? "")
+        : (override?.password ?? base.password),
       role: "role" in base ? base.role : "user",
       approved: status.approved,
       mustChangePassword:
@@ -1035,6 +1046,90 @@ export function getMockAccounts(
         "pendingExpiresAt" in base ? base.pendingExpiresAt : null,
     };
   });
+}
+
+export function setMockTemporaryPassword(input: {
+  accountId: string;
+  expectedAccountVersion: number;
+  password: string;
+}): { accountVersion: number; expiresAt: string } {
+  const state = readState();
+  const target = getMockAccounts(state).find(
+    (account) => account.id === input.accountId,
+  );
+  const current = state.admin_users.find((user) => user.id === input.accountId);
+  if (!target || !current)
+    throw new ServiceError("USER_NOT_FOUND", "회원을 찾을 수 없어요.", {
+      httpStatus: 404,
+      outcome: "rejected",
+    });
+  if (target.role === "admin")
+    throw new ServiceError(
+      "ADMIN_ACCOUNT_PROTECTED",
+      "관리자 계정은 변경할 수 없어요.",
+      { httpStatus: 403, outcome: "rejected" },
+    );
+  if (current.account_version !== input.expectedAccountVersion)
+    throw new ServiceError(
+      "USER_STATE_CONFLICT",
+      "회원 상태가 바뀌었어요. 다시 확인해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  if (current.account_version >= Number.MAX_SAFE_INTEGER)
+    throw new ServiceError(
+      "SERVICE_UNAVAILABLE",
+      "계정 상태를 변경할 수 없어요.",
+      { httpStatus: 503 },
+    );
+
+  const accountVersion = current.account_version + 1;
+  const expiresAt = new Date(
+    Date.parse(state.mock_now) + 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const principalChanged = state.principal_id === input.accountId;
+  const revision = principalChanged
+    ? (BigInt(state.auth_flow.revision) + 1n).toString()
+    : state.auth_flow.revision;
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    credential_overrides: [
+      ...state.credential_overrides.filter(
+        (item) => item.account_id !== input.accountId,
+      ),
+      {
+        account_id: input.accountId,
+        password: MOCK_TEMP_PASSWORD_PLACEHOLDER,
+        must_change_password: true,
+        temporary_password_expires_at: expiresAt,
+      },
+    ],
+    admin_users: state.admin_users.map((user) =>
+      user.id === input.accountId
+        ? { ...user, account_version: accountVersion }
+        : user,
+    ),
+    principal_id: principalChanged ? null : state.principal_id,
+    principal_session: principalChanged ? null : state.principal_session,
+    auth_flow: principalChanged
+      ? {
+          ...state.auth_flow,
+          revision,
+          session_generation: null,
+          last_identity_change_revision: revision,
+          session_cookie_present: false,
+        }
+      : state.auth_flow,
+    observation_generation: principalChanged
+      ? state.observation_generation >= Number.MAX_SAFE_INTEGER
+        ? 0
+        : state.observation_generation + 1
+      : state.observation_generation,
+    generation,
+  });
+  mockTemporaryPasswords.set(input.accountId, input.password.normalize("NFC"));
+  resetGeneration = generation;
+  return { accountVersion, expiresAt };
 }
 
 export function createMockApprovalOperation(input: {
@@ -1176,6 +1271,7 @@ export function finishMockApprovalOperation(
 }
 
 export function resetMockState(): void {
+  mockTemporaryPasswords.clear();
   let next = nextGeneration(resetGeneration);
   try {
     const current = readState();
@@ -2068,6 +2164,7 @@ export function completeMockPasswordChange(input: {
       session_cookie_present: input.sessionCookiePresent ?? true,
     },
   });
+  mockTemporaryPasswords.delete(account.id);
   resetGeneration = generation;
 }
 
@@ -2090,10 +2187,19 @@ export function completeMockReauthentication(input: {
     !account
   )
     throw new DOMException("Mock auth transition changed", "AbortError");
+  const sessionGeneration = (
+    BigInt(state.auth_flow.issued_session_generation) + 1n
+  ).toString();
   const generation = nextGeneration(state.generation);
   writeState({
     ...state,
     generation,
+    auth_flow: {
+      ...state.auth_flow,
+      session_generation: sessionGeneration,
+      issued_session_generation: sessionGeneration,
+      session_cookie_present: true,
+    },
     principal_session: {
       ...session,
       recent_auth_until:

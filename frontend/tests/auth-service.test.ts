@@ -602,6 +602,28 @@ describe("demo authentication and protected reads", () => {
     });
   });
 
+  it("rotates a recent-auth administrator session without extending its expiry", async () => {
+    await authService.login({ loginId: "admin", password: "admin123" });
+    const before = await authService.getCurrentAuthState();
+
+    const result = await authService.reauthenticate({ password: "admin123" });
+    const after = await authService.getCurrentAuthState();
+
+    expect(result.user).toMatchObject({
+      id: before.user?.id,
+      role: "admin",
+      sessionKind: "full",
+      expiresAt: before.user?.expiresAt,
+      recentAuthUntil: "2026-09-22T00:27:00.000Z",
+    });
+    expect(after.flow.sessionGeneration).not.toBe(
+      before.flow.sessionGeneration,
+    );
+    expect(after.flow.lastIdentityChangeRevision).toBe(
+      before.flow.lastIdentityChangeRevision,
+    );
+  });
+
   it("does not apply a delayed login after mock reset", async () => {
     vi.useFakeTimers();
     try {

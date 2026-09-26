@@ -36,6 +36,7 @@ type WireAdminUser = Wire["AdminUser"];
 type WireAdminStats = Wire["AdminStats"];
 type WireAdminUserPage = Wire["AdminUserPage"];
 type WireApprovalOperation = Wire["ApprovalOperation"];
+type WirePasswordResetOperation = Wire["PasswordResetOperation"];
 type WireAppWriteOperation = Wire["AppWriteOperation"];
 
 export type Theme = Wire["Theme"];
@@ -240,6 +241,20 @@ export type ApprovalOperation = {
   appliedApproved: boolean | null;
   finalizedAt: string | null;
   rejectionCode: string | null;
+  serverTime: string;
+};
+export type PasswordResetOperation = {
+  key: string;
+  kind: "user_password_reset";
+  targetId: string;
+  issuedAt: string;
+  expiresAt: string;
+  state: "unresolved" | "succeeded" | "rejected";
+  appliedAccountVersion: number | null;
+  temporaryPasswordExpiresAt: string | null;
+  finalizedAt: string | null;
+  rejectionCode: string | null;
+  serverTime: string;
 };
 
 const UUID =
@@ -916,6 +931,7 @@ export function mapApprovalOperation(value: unknown): ApprovalOperation {
       "applied_approved",
       "finalized_at",
       "rejection_code",
+      "server_time",
     ]) ||
     item.kind !== "user_approval" ||
     !["unresolved", "succeeded", "rejected"].includes(String(item.state))
@@ -962,6 +978,75 @@ export function mapApprovalOperation(value: unknown): ApprovalOperation {
     appliedApproved,
     finalizedAt,
     rejectionCode,
+    serverTime: dateTime(item.server_time),
+  };
+}
+
+export function mapPasswordResetOperation(
+  value: unknown,
+): PasswordResetOperation {
+  const item = record(value) as unknown as Partial<WirePasswordResetOperation>;
+  if (
+    !hasOnlyKeys(item, [
+      "key",
+      "kind",
+      "target_id",
+      "issued_at",
+      "expires_at",
+      "state",
+      "applied_account_version",
+      "temporary_password_expires_at",
+      "finalized_at",
+      "rejection_code",
+      "server_time",
+    ]) ||
+    item.kind !== "user_password_reset" ||
+    !["unresolved", "succeeded", "rejected"].includes(String(item.state))
+  )
+    throw contractError();
+  const key = nonEmpty(item.key);
+  const targetId = nonEmpty(item.target_id);
+  if (!UUID.test(key) || !UUID.test(targetId)) throw contractError();
+  const state = item.state as PasswordResetOperation["state"];
+  const appliedAccountVersion =
+    item.applied_account_version === null
+      ? null
+      : integer(item.applied_account_version, 1);
+  const temporaryPasswordExpiresAt = nullableDateTime(
+    item.temporary_password_expires_at,
+  );
+  const finalizedAt = nullableDateTime(item.finalized_at);
+  const rejectionCode = nullableString(item.rejection_code);
+  if (
+    (state === "unresolved" &&
+      (appliedAccountVersion !== null ||
+        temporaryPasswordExpiresAt !== null ||
+        finalizedAt !== null ||
+        rejectionCode !== null)) ||
+    (state === "succeeded" &&
+      (appliedAccountVersion === null ||
+        temporaryPasswordExpiresAt === null ||
+        finalizedAt === null ||
+        rejectionCode !== null)) ||
+    (state === "rejected" &&
+      (appliedAccountVersion !== null ||
+        temporaryPasswordExpiresAt !== null ||
+        finalizedAt === null ||
+        rejectionCode === null))
+  )
+    throw contractError();
+  return {
+    key,
+    kind: "user_password_reset",
+    targetId,
+    issuedAt: dateTime(item.issued_at),
+    expiresAt: dateTime(item.expires_at),
+    state,
+    appliedAccountVersion,
+    temporaryPasswordExpiresAt,
+    finalizedAt,
+    rejectionCode,
+    serverTime: dateTime(item.server_time),
   };
 }
 

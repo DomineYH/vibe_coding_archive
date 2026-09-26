@@ -501,6 +501,23 @@ export interface paths {
         patch: operations["setAdminUserApproval"];
         trace?: never;
     };
+    "/admin/users/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set a current ordinary member password to an administrator supplied temporary password */
+        post: operations["resetAdminUserPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/write-operations/{key}": {
         parameters: {
             query?: never;
@@ -527,8 +544,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel an unresolved approval key without changing its target input */
-        post: operations["cancelApprovalOperation"];
+        /** Cancel an unresolved approval or password reset key */
+        post: operations["cancelWriteOperation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -599,6 +616,15 @@ export interface components {
             expected_account_version: number;
             approved: boolean;
         };
+        /** @description The new_password is included only in this key-issuance request and is never echoed or stored in the operation result. The implementation enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point password policy. The versioned local common-password blocklist applies to the real API; Phase 1 mock does not apply that check. */
+        CreatePasswordResetOperation: {
+            /** @constant */
+            kind: "user_password_reset";
+            /** Format: uuid */
+            target_id: string;
+            expected_account_version: number;
+            new_password: string;
+        };
         CreateAppWriteOperation: {
             /** @constant */
             kind: "app_create";
@@ -619,7 +645,7 @@ export interface components {
             target_id: string;
             expected_version: number;
         };
-        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"] | components["schemas"]["CreateAppDeleteOperation"];
+        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreatePasswordResetOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"] | components["schemas"]["CreateAppDeleteOperation"];
         DeleteAppInput: {
             expected_version: number;
         };
@@ -658,6 +684,11 @@ export interface components {
             approved: boolean;
             expected_account_version: number;
         };
+        /** @description The new_password is matched against the same key-issuance input and is never echoed or stored in the operation result. The implementation enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point password policy. The versioned local common-password blocklist applies to the real API; Phase 1 mock does not apply that check. */
+        SetPasswordResetInput: {
+            new_password: string;
+            expected_account_version: number;
+        };
         ApprovalOperation: {
             /** Format: uuid */
             key: string;
@@ -676,6 +707,30 @@ export interface components {
             /** Format: date-time */
             finalized_at: string | null;
             rejection_code: string | null;
+            /** Format: date-time */
+            server_time: string;
+        };
+        PasswordResetOperation: {
+            /** Format: uuid */
+            key: string;
+            /** @constant */
+            kind: "user_password_reset";
+            /** Format: uuid */
+            target_id: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** @enum {string} */
+            state: "unresolved" | "succeeded" | "rejected";
+            applied_account_version: number | null;
+            /** Format: date-time */
+            temporary_password_expires_at: string | null;
+            /** Format: date-time */
+            finalized_at: string | null;
+            rejection_code: string | null;
+            /** Format: date-time */
+            server_time: string;
         };
         AppWriteOperation: {
             /** Format: uuid */
@@ -2031,7 +2086,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["AppWriteOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"] | components["schemas"]["AppWriteOperation"];
                 };
             };
             400: components["responses"]["ServiceError"];
@@ -2084,6 +2139,47 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
+    resetAdminUserPassword: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPasswordResetInput"];
+            };
+        };
+        responses: {
+            /** @description The password was reset and the target's sessions were invalidated. */
+            204: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ServiceError"];
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            410: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
     getWriteOperation: {
         parameters: {
             query?: never;
@@ -2106,7 +2202,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["AppWriteOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"] | components["schemas"]["AppWriteOperation"];
                 };
             };
             401: components["responses"]["ServiceError"];
@@ -2117,7 +2213,7 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
-    cancelApprovalOperation: {
+    cancelWriteOperation: {
         parameters: {
             query?: never;
             header: {
@@ -2141,7 +2237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"];
                 };
             };
             401: components["responses"]["ServiceError"];
