@@ -3,6 +3,34 @@ import { Link } from "react-router-dom";
 import { Btn, Chip, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
 
+const registrationErrorFields = {
+  login_id: "loginId",
+  password: "password",
+  nickname: "nickname",
+  email: "email",
+  phone: "phone",
+};
+
+function getRegistrationFieldErrors(error) {
+  if (!(error instanceof ServiceError)) return {};
+  const fields = {};
+  for (const [key, message] of Object.entries(error.fields ?? {})) {
+    const name = registrationErrorFields[key];
+    if (name) fields[name] = message;
+  }
+  if (error.code === "LOGIN_ID_TAKEN" && !fields.loginId)
+    fields.loginId = error.message;
+  return fields;
+}
+
+function formatPendingExpiry(value) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    dateStyle: "long",
+    timeStyle: "short",
+    timeZone: "Asia/Seoul",
+  }).format(new Date(value));
+}
+
 export function AuthView({
   mode,
   routeError,
@@ -10,9 +38,15 @@ export function AuthView({
   authError,
   onRetry,
   onLogin,
+  onRegister,
 }) {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [registered, setRegistered] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
@@ -66,16 +100,12 @@ export function AuthView({
     );
   }
 
-  if (mode !== "login") {
+  if (mode !== "login" && mode !== "signup") {
     return (
       <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
         <div role="status" aria-live="polite">
           <EmptyState
-            title={
-              mode === "signup"
-                ? "신규 가입은 아직 제공하지 않아요"
-                : "이 인증 기능은 아직 제공하지 않아요"
-            }
+            title="이 인증 기능은 아직 제공하지 않아요"
             desc="기존 합성 계정으로 로그인할 수 있습니다."
           >
             <Link
@@ -90,9 +120,96 @@ export function AuthView({
     );
   }
 
+  if (registered && mode === "signup") {
+    return (
+      <main
+        className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14"
+        data-screen-label="가입 승인 대기"
+      >
+        <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
+          <span className="text-[17px] font-extrabold tracking-tight">EV</span>
+        </span>
+        <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+          가입 신청이 접수되었어요
+        </h1>
+        <section
+          role="status"
+          aria-live="polite"
+          className="mt-7 w-full rounded-3xl border border-neutral-200/80 bg-white p-6 text-[13px] leading-relaxed text-neutral-600 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)]"
+        >
+          <p className="font-semibold text-neutral-800">
+            관리자가 수동으로 승인한 뒤 로그인할 수 있습니다. 자동 로그인되지
+            않았습니다.
+          </p>
+          <p className="mt-3">
+            최초 승인 대기는 가입일부터 90일이며, 이 신청은{" "}
+            <strong className="text-neutral-900">
+              {formatPendingExpiry(registered.pendingExpiresAt)} (KST)
+            </strong>
+            에 만료됩니다.
+          </p>
+          <p className="mt-3">
+            승인을 요청하려면 로그인 아이디, 국내 성인 교육 관계자라는 자기진술,
+            교육 목적 한 문장을 운영자에게 전달해 주세요. 운영 문의 주소는 현재
+            설정되지 않았습니다.
+          </p>
+          <Link
+            to="/auth?mode=login"
+            className="mt-5 inline-flex h-10 items-center rounded-full bg-neutral-900 px-4 text-[13px] font-semibold text-white"
+          >
+            로그인 화면으로
+          </Link>
+        </section>
+      </main>
+    );
+  }
+
   async function submit(event) {
     event.preventDefault();
     if (submitting.current || pending) return;
+    if (mode === "signup") {
+      const normalizedPassword = password.normalize("NFC");
+      const normalizedConfirm = passwordConfirm.normalize("NFC");
+      const errors = {};
+      if (!normalizedConfirm)
+        errors.passwordConfirm = "비밀번호를 한 번 더 입력해 주세요.";
+      else if (normalizedPassword !== normalizedConfirm)
+        errors.passwordConfirm = "비밀번호 확인이 일치하지 않습니다.";
+      setFieldErrors(errors);
+      setMessage("");
+      if (Object.keys(errors).length) return;
+
+      submitting.current = true;
+      setPending(true);
+      try {
+        const result = await onRegister({
+          loginId,
+          password,
+          nickname,
+          email,
+          phone,
+        });
+        setRegistered(result);
+        setPassword("");
+        setPasswordConfirm("");
+      } catch (error) {
+        const fieldErrors = getRegistrationFieldErrors(error);
+        setFieldErrors(fieldErrors);
+        setMessage(
+          Object.keys(fieldErrors).length
+            ? ""
+            : error instanceof ServiceError &&
+                error.code === "ALREADY_AUTHENTICATED"
+              ? error.message
+              : "가입 신청을 보내지 못했어요. 입력을 보존했으니 연결을 확인하고 다시 시도해 주세요.",
+        );
+      } finally {
+        submitting.current = false;
+        setPending(false);
+      }
+      return;
+    }
+
     const errors = {};
     const normalizedLoginId = loginId.trim().normalize("NFC");
     if (!normalizedLoginId) errors.loginId = "로그인 아이디를 입력해 주세요.";
@@ -132,29 +249,32 @@ export function AuthView({
   return (
     <main
       className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14"
-      data-screen-label="로그인"
+      data-screen-label={mode === "login" ? "로그인" : "회원가입"}
     >
       <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
         <span className="text-[17px] font-extrabold tracking-tight">EV</span>
       </span>
       <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
-        다시 만나서 반가워요
+        {mode === "login" ? "다시 만나서 반가워요" : "아카이브에 합류하기"}
       </h1>
       <p className="mt-1.5 text-center text-[13.5px] leading-relaxed text-neutral-500">
-        로그인 아이디와 별명은 구분하여 관리합니다.
+        {mode === "login"
+          ? "로그인 아이디와 별명은 구분하여 관리합니다."
+          : "가입 신청은 관리자의 수동 승인 후 이용할 수 있습니다."}
       </p>
 
       <div className="mt-7 grid w-full grid-cols-2 gap-1 rounded-full bg-neutral-200/60 p-1">
-        <button
-          type="button"
-          aria-pressed="true"
-          className="h-9 rounded-full bg-white text-[13.5px] font-semibold text-neutral-900 shadow-sm"
+        <Link
+          to="/auth?mode=login"
+          aria-current={mode === "login" ? "page" : undefined}
+          className={`flex h-9 items-center justify-center rounded-full text-[13.5px] font-semibold ${mode === "login" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
         >
           로그인
-        </button>
+        </Link>
         <Link
           to="/auth?mode=signup"
-          className="flex h-9 items-center justify-center rounded-full text-[13.5px] font-semibold text-neutral-500 hover:text-neutral-700"
+          aria-current={mode === "signup" ? "page" : undefined}
+          className={`flex h-9 items-center justify-center rounded-full text-[13.5px] font-semibold ${mode === "signup" ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"}`}
         >
           회원가입
         </Link>
@@ -171,21 +291,35 @@ export function AuthView({
             className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
           >
             로그인 아이디
+            {mode === "signup" ? (
+              <span className="font-normal text-neutral-400"> (필수)</span>
+            ) : null}
           </label>
           <input
             id="login-id"
             className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
             value={loginId}
             onChange={(event) => setLoginId(event.target.value)}
+            disabled={pending}
             placeholder={
               __DATA_MODE__ === "mock" ? "예: 교사김코딩" : "로그인 아이디"
             }
             autoComplete="username"
+            aria-required={mode === "signup" ? "true" : undefined}
             aria-invalid={fieldErrors.loginId ? "true" : undefined}
             aria-describedby={
-              fieldErrors.loginId ? "login-id-error" : undefined
+              mode === "signup"
+                ? `login-id-hint${fieldErrors.loginId ? " login-id-error" : ""}`
+                : fieldErrors.loginId
+                  ? "login-id-error"
+                  : undefined
             }
           />
+          {mode === "signup" ? (
+            <p id="login-id-hint" className="mt-1 text-[11px] text-neutral-400">
+              2~32자 · 한글, 영문, 숫자와 . _ - 사용
+            </p>
+          ) : null}
           {fieldErrors.loginId ? (
             <p id="login-id-error" className="mt-1 text-[12px] text-red-700">
               {fieldErrors.loginId}
@@ -198,6 +332,9 @@ export function AuthView({
             className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
           >
             비밀번호
+            {mode === "signup" ? (
+              <span className="font-normal text-neutral-400"> (필수)</span>
+            ) : null}
           </label>
           <input
             id="login-password"
@@ -205,19 +342,164 @@ export function AuthView({
             className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            disabled={pending}
             placeholder="••••••"
-            autoComplete="current-password"
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
+            aria-required={mode === "signup" ? "true" : undefined}
             aria-invalid={fieldErrors.password ? "true" : undefined}
             aria-describedby={
-              fieldErrors.password ? "password-error" : undefined
+              mode === "signup"
+                ? `password-hint${fieldErrors.password ? " password-error" : ""}`
+                : fieldErrors.password
+                  ? "password-error"
+                  : undefined
             }
           />
+          {mode === "signup" ? (
+            <p id="password-hint" className="mt-1 text-[11px] text-neutral-400">
+              15~128자 · 공백 포함 가능
+            </p>
+          ) : null}
           {fieldErrors.password ? (
             <p id="password-error" className="mt-1 text-[12px] text-red-700">
               {fieldErrors.password}
             </p>
           ) : null}
         </div>
+        {mode === "signup" ? (
+          <>
+            <div>
+              <label
+                htmlFor="password-confirm"
+                className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+              >
+                비밀번호 확인{" "}
+                <span className="font-normal text-neutral-400">(필수)</span>
+              </label>
+              <input
+                id="password-confirm"
+                type="password"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+                value={passwordConfirm}
+                onChange={(event) => setPasswordConfirm(event.target.value)}
+                disabled={pending}
+                placeholder="••••••"
+                autoComplete="new-password"
+                aria-required="true"
+                aria-invalid={fieldErrors.passwordConfirm ? "true" : undefined}
+                aria-describedby={
+                  fieldErrors.passwordConfirm
+                    ? "password-confirm-error"
+                    : undefined
+                }
+              />
+              {fieldErrors.passwordConfirm ? (
+                <p
+                  id="password-confirm-error"
+                  className="mt-1 text-[12px] text-red-700"
+                >
+                  {fieldErrors.passwordConfirm}
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <label
+                htmlFor="nickname"
+                className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+              >
+                별명{" "}
+                <span className="font-normal text-neutral-400">(필수)</span>
+              </label>
+              <input
+                id="nickname"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+                value={nickname}
+                onChange={(event) => setNickname(event.target.value)}
+                disabled={pending}
+                autoComplete="nickname"
+                aria-required="true"
+                aria-invalid={fieldErrors.nickname ? "true" : undefined}
+                aria-describedby={
+                  fieldErrors.nickname ? "nickname-error" : undefined
+                }
+              />
+              {fieldErrors.nickname ? (
+                <p
+                  id="nickname-error"
+                  className="mt-1 text-[12px] text-red-700"
+                >
+                  {fieldErrors.nickname}
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+              >
+                이메일{" "}
+                <span className="font-normal text-neutral-400">(선택)</span>
+              </label>
+              <input
+                id="email"
+                type="text"
+                inputMode="email"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                disabled={pending}
+                autoComplete="email"
+                aria-invalid={fieldErrors.email ? "true" : undefined}
+                aria-describedby={
+                  fieldErrors.email ? "email-error" : "contact-hint"
+                }
+              />
+              {fieldErrors.email ? (
+                <p id="email-error" className="mt-1 text-[12px] text-red-700">
+                  {fieldErrors.email}
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <label
+                htmlFor="phone"
+                className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+              >
+                연락처{" "}
+                <span className="font-normal text-neutral-400">(선택)</span>
+              </label>
+              <input
+                id="phone"
+                type="text"
+                inputMode="tel"
+                className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+                value={phone}
+                onChange={(event) => setPhone(event.target.value)}
+                disabled={pending}
+                autoComplete="tel"
+                aria-invalid={fieldErrors.phone ? "true" : undefined}
+                aria-describedby={
+                  fieldErrors.phone ? "phone-error" : "contact-hint"
+                }
+              />
+              {fieldErrors.phone ? (
+                <p id="phone-error" className="mt-1 text-[12px] text-red-700">
+                  {fieldErrors.phone}
+                </p>
+              ) : null}
+            </div>
+            <p
+              id="contact-hint"
+              className="-mt-1 text-[11px] leading-relaxed text-neutral-400"
+            >
+              이메일·연락처는 선택이며 공개 화면에 표시되지 않습니다. 개발용
+              mock에서는 가짜 비밀번호와 연락처만 사용해 주세요. 실제 수집
+              기능은 비활성화되어 있습니다.
+            </p>
+          </>
+        ) : null}
         {message ? (
           <div
             role="alert"
@@ -228,8 +510,19 @@ export function AuthView({
           </div>
         ) : null}
         <Btn type="submit" size="lg" className="mt-1 w-full" disabled={pending}>
-          {pending ? "로그인 중…" : "로그인"}
+          {pending
+            ? mode === "login"
+              ? "로그인 중…"
+              : "가입 신청 중…"
+            : mode === "login"
+              ? "로그인"
+              : "가입 신청하기"}
         </Btn>
+        {mode === "signup" ? (
+          <p className="text-center text-[11.5px] leading-relaxed text-neutral-400">
+            가입 즉시 로그인되지 않으며, 관리자 승인 후 이용할 수 있습니다.
+          </p>
+        ) : null}
       </form>
 
       {__DATA_MODE__ === "mock" ? (

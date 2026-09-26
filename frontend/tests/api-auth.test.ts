@@ -10,6 +10,13 @@ describe("Phase 1 API auth boundary", () => {
       code: "FEATURE_UNAVAILABLE",
     });
     await expect(
+      authService.register({
+        loginId: "new-teacher",
+        password: "correct horse battery staple",
+        nickname: "새 교사",
+      }),
+    ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
+    await expect(
       authService.login({ loginId: "admin", password: "admin123" }),
     ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
     await expect(authService.logout()).rejects.toMatchObject({

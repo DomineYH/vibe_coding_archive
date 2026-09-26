@@ -44,7 +44,7 @@ function job(state: StoredState): StoredObject {
 
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 3)],
+  ["unsupported state version", (state) => (state.version = 4)],
   ["extra state field", (state) => (state.extra = true)],
   ["missing generation", (state) => delete state.generation],
   ["string generation", (state) => (state.generation = "1")],
@@ -195,9 +195,32 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 2,
+      version: 3,
       principal_id: null,
       private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
+      registered_accounts: [],
+    });
+  });
+
+  it("migrates the auth-capable state before adding registration storage", async () => {
+    resetMockState();
+    const current = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    const v2 = { ...current } as Record<string, unknown>;
+    delete v2.registered_accounts;
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({ ...v2, version: 2 }),
+    );
+
+    expect((await appsService.list()).items).toHaveLength(16);
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
+    ).toMatchObject({
+      version: 3,
+      registered_accounts: [],
+      principal_id: null,
     });
   });
 });

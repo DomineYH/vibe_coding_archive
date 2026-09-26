@@ -1,7 +1,10 @@
 import catalog from "../../../../contracts/catalog.json";
 import publicApps from "../../fixtures/public-apps.json";
 import privateApps from "../../fixtures/private-apps.json";
-import { mapAppDetailResponse } from "../../contracts/mappers";
+import {
+  mapAppDetailResponse,
+  mapRegisteredUser,
+} from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
 import { DEMO_ACCOUNTS } from "./accounts";
 
@@ -24,7 +27,7 @@ const MOCK_SCENARIOS = [
   "auth_network_error",
   "detail_delayed",
 ] as const;
-const STATE_KEYS = [
+const V2_STATE_KEYS = [
   "version",
   "generation",
   "scenario",
@@ -32,7 +35,15 @@ const STATE_KEYS = [
   "private_apps",
   "principal_id",
 ];
+const STATE_KEYS = [...V2_STATE_KEYS, "registered_accounts"];
 const LEGACY_STATE_KEYS = ["version", "generation", "scenario", "apps"];
+const REGISTERED_ACCOUNT_KEYS = [
+  "id",
+  "loginId",
+  "password",
+  "nickname",
+  "pendingExpiresAt",
+];
 const APP_KEYS = [
   "id",
   "owner",
@@ -70,12 +81,21 @@ const CATALOG_GRADES = new Set(catalog.grades);
 const CATALOG_THEMES = new Set(catalog.themes.map((theme) => theme.id));
 export type MockScenario = (typeof MOCK_SCENARIOS)[number];
 type MockState = {
-  version: 2;
+  version: 3;
   generation: number;
   scenario: MockScenario;
   apps: typeof publicApps;
   private_apps: typeof privateApps;
   principal_id: string | null;
+  registered_accounts: MockRegisteredAccount[];
+};
+export type MockRegisteredAccount = {
+  id: string;
+  loginId: string;
+  // ponytail: synthetic passwords stay plain in mock storage; replace with server-side credential storage before production auth.
+  password: string;
+  nickname: string;
+  pendingExpiresAt: string;
 };
 
 let resetGeneration = 0;
@@ -142,18 +162,51 @@ function validateApps(apps: unknown[], isPublic: boolean): void {
   }
 }
 
+function validateRegisteredAccounts(accounts: unknown[]): void {
+  const ids = new Set<string>(DEMO_ACCOUNTS.map((account) => account.id));
+  const loginIds = new Set<string>(
+    DEMO_ACCOUNTS.map((account) => account.loginId.toLowerCase()),
+  );
+  for (const account of accounts) {
+    if (!hasExactKeys(account, REGISTERED_ACCOUNT_KEYS)) throw storageError();
+    const registered = account as unknown as MockRegisteredAccount;
+    const mapped = mapRegisteredUser({
+      id: registered.id,
+      login_id: registered.loginId,
+      nickname: registered.nickname,
+      approved: false,
+      pending_expires_at: registered.pendingExpiresAt,
+    });
+    const loginId = mapped.loginId.trim().normalize("NFC");
+    if (
+      registered.loginId !== loginId ||
+      !/^[가-힣A-Za-z0-9_.-]{2,32}$/u.test(loginId) ||
+      typeof registered.password !== "string" ||
+      Array.from(registered.password).length < 15 ||
+      Array.from(registered.password).length > 128 ||
+      registered.nickname !== registered.nickname.trim().normalize("NFC") ||
+      ids.has(registered.id) ||
+      loginIds.has(loginId.toLowerCase())
+    )
+      throw storageError();
+    ids.add(registered.id);
+    loginIds.add(loginId.toLowerCase());
+  }
+}
+
 function nextGeneration(currentGeneration: number): number {
   const current = Math.max(currentGeneration, resetGeneration);
   return current >= Number.MAX_SAFE_INTEGER ? 0 : current + 1;
 }
 
 const initialState = (): MockState => ({
-  version: 2,
+  version: 3,
   generation: resetGeneration,
   scenario: "original",
   apps: publicApps,
   private_apps: privateApps,
   principal_id: null,
+  registered_accounts: [],
 });
 
 function storage(): Storage {
@@ -194,10 +247,14 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 2,
+      version: 3,
       private_apps: privateApps,
       principal_id: null,
+      registered_accounts: [],
     };
+    needsMigration = true;
+  } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
+    state = { ...value, version: 3, registered_accounts: [] };
     needsMigration = true;
   } else if (hasExactKeys(value, STATE_KEYS)) {
     state = value;
@@ -205,19 +262,20 @@ function readState(): MockState {
     throw storageError();
   }
   if (
-    state.version !== 2 ||
+    state.version !== 3 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
     !isMockScenario(state.scenario) ||
     !Array.isArray(state.apps) ||
     !Array.isArray(state.private_apps) ||
-    (state.principal_id !== null &&
-      !DEMO_ACCOUNTS.some((account) => account.id === state.principal_id))
+    !Array.isArray(state.registered_accounts) ||
+    (state.principal_id !== null && typeof state.principal_id !== "string")
   ) {
     throw storageError();
   }
   try {
+    validateRegisteredAccounts(state.registered_accounts);
     validateApps(state.apps, true);
     validateApps(state.private_apps, false);
   } catch {
@@ -225,6 +283,14 @@ function readState(): MockState {
   }
   const ids = new Set(state.apps.map((app) => app.id));
   if (state.private_apps.some((app) => ids.has(app.id))) throw storageError();
+  if (
+    state.principal_id !== null &&
+    !DEMO_ACCOUNTS.some((account) => account.id === state.principal_id) &&
+    !state.registered_accounts.some(
+      (account) => account.id === state.principal_id,
+    )
+  )
+    throw storageError();
   const validState = state as unknown as MockState;
   if (needsMigration) {
     validState.generation = nextGeneration(validState.generation);
@@ -274,15 +340,40 @@ export function readMockScenario(): MockScenario {
 }
 
 export function setMockPrincipal(principalId: string | null): void {
+  const state = readState();
   if (
     principalId !== null &&
-    !DEMO_ACCOUNTS.some((account) => account.id === principalId)
+    !DEMO_ACCOUNTS.some((account) => account.id === principalId) &&
+    !state.registered_accounts.some((account) => account.id === principalId)
   )
-    throw new TypeError("Unsupported demo member");
-  const state = readState();
+    throw new TypeError("Unsupported mock member");
   if (state.principal_id === principalId) return;
   const generation = nextGeneration(state.generation);
   writeState({ ...state, principal_id: principalId, generation });
+  resetGeneration = generation;
+}
+
+export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
+  const state = readState();
+  if (
+    state.registered_accounts.some(
+      (item) =>
+        item.id === account.id ||
+        item.loginId.toLowerCase() === account.loginId.toLowerCase(),
+    ) ||
+    DEMO_ACCOUNTS.some(
+      (item) =>
+        item.id === account.id ||
+        item.loginId.toLowerCase() === account.loginId.toLowerCase(),
+    )
+  )
+    throw storageError();
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    registered_accounts: [...state.registered_accounts, account],
+    generation,
+  });
   resetGeneration = generation;
 }
 

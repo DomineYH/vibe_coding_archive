@@ -27,7 +27,7 @@ const longCopy = Array.from(
 ).join("\n\n");
 const capabilities = {
   apps_read: { enabled: true, reasons: [] },
-  auth_register: { enabled: false, reasons: ["not_implemented"] },
+  auth_register: { enabled: true, reasons: [] },
   auth_login: { enabled: true, reasons: [] },
   auth_logout: { enabled: true, reasons: [] },
   auth_password_change: { enabled: false, reasons: ["not_implemented"] },

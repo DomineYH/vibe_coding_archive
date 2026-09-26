@@ -19,12 +19,34 @@ const viewports = [
 const results = [];
 
 async function login(page, loginId = "교사김코딩", password = "1234") {
+  const passwordInput = page.getByLabel("비밀번호", { exact: true });
+  await expect(passwordInput).toBeVisible();
   await page.getByLabel("로그인 아이디").fill(loginId);
-  await page.getByLabel("비밀번호").fill(password);
+  await passwordInput.fill(password);
   await page
     .getByRole("button", { name: "로그인", exact: true })
     .last()
     .click();
+}
+
+async function register(
+  page,
+  {
+    loginId = "new-teacher-1",
+    password = "correct horse battery staple",
+    passwordConfirm = password,
+    nickname = "새 교사",
+    email = "",
+    phone = "",
+  } = {},
+) {
+  await page.getByLabel("로그인 아이디").fill(loginId);
+  await page.getByLabel(/^비밀번호 \(필수\)$/).fill(password);
+  await page.getByLabel("비밀번호 확인").fill(passwordConfirm);
+  await page.getByLabel("별명").fill(nickname);
+  await page.getByLabel("이메일").fill(email);
+  await page.getByLabel("연락처").fill(phone);
+  await page.getByRole("button", { name: "가입 신청하기" }).click();
 }
 
 async function reset(page, viewport) {
@@ -163,6 +185,54 @@ for (const viewport of viewports) {
     await page.goto("/auth?mode=login");
     await expect(page.getByLabel("로그인 아이디")).toBeVisible();
     await capture(page, "auth-login", viewport, testInfo, "07-login.png");
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=signup");
+    await expect(page.getByLabel("비밀번호 확인")).toBeVisible();
+    await capture(page, "auth-signup", viewport, testInfo, "09-signup.png");
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=signup");
+    await register(page, { passwordConfirm: "mismatch" });
+    await expect(page.locator("#password-confirm-error")).toBeVisible();
+    await capture(
+      page,
+      "auth-signup-confirm-error",
+      viewport,
+      testInfo,
+      "10-signup-error.png",
+    );
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=signup");
+    await register(page, { loginId: "ADMIN" });
+    await expect(page.locator("#login-id-error")).toBeVisible();
+    await capture(page, "auth-signup-duplicate", viewport, testInfo);
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=signup");
+    await register(page, {
+      email: "teacher@example.invalid",
+      phone: "+00 000-0000-0000",
+    });
+    await expect(page.locator("#email-error")).toBeVisible();
+    await expect(page.locator("#phone-error")).toBeVisible();
+    await capture(page, "auth-signup-collection-disabled", viewport, testInfo);
+
+    await reset(page, viewport);
+    await page.goto("/auth?mode=signup");
+    await register(page);
+    await expect(
+      page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+    ).toBeVisible();
+    await capture(page, "auth-signup-pending", viewport, testInfo);
+
+    await page.getByRole("link", { name: "로그인 화면으로" }).click();
+    await login(page, "new-teacher-1", "correct horse battery staple");
+    await expect(page.getByRole("alert")).toContainText(
+      "승인 대기 중인 계정입니다",
+    );
+    await capture(page, "auth-signup-login-pending", viewport, testInfo);
 
     await reset(page, viewport);
     await page.goto("/auth?mode=login");

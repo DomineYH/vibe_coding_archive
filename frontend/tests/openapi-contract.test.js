@@ -33,6 +33,30 @@ describe("OpenAPI app detail schema", () => {
     );
   });
 
+  it("defines registration without confirmation or contact fields in the response", () => {
+    const operation = openapi.paths["/auth/register"].post;
+    const registerInput = openapi.components.schemas.RegisterInput;
+    expect(
+      operation.responses["201"].content["application/json"].schema.$ref,
+    ).toBe("#/components/schemas/RegisteredUser");
+    expect(registerInput.required).toEqual([
+      "login_id",
+      "password",
+      "nickname",
+    ]);
+    expect(registerInput.additionalProperties).toBe(false);
+    expect(registerInput.properties).not.toHaveProperty("password_confirm");
+    expect(
+      openapi.components.schemas.RegisteredUser.properties.approved.const,
+    ).toBe(false);
+    expect(
+      openapi.components.schemas.RegisteredUser.properties,
+    ).not.toHaveProperty("email");
+    expect(
+      openapi.components.schemas.RegisteredUser.properties,
+    ).not.toHaveProperty("phone");
+  });
+
   it("accepts representative detail fixtures", () => {
     expect(publicApps.every((app) => validateAppDetail(app))).toBe(true);
   });
