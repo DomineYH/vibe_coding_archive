@@ -73,6 +73,54 @@ describe("mock app creation", () => {
     expect(first.id).not.toBe(second.id);
   });
 
+  it("keeps an operation key bound to its original request", async () => {
+    await loginMember();
+    const operation = await appsService.issueCreateOperation(input);
+    const differentInput = { ...input, name: "상이한 요청" };
+
+    await expect(
+      appsService.create(differentInput, operation.key),
+    ).rejects.toMatchObject({
+      code: "OPERATION_KEY_MISMATCH",
+      outcome: "rejected",
+    });
+    await expect(
+      appsService.getCreateOperation(operation.key),
+    ).resolves.toMatchObject({ state: "unresolved" });
+    expect(getMockSnapshot().apps).toHaveLength(16);
+    await expect(
+      appsService.create(input, operation.key),
+    ).resolves.toMatchObject({ name: input.name });
+  });
+
+  it("keeps an expired create outcome unknown and does not replay it", async () => {
+    await loginMember();
+    const operation = await appsService.issueCreateOperation(input);
+    const state = getMockSnapshot();
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({ ...state, mock_now: operation.expiresAt }),
+    );
+    await authService.getCurrentAuthState();
+    await loginMember();
+
+    await expect(
+      appsService.create(input, operation.key),
+    ).rejects.toMatchObject({
+      code: "OPERATION_EXPIRED",
+      outcome: "unknown",
+      httpStatus: 410,
+    });
+    await expect(
+      appsService.getCreateOperation(operation.key),
+    ).rejects.toMatchObject({
+      code: "OPERATION_EXPIRED",
+      outcome: "unknown",
+      httpStatus: 410,
+    });
+    expect(getMockSnapshot().apps).toHaveLength(16);
+  });
+
   it("clears tab-memory operation keys on an explicit mock reset", async () => {
     await loginMember();
     const operation = await appsService.issueCreateOperation(input);
@@ -389,6 +437,40 @@ describe("mock app updates", () => {
     await expect(
       appsService.update(created.id, patch, created.version, operation.key),
     ).resolves.toMatchObject({ name: patch.name, version: 2 });
+  });
+
+  it("keeps expired update and delete results unknown without applying them", async () => {
+    await loginMember();
+    const appId = "00000000-0000-4000-8000-000000000091";
+    const update = await appsService.issueUpdateOperation(
+      appId,
+      { name: "기한 후 수정" },
+      1,
+    );
+    const deletion = await appsService.issueDeleteOperation(appId, 1);
+    const state = getMockSnapshot();
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({ ...state, mock_now: update.expiresAt }),
+    );
+    await authService.getCurrentAuthState();
+    await loginMember();
+
+    await expect(
+      appsService.update(appId, { name: "기한 후 수정" }, 1, update.key),
+    ).rejects.toMatchObject({ code: "OPERATION_EXPIRED", outcome: "unknown" });
+    await expect(
+      appsService.getUpdateOperation(update.key),
+    ).rejects.toMatchObject({ code: "OPERATION_EXPIRED", outcome: "unknown" });
+    await expect(
+      appsService.delete(appId, 1, deletion.key),
+    ).rejects.toMatchObject({ code: "OPERATION_EXPIRED", outcome: "unknown" });
+    await expect(
+      appsService.getDeleteOperation(deletion.key),
+    ).rejects.toMatchObject({ code: "OPERATION_EXPIRED", outcome: "unknown" });
+    expect(getMockSnapshot().private_apps).toContainEqual(
+      expect.objectContaining({ id: appId }),
+    );
   });
 });
 

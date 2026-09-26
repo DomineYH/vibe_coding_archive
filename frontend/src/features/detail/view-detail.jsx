@@ -309,7 +309,7 @@ export function AppDetailView({
       )?.focus();
     else if (prior.open && !confirmDelete) deleteTriggerRef.current?.focus();
     else if (confirmDelete && prior.phase !== deletePhase)
-      (deletePhase === "pending"
+      (deletePhase === "pending" || deletePhase === "expired"
         ? deleteStatusRef.current
         : (deleteCheckRef.current ?? deleteCancelRef.current)
       )?.focus();
@@ -431,9 +431,13 @@ export function AppDetailView({
               삭제 요청 처리 중…
             </span>
           ) : null}
-          {deletePhase === "unknown" || deletePhase === "rejected" ? (
+          {deletePhase === "unknown" ||
+          deletePhase === "expired" ||
+          deletePhase === "rejected" ? (
             <p
+              ref={deletePhase === "expired" ? deleteStatusRef : undefined}
               role="alert"
+              tabIndex={deletePhase === "expired" ? -1 : undefined}
               className="basis-full text-[12px] leading-relaxed text-red-700"
             >
               {deleteState.message}

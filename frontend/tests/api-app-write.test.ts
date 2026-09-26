@@ -46,6 +46,21 @@ const updateIssued = {
   kind: "app_update",
   target_id: appId,
 };
+const createSucceeded = {
+  ...issued,
+  state: "succeeded",
+  target_id: appId,
+  db_applied_at: issued.server_time,
+  finalized_at: issued.server_time,
+  result_version: 1,
+};
+const updateSucceeded = {
+  ...updateIssued,
+  state: "succeeded",
+  db_applied_at: issued.server_time,
+  finalized_at: issued.server_time,
+  result_version: 2,
+};
 const created = {
   item: {
     id: appId,
@@ -145,6 +160,9 @@ describe("app write API", () => {
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify(created), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(createSucceeded), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetch);
 
@@ -162,7 +180,49 @@ describe("app write API", () => {
     expect(url).toBe("/api/v1/apps");
     expect(init?.method).toBe("POST");
     expect(new Headers(init?.headers).get("Idempotency-Key")).toBe(key);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not treat a successful write response as success without a succeeded operation record", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(created), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(issued), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(appsService.create(input, key)).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
     expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls[1][0]).toBe(`/api/v1/write-operations/${key}`);
+  });
+
+  it("does not confirm a write from a different operation key's record", async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(created), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...createSucceeded,
+            key: "00000000-0000-4000-8000-000000000202",
+          }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetch);
+
+    await expect(appsService.create(input, key)).rejects.toMatchObject({
+      code: "CONTRACT_ERROR",
+      outcome: "unknown",
+    });
   });
 
   it("issues an update key, then PATCHes only supplied fields with the expected version", async () => {
@@ -177,6 +237,9 @@ describe("app write API", () => {
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify(updated), { status: 200 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(updateSucceeded), { status: 200 }),
       );
     vi.stubGlobal("fetch", fetch);
 
@@ -216,6 +279,8 @@ describe("app write API", () => {
       stack_db: null,
     });
     expect(new Headers(init?.headers).get("Idempotency-Key")).toBe(key);
+    expect(fetch.mock.calls[2][0]).toBe(`/api/v1/write-operations/${key}`);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it("deletes only with the issued key and accepts the confirmed 204 result", async () => {
@@ -232,6 +297,9 @@ describe("app write API", () => {
         new Response(JSON.stringify(deleteIssued), { status: 201 }),
       )
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(deleteSucceeded), { status: 200 }),
+      )
       .mockResolvedValueOnce(
         new Response(JSON.stringify(deleteSucceeded), { status: 200 }),
       );
@@ -263,6 +331,8 @@ describe("app write API", () => {
     expect(
       new Headers(fetch.mock.calls[1][1]?.headers).get("Idempotency-Key"),
     ).toBe(key);
+    expect(fetch.mock.calls[2][0]).toBe(`/api/v1/write-operations/${key}`);
+    expect(fetch).toHaveBeenCalledTimes(4);
   });
 
   it("preserves a pending deletion result as unknown rather than rejection", async () => {
@@ -331,6 +401,66 @@ describe("app write API", () => {
     });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+
+  it.each([
+    { status: 401, code: "AUTH_REQUIRED" },
+    { status: 503, code: "SERVICE_UNAVAILABLE" },
+    { status: 410, code: "OPERATION_EXPIRED" },
+  ])("keeps a retry's $code result unknown", async ({ status, code }) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              code,
+              message: "결과를 확정할 수 없어요.",
+              request_id: null,
+            },
+          }),
+          { status },
+        ),
+      ),
+    );
+
+    await expect(appsService.create(input, key)).rejects.toMatchObject({
+      code,
+      outcome: "unknown",
+      httpStatus: status,
+    });
+  });
+
+  it.each([
+    { status: 401, code: "AUTH_REQUIRED" },
+    { status: 404, code: "OPERATION_NOT_FOUND" },
+    { status: 410, code: "OPERATION_EXPIRED" },
+    { status: 503, code: "SERVICE_UNAVAILABLE" },
+  ])(
+    "keeps a $code result lookup failure unknown",
+    async ({ status, code }) => {
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockResolvedValue(
+          new Response(
+            JSON.stringify({
+              error: {
+                code,
+                message: "작업 결과를 확인할 수 없어요.",
+                request_id: null,
+              },
+            }),
+            { status },
+          ),
+        ),
+      );
+
+      await expect(appsService.getCreateOperation(key)).rejects.toMatchObject({
+        code,
+        outcome: "unknown",
+        httpStatus: status,
+      });
+    },
+  );
 
   it("treats an already-resolved key as an instruction to check its result", async () => {
     vi.stubGlobal(
