@@ -66,6 +66,23 @@ async function setScenario(page, scenario) {
   );
 }
 
+async function advanceBeyondOperationExpiry(page) {
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        ...state,
+        mock_now: "2026-09-24T00:12:00.000Z",
+        principal_session: {
+          ...state.principal_session,
+          expires_at: "2026-09-25T00:12:00.000Z",
+        },
+      }),
+    );
+  }, key);
+}
+
 test("owner edits an app, changes visibility, and the gallery no longer lists it", async ({
   page,
 }) => {
@@ -241,7 +258,8 @@ test("unknown update outcome requires an explicit result check before completion
     exact: true,
   });
   await expect(check).toBeVisible();
-  await expect(name).toBeDisabled();
+  await expect(name).toBeEnabled();
+  await expect(name).toHaveAttribute("readonly", "");
   await check.click();
   await expect(
     page.getByRole("heading", {
@@ -249,6 +267,53 @@ test("unknown update outcome requires an explicit result check before completion
       exact: true,
     }),
   ).toBeVisible();
+});
+
+test("hides and restores an unresolved edit draft around failed auth checks", async ({
+  page,
+}) => {
+  const id = await createOwnedApp(page, "인증 복귀 수정 대상");
+  const form = await openEdit(page, id);
+  const name = form.getByRole("textbox", {
+    name: "어플리케이션 이름",
+    exact: true,
+  });
+  await name.fill("인증 확인 중 숨길 수정 초안");
+  await setScenario(page, "app_update_unresolved");
+  await form
+    .getByRole("button", { name: "변경사항 저장", exact: true })
+    .click();
+  await expect(
+    form.getByRole("button", { name: "저장 결과 확인", exact: true }),
+  ).toBeVisible();
+
+  await setScenario(page, "auth_observation_error");
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  const status = page
+    .getByRole("main")
+    .getByText("로그인 상태를 확인할 수 없어요", { exact: true });
+  await expect(status).toBeVisible();
+  await expect(form).toBeHidden();
+  const retry = page
+    .getByRole("main")
+    .getByRole("button", { name: "다시 확인", exact: true });
+  await retry.click();
+  await expect(status).toBeVisible();
+  await expect(form).toBeHidden();
+
+  await setScenario(page, "original");
+  await retry.click();
+  await expect(form).toBeVisible();
+  await expect(name).toHaveValue("인증 확인 중 숨길 수정 초안");
+  await expect(
+    form.getByRole("button", { name: "저장 결과 확인", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "인증 복귀 수정 대상", exact: true }),
+  ).toHaveCount(0);
 });
 
 test("unresolved update can only be retried with the original request", async ({
@@ -275,7 +340,8 @@ test("unresolved update can only be retried with the original request", async ({
   });
   await expect(check).toBeVisible();
   await expect(retry).toBeVisible();
-  await expect(name).toBeDisabled();
+  await expect(name).toBeEnabled();
+  await expect(name).toHaveAttribute("readonly", "");
   await check.click();
   await expect(page.getByRole("alert")).toContainText(
     "아직 저장 결과가 정해지지 않았어요",
@@ -443,6 +509,43 @@ test("unknown delete result stays on detail until the issued key confirms succes
   await expect(page.getByRole("link", { name: new RegExp(name) })).toHaveCount(
     0,
   );
+});
+
+test("keeps an expired deletion unknown and never repeats it with a new key", async ({
+  page,
+}) => {
+  const name = "만료된 삭제 결과 대상";
+  const id = await createOwnedApp(page, name);
+  await setScenario(page, "app_delete_unknown");
+  const detail = page.locator('[data-screen-label="공개 앱 상세"]');
+  await detail.getByRole("button", { name: "삭제", exact: true }).click();
+  const prompt = page.getByRole("group", {
+    name: `‘${name}’을 아카이브에서 삭제할까요?`,
+    exact: true,
+  });
+  await prompt.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(prompt.getByRole("alert")).toBeVisible();
+  await advanceBeyondOperationExpiry(page);
+  await prompt
+    .getByRole("button", { name: "삭제 결과 확인", exact: true })
+    .click();
+
+  await expect(prompt.getByRole("alert")).toContainText(
+    "삭제 결과 확인 기간이 지나",
+  );
+  await expect(
+    prompt.getByRole("button", {
+      name: "같은 삭제 요청 다시 보내기",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(page).toHaveURL(new RegExp(`/apps/${id}$`));
+  const unload = await page.evaluate(() => {
+    const event = new Event("beforeunload", { cancelable: true });
+    const completed = window.dispatchEvent(event);
+    return { completed, prevented: event.defaultPrevented };
+  });
+  expect(unload).toEqual({ completed: false, prevented: true });
 });
 
 test("unresolved deletion warns before refresh and keeps its key when the author stays", async ({

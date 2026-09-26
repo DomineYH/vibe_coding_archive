@@ -93,6 +93,7 @@ export function SubmitView({
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [unknown, setUnknown] = useState(false);
+  const [operationExpired, setOperationExpired] = useState(false);
   const [operationKey, setOperationKey] = useState(null);
   const [pendingInput, setPendingInput] = useState(null);
   const [confirmedAppId, setConfirmedAppId] = useState(null);
@@ -101,6 +102,8 @@ export function SubmitView({
   const [loadingLatest, setLoadingLatest] = useState(false);
   const allowNavigation = useRef(false);
   const savingLocked = saving || unknown;
+  const expiredOperationMessage =
+    "저장 결과 확인 기간이 지나 확인할 수 없어요. 새 작업 키로 다시 저장하지 마세요.";
   const dirty = isAppInputDirty(baseDraft, draft);
   const shouldWarn = dirty || savingLocked;
   const blocker = useBlocker(
@@ -168,6 +171,13 @@ export function SubmitView({
   };
 
   const handleFailure = (error) => {
+    if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED") {
+      setSaving(false);
+      setUnknown(true);
+      setOperationExpired(true);
+      setFormError(expiredOperationMessage);
+      return;
+    }
     if (isUncertain(error)) {
       setSaving(false);
       setUnknown(true);
@@ -263,7 +273,7 @@ export function SubmitView({
   };
 
   const checkResult = async () => {
-    if (!operationKey || !pendingInput) return;
+    if (!operationKey || !pendingInput || operationExpired) return;
     setSaving(true);
     setFormError("");
     try {
@@ -309,17 +319,21 @@ export function SubmitView({
       }
     } catch (error) {
       setFormError(
-        error instanceof Error
-          ? error.message
-          : "저장 결과를 확인하지 못했어요.",
+        error instanceof ServiceError && error.code === "OPERATION_EXPIRED"
+          ? expiredOperationMessage
+          : error instanceof Error
+            ? error.message
+            : "저장 결과를 확인하지 못했어요.",
       );
+      if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
+        setOperationExpired(true);
     } finally {
       setSaving(false);
     }
   };
 
   const retrySameRequest = () => {
-    if (operationKey && pendingInput)
+    if (operationKey && pendingInput && !operationExpired)
       void sendWithKey(pendingInput, operationKey);
   };
 
@@ -422,10 +436,7 @@ export function SubmitView({
         className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
       >
         <div className="flex min-w-0 flex-col gap-6">
-          <fieldset
-            disabled={savingLocked || loadingLatest}
-            className="contents"
-          >
+          <fieldset disabled={saving || loadingLatest} className="contents">
             <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-5 sm:p-6">
               <h2 className="text-[14px] font-bold text-neutral-900">
                 기본 정보
@@ -440,6 +451,7 @@ export function SubmitView({
                   id="app-name"
                   className={inputClass}
                   value={draft.name}
+                  readOnly={unknown}
                   onChange={(event) => setField("name", event.target.value)}
                   autoComplete="off"
                   aria-required="true"
@@ -462,6 +474,7 @@ export function SubmitView({
                   inputMode="url"
                   className={inputClass}
                   value={draft.url}
+                  readOnly={unknown}
                   onChange={(event) => setField("url", event.target.value)}
                   autoComplete="url"
                   aria-required="true"
@@ -483,6 +496,7 @@ export function SubmitView({
                   id="app-prompt"
                   className={`${inputClass} min-h-[130px] resize-y py-2.5 font-mono text-[13px] leading-relaxed`}
                   value={draft.prompt}
+                  readOnly={unknown}
                   onChange={(event) => setField("prompt", event.target.value)}
                   aria-required="true"
                   aria-invalid={Boolean(fieldErrors.prompt)}
@@ -503,6 +517,7 @@ export function SubmitView({
                   id="app-description"
                   className={`${inputClass} min-h-[130px] resize-y py-2.5 leading-relaxed`}
                   value={draft.description}
+                  readOnly={unknown}
                   onChange={(event) =>
                     setField("description", event.target.value)
                   }
@@ -540,6 +555,7 @@ export function SubmitView({
                     <button
                       key={subject}
                       type="button"
+                      disabled={unknown}
                       aria-pressed={draft.subject === subject}
                       onClick={() => setField("subject", subject)}
                       className={`h-9 rounded-full px-4 text-[13px] font-semibold transition-all ${draft.subject === subject ? "acc-bg text-white shadow-sm" : "border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"}`}
@@ -578,6 +594,7 @@ export function SubmitView({
                     <button
                       key={grade}
                       type="button"
+                      disabled={unknown}
                       aria-pressed={draft.grades.includes(grade)}
                       onClick={() => toggleGrade(grade)}
                       className={`h-9 rounded-full px-3.5 text-[13px] font-semibold transition-all ${draft.grades.includes(grade) ? "bg-[#3C7A72] text-white shadow-sm" : "border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"}`}
@@ -618,6 +635,7 @@ export function SubmitView({
                       id={`stack-${field}`}
                       className={inputClass}
                       value={draft.stack[field]}
+                      readOnly={unknown}
                       onChange={(event) => setStack(field, event.target.value)}
                       aria-invalid={Boolean(fieldErrors[`stack.${field}`])}
                       aria-describedby={
@@ -726,18 +744,24 @@ export function SubmitView({
               aria-label="저장 결과 확인"
             >
               <p className="text-[12.5px] leading-relaxed text-amber-900">
-                같은 요청만 다시 보낼 수 있어요. 먼저 결과를 확인해 주세요.
+                {operationExpired
+                  ? expiredOperationMessage
+                  : "같은 요청만 다시 보낼 수 있어요. 먼저 결과를 확인해 주세요."}
               </p>
-              <Btn
-                variant="line"
-                onClick={() => void checkResult()}
-                disabled={saving}
-              >
-                저장 결과 확인
-              </Btn>
-              <Btn onClick={retrySameRequest} disabled={saving}>
-                같은 요청 다시 보내기
-              </Btn>
+              {operationExpired ? null : (
+                <>
+                  <Btn
+                    variant="line"
+                    onClick={() => void checkResult()}
+                    disabled={saving}
+                  >
+                    저장 결과 확인
+                  </Btn>
+                  <Btn onClick={retrySameRequest} disabled={saving}>
+                    같은 요청 다시 보내기
+                  </Btn>
+                </>
+              )}
             </section>
           ) : null}
           {conflictPending ? (
@@ -775,9 +799,11 @@ export function SubmitView({
             >
               {saving
                 ? "앱을 등록하고 있어요"
-                : unknown
-                  ? "저장 결과를 확인해 주세요"
-                  : "작성 중인 내용이 있어요"}
+                : operationExpired
+                  ? "저장 결과 확인 기간이 지났어요"
+                  : unknown
+                    ? "저장 결과를 확인해 주세요"
+                    : "작성 중인 내용이 있어요"}
             </h2>
             <p
               id="leave-submit-description"
@@ -785,12 +811,18 @@ export function SubmitView({
             >
               {saving
                 ? "저장이 끝날 때까지 이동할 수 없어요."
-                : unknown
-                  ? "결과가 확인될 때까지 이 화면을 유지해 주세요. 같은 요청을 다시 보내거나 결과를 확인할 수 있어요."
-                  : "이 화면을 나가면 작성한 내용이 사라져요. 계속 작성할까요?"}
+                : operationExpired
+                  ? expiredOperationMessage
+                  : unknown
+                    ? "결과가 확인될 때까지 이 화면을 유지해 주세요. 같은 요청을 다시 보내거나 결과를 확인할 수 있어요."
+                    : "이 화면을 나가면 작성한 내용이 사라져요. 계속 작성할까요?"}
             </p>
             <div className="mt-5 flex flex-wrap justify-end gap-2">
-              {saving ? null : unknown ? (
+              {saving ? null : operationExpired ? (
+                <Btn variant="line" onClick={() => blocker.reset()}>
+                  이 화면 유지
+                </Btn>
+              ) : unknown ? (
                 <>
                   <Btn
                     variant="line"

@@ -4,6 +4,7 @@ import {
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
+  type AppWriteOperation,
 } from "../../contracts/mappers";
 import {
   contractError,
@@ -317,29 +318,55 @@ async function getJson(
 ): Promise<unknown> {
   const headers = new Headers({ Accept: "application/json" });
   if (authenticated || write) {
-    const auth = await authService.getCurrentAuthState({ signal });
+    let auth;
+    try {
+      auth = await authService.getCurrentAuthState({ signal });
+    } catch (error) {
+      if (!uncertain) throw error;
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "현재 인증 상태를 확인할 수 없어 저장 결과를 확정할 수 없어요.",
+        {
+          httpStatus: error instanceof ServiceError ? error.httpStatus : 503,
+          outcome: "unknown",
+        },
+      );
+    }
     const user = auth.user;
     if (auth.status !== "ready" || !user || !user.approved)
       throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
-        outcome: "rejected",
+        outcome: uncertain ? "unknown" : "rejected",
         httpStatus: 401,
       });
     if (user.mustChangePassword || user.sessionKind === "change_only")
       throw new ServiceError(
         "PASSWORD_CHANGE_REQUIRED",
         "회원 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
-        { outcome: "rejected", httpStatus: 403 },
+        { outcome: uncertain ? "unknown" : "rejected", httpStatus: 403 },
       );
     if (!auth.flow.sessionGeneration)
       throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
-        outcome: "rejected",
+        outcome: uncertain ? "unknown" : "rejected",
         httpStatus: 401,
       });
     headers.set("X-EduVibe-Flow-Id", auth.flow.flowId);
     headers.set("X-EduVibe-Auth-Revision", auth.flow.revision);
     headers.set("X-EduVibe-Session-Generation", auth.flow.sessionGeneration);
     if (write) {
-      const csrf = await authService.getCsrf({ signal });
+      let csrf;
+      try {
+        csrf = await authService.getCsrf({ signal });
+      } catch (error) {
+        if (!uncertain) throw error;
+        throw new ServiceError(
+          "SERVICE_UNAVAILABLE",
+          "요청 권한을 확인할 수 없어 저장 결과를 확정할 수 없어요.",
+          {
+            httpStatus: error instanceof ServiceError ? error.httpStatus : 503,
+            outcome: "unknown",
+          },
+        );
+      }
       headers.set("X-CSRF-Token", csrf.csrfToken);
     }
   }
@@ -443,9 +470,19 @@ function mapApiError(
     endpoint === "GET /apps/{id}" && allowed.code === "NOT_FOUND"
       ? "아카이브 앱을 찾을 수 없어요."
       : fields.message;
+  const resultLookup = endpoint === "GET /write-operations/{key}";
+  const retryMayBeUnresolved =
+    uncertain &&
+    (httpStatus === 401 ||
+      httpStatus === 403 ||
+      httpStatus === 410 ||
+      allowed.code === "AUTH_STATE_CHANGED" ||
+      allowed.code === "AUTH_TRANSITION_PENDING");
   return new ServiceError(allowed.code, message, {
     httpStatus,
     outcome:
+      resultLookup ||
+      retryMayBeUnresolved ||
       ((endpoint === "POST /apps" ||
         endpoint === "PATCH /apps/{id}" ||
         endpoint === "DELETE /apps/{id}") &&
@@ -484,6 +521,36 @@ function mapWriteResult<T>(mapper: (value: unknown) => T, value: unknown): T {
       );
     throw error;
   }
+}
+
+function requireSucceededOperation(
+  operation: AppWriteOperation,
+  kind: AppWriteOperation["kind"],
+  targetId: string,
+) {
+  if (
+    operation.kind !== kind ||
+    (operation.targetId !== null && operation.targetId !== targetId)
+  )
+    throw new ServiceError(
+      "CONTRACT_ERROR",
+      "저장 작업 결과를 확인할 수 없어요.",
+      { outcome: "unknown" },
+    );
+  if (operation.state === "rejected")
+    throw new ServiceError(
+      operation.rejectionCode === "VERSION_CONFLICT"
+        ? "VERSION_CONFLICT"
+        : "VALIDATION_ERROR",
+      "저장 작업이 거절되었어요.",
+      { outcome: "rejected" },
+    );
+  if (operation.state !== "succeeded" || operation.targetId !== targetId)
+    throw new ServiceError(
+      "SERVICE_UNAVAILABLE",
+      "저장 결과가 아직 확정되지 않았어요.",
+      { outcome: "unknown" },
+    );
 }
 
 function hasOnlyKeys(value: Record<string, unknown>, allowed: string[]) {
@@ -557,7 +624,7 @@ export const appsService: AppsService = {
       throw new ServiceError("VALIDATION_ERROR", "저장 작업을 확인해 주세요.", {
         outcome: "rejected",
       });
-    return mapWriteResult(
+    const saved = mapWriteResult(
       (value) => mapAppDetailResponse(value).item,
       await getJson("POST /apps", "/apps", {
         method: "POST",
@@ -567,6 +634,9 @@ export const appsService: AppsService = {
         requestBody: appInputToWire(input),
       }),
     );
+    const operation = await appsService.getCreateOperation(operationKey);
+    requireSucceededOperation(operation, "app_create", saved.id);
+    return saved;
   },
 
   async getCreateOperation(key, { signal } = {}) {
@@ -578,10 +648,11 @@ export const appsService: AppsService = {
       await getJson(
         "GET /write-operations/{key}",
         `/write-operations/${encodeURIComponent(key)}`,
-        { authenticated: true, signal },
+        { authenticated: true, signal, uncertain: true },
       ),
     );
-    if (operation.kind !== "app_create") throw contractError();
+    if (operation.key !== key || operation.kind !== "app_create")
+      throw apiContractError(200, true);
     return operation;
   },
 
@@ -626,7 +697,7 @@ export const appsService: AppsService = {
         outcome: "rejected",
       });
     const input = appPatchToWire(patch);
-    return mapWriteResult(
+    const saved = mapWriteResult(
       (value) => {
         const app = mapAppDetailResponse(value).item;
         if (app.id !== id) throw contractError();
@@ -640,6 +711,9 @@ export const appsService: AppsService = {
         requestBody: { expected_version: expectedVersion, ...input },
       }),
     );
+    const operation = await appsService.getUpdateOperation(operationKey);
+    requireSucceededOperation(operation, "app_update", id);
+    return saved;
   },
 
   async getUpdateOperation(key, { signal } = {}) {
@@ -651,10 +725,11 @@ export const appsService: AppsService = {
       await getJson(
         "GET /write-operations/{key}",
         `/write-operations/${encodeURIComponent(key)}`,
-        { authenticated: true, signal },
+        { authenticated: true, signal, uncertain: true },
       ),
     );
-    if (operation.kind !== "app_update") throw contractError();
+    if (operation.key !== key || operation.kind !== "app_update")
+      throw apiContractError(200, true);
     return operation;
   },
 
@@ -705,6 +780,8 @@ export const appsService: AppsService = {
       idempotencyKey: operationKey,
       requestBody: { expected_version: expectedVersion },
     });
+    const operation = await appsService.getDeleteOperation(operationKey);
+    requireSucceededOperation(operation, "app_delete", id);
   },
 
   async getDeleteOperation(key, { signal } = {}) {
@@ -716,10 +793,11 @@ export const appsService: AppsService = {
       await getJson(
         "GET /write-operations/{key}",
         `/write-operations/${encodeURIComponent(key)}`,
-        { authenticated: true, signal },
+        { authenticated: true, signal, uncertain: true },
       ),
     );
-    if (operation.kind !== "app_delete") throw contractError();
+    if (operation.key !== key || operation.kind !== "app_delete")
+      throw apiContractError(200, true);
     return operation;
   },
 };

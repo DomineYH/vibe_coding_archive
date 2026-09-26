@@ -504,19 +504,22 @@ function DetailRoute({
       setCurrentDeletion(null);
       onDeleted(id, actorId);
     } catch (error) {
+      const expired = error?.code === "OPERATION_EXPIRED";
       setCurrentDeletion({
         id,
         actorId,
         expectedVersion,
         operation,
-        phase:
-          error?.outcome === "unknown" ||
-          error?.code === "OPERATION_ALREADY_RESOLVED"
+        phase: expired
+          ? "expired"
+          : error?.outcome === "unknown" ||
+              error?.code === "OPERATION_ALREADY_RESOLVED"
             ? "unknown"
             : "rejected",
-        message:
-          error?.message ??
-          "삭제 결과를 확인하지 못했어요. 작업 결과를 확인해 주세요.",
+        message: expired
+          ? "삭제 결과 확인 기간이 지나 확인할 수 없어요. 앱이 없는 상태만으로 삭제 성공을 판단할 수 없습니다."
+          : (error?.message ??
+            "삭제 결과를 확인하지 못했어요. 작업 결과를 확인해 주세요."),
       });
     } finally {
       deletionBusy.current = false;
@@ -560,10 +563,13 @@ function DetailRoute({
         });
       }
     } catch (error) {
+      const expired = error?.code === "OPERATION_EXPIRED";
       setCurrentDeletion({
         ...existing,
-        phase: "unknown",
-        message: `삭제 결과를 확인할 수 없어요. ${error?.message ?? "같은 작업 키로 다시 확인해 주세요."}`,
+        phase: expired ? "expired" : "unknown",
+        message: expired
+          ? "삭제 결과 확인 기간이 지나 확인할 수 없어요. 앱이 없는 상태만으로 삭제 성공을 판단할 수 없습니다."
+          : `삭제 결과를 확인할 수 없어요. ${error?.message ?? "같은 작업 키로 다시 확인해 주세요."}`,
       });
     } finally {
       deletionBusy.current = false;
@@ -572,7 +578,8 @@ function DetailRoute({
   const cancelDelete = () => {
     if (
       currentDeletion?.phase === "pending" ||
-      currentDeletion?.phase === "unknown"
+      currentDeletion?.phase === "unknown" ||
+      currentDeletion?.phase === "expired"
     )
       return;
     setCurrentDeletion(null);
@@ -1479,7 +1486,7 @@ export default function App() {
       setDeletion(null);
   }, [auth.status, auth.user?.id, deletion]);
 
-  const deletionNeedsConfirmation = ["pending", "unknown"].includes(
+  const deletionNeedsConfirmation = ["pending", "unknown", "expired"].includes(
     deletion?.phase,
   );
   useEffect(() => {

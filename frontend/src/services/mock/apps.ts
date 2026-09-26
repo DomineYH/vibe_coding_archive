@@ -268,6 +268,18 @@ function ownedOperation(key: string, actorId: string) {
   return operation;
 }
 
+function assertOperationNotExpired(
+  operation: MockAppWriteOperation,
+  now: string,
+) {
+  if (Date.parse(now) < Date.parse(operation.expiresAt)) return;
+  throw new ServiceError(
+    "OPERATION_EXPIRED",
+    "작업 결과 확인 기간이 만료되었어요.",
+    { httpStatus: 410, outcome: "unknown" },
+  );
+}
+
 function ownedApp(id: string, actorId: string) {
   const state = getMockSnapshot();
   const app = [...state.apps, ...state.private_apps].find(
@@ -500,11 +512,7 @@ export const appsService: AppsService = {
         "저장 요청 내용이 작업 키와 달라요.",
         { httpStatus: 409, outcome: "rejected" },
       );
-    if (Date.parse(state.mock_now) >= Date.parse(operation.expiresAt))
-      throw new ServiceError("OPERATION_EXPIRED", "저장 작업이 만료되었어요.", {
-        httpStatus: 410,
-        outcome: "rejected",
-      });
+    assertOperationNotExpired(operation, state.mock_now);
     if (operation.state !== "unresolved")
       throw new ServiceError(
         "OPERATION_ALREADY_RESOLVED",
@@ -616,11 +624,7 @@ export const appsService: AppsService = {
         "저장 요청 내용이 작업 키와 달라요.",
         { httpStatus: 409, outcome: "rejected" },
       );
-    if (Date.parse(state.mock_now) >= Date.parse(operation.expiresAt))
-      throw new ServiceError("OPERATION_EXPIRED", "저장 작업이 만료되었어요.", {
-        httpStatus: 410,
-        outcome: "rejected",
-      });
+    assertOperationNotExpired(operation, state.mock_now);
     if (operation.state !== "unresolved")
       throw new ServiceError(
         "OPERATION_ALREADY_RESOLVED",
@@ -712,7 +716,7 @@ export const appsService: AppsService = {
   },
 
   async getCreateOperation(key) {
-    const { account } = currentMember();
+    const { state, account } = currentMember();
     const operation = ownedOperation(key, account.id);
     if (operation.kind !== "app_create")
       throw new ServiceError(
@@ -723,11 +727,12 @@ export const appsService: AppsService = {
           outcome: "rejected",
         },
       );
+    assertOperationNotExpired(operation, state.mock_now);
     return operationWire(operation);
   },
 
   async getUpdateOperation(key) {
-    const { account } = currentMember();
+    const { state, account } = currentMember();
     const operation = ownedOperation(key, account.id);
     if (operation.kind !== "app_update")
       throw new ServiceError(
@@ -738,6 +743,7 @@ export const appsService: AppsService = {
           outcome: "rejected",
         },
       );
+    assertOperationNotExpired(operation, state.mock_now);
     return operationWire(operation);
   },
 
@@ -790,11 +796,7 @@ export const appsService: AppsService = {
         "삭제 요청이 작업 키와 달라요.",
         { httpStatus: 409, outcome: "rejected" },
       );
-    if (Date.parse(state.mock_now) >= Date.parse(operation.expiresAt))
-      throw new ServiceError("OPERATION_EXPIRED", "삭제 작업이 만료되었어요.", {
-        httpStatus: 410,
-        outcome: "rejected",
-      });
+    assertOperationNotExpired(operation, state.mock_now);
     if (operation.state === "succeeded") return;
     if (operation.state === "confirming_deletion") {
       operation = {
@@ -874,7 +876,7 @@ export const appsService: AppsService = {
   },
 
   async getDeleteOperation(key) {
-    const { account } = currentMember();
+    const { state, account } = currentMember();
     const operation = ownedOperation(key, account.id);
     if (operation.kind !== "app_delete")
       throw new ServiceError(
@@ -882,6 +884,7 @@ export const appsService: AppsService = {
         "삭제 작업을 찾을 수 없어요.",
         { httpStatus: 404, outcome: "rejected" },
       );
+    assertOperationNotExpired(operation, state.mock_now);
     return operationWire(operation);
   },
 };

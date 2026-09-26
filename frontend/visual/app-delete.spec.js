@@ -279,5 +279,44 @@ for (const viewport of viewports) {
       .click();
     await expect(page).toHaveURL(/\/$/);
     await expect(deletionToast).toBeVisible();
+
+    detail = await openOwnerDetail(page);
+    await setScenario(page, "app_delete_unknown");
+    await detail.getByRole("button", { name: "삭제", exact: true }).click();
+    prompt = page.locator('[aria-labelledby="app-delete-confirmation-title"]');
+    await prompt
+      .getByRole("button", { name: "삭제 확인", exact: true })
+      .click();
+    await expect(prompt.getByRole("alert")).toContainText(
+      "삭제 결과를 확인할 수 없어요",
+    );
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...state,
+          mock_now: "2026-09-24T00:12:00.000Z",
+          principal_session: {
+            ...state.principal_session,
+            expires_at: "2026-09-25T00:12:00.000Z",
+          },
+        }),
+      );
+    });
+    await prompt
+      .getByRole("button", { name: "삭제 결과 확인", exact: true })
+      .click();
+    await expect(prompt.getByRole("alert")).toContainText(
+      "삭제 결과 확인 기간이 지나",
+    );
+    await expect(
+      prompt.getByRole("button", {
+        name: "같은 삭제 요청 다시 보내기",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    await capture(page, "delete-expired", viewport, testInfo);
   });
 }

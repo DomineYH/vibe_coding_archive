@@ -241,6 +241,31 @@ for (const viewport of viewports) {
       page.getByRole("button", { name: "저장 결과 확인", exact: true }),
     ).toBeVisible();
     await capture(page, "app-create-unknown", viewport, testInfo);
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...state,
+          mock_now: "2026-09-24T00:12:00.000Z",
+          principal_session: {
+            ...state.principal_session,
+            expires_at: "2026-09-25T00:12:00.000Z",
+          },
+        }),
+      );
+    });
+    await form
+      .getByRole("button", { name: "저장 결과 확인", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "저장 결과 확인 기간이 지나",
+    );
+    await expect(
+      form.getByRole("button", { name: "같은 요청 다시 보내기", exact: true }),
+    ).toHaveCount(0);
+    await capture(page, "app-create-expired", viewport, testInfo);
   });
 
   test(`app edit form at ${tag}`, async ({ page }, testInfo) => {
@@ -347,6 +372,91 @@ for (const viewport of viewports) {
     ).toBeVisible();
     await capture(page, "app-edit-unknown", viewport, testInfo);
     await otherPage.close();
+  });
+
+  test(`conceals an unresolved create draft during auth checks at ${tag}`, async ({
+    page,
+  }, testInfo) => {
+    await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await login(page);
+    await page.goto("/apps/new");
+    await expect(page).toHaveURL(/\/apps\/new$/);
+    const form = await fillValidForm(page);
+    await setScenario(page, "app_create_unresolved");
+    await form
+      .getByRole("button", { name: "아카이브에 등록", exact: true })
+      .click();
+    await expect(
+      form.getByRole("button", { name: "저장 결과 확인", exact: true }),
+    ).toBeVisible();
+
+    await setScenario(page, "auth_observation_error");
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"));
+      window.dispatchEvent(new Event("focus"));
+    });
+    const status = page
+      .getByRole("main")
+      .getByText("로그인 상태를 확인할 수 없어요", { exact: true });
+    await expect(status).toBeVisible();
+    await expect(form).toBeHidden();
+    await capture(page, "app-create-auth-concealed", viewport, testInfo);
+  });
+
+  test(`shows confirmed create when its target is later unavailable at ${tag}`, async ({
+    page,
+  }, testInfo) => {
+    await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await login(page);
+    await page.goto("/apps/new");
+    await expect(page).toHaveURL(/\/apps\/new$/);
+    const form = await fillValidForm(page);
+    await setScenario(page, "app_create_unknown");
+    await form
+      .getByRole("button", { name: "아카이브에 등록", exact: true })
+      .click();
+    await expect(
+      form.getByRole("button", { name: "저장 결과 확인", exact: true }),
+    ).toBeVisible();
+    const appId = await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      const target = [...state.apps, ...state.private_apps].find(
+        (app) => app.name === "시각 비교용 앱",
+      );
+      if (!target) return null;
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          ...state,
+          apps: state.apps.filter((app) => app.id !== target.id),
+          private_apps: state.private_apps.filter(
+            (app) => app.id !== target.id,
+          ),
+        }),
+      );
+      return target.id;
+    });
+    expect(appId).toBeTruthy();
+    await form
+      .getByRole("button", { name: "저장 결과 확인", exact: true })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/apps/${appId}$`));
+    await expect(page.getByRole("alert")).toContainText(
+      "아카이브 앱을 찾을 수 없어요",
+    );
+    await expect(
+      page.getByText("앱을 등록했어요.", { exact: true }),
+    ).toBeVisible();
+    await capture(page, "app-create-target-missing", viewport, testInfo);
   });
 
   test(`private app detail after owner update at ${tag}`, async ({
