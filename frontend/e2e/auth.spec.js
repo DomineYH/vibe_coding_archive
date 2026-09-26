@@ -451,23 +451,23 @@ test("an authenticated member gets 403 for the admin route while admin can open 
   await page.reload();
   await expect(page).toHaveURL("/admin");
   await expect(page.getByRole("heading", { name: "관리자" })).toBeVisible();
-  const adminPlaceholder = page.getByText(
-    "관리자 작업은 아직 제공하지 않아요.",
-    { exact: true },
-  );
+  const adminDashboard = page.getByRole("heading", {
+    name: "관리자 대시보드",
+    exact: true,
+  });
   const adminNavigation = page
     .getByRole("navigation", { name: "주 메뉴" })
     .getByRole("link", { name: "관리자", exact: true });
-  await expect(adminPlaceholder).toBeVisible();
+  await expect(adminDashboard).toBeVisible();
   await expect(adminNavigation).toBeVisible();
   await page.evaluate(() => window.dispatchEvent(new Event("blur")));
   await expect(page.getByRole("main").getByRole("status")).toContainText(
     "화면이 잠시 가려졌습니다",
   );
-  await expect(adminPlaceholder).toHaveCount(0);
+  await expect(adminDashboard).toHaveCount(0);
   await expect(adminNavigation).toHaveCount(0);
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(adminPlaceholder).toBeVisible();
+  await expect(adminDashboard).toBeVisible();
   await expect(adminNavigation).toBeVisible();
 });
 

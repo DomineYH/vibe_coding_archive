@@ -84,6 +84,58 @@ describe("OpenAPI app detail schema", () => {
     ).not.toHaveProperty("phone");
   });
 
+  it("defines admin pages, aggregate stats, and contact-free approval targets", () => {
+    const list = openapi.paths["/admin/users"].get;
+    const user = openapi.components.schemas.AdminUser;
+    const params = list.parameters;
+    expect(params.find(({ name }) => name === "limit").schema).toMatchObject({
+      default: 24,
+      minimum: 1,
+      maximum: 100,
+    });
+    expect(user.properties.account_version).toMatchObject({
+      minimum: 1,
+      maximum: Number.MAX_SAFE_INTEGER,
+    });
+    expect(user.properties).not.toHaveProperty("email");
+    expect(user.properties).not.toHaveProperty("phone");
+    expect(user.properties).not.toHaveProperty("password");
+    expect(openapi.components.schemas.AdminUserPage.required).toContain(
+      "stats",
+    );
+    expect(openapi.components.schemas.AdminStats.required).toEqual([
+      "total_users",
+      "pending_users",
+      "total_apps",
+      "healthy_apps",
+    ]);
+  });
+
+  it("binds approval execution to an explicit value, account version, and operation key", () => {
+    const issue = openapi.paths["/write-operations"].post;
+    const execute = openapi.paths["/admin/users/{id}/approval"].patch;
+    const keyHeader = execute.parameters.find(
+      ({ name }) => name === "Idempotency-Key",
+    );
+    expect(issue.requestBody.required).toBe(true);
+    expect(openapi.components.schemas.CreateApprovalOperation.required).toEqual(
+      ["kind", "target_id", "expected_account_version", "approved"],
+    );
+    expect(keyHeader.required).toBe(true);
+    expect(execute.requestBody.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/SetApprovalInput",
+    );
+    expect(
+      openapi.paths["/write-operations/{key}/cancel"].post.responses["200"],
+    ).toBeDefined();
+    expect(issue.responses["400"]).toBeDefined();
+    expect(execute.responses["410"]).toBeDefined();
+    expect(openapi.paths["/admin/users"].get.responses["409"]).toBeDefined();
+    expect(
+      openapi.components.schemas.ApprovalOperation.properties.state.enum,
+    ).toEqual(["unresolved", "succeeded", "rejected"]);
+  });
+
   it("accepts representative detail fixtures", () => {
     expect(publicApps.every((app) => validateAppDetail(app))).toBe(true);
   });

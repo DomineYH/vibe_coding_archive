@@ -6,6 +6,7 @@ export const DEMO_ACCOUNTS = [
     nickname: "아카이브 관리자",
     role: "admin",
     approved: true,
+    createdAt: "2026-03-02T00:12:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000101",
@@ -14,6 +15,7 @@ export const DEMO_ACCOUNTS = [
     nickname: "교사김코딩",
     role: "user",
     approved: true,
+    createdAt: "2026-03-15T00:12:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000102",
@@ -22,6 +24,7 @@ export const DEMO_ACCOUNTS = [
     nickname: "비기너개발자",
     role: "user",
     approved: false,
+    createdAt: "2026-06-08T00:12:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000103",
@@ -30,6 +33,7 @@ export const DEMO_ACCOUNTS = [
     nickname: "과학덕후박샘",
     role: "user",
     approved: true,
+    createdAt: "2026-04-01T00:12:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000104",
@@ -38,6 +42,7 @@ export const DEMO_ACCOUNTS = [
     nickname: "영어쌤제이",
     role: "user",
     approved: true,
+    createdAt: "2026-04-22T00:12:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000105",
@@ -46,6 +51,7 @@ export const DEMO_ACCOUNTS = [
     nickname: "역사수업연구가",
     role: "user",
     approved: true,
+    createdAt: "2026-05-03T00:12:00.000Z",
   },
   {
     id: "00000000-0000-4000-8000-000000000106",
@@ -54,5 +60,6 @@ export const DEMO_ACCOUNTS = [
     nickname: "코딩꿈나무",
     role: "user",
     approved: false,
+    createdAt: "2026-06-09T00:12:00.000Z",
   },
 ] as const;

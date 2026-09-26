@@ -61,6 +61,10 @@ export default defineConfig(({ command, mode: viteMode }) => {
           root,
           `src/services/${dataMode}/auth.ts`,
         ),
+        "@services/admin": path.resolve(
+          root,
+          `src/services/${dataMode}/admin.ts`,
+        ),
       },
     },
     define: { __DATA_MODE__: JSON.stringify(dataMode) },

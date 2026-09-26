@@ -255,7 +255,235 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      summary: List users and aggregate dashboard statistics
+      description: >-
+        Pending users sort first, then creation time and member ID ascending.
+        The page always carries aggregates for the full authorized member set.
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 24 },
+          }
+        - {
+            name: offset,
+            in: query,
+            schema: { type: integer, minimum: 0, default: 0 },
+          }
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: An offset page and aggregate statistics for all users/apps.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUserPage" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /admin/users/{id}:
+    get:
+      operationId: getAdminUser
+      summary: Read an approval target with its current account version
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: The current target without contact fields.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUser" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /write-operations:
+    post:
+      operationId: createApprovalOperation
+      summary: Issue an approval operation key
+      security:
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateApprovalOperation" }
+      responses:
+        "201":
+          description: An unresolved key result with no echoed business input.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalOperation" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /admin/users/{id}/approval:
+    patch:
+      operationId: setAdminUserApproval
+      summary: Explicitly set the approval value for one current target version
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SetApprovalInput" }
+      responses:
+        "200":
+          description: The account state applied by this request.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUser" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "410": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /write-operations/{key}:
+    get:
+      operationId: getApprovalOperation
+      summary: Read the minimal result for an approval key
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: key,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: Unresolved is not success; the result does not expose input.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalOperation" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "410": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /write-operations/{key}/cancel:
+    post:
+      operationId: cancelApprovalOperation
+      summary: Cancel an unresolved approval key without changing its target input
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: key,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: The result after cancellation; a prior success is not rolled back.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ApprovalOperation" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "410": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
 components:
+  parameters:
+    Origin:
+      name: Origin
+      in: header
+      required: true
+      schema: { type: string, format: uri }
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      required: true
+      schema: { type: string, minLength: 1 }
+    AuthFlowId:
+      name: X-EduVibe-Flow-Id
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    AuthRevision:
+      name: X-EduVibe-Auth-Revision
+      in: header
+      required: true
+      schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" }
+    SessionGeneration:
+      name: X-EduVibe-Session-Generation
+      in: header
+      required: true
+      schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" }
   securitySchemes:
     SessionCookie:
       type: apiKey
@@ -336,6 +564,109 @@ components:
           description: >-
             ASCII digits with an optional leading plus, spaces, and hyphens;
             the digit count must be 7-15.
+    AdminUser:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          login_id,
+          nickname,
+          role,
+          approved,
+          account_version,
+          created_at,
+          first_approved_at,
+          pending_expires_at,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        login_id: { type: string, minLength: 2, maxLength: 32 }
+        nickname: { type: string, minLength: 2, maxLength: 20 }
+        role: { $ref: "#/components/schemas/Role" }
+        approved: { type: boolean }
+        account_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+          description: >-
+            Monotonic approval/credential version. Expected by approval writes;
+            never exposed by public member DTOs.
+        created_at: { type: string, format: date-time }
+        first_approved_at: { type: [string, "null"], format: date-time }
+        pending_expires_at: { type: [string, "null"], format: date-time }
+    AdminStats:
+      type: object
+      additionalProperties: false
+      required: [total_users, pending_users, total_apps, healthy_apps]
+      properties:
+        total_users: { type: integer, minimum: 0 }
+        pending_users: { type: integer, minimum: 0 }
+        total_apps: { type: integer, minimum: 0 }
+        healthy_apps: { type: integer, minimum: 0 }
+    AdminUserPage:
+      type: object
+      additionalProperties: false
+      required: [items, pagination, stats, server_time]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/AdminUser" }
+        pagination: { $ref: "#/components/schemas/Pagination" }
+        stats: { $ref: "#/components/schemas/AdminStats" }
+        server_time: { type: string, format: date-time }
+    CreateApprovalOperation:
+      type: object
+      additionalProperties: false
+      required: [kind, target_id, expected_account_version, approved]
+      properties:
+        kind: { type: string, const: user_approval }
+        target_id: { type: string, format: uuid }
+        expected_account_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        approved: { type: boolean }
+    SetApprovalInput:
+      type: object
+      additionalProperties: false
+      required: [approved, expected_account_version]
+      properties:
+        approved: { type: boolean }
+        expected_account_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+    ApprovalOperation:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          key,
+          kind,
+          target_id,
+          issued_at,
+          expires_at,
+          state,
+          applied_account_version,
+          applied_approved,
+          finalized_at,
+          rejection_code,
+        ]
+      properties:
+        key: { type: string, format: uuid }
+        kind: { type: string, const: user_approval }
+        target_id: { type: string, format: uuid }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        state: { type: string, enum: [unresolved, succeeded, rejected] }
+        applied_account_version:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 9007199254740991
+        applied_approved: { type: [boolean, "null"] }
+        finalized_at: { type: [string, "null"], format: date-time }
+        rejection_code: { type: [string, "null"] }
     RegisteredUser:
       type: object
       additionalProperties: false
