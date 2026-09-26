@@ -4,7 +4,7 @@ const memberApp = "/apps/00000000-0000-4000-8000-000000000091";
 
 async function login(page, loginId = "교사김코딩", password = "1234") {
   await page.getByLabel("로그인 아이디").fill(loginId);
-  await page.getByLabel("비밀번호").fill(password);
+  await page.getByLabel("비밀번호", { exact: true }).fill(password);
   await page
     .getByRole("button", { name: "로그인", exact: true })
     .last()
@@ -156,7 +156,7 @@ test("login validation identifies fields and blocks a second pending submit", as
     .last();
   await submit.click();
   const loginId = page.getByLabel("로그인 아이디");
-  const password = page.getByLabel("비밀번호");
+  const password = page.getByLabel("비밀번호", { exact: true });
   await expect(loginId).toHaveAttribute("aria-invalid", "true");
   await expect(loginId).toHaveAttribute("aria-describedby", "login-id-error");
   await expect(password).toHaveAttribute("aria-invalid", "true");
@@ -173,7 +173,7 @@ test("login validation identifies fields and blocks a second pending submit", as
   await login(page);
   const pendingSubmit = page.getByRole("button", { name: "로그인 중…" });
   await expect(pendingSubmit).toBeDisabled();
-  await page.getByLabel("비밀번호").press("Enter");
+  await page.getByLabel("비밀번호", { exact: true }).press("Enter");
   await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });

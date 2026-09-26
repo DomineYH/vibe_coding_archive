@@ -20,7 +20,7 @@ const results = [];
 
 async function login(page, loginId = "교사김코딩", password = "1234") {
   await page.getByLabel("로그인 아이디").fill(loginId);
-  await page.getByLabel("비밀번호").fill(password);
+  await page.getByLabel("비밀번호", { exact: true }).fill(password);
   await page
     .getByRole("button", { name: "로그인", exact: true })
     .last()
