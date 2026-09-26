@@ -242,4 +242,137 @@ for (const viewport of viewports) {
     ).toBeVisible();
     await capture(page, "app-create-unknown", viewport, testInfo);
   });
+
+  test(`app edit form at ${tag}`, async ({ page }, testInfo) => {
+    await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await login(page);
+    await page.goto("/apps/00000000-0000-4000-8000-000000000091/edit");
+    await expect(page).toHaveURL(/\/apps\/[^/]+\/edit$/);
+    const form = page.getByRole("form", { name: "앱 수정 양식", exact: true });
+    await expect(form).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "앱 정보 편집", exact: true }),
+    ).toBeVisible();
+    await expect(
+      form.getByRole("textbox", {
+        name: "어플리케이션 이름",
+        exact: true,
+      }),
+    ).toHaveValue("과학 수행평가 루브릭 채점기");
+    await expect(
+      form.getByRole("switch", { name: "전체 공개", exact: true }),
+    ).toHaveAttribute("aria-checked", "false");
+    await expect(
+      form.getByRole("button", { name: "테마 Niagara 선택", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(viewport.width);
+    await capture(page, "app-edit", viewport, testInfo, "13-edit.png");
+
+    const name = form.getByRole("textbox", {
+      name: "어플리케이션 이름",
+      exact: true,
+    });
+    await name.fill("충돌 뒤에도 보존할 초안");
+    const otherPage = await page.context().newPage();
+    await otherPage.goto("/apps/00000000-0000-4000-8000-000000000091/edit");
+    const otherForm = otherPage.getByRole("form", {
+      name: "앱 수정 양식",
+      exact: true,
+    });
+    await expect(otherForm).toBeVisible();
+    await otherForm
+      .getByRole("textbox", { name: "어플리케이션 이름", exact: true })
+      .fill("먼저 저장한 편집");
+    await otherForm
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await expect(
+      otherPage.getByRole("heading", { name: "먼저 저장한 편집", exact: true }),
+    ).toBeVisible();
+    await form
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "앱이 다른 내용으로 수정되었어요",
+    );
+    await expect(name).toHaveValue("충돌 뒤에도 보존할 초안");
+    await capture(page, "app-edit-version-conflict", viewport, testInfo);
+
+    await setScenario(page, "auth_observation_error");
+    await form
+      .getByRole("button", { name: "최신 내용 불러오기", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "최신 내용을 불러오지 못했어요",
+    );
+    await expect(name).toHaveValue("충돌 뒤에도 보존할 초안");
+    await capture(page, "app-edit-latest-unavailable", viewport, testInfo);
+    await setScenario(page, "original");
+    await form
+      .getByRole("button", { name: "최신 내용 불러오기", exact: true })
+      .click();
+    await expect(name).toHaveValue("먼저 저장한 편집");
+    await name.fill("");
+    await form
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "표시된 항목을 확인해 주세요",
+    );
+    await capture(page, "app-edit-validation-error", viewport, testInfo);
+
+    await name.fill("거절된 수정 내용");
+    await setScenario(page, "app_update_failure");
+    await form
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await expect(page.getByRole("alert")).toContainText(
+      "앱을 수정하지 못했어요",
+    );
+    await capture(page, "app-edit-rejected", viewport, testInfo);
+
+    await name.fill("응답 확인이 필요한 수정");
+    await setScenario(page, "app_update_unknown");
+    await form
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await expect(
+      form.getByRole("button", { name: "저장 결과 확인", exact: true }),
+    ).toBeVisible();
+    await capture(page, "app-edit-unknown", viewport, testInfo);
+    await otherPage.close();
+  });
+
+  test(`private app detail after owner update at ${tag}`, async ({
+    page,
+  }, testInfo) => {
+    await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await login(page);
+    await page.goto("/apps/00000000-0000-4000-8000-000000000091");
+    const detail = page.locator('[data-screen-label="비공개 앱 상세"]');
+    await expect(detail).toBeVisible();
+    await expect(
+      detail.getByRole("link", { name: "앱 수정", exact: true }),
+    ).toBeVisible();
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.scrollWidth))
+      .toBeLessThanOrEqual(viewport.width);
+    await capture(
+      page,
+      "app-detail-private",
+      viewport,
+      testInfo,
+      "12-detail-private.png",
+    );
+  });
 }

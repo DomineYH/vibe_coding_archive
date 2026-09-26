@@ -11,6 +11,7 @@ import type {
   AuthTransitionKind,
   AuthTransitionState,
 } from "../../contracts/mappers";
+import type { components } from "../../contracts/api";
 import { MOCK_ACCOUNTS } from "./accounts";
 
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
@@ -49,6 +50,10 @@ const MOCK_SCENARIOS = [
   "app_create_unknown",
   "app_create_unresolved",
   "app_create_delayed",
+  "app_update_failure",
+  "app_update_unknown",
+  "app_update_unresolved",
+  "app_update_delayed",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
@@ -918,6 +923,23 @@ export function createMockApp(
   resetGeneration = generation;
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
   return app;
+}
+
+export function updateMockApp(app: components["schemas"]["AppDetail"]): void {
+  const state = readState();
+  const generation = nextGeneration(state.generation);
+  const apps = state.apps.filter((item) => item.id !== app.id);
+  const privateApps = state.private_apps.filter((item) => item.id !== app.id);
+  writeState({
+    ...state,
+    apps: (app.is_public ? [...apps, app] : apps) as MockState["apps"],
+    private_apps: (app.is_public
+      ? privateApps
+      : [...privateApps, app]) as MockState["private_apps"],
+    generation,
+  });
+  resetGeneration = generation;
+  window.dispatchEvent(new Event(MOCK_RESET_EVENT));
 }
 
 export function getMockNow(state = readState()): string {

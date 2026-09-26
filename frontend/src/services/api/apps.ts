@@ -5,8 +5,13 @@ import {
   mapAppPage,
   mapMeta,
 } from "../../contracts/mappers";
-import { ServiceError, type ServiceErrorCode } from "../service-error";
 import {
+  contractError,
+  ServiceError,
+  type ServiceErrorCode,
+} from "../service-error";
+import {
+  appPatchToWire,
   appInputToWire,
   normalizeAppInput,
   normalizeQueryForService,
@@ -20,6 +25,7 @@ type ApiEndpoint =
   | "GET /apps/{id}"
   | "POST /write-operations"
   | "POST /apps"
+  | "PATCH /apps/{id}"
   | "GET /write-operations/{key}";
 
 const API_ERROR_TRIPLES = [
@@ -43,6 +49,7 @@ const API_ERROR_TRIPLES = [
   { endpoint: "GET /apps/{id}", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /apps/{id}", status: 503, code: "SERVICE_UNAVAILABLE" },
   { endpoint: "POST /write-operations", status: 400, code: "VALIDATION_ERROR" },
+  { endpoint: "POST /write-operations", status: 404, code: "NOT_FOUND" },
   { endpoint: "POST /write-operations", status: 401, code: "AUTH_REQUIRED" },
   { endpoint: "POST /write-operations", status: 403, code: "FORBIDDEN" },
   {
@@ -66,6 +73,11 @@ const API_ERROR_TRIPLES = [
     endpoint: "POST /write-operations",
     status: 409,
     code: "AUTH_TRANSITION_PENDING",
+  },
+  {
+    endpoint: "POST /write-operations",
+    status: 409,
+    code: "VERSION_CONFLICT",
   },
   { endpoint: "POST /write-operations", status: 422, code: "VALIDATION_ERROR" },
   {
@@ -98,6 +110,67 @@ const API_ERROR_TRIPLES = [
   { endpoint: "POST /apps", status: 503, code: "SERVICE_UNAVAILABLE" },
   { endpoint: "POST /apps", status: 503, code: "DB_BUSY" },
   { endpoint: "POST /apps", status: 503, code: "AUTH_BUSY" },
+  { endpoint: "PATCH /apps/{id}", status: 400, code: "VALIDATION_ERROR" },
+  { endpoint: "PATCH /apps/{id}", status: 401, code: "AUTH_REQUIRED" },
+  { endpoint: "PATCH /apps/{id}", status: 403, code: "FORBIDDEN" },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  { endpoint: "PATCH /apps/{id}", status: 403, code: "CSRF_INVALID" },
+  { endpoint: "PATCH /apps/{id}", status: 403, code: "ORIGIN_REJECTED" },
+  { endpoint: "PATCH /apps/{id}", status: 404, code: "NOT_FOUND" },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 404,
+    code: "OPERATION_NOT_FOUND",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 409,
+    code: "OPERATION_KEY_MISMATCH",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 409,
+    code: "OPERATION_ALREADY_RESOLVED",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 409,
+    code: "OPERATION_INVALIDATED",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 409,
+    code: "AUTH_STATE_CHANGED",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 409,
+    code: "AUTH_TRANSITION_PENDING",
+  },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 409,
+    code: "VERSION_CONFLICT",
+  },
+  { endpoint: "PATCH /apps/{id}", status: 410, code: "OPERATION_EXPIRED" },
+  { endpoint: "PATCH /apps/{id}", status: 422, code: "VALIDATION_ERROR" },
+  { endpoint: "PATCH /apps/{id}", status: 429, code: "RATE_LIMITED" },
+  {
+    endpoint: "PATCH /apps/{id}",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  { endpoint: "PATCH /apps/{id}", status: 503, code: "DB_BUSY" },
+  { endpoint: "PATCH /apps/{id}", status: 503, code: "AUTH_BUSY" },
   {
     endpoint: "GET /write-operations/{key}",
     status: 401,
@@ -160,7 +233,7 @@ async function getJson(
     uncertain = false,
   }: {
     signal?: AbortSignal;
-    method?: "GET" | "POST";
+    method?: "GET" | "POST" | "PATCH";
     requestBody?: unknown;
     authenticated?: boolean;
     write?: boolean;
@@ -289,7 +362,7 @@ function mapApiError(
   return new ServiceError(allowed.code, message, {
     httpStatus,
     outcome:
-      (endpoint === "POST /apps" &&
+      ((endpoint === "POST /apps" || endpoint === "PATCH /apps/{id}") &&
         allowed.code === "OPERATION_ALREADY_RESOLVED") ||
       (uncertain && httpStatus >= 500)
         ? "unknown"
@@ -377,7 +450,7 @@ export const appsService: AppsService = {
 
   async issueCreateOperation(input) {
     const normalized = normalizeAppInput(input);
-    return mapAppWriteOperation(
+    const operation = mapAppWriteOperation(
       await getJson("POST /write-operations", "/write-operations", {
         method: "POST",
         write: true,
@@ -387,6 +460,9 @@ export const appsService: AppsService = {
         },
       }),
     );
+    if (operation.kind !== "app_create" || operation.state !== "unresolved")
+      throw contractError();
+    return operation;
   },
 
   async create(input, operationKey) {
@@ -411,12 +487,87 @@ export const appsService: AppsService = {
       throw new ServiceError("VALIDATION_ERROR", "저장 작업을 확인해 주세요.", {
         outcome: "rejected",
       });
-    return mapAppWriteOperation(
+    const operation = mapAppWriteOperation(
       await getJson(
         "GET /write-operations/{key}",
         `/write-operations/${encodeURIComponent(key)}`,
         { authenticated: true, signal },
       ),
     );
+    if (operation.kind !== "app_create") throw contractError();
+    return operation;
+  },
+
+  async issueUpdateOperation(id, patch, expectedVersion) {
+    if (
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu.test(id) ||
+      !Number.isSafeInteger(expectedVersion) ||
+      expectedVersion < 1
+    )
+      throw new ServiceError("VALIDATION_ERROR", "수정 요청을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    const operation = mapAppWriteOperation(
+      await getJson("POST /write-operations", "/write-operations", {
+        method: "POST",
+        write: true,
+        requestBody: {
+          kind: "app_update",
+          target_id: id,
+          expected_version: expectedVersion,
+          input: appPatchToWire(patch),
+        },
+      }),
+    );
+    if (
+      operation.kind !== "app_update" ||
+      operation.targetId !== id ||
+      operation.state !== "unresolved"
+    )
+      throw contractError();
+    return operation;
+  },
+
+  async update(id, patch, expectedVersion, operationKey) {
+    if (
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu.test(id) ||
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu.test(operationKey) ||
+      !Number.isSafeInteger(expectedVersion) ||
+      expectedVersion < 1
+    )
+      throw new ServiceError("VALIDATION_ERROR", "수정 요청을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    const input = appPatchToWire(patch);
+    return mapWriteResult(
+      (value) => {
+        const app = mapAppDetailResponse(value).item;
+        if (app.id !== id) throw contractError();
+        return app;
+      },
+      await getJson("PATCH /apps/{id}", `/apps/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        write: true,
+        uncertain: true,
+        idempotencyKey: operationKey,
+        requestBody: { expected_version: expectedVersion, ...input },
+      }),
+    );
+  },
+
+  async getUpdateOperation(key, { signal } = {}) {
+    if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/iu.test(key))
+      throw new ServiceError("VALIDATION_ERROR", "저장 작업을 확인해 주세요.", {
+        outcome: "rejected",
+      });
+    const operation = mapAppWriteOperation(
+      await getJson(
+        "GET /write-operations/{key}",
+        `/write-operations/${encodeURIComponent(key)}`,
+        { authenticated: true, signal },
+      ),
+    );
+    if (operation.kind !== "app_update") throw contractError();
+    return operation;
   },
 };

@@ -7,6 +7,7 @@ import {
 } from "../../services/apps-service";
 import { ServiceError } from "../../services/service-error";
 import { appsService } from "@services/apps";
+import { authService } from "@services/auth";
 
 const emptyDraft = {
   name: "",
@@ -19,6 +20,25 @@ const emptyDraft = {
   themeId: "niagara",
   stack: { db: "", backend: "", frontend: "", hosting: "" },
 };
+
+function draftFromApp(app) {
+  return {
+    name: app.name,
+    url: app.url,
+    prompt: app.prompt,
+    description: app.description,
+    subject: app.subject,
+    grades: app.grades,
+    isPublic: app.isPublic,
+    themeId: app.themeId,
+    stack: {
+      db: app.stack.db ?? "",
+      backend: app.stack.backend ?? "",
+      frontend: app.stack.frontend ?? "",
+      hosting: app.stack.hosting ?? "",
+    },
+  };
+}
 
 const inputClass =
   "w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10";
@@ -56,8 +76,19 @@ function isUncertain(error) {
   return error instanceof ServiceError && error.outcome === "unknown";
 }
 
-export function SubmitView({ meta, onCreated }) {
-  const [draft, setDraft] = useState(emptyDraft);
+export function SubmitView({
+  meta,
+  app,
+  onCreated,
+  onSaved,
+  onLatest,
+  onCancel,
+}) {
+  const editing = Boolean(app);
+  const initialDraft = app ? draftFromApp(app) : emptyDraft;
+  const [baseDraft, setBaseDraft] = useState(initialDraft);
+  const [draft, setDraft] = useState(initialDraft);
+  const [expectedVersion, setExpectedVersion] = useState(app?.version ?? null);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -65,9 +96,12 @@ export function SubmitView({ meta, onCreated }) {
   const [operationKey, setOperationKey] = useState(null);
   const [pendingInput, setPendingInput] = useState(null);
   const [confirmedAppId, setConfirmedAppId] = useState(null);
+  const [confirmedUpdate, setConfirmedUpdate] = useState(null);
+  const [conflictPending, setConflictPending] = useState(false);
+  const [loadingLatest, setLoadingLatest] = useState(false);
   const allowNavigation = useRef(false);
   const savingLocked = saving || unknown;
-  const dirty = isAppInputDirty(emptyDraft, draft);
+  const dirty = isAppInputDirty(baseDraft, draft);
   const shouldWarn = dirty || savingLocked;
   const blocker = useBlocker(
     useCallback(
@@ -85,15 +119,17 @@ export function SubmitView({ meta, onCreated }) {
   };
 
   useEffect(() => {
-    if (!confirmedAppId) return;
+    if (!confirmedAppId && !confirmedUpdate) return;
     if (blocker.state === "blocked") {
       blocker.reset();
       return;
     }
     allowNavigation.current = true;
-    onCreated(confirmedAppId);
+    if (editing) onSaved(confirmedUpdate);
+    else onCreated(confirmedAppId);
     setConfirmedAppId(null);
-  }, [blocker, confirmedAppId, onCreated]);
+    setConfirmedUpdate(null);
+  }, [blocker, confirmedAppId, confirmedUpdate, editing, onCreated, onSaved]);
 
   useEffect(() => {
     if (!shouldWarn) return undefined;
@@ -142,13 +178,27 @@ export function SubmitView({ meta, onCreated }) {
     setUnknown(false);
     setOperationKey(null);
     setPendingInput(null);
+    if (
+      editing &&
+      error instanceof ServiceError &&
+      error.code === "VERSION_CONFLICT"
+    ) {
+      setConflictPending(true);
+      setFormError(error.message);
+      return;
+    }
+    setConflictPending(false);
     if (error instanceof ServiceError) {
       setFieldErrors(error.fields ?? {});
       setFormError(
         error.fields ? "표시된 항목을 확인해 주세요." : error.message,
       );
     } else {
-      setFormError("앱을 등록하지 못했어요. 다시 시도해 주세요.");
+      setFormError(
+        editing
+          ? "앱을 수정하지 못했어요. 다시 시도해 주세요."
+          : "앱을 등록하지 못했어요. 다시 시도해 주세요.",
+      );
     }
   };
 
@@ -157,8 +207,11 @@ export function SubmitView({ meta, onCreated }) {
     setUnknown(false);
     setFormError("");
     try {
-      const app = await appsService.create(input, key);
-      openCreatedApp(app.id);
+      const saved = editing
+        ? await appsService.update(app.id, input, expectedVersion, key)
+        : await appsService.create(input, key);
+      if (editing) setConfirmedUpdate(saved);
+      else openCreatedApp(saved.id);
     } catch (error) {
       handleFailure(error);
     } finally {
@@ -168,7 +221,7 @@ export function SubmitView({ meta, onCreated }) {
 
   const submit = async (event) => {
     event.preventDefault();
-    if (savingLocked) return;
+    if (savingLocked || conflictPending) return;
     setFieldErrors({});
     setFormError("");
     let input;
@@ -185,8 +238,16 @@ export function SubmitView({ meta, onCreated }) {
     }
     setSaving(true);
     try {
-      const operation = await appsService.issueCreateOperation(input);
-      if (operation.state !== "unresolved" || operation.targetId !== null)
+      const operation = editing
+        ? await appsService.issueUpdateOperation(app.id, input, expectedVersion)
+        : await appsService.issueCreateOperation(input);
+      const expectedKind = editing ? "app_update" : "app_create";
+      const expectedTarget = editing ? app.id : null;
+      if (
+        operation.kind !== expectedKind ||
+        operation.state !== "unresolved" ||
+        operation.targetId !== expectedTarget
+      )
         throw new ServiceError(
           "CONTRACT_ERROR",
           "저장 작업을 확인할 수 없어요.",
@@ -206,14 +267,38 @@ export function SubmitView({ meta, onCreated }) {
     setSaving(true);
     setFormError("");
     try {
-      const operation = await appsService.getCreateOperation(operationKey);
+      const operation = editing
+        ? await appsService.getUpdateOperation(operationKey)
+        : await appsService.getCreateOperation(operationKey);
+      if (
+        operation.kind !== (editing ? "app_update" : "app_create") ||
+        (editing && operation.targetId !== app.id)
+      )
+        throw new ServiceError(
+          "CONTRACT_ERROR",
+          "저장 작업을 확인할 수 없어요.",
+        );
       if (operation.state === "succeeded" && operation.targetId) {
-        openCreatedApp(operation.targetId);
+        if (editing) {
+          const latest = await appsService.get(operation.targetId);
+          if (latest.version < operation.resultVersion)
+            throw new ServiceError(
+              "CONTRACT_ERROR",
+              "저장 결과를 확인할 수 없어요.",
+            );
+          setConfirmedUpdate(latest);
+        } else openCreatedApp(operation.targetId);
       } else if (operation.state === "rejected") {
         handleFailure(
           new ServiceError(
-            "VALIDATION_ERROR",
-            "앱을 등록하지 못했어요. 입력 내용을 확인해 주세요.",
+            editing && operation.rejectionCode === "VERSION_CONFLICT"
+              ? "VERSION_CONFLICT"
+              : "VALIDATION_ERROR",
+            editing && operation.rejectionCode === "VERSION_CONFLICT"
+              ? "앱이 다른 내용으로 수정되었어요. 최신 내용을 확인해 주세요."
+              : editing
+                ? "앱을 수정하지 못했어요. 입력 내용을 확인해 주세요."
+                : "앱을 등록하지 못했어요. 입력 내용을 확인해 주세요.",
             { outcome: "rejected" },
           ),
         );
@@ -238,6 +323,45 @@ export function SubmitView({ meta, onCreated }) {
       void sendWithKey(pendingInput, operationKey);
   };
 
+  const loadLatest = async () => {
+    if (!app || loadingLatest) return;
+    setLoadingLatest(true);
+    setFormError("");
+    try {
+      const auth = await authService.getCurrentAuthState();
+      const user = auth.user;
+      if (
+        auth.status !== "ready" ||
+        !user ||
+        user.id !== app.ownerId ||
+        !user.approved ||
+        user.sessionKind !== "full" ||
+        user.mustChangePassword
+      )
+        throw new ServiceError(
+          "AUTH_REQUIRED",
+          "현재 회원의 수정 권한을 확인할 수 없어요.",
+          { outcome: "rejected" },
+        );
+      const latest = await appsService.get(app.id);
+      if (latest.ownerId !== user.id)
+        throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.");
+      const latestDraft = draftFromApp(latest);
+      setBaseDraft(latestDraft);
+      setDraft(latestDraft);
+      setExpectedVersion(latest.version);
+      setFieldErrors({});
+      setConflictPending(false);
+      onLatest(latest);
+    } catch (error) {
+      setFormError(
+        `최신 내용을 불러오지 못했어요. 작성 중인 초안은 유지됩니다. ${error instanceof Error ? error.message : "다시 확인해 주세요."}`,
+      );
+    } finally {
+      setLoadingLatest(false);
+    }
+  };
+
   const toggleGrade = (grade) => {
     const selected = draft.grades.includes(grade);
     setField(
@@ -253,23 +377,33 @@ export function SubmitView({ meta, onCreated }) {
   return (
     <main
       className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-10 sm:px-8"
-      data-screen-label="등록"
+      data-screen-label={editing ? "편집" : "등록"}
     >
       <div className="mb-8 flex items-end justify-between gap-4">
         <div>
           <h1 className="text-[28px] font-extrabold tracking-tight text-neutral-900">
-            새 앱 등록
+            {editing ? "앱 정보 편집" : "새 앱 등록"}
           </h1>
           <p className="mt-1 text-[13.5px] text-neutral-500">
             프롬프트까지 공유하면 다른 선생님이 똑같이 다시 만들 수 있어요.
           </p>
         </div>
-        <Link
-          to="/"
-          className="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
-        >
-          취소
-        </Link>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
+          >
+            취소
+          </button>
+        ) : (
+          <Link
+            to="/"
+            className="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
+          >
+            취소
+          </Link>
+        )}
       </div>
 
       {formError ? (
@@ -284,11 +418,14 @@ export function SubmitView({ meta, onCreated }) {
       <form
         noValidate
         onSubmit={submit}
-        aria-label="새 앱 등록 양식"
+        aria-label={editing ? "앱 수정 양식" : "새 앱 등록 양식"}
         className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
       >
         <div className="flex min-w-0 flex-col gap-6">
-          <fieldset disabled={savingLocked} className="contents">
+          <fieldset
+            disabled={savingLocked || loadingLatest}
+            className="contents"
+          >
             <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-5 sm:p-6">
               <h2 className="text-[14px] font-bold text-neutral-900">
                 기본 정보
@@ -542,6 +679,9 @@ export function SubmitView({ meta, onCreated }) {
                     ? "모든 사용자가 열람할 수 있어요."
                     : "본인과 관리자만 볼 수 있어요."}
                 </p>
+                <p className="mt-1 text-[11.5px] leading-relaxed text-neutral-500">
+                  외부 사이트 자체의 접근 제한은 아니에요.
+                </p>
               </div>
               <button
                 type="button"
@@ -563,9 +703,22 @@ export function SubmitView({ meta, onCreated }) {
             type="submit"
             size="lg"
             className="w-full"
-            disabled={savingLocked}
+            disabled={
+              savingLocked ||
+              loadingLatest ||
+              conflictPending ||
+              (editing && !dirty)
+            }
           >
-            {saving ? "등록 중…" : unknown ? "결과 확인 중" : "아카이브에 등록"}
+            {saving
+              ? editing
+                ? "수정 중…"
+                : "등록 중…"
+              : unknown
+                ? "결과 확인 중"
+                : editing
+                  ? "변경사항 저장"
+                  : "아카이브에 등록"}
           </Btn>
           {unknown ? (
             <section
@@ -584,6 +737,20 @@ export function SubmitView({ meta, onCreated }) {
               </Btn>
               <Btn onClick={retrySameRequest} disabled={saving}>
                 같은 요청 다시 보내기
+              </Btn>
+            </section>
+          ) : null}
+          {conflictPending ? (
+            <section
+              className="-mt-4 flex flex-col gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-4"
+              aria-label="버전 충돌 확인"
+            >
+              <p className="text-[12.5px] leading-relaxed text-amber-900">
+                최신 내용이 있어요. 입력한 초안은 유지됩니다. 최신 내용을
+                불러오면 이 초안이 교체됩니다.
+              </p>
+              <Btn onClick={() => void loadLatest()} disabled={loadingLatest}>
+                {loadingLatest ? "최신 내용 확인 중…" : "최신 내용 불러오기"}
               </Btn>
             </section>
           ) : null}

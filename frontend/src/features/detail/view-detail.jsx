@@ -271,6 +271,8 @@ export function AppDetailView({
   authStatus = "ready",
   authError,
   concealed = false,
+  canEdit = false,
+  fromGallery = false,
 }) {
   const [notice, setNotice] = useState("");
   const mainRef = useRef(null);
@@ -331,7 +333,17 @@ export function AppDetailView({
           <ChevronLeft size={15} aria-hidden="true" />
           갤러리로
         </button>
-        <span aria-hidden="true" />
+        {canEdit ? (
+          <Link
+            to={`/apps/${app.id}/edit`}
+            state={{ fromDetail: true, fromGallery }}
+            className="inline-flex h-9 items-center rounded-full border border-neutral-200 px-4 text-[12.5px] font-semibold text-neutral-700 hover:bg-neutral-100"
+          >
+            앱 수정
+          </Link>
+        ) : (
+          <span aria-hidden="true" />
+        )}
       </div>
 
       <DeviceScreen
@@ -454,8 +466,16 @@ export function AppDetailView({
           <div className="px-1 text-[12px] leading-relaxed text-neutral-400">
             <div className="flex items-center justify-between border-b border-neutral-200/70 py-2">
               <span>공개 범위</span>
-              <span className="font-semibold text-neutral-600">전체 공개</span>
+              <span className="font-semibold text-neutral-600">
+                {app.isPublic ? "전체 공개" : "비공개"}
+              </span>
             </div>
+            {!app.isPublic ? (
+              <p className="border-b border-neutral-200/70 py-2 text-[11px] leading-relaxed">
+                이 설정은 EduVibe 내 열람 범위이며 외부 사이트를 보호하지
+                않아요.
+              </p>
+            ) : null}
             <div className="flex items-center justify-between border-b border-neutral-200/70 py-2">
               <span>등록일</span>
               <span className="font-semibold text-neutral-600">

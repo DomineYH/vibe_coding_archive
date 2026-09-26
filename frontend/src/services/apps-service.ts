@@ -26,6 +26,9 @@ export type AppInput = {
     hosting: string | null;
   };
 };
+export type AppPatch = Partial<Omit<AppInput, "stack">> & {
+  stack?: Partial<AppInput["stack"]>;
+};
 
 const subjects = new Set(catalog.subjects);
 const grades = new Set(catalog.grades);
@@ -279,6 +282,132 @@ export function appInputToWire(
   };
 }
 
+export function normalizeAppPatch(input: unknown): AppPatch {
+  if (
+    input === null ||
+    typeof input !== "object" ||
+    Array.isArray(input) ||
+    Object.keys(input).some((key) => !appFields.has(key)) ||
+    Object.keys(input).length === 0
+  )
+    throw invalidAppInput({ form: "변경할 항목을 확인해 주세요." });
+
+  const value = input as Record<string, unknown>;
+  const patch: AppPatch = {};
+  const errors: Record<string, string> = {};
+
+  for (const field of ["name", "url", "prompt", "description"] as const) {
+    if (!Object.hasOwn(value, field)) continue;
+    try {
+      patch[field] =
+        field === "url"
+          ? validateAppUrl(value[field])
+          : cleanText(
+              value[field],
+              field,
+              field === "name" ? 100 : field === "prompt" ? 30_000 : 20_000,
+              {
+                trim: field === "name",
+                nfc: field === "name",
+                multiline: field === "prompt" || field === "description",
+                required: true,
+              },
+            );
+    } catch (error) {
+      if (error instanceof ServiceError) Object.assign(errors, error.fields);
+      else throw error;
+    }
+  }
+  if (Object.hasOwn(value, "subject")) {
+    if (typeof value.subject !== "string" || !subjects.has(value.subject))
+      errors.subject = "교과 과목을 선택해 주세요.";
+    else patch.subject = value.subject as Subject;
+  }
+  if (Object.hasOwn(value, "grades")) {
+    if (
+      !Array.isArray(value.grades) ||
+      value.grades.length === 0 ||
+      value.grades.some(
+        (grade) => typeof grade !== "string" || !grades.has(grade),
+      )
+    )
+      errors.grades = "적용 학년을 하나 이상 선택해 주세요.";
+    else
+      patch.grades = catalog.grades.filter((grade) =>
+        (value.grades as string[]).includes(grade),
+      ) as Grade[];
+  }
+  if (Object.hasOwn(value, "isPublic")) {
+    if (typeof value.isPublic !== "boolean")
+      errors.isPublic = "공개 여부를 확인해 주세요.";
+    else patch.isPublic = value.isPublic;
+  }
+  if (Object.hasOwn(value, "themeId")) {
+    if (typeof value.themeId !== "string" || !themeIds.has(value.themeId))
+      errors.themeId = "테마를 선택해 주세요.";
+    else patch.themeId = value.themeId;
+  }
+  if (Object.hasOwn(value, "stack")) {
+    const stack = value.stack;
+    if (
+      stack === null ||
+      typeof stack !== "object" ||
+      Array.isArray(stack) ||
+      Object.keys(stack).length === 0 ||
+      Object.keys(stack).some((key) => !stackFields.has(key))
+    ) {
+      errors.stack = "기술 스택을 확인해 주세요.";
+    } else {
+      const normalized: NonNullable<AppPatch["stack"]> = {};
+      for (const field of stackFields) {
+        if (!Object.hasOwn(stack, field)) continue;
+        const item = (stack as Record<string, unknown>)[field];
+        try {
+          normalized[field as keyof AppInput["stack"]] =
+            item === null
+              ? null
+              : cleanText(item, `stack.${field}`, 200, {
+                  trim: true,
+                  nfc: true,
+                }) || null;
+        } catch (error) {
+          if (error instanceof ServiceError)
+            Object.assign(errors, error.fields);
+          else throw error;
+        }
+      }
+      patch.stack = normalized;
+    }
+  }
+  if (Object.keys(errors).length) throw invalidAppInput(errors);
+  return patch;
+}
+
+export function appPatchToWire(
+  input: unknown,
+): components["schemas"]["AppPatch"] {
+  const value = normalizeAppPatch(input);
+  const wire: components["schemas"]["AppPatch"] = {};
+  if (Object.hasOwn(value, "name")) wire.name = value.name!;
+  if (Object.hasOwn(value, "url")) wire.url = value.url!;
+  if (Object.hasOwn(value, "prompt")) wire.prompt = value.prompt!;
+  if (Object.hasOwn(value, "description"))
+    wire.description = value.description!;
+  if (Object.hasOwn(value, "subject")) wire.subject = value.subject!;
+  if (Object.hasOwn(value, "grades")) wire.grades = value.grades!;
+  if (Object.hasOwn(value, "isPublic")) wire.is_public = value.isPublic!;
+  if (Object.hasOwn(value, "themeId")) wire.theme_id = value.themeId!;
+  if (value.stack && Object.hasOwn(value.stack, "db"))
+    wire.stack_db = value.stack.db!;
+  if (value.stack && Object.hasOwn(value.stack, "backend"))
+    wire.stack_backend = value.stack.backend!;
+  if (value.stack && Object.hasOwn(value.stack, "frontend"))
+    wire.stack_frontend = value.stack.frontend!;
+  if (value.stack && Object.hasOwn(value.stack, "hosting"))
+    wire.stack_hosting = value.stack.hosting!;
+  return wire;
+}
+
 function draftValue(input: AppInput) {
   return {
     name: input.name.trim().normalize("NFC"),
@@ -336,6 +465,21 @@ export type AppsService = {
   issueCreateOperation(input: unknown): Promise<AppWriteOperation>;
   create(input: unknown, operationKey: string): Promise<AppDetail>;
   getCreateOperation(
+    key: string,
+    options?: RequestOptions,
+  ): Promise<AppWriteOperation>;
+  issueUpdateOperation(
+    id: string,
+    patch: unknown,
+    expectedVersion: number,
+  ): Promise<AppWriteOperation>;
+  update(
+    id: string,
+    patch: unknown,
+    expectedVersion: number,
+    operationKey: string,
+  ): Promise<AppDetail>;
+  getUpdateOperation(
     key: string,
     options?: RequestOptions,
   ): Promise<AppWriteOperation>;

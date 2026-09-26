@@ -97,7 +97,7 @@ export type AppDetail = AppCard & {
 };
 export type AppWriteOperation = {
   key: string;
-  kind: "app_create";
+  kind: "app_create" | "app_update";
   targetId: string | null;
   issuedAt: string;
   expiresAt: string;
@@ -981,7 +981,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
       "rejection_code",
       "server_time",
     ]) ||
-    item.kind !== "app_create" ||
+    (item.kind !== "app_create" && item.kind !== "app_update") ||
     !["unresolved", "succeeded", "rejected"].includes(String(item.state))
   )
     throw contractError();
@@ -993,6 +993,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
   const issuedAt = dateTime(item.issued_at);
   const expiresAt = dateTime(item.expires_at);
   const state = item.state as AppWriteOperation["state"];
+  const kind = item.kind;
   const dbAppliedAt = nullableDateTime(item.db_applied_at);
   const finalizedAt = nullableDateTime(item.finalized_at);
   const resultVersion =
@@ -1002,7 +1003,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
     (rejectionCode !== null && !rejectionCode) ||
     Date.parse(expiresAt) <= Date.parse(issuedAt) ||
     (state === "unresolved" &&
-      (targetId !== null ||
+      ((kind === "app_create" ? targetId !== null : targetId === null) ||
         dbAppliedAt !== null ||
         finalizedAt !== null ||
         resultVersion !== null ||
@@ -1014,7 +1015,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
         resultVersion === null ||
         rejectionCode !== null)) ||
     (state === "rejected" &&
-      (targetId !== null ||
+      ((kind === "app_create" ? targetId !== null : targetId === null) ||
         dbAppliedAt !== null ||
         finalizedAt === null ||
         resultVersion !== null ||
@@ -1023,7 +1024,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
     throw contractError();
   return {
     key,
-    kind: "app_create",
+    kind,
     targetId,
     issuedAt,
     expiresAt,
