@@ -392,12 +392,21 @@ function GalleryRoute({ auth }) {
   );
 }
 
-function DetailRoute({ auth, onRetryAuth }) {
+function DetailRoute({
+  auth,
+  onRetryAuth,
+  onDeleted,
+  deletionState,
+  setDeletionState,
+}) {
   const { id = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const access = usePublicMetadata();
   const observationId = useRef(auth.observationId);
+  const currentActorId = useRef(auth.user?.id ?? null);
+  currentActorId.current = auth.user?.id ?? null;
+  const deletionBusy = useRef(false);
   observationId.current = auth.observationId;
   const detail = useQuery({
     queryKey: [__DATA_MODE__, "apps", "detail", id],
@@ -443,6 +452,131 @@ function DetailRoute({ auth, onRetryAuth }) {
     auth.user.sessionKind === "full" &&
     !auth.user.mustChangePassword &&
     access.meta?.capabilities.apps_update_own.enabled === true;
+  const canDelete =
+    Boolean(app) &&
+    auth.status === "ready" &&
+    !auth.concealed &&
+    auth.user?.role === "user" &&
+    auth.user.id === app?.ownerId &&
+    auth.user.approved &&
+    auth.user.sessionKind === "full" &&
+    !auth.user.mustChangePassword &&
+    access.meta?.capabilities.apps_delete_own.enabled === true;
+  const currentDeletion =
+    deletionState?.id === id && deletionState.actorId === auth.user?.id
+      ? deletionState
+      : null;
+  const setCurrentDeletion = (next) =>
+    setDeletionState((current) => {
+      if (auth.user?.id !== currentActorId.current) return current;
+      if (current && (current.id !== id || current.actorId !== auth.user?.id))
+        return current;
+      return next;
+    });
+  const runDelete = async () => {
+    if (!canDelete || !app || deletionBusy.current) return;
+    const actorId = auth.user.id;
+    const existing = currentDeletion;
+    const expectedVersion = existing?.operation
+      ? existing.expectedVersion
+      : app.version;
+    let operation = existing?.operation ?? null;
+    deletionBusy.current = true;
+    setCurrentDeletion({
+      id,
+      actorId,
+      expectedVersion,
+      operation,
+      phase: "pending",
+      message: null,
+    });
+    try {
+      operation ??= await appsService.issueDeleteOperation(id, expectedVersion);
+      setCurrentDeletion({
+        id,
+        actorId,
+        expectedVersion,
+        operation,
+        phase: "pending",
+        message: null,
+      });
+      await appsService.delete(id, expectedVersion, operation.key);
+      setCurrentDeletion(null);
+      onDeleted(id, actorId);
+    } catch (error) {
+      setCurrentDeletion({
+        id,
+        actorId,
+        expectedVersion,
+        operation,
+        phase:
+          error?.outcome === "unknown" ||
+          error?.code === "OPERATION_ALREADY_RESOLVED"
+            ? "unknown"
+            : "rejected",
+        message:
+          error?.message ??
+          "삭제 결과를 확인하지 못했어요. 작업 결과를 확인해 주세요.",
+      });
+    } finally {
+      deletionBusy.current = false;
+    }
+  };
+  const checkDeleteResult = async () => {
+    const existing = currentDeletion;
+    if (!existing?.operation || deletionBusy.current) return;
+    deletionBusy.current = true;
+    setCurrentDeletion({
+      ...existing,
+      phase: "pending",
+      message: "삭제 결과를 확인하고 있어요.",
+    });
+    try {
+      const operation = await appsService.getDeleteOperation(
+        existing.operation.key,
+      );
+      if (operation.state === "succeeded") {
+        setCurrentDeletion(null);
+        onDeleted(id, existing.actorId);
+      } else if (operation.state === "rejected") {
+        setCurrentDeletion({
+          ...existing,
+          operation,
+          phase: "rejected",
+          message:
+            operation.rejectionCode === "VERSION_CONFLICT"
+              ? "앱 정보가 바뀌어 삭제하지 않았어요. 최신 상태를 확인해 주세요."
+              : "삭제 요청이 거절되어 앱은 삭제되지 않았어요.",
+        });
+      } else {
+        setCurrentDeletion({
+          ...existing,
+          operation,
+          phase: "unknown",
+          message:
+            operation.state === "confirming_deletion"
+              ? "앱 삭제가 반영되었고 삭제 결과 확인을 기다리고 있어요."
+              : "삭제 결과가 아직 확정되지 않았어요. 같은 작업 키로 결과를 확인하거나 다시 요청해 주세요.",
+        });
+      }
+    } catch (error) {
+      setCurrentDeletion({
+        ...existing,
+        phase: "unknown",
+        message: `삭제 결과를 확인할 수 없어요. ${error?.message ?? "같은 작업 키로 다시 확인해 주세요."}`,
+      });
+    } finally {
+      deletionBusy.current = false;
+    }
+  };
+  const cancelDelete = () => {
+    if (
+      currentDeletion?.phase === "pending" ||
+      currentDeletion?.phase === "unknown"
+    )
+      return;
+    setCurrentDeletion(null);
+  };
   const authError =
     __DATA_MODE__ === "mock" && protectedDetail && auth.status === "error";
   return (
@@ -458,6 +592,12 @@ function DetailRoute({ auth, onRetryAuth }) {
       error={access.error ?? detail.error}
       retry={authError ? onRetryAuth : () => access.retry(detail.refetch)}
       canEdit={canEdit}
+      canDelete={canDelete}
+      deleteState={currentDeletion}
+      onDelete={runDelete}
+      onCheckDeleteResult={checkDeleteResult}
+      onRetryDelete={runDelete}
+      onCancelDelete={cancelDelete}
       fromGallery={location.state?.fromGallery === true}
       onBack={() =>
         navigate(
@@ -907,6 +1047,7 @@ export default function App() {
     concealed: document.visibilityState === "hidden",
   });
   const [logoutPending, setLogoutPending] = useState(false);
+  const [deletion, setDeletion] = useState(null);
 
   const onAppCreated = useCallback(
     (id) => {
@@ -940,6 +1081,27 @@ export default function App() {
       setToast("앱을 수정했어요.");
     },
     [location.state, navigate, queryClient],
+  );
+  const onAppDeleted = useCallback(
+    (id, actorId) => {
+      setDeletion((current) =>
+        current?.id === id && current.actorId === actorId ? null : current,
+      );
+      queryClient.removeQueries({
+        queryKey: [__DATA_MODE__, "apps", "detail", id],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "admin"],
+      });
+      if (authSnapshot.current.user?.id === actorId) {
+        navigate("/", { replace: true });
+        setToast("앱을 삭제했어요.");
+      }
+    },
+    [navigate, queryClient],
   );
 
   const isProtectedQuery = useCallback((query) => {
@@ -1263,11 +1425,20 @@ export default function App() {
         void refreshMockState();
     };
     const onMockReset = () => void refreshMockState();
+    const onMockAppDeleted = () => {
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "admin"],
+      });
+    };
     const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") concealOnDeparture();
       else restoreOnReturn();
     };
     window.addEventListener("eduvibe:mock-reset", onMockReset);
+    window.addEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
     window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("blur", concealOnDeparture);
@@ -1278,19 +1449,48 @@ export default function App() {
     window.addEventListener("pageshow", onPageShow);
     return () => {
       window.removeEventListener("eduvibe:mock-reset", onMockReset);
+      window.removeEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
       window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onVisibilityChange);
       window.removeEventListener("blur", concealOnDeparture);
       window.removeEventListener("focus", restoreOnReturn);
       window.removeEventListener("pageshow", onPageShow);
     };
-  }, [concealOnDeparture, refreshMockState, restoreAuth, restoreOnReturn]);
+  }, [
+    concealOnDeparture,
+    queryClient,
+    refreshMockState,
+    restoreAuth,
+    restoreOnReturn,
+  ]);
 
   useEffect(() => {
     if (!toast) return undefined;
     const timer = window.setTimeout(() => setToast(""), 2200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (
+      deletion &&
+      auth.status === "ready" &&
+      deletion.actorId !== auth.user?.id
+    )
+      setDeletion(null);
+  }, [auth.status, auth.user?.id, deletion]);
+
+  const deletionNeedsConfirmation = ["pending", "unknown"].includes(
+    deletion?.phase,
+  );
+  useEffect(() => {
+    if (!deletionNeedsConfirmation) return undefined;
+    const warnBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeUnload);
+    return () => window.removeEventListener("beforeunload", warnBeforeUnload);
+  }, [deletionNeedsConfirmation]);
 
   const active =
     location.pathname === "/apps/new"
@@ -1334,7 +1534,15 @@ export default function App() {
         />
         <Route
           path="/apps/:id"
-          element={<DetailRoute auth={auth} onRetryAuth={restoreAuth} />}
+          element={
+            <DetailRoute
+              auth={auth}
+              onRetryAuth={restoreAuth}
+              onDeleted={onAppDeleted}
+              deletionState={deletion}
+              setDeletionState={setDeletion}
+            />
+          }
         />
         <Route
           path="/auth"

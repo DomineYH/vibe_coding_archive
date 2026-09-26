@@ -205,6 +205,31 @@ describe("OpenAPI app detail schema", () => {
     ).toEqual(["unresolved", "succeeded", "rejected"]);
   });
 
+  it("binds app deletion to its issued key and expected app version", () => {
+    const deletion = openapi.paths["/apps/{id}"].delete;
+    const issue = openapi.paths["/write-operations"].post;
+    expect(deletion.parameters).toContainEqual({
+      $ref: "#/components/parameters/IdempotencyKey",
+    });
+    expect(deletion.requestBody.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/DeleteAppInput",
+    );
+    expect(deletion.responses["204"]).toBeDefined();
+    expect(deletion.responses["503"]).toBeDefined();
+    expect(issue.requestBody.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/CreateWriteOperation",
+    );
+    expect(
+      openapi.components.schemas.CreateWriteOperation.oneOf,
+    ).toContainEqual({ $ref: "#/components/schemas/CreateAppDeleteOperation" });
+    expect(
+      openapi.components.schemas.CreateAppDeleteOperation.required,
+    ).toEqual(["kind", "target_id", "expected_version"]);
+    expect(
+      openapi.components.schemas.AppWriteOperation.properties.state.enum,
+    ).toContain("confirming_deletion");
+  });
+
   it("accepts representative detail fixtures", () => {
     expect(publicApps.every((app) => validateAppDetail(app))).toBe(true);
   });

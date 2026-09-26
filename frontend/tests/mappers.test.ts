@@ -161,6 +161,43 @@ describe("response mappers", () => {
     ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 
+  it("maps a pending deletion separately from its confirmed result", () => {
+    const deletion = {
+      ...appWriteOperation,
+      kind: "app_delete",
+      target_id: card.id,
+      state: "confirming_deletion",
+      db_applied_at: appWriteOperation.server_time,
+    };
+    expect(mapAppWriteOperation(deletion)).toMatchObject({
+      kind: "app_delete",
+      targetId: card.id,
+      state: "confirming_deletion",
+      dbAppliedAt: appWriteOperation.server_time,
+      finalizedAt: null,
+      resultVersion: null,
+    });
+    expect(
+      mapAppWriteOperation({
+        ...deletion,
+        state: "succeeded",
+        finalized_at: appWriteOperation.server_time,
+      }),
+    ).toMatchObject({
+      kind: "app_delete",
+      state: "succeeded",
+      resultVersion: null,
+    });
+    expect(() =>
+      mapAppWriteOperation({
+        ...deletion,
+        state: "succeeded",
+        finalized_at: appWriteOperation.server_time,
+        result_version: 1,
+      }),
+    ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
   it("maps authentication flow identity and sequence metadata", () => {
     const flow = {
       flow_id: "00000000-0000-4000-8000-000000000200",

@@ -97,11 +97,11 @@ export type AppDetail = AppCard & {
 };
 export type AppWriteOperation = {
   key: string;
-  kind: "app_create" | "app_update";
+  kind: "app_create" | "app_update" | "app_delete";
   targetId: string | null;
   issuedAt: string;
   expiresAt: string;
-  state: "unresolved" | "succeeded" | "rejected";
+  state: "unresolved" | "confirming_deletion" | "succeeded" | "rejected";
   dbAppliedAt: string | null;
   finalizedAt: string | null;
   resultVersion: number | null;
@@ -981,8 +981,10 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
       "rejection_code",
       "server_time",
     ]) ||
-    (item.kind !== "app_create" && item.kind !== "app_update") ||
-    !["unresolved", "succeeded", "rejected"].includes(String(item.state))
+    !["app_create", "app_update", "app_delete"].includes(String(item.kind)) ||
+    !["unresolved", "confirming_deletion", "succeeded", "rejected"].includes(
+      String(item.state),
+    )
   )
     throw contractError();
 
@@ -993,7 +995,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
   const issuedAt = dateTime(item.issued_at);
   const expiresAt = dateTime(item.expires_at);
   const state = item.state as AppWriteOperation["state"];
-  const kind = item.kind;
+  const kind = item.kind as AppWriteOperation["kind"];
   const dbAppliedAt = nullableDateTime(item.db_applied_at);
   const finalizedAt = nullableDateTime(item.finalized_at);
   const resultVersion =
@@ -1008,11 +1010,20 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
         finalizedAt !== null ||
         resultVersion !== null ||
         rejectionCode !== null)) ||
+    (state === "confirming_deletion" &&
+      (kind !== "app_delete" ||
+        targetId === null ||
+        dbAppliedAt === null ||
+        finalizedAt !== null ||
+        resultVersion !== null ||
+        rejectionCode !== null)) ||
     (state === "succeeded" &&
       (targetId === null ||
         dbAppliedAt === null ||
         finalizedAt === null ||
-        resultVersion === null ||
+        (kind === "app_delete"
+          ? resultVersion !== null
+          : resultVersion === null) ||
         rejectionCode !== null)) ||
     (state === "rejected" &&
       ((kind === "app_create" ? targetId !== null : targetId === null) ||

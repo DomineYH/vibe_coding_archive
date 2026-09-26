@@ -145,6 +145,16 @@ function SpecCell({ label, value }) {
   );
 }
 
+function objectParticle(value) {
+  const last = String(value || "")
+    .trim()
+    .slice(-1)
+    .charCodeAt(0);
+  return last >= 0xac00 && last <= 0xd7a3 && (last - 0xac00) % 28 !== 0
+    ? "을"
+    : "를";
+}
+
 function StateView({
   loading,
   error,
@@ -272,10 +282,43 @@ export function AppDetailView({
   authError,
   concealed = false,
   canEdit = false,
+  canDelete = false,
+  deleteState = null,
+  onDelete,
+  onCheckDeleteResult,
+  onRetryDelete,
+  onCancelDelete,
   fromGallery = false,
 }) {
   const [notice, setNotice] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const mainRef = useRef(null);
+  const deleteTriggerRef = useRef(null);
+  const deleteCancelRef = useRef(null);
+  const deleteCheckRef = useRef(null);
+  const deleteStatusRef = useRef(null);
+  const priorDeleteFocus = useRef({ open: false, phase: "idle" });
+  const deletePhase = deleteState?.phase ?? "idle";
+  useEffect(() => {
+    const prior = priorDeleteFocus.current;
+    if (!prior.open && confirmDelete)
+      (
+        deleteCheckRef.current ??
+        deleteStatusRef.current ??
+        deleteCancelRef.current
+      )?.focus();
+    else if (prior.open && !confirmDelete) deleteTriggerRef.current?.focus();
+    else if (confirmDelete && prior.phase !== deletePhase)
+      (deletePhase === "pending"
+        ? deleteStatusRef.current
+        : (deleteCheckRef.current ?? deleteCancelRef.current)
+      )?.focus();
+    priorDeleteFocus.current = { open: confirmDelete, phase: deletePhase };
+  }, [confirmDelete, deletePhase]);
+  useEffect(() => {
+    if (deleteState?.phase && deleteState.phase !== "idle")
+      setConfirmDelete(true);
+  }, [app?.id, deleteState?.id, deleteState?.phase]);
   useEffect(() => {
     if (
       loading ||
@@ -333,18 +376,143 @@ export function AppDetailView({
           <ChevronLeft size={15} aria-hidden="true" />
           갤러리로
         </button>
-        {canEdit ? (
-          <Link
-            to={`/apps/${app.id}/edit`}
-            state={{ fromDetail: true, fromGallery }}
-            className="inline-flex h-9 items-center rounded-full border border-neutral-200 px-4 text-[12.5px] font-semibold text-neutral-700 hover:bg-neutral-100"
-          >
-            앱 수정
-          </Link>
+        {canEdit || canDelete ? (
+          <div className="flex items-center gap-2">
+            {canEdit ? (
+              <Link
+                to={`/apps/${app.id}/edit`}
+                state={{ fromDetail: true, fromGallery }}
+                className="inline-flex h-9 items-center rounded-full border border-neutral-200 px-4 text-[12.5px] font-semibold text-neutral-700 hover:bg-neutral-100"
+              >
+                앱 수정
+              </Link>
+            ) : null}
+            {canDelete ? (
+              <button
+                ref={deleteTriggerRef}
+                type="button"
+                aria-expanded={confirmDelete}
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex h-8 items-center rounded-full border border-neutral-300 bg-white px-3.5 text-[12.5px] font-semibold text-neutral-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+              >
+                삭제
+              </button>
+            ) : null}
+          </div>
         ) : (
           <span aria-hidden="true" />
         )}
       </div>
+
+      {canDelete && confirmDelete ? (
+        <section
+          className="mb-5 flex flex-wrap items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-4"
+          role="group"
+          aria-labelledby="app-delete-confirmation-title"
+        >
+          <div className="min-w-[220px] flex-1">
+            <div
+              id="app-delete-confirmation-title"
+              className="break-keep text-[13.5px] font-bold text-red-700"
+            >
+              ‘{app.name}’{objectParticle(app.name)} 아카이브에서 삭제할까요?
+            </div>
+            <p className="mt-0.5 break-keep text-[12px] leading-relaxed text-red-600/90">
+              프롬프트와 활용 매뉴얼이 함께 삭제되며 되돌릴 수 없습니다.
+            </p>
+          </div>
+          {deletePhase === "pending" ? (
+            <span
+              ref={deleteStatusRef}
+              role="status"
+              tabIndex={-1}
+              className="text-[12px] font-semibold text-red-700"
+            >
+              삭제 요청 처리 중…
+            </span>
+          ) : null}
+          {deletePhase === "unknown" || deletePhase === "rejected" ? (
+            <p
+              role="alert"
+              className="basis-full text-[12px] leading-relaxed text-red-700"
+            >
+              {deleteState.message}
+            </p>
+          ) : null}
+          {deletePhase === "idle" ? (
+            <>
+              <Btn size="sm" variant="danger" onClick={onDelete}>
+                삭제 확인
+              </Btn>
+              <button
+                ref={deleteCancelRef}
+                type="button"
+                className="inline-flex h-8 items-center justify-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 transition-colors hover:bg-neutral-100"
+                onClick={() => {
+                  onCancelDelete?.();
+                  setConfirmDelete(false);
+                }}
+              >
+                취소
+              </button>
+            </>
+          ) : null}
+          {deletePhase === "pending" ? (
+            <>
+              <Btn size="sm" variant="danger" disabled>
+                삭제 중…
+              </Btn>
+              <Btn size="sm" variant="ghost" disabled>
+                취소
+              </Btn>
+            </>
+          ) : null}
+          {deletePhase === "unknown" ? (
+            <>
+              <button
+                ref={deleteCheckRef}
+                type="button"
+                className="inline-flex h-8 items-center justify-center rounded-full border border-neutral-300 bg-white px-3 text-[12.5px] font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
+                onClick={onCheckDeleteResult}
+              >
+                삭제 결과 확인
+              </button>
+              <Btn size="sm" variant="danger" onClick={onRetryDelete}>
+                같은 삭제 요청 다시 보내기
+              </Btn>
+            </>
+          ) : null}
+          {deletePhase === "rejected" ? (
+            <>
+              {deleteState.operation ? (
+                <button
+                  ref={deleteCheckRef}
+                  type="button"
+                  className="inline-flex h-8 items-center justify-center rounded-full border border-neutral-300 bg-white px-3 text-[12.5px] font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
+                  onClick={onCheckDeleteResult}
+                >
+                  삭제 결과 확인
+                </button>
+              ) : (
+                <Btn size="sm" variant="danger" onClick={onDelete}>
+                  다시 시도
+                </Btn>
+              )}
+              <button
+                ref={deleteCancelRef}
+                type="button"
+                className="inline-flex h-8 items-center justify-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 transition-colors hover:bg-neutral-100"
+                onClick={() => {
+                  onCancelDelete?.();
+                  setConfirmDelete(false);
+                }}
+              >
+                취소
+              </button>
+            </>
+          ) : null}
+        </section>
+      ) : null}
 
       <DeviceScreen
         app={app}

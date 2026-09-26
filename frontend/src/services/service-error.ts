@@ -3,6 +3,7 @@ export type ServiceErrorCode =
   | "NETWORK_ERROR"
   | "SERVICE_UNAVAILABLE"
   | "DB_BUSY"
+  | "DELETION_CONFIRMATION_PENDING"
   | "AUTH_BUSY"
   | "NOT_FOUND"
   | "VALIDATION_ERROR"

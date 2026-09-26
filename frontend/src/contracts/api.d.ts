@@ -422,7 +422,8 @@ export interface paths {
         get: operations["getApp"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete an owned archive app at its expected version */
+        delete: operations["deleteApp"];
         options?: never;
         head?: never;
         /** Update an owned archive app at its expected version */
@@ -611,7 +612,17 @@ export interface components {
             expected_version: number;
             input: components["schemas"]["AppPatch"];
         };
-        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"];
+        CreateAppDeleteOperation: {
+            /** @constant */
+            kind: "app_delete";
+            /** Format: uuid */
+            target_id: string;
+            expected_version: number;
+        };
+        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"] | components["schemas"]["CreateAppDeleteOperation"];
+        DeleteAppInput: {
+            expected_version: number;
+        };
         AppPatch: {
             name?: string;
             /** Format: uri */
@@ -670,7 +681,7 @@ export interface components {
             /** Format: uuid */
             key: string;
             /** @enum {string} */
-            kind: "app_create" | "app_update";
+            kind: "app_create" | "app_update" | "app_delete";
             /** Format: uuid */
             target_id: string | null;
             /** Format: date-time */
@@ -678,11 +689,12 @@ export interface components {
             /** Format: date-time */
             expires_at: string;
             /** @enum {string} */
-            state: "unresolved" | "succeeded" | "rejected";
+            state: "unresolved" | "confirming_deletion" | "succeeded" | "rejected";
             /** Format: date-time */
             db_applied_at: string | null;
             /** Format: date-time */
             finalized_at: string | null;
+            /** @description Set only for a confirmed app create or update. */
             result_version: number | null;
             rejection_code: string | null;
             /** Format: date-time */
@@ -1842,6 +1854,47 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    deleteApp: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteAppInput"];
+            };
+        };
+        responses: {
+            /** @description The app and its related health result and jobs were deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ServiceError"];
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            410: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            /** @description Includes DELETION_CONFIRMATION_PENDING when the app deletion is committed but its related deletion record is not yet confirmed. Check the existing operation key; do not submit a new key. */
             503: components["responses"]["ServiceError"];
         };
     };

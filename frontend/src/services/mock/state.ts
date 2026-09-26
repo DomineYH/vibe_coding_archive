@@ -17,6 +17,7 @@ import { MOCK_ACCOUNTS } from "./accounts";
 export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
 export const MOCK_AUTH_STATE_EVENT = "eduvibe:mock-auth-state";
+export const MOCK_APP_DELETED_EVENT = "eduvibe:mock-app-deleted";
 export const MOCK_WRITE_OPERATIONS_RESET_EVENT =
   "eduvibe:mock-write-operations-reset";
 
@@ -54,6 +55,10 @@ const MOCK_SCENARIOS = [
   "app_update_unknown",
   "app_update_unresolved",
   "app_update_delayed",
+  "app_delete_unknown",
+  "app_delete_unresolved",
+  "app_delete_delayed",
+  "app_delete_pending_confirmation",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
@@ -940,6 +945,23 @@ export function updateMockApp(app: components["schemas"]["AppDetail"]): void {
   });
   resetGeneration = generation;
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+}
+
+export function deleteMockApp(id: string): void {
+  const state = readState();
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    apps: state.apps.filter((app) => app.id !== id) as MockState["apps"],
+    private_apps: state.private_apps.filter(
+      (app) => app.id !== id,
+    ) as MockState["private_apps"],
+    generation,
+  });
+  resetGeneration = generation;
+  window.dispatchEvent(
+    new CustomEvent(MOCK_APP_DELETED_EVENT, { detail: { id } }),
+  );
 }
 
 export function getMockNow(state = readState()): string {

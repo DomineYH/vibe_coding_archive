@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { authService } from "../src/services/mock/auth";
 import { appsService } from "../src/services/mock/apps";
+import { adminService } from "../src/services/mock/admin";
 import {
   getMockSnapshot,
   MOCK_STORAGE_KEY,
@@ -388,5 +389,160 @@ describe("mock app updates", () => {
     await expect(
       appsService.update(created.id, patch, created.version, operation.key),
     ).resolves.toMatchObject({ name: patch.name, version: 2 });
+  });
+});
+
+describe("mock app deletion", () => {
+  it("deletes only the owner's current app and updates aggregate counts", async () => {
+    await loginMember();
+    const appId = "00000000-0000-4000-8000-000000000091";
+    const before = getMockSnapshot();
+    const operation = await appsService.issueDeleteOperation(appId, 1);
+
+    expect(operation).toMatchObject({
+      kind: "app_delete",
+      targetId: appId,
+      state: "unresolved",
+    });
+    expect(getMockSnapshot().private_apps).toHaveLength(
+      before.private_apps.length,
+    );
+
+    await appsService.delete(appId, 1, operation.key);
+    await expect(
+      appsService.getDeleteOperation(operation.key),
+    ).resolves.toMatchObject({
+      kind: "app_delete",
+      state: "succeeded",
+      targetId: appId,
+      resultVersion: null,
+    });
+    expect(getMockSnapshot().private_apps.some((app) => app.id === appId)).toBe(
+      false,
+    );
+    const deletedSnapshot = getMockSnapshot();
+    await appsService.delete(appId, 1, operation.key);
+    expect(getMockSnapshot().generation).toBe(deletedSnapshot.generation);
+    await expect(appsService.get(appId)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+      outcome: "rejected",
+    });
+
+    await authService.logout();
+    await authService.login({ loginId: "admin", password: "admin123" });
+    const page = await adminService.listUsers();
+    expect(page.stats.totalApps).toBe(
+      before.apps.length + before.private_apps.length - 1,
+    );
+    expect(page.stats.healthyApps).toBe(
+      [...before.apps, ...before.private_apps].filter(
+        (app) => app.health.result.state === "healthy",
+      ).length - 1,
+    );
+  });
+
+  it("rejects non-owner, stale-version, and mismatched-key deletes", async () => {
+    const appId = "00000000-0000-4000-8000-000000000091";
+    await authService.login({ loginId: "과학덕후박샘", password: "1234" });
+    await expect(
+      appsService.issueDeleteOperation(appId, 1),
+    ).rejects.toMatchObject({ code: "NOT_FOUND", outcome: "rejected" });
+
+    await authService.logout();
+    await loginMember();
+    await expect(
+      appsService.issueDeleteOperation(appId, 2),
+    ).rejects.toMatchObject({ code: "VERSION_CONFLICT", outcome: "rejected" });
+    const operation = await appsService.issueDeleteOperation(appId, 1);
+    await expect(
+      appsService.delete(appId, 2, operation.key),
+    ).rejects.toMatchObject({
+      code: "OPERATION_KEY_MISMATCH",
+      outcome: "rejected",
+    });
+    expect(getMockSnapshot().private_apps.some((app) => app.id === appId)).toBe(
+      true,
+    );
+  });
+
+  it("keeps an unresolved delete until the author explicitly retries the same key", async () => {
+    await loginMember();
+    const appId = "00000000-0000-4000-8000-000000000091";
+    const operation = await appsService.issueDeleteOperation(appId, 1);
+    setMockScenario("app_delete_unresolved");
+
+    await expect(
+      appsService.delete(appId, 1, operation.key),
+    ).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
+    await expect(
+      appsService.getDeleteOperation(operation.key),
+    ).resolves.toMatchObject({ state: "unresolved" });
+    expect(getMockSnapshot().private_apps.some((app) => app.id === appId)).toBe(
+      true,
+    );
+
+    setMockScenario("original");
+    await appsService.delete(appId, 1, operation.key);
+    await expect(
+      appsService.getDeleteOperation(operation.key),
+    ).resolves.toMatchObject({ state: "succeeded" });
+  });
+
+  it("requires explicit key lookup after a committed response is lost", async () => {
+    await loginMember();
+    const appId = "00000000-0000-4000-8000-000000000091";
+    const operation = await appsService.issueDeleteOperation(appId, 1);
+    setMockScenario("app_delete_unknown");
+
+    await expect(
+      appsService.delete(appId, 1, operation.key),
+    ).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
+    expect(getMockSnapshot().private_apps.some((app) => app.id === appId)).toBe(
+      false,
+    );
+    await expect(
+      appsService.getDeleteOperation(operation.key),
+    ).resolves.toMatchObject({ state: "succeeded", targetId: appId });
+  });
+
+  it("keeps deletion confirmation pending until the same key is retried", async () => {
+    await loginMember();
+    const appId = "00000000-0000-4000-8000-000000000091";
+    const operation = await appsService.issueDeleteOperation(appId, 1);
+    setMockScenario("app_delete_pending_confirmation");
+
+    await expect(
+      appsService.delete(appId, 1, operation.key),
+    ).rejects.toMatchObject({
+      code: "DELETION_CONFIRMATION_PENDING",
+      outcome: "unknown",
+    });
+    await expect(
+      appsService.getDeleteOperation(operation.key),
+    ).resolves.toMatchObject({ state: "confirming_deletion" });
+    await appsService.delete(appId, 1, operation.key);
+    await expect(
+      appsService.getDeleteOperation(operation.key),
+    ).resolves.toMatchObject({ state: "succeeded" });
+  });
+
+  it("drops a delayed deletion when mock state resets before it commits", async () => {
+    await loginMember();
+    const appId = "00000000-0000-4000-8000-000000000091";
+    setMockScenario("app_delete_delayed");
+    const operation = await appsService.issueDeleteOperation(appId, 1);
+    const request = appsService.delete(appId, 1, operation.key);
+
+    resetMockState();
+    await expect(request).rejects.toMatchObject({ name: "AbortError" });
+    expect(getMockSnapshot().private_apps.some((app) => app.id === appId)).toBe(
+      true,
+    );
   });
 });
