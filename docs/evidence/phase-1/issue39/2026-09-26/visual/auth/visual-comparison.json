@@ -1,0 +1,175 @@
+{
+  "thresholdPixels": 0,
+  "results": [
+    {
+      "state": "auth-result-unresolved",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "auth-result-unresolved-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-missing-session-cookie",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "auth-missing-session-cookie-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-result-unresolved",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "auth-result-unresolved-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-missing-session-cookie",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "auth-missing-session-cookie-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-result-unresolved",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "auth-result-unresolved-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-missing-session-cookie",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "auth-missing-session-cookie-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-result-unresolved",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "auth-result-unresolved-390x844.png",
+      "width": 390,
+      "height": 844,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-missing-session-cookie",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "auth-missing-session-cookie-390x844.png",
+      "width": 390,
+      "height": 844,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-result-unresolved",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "auth-result-unresolved-360x844.png",
+      "width": 360,
+      "height": 844,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "auth-missing-session-cookie",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "auth-missing-session-cookie-360x844.png",
+      "width": 360,
+      "height": 844,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    }
+  ]
+}

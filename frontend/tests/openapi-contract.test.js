@@ -24,7 +24,7 @@ describe("OpenAPI app detail schema", () => {
   it("defines normal authentication flow observation metadata", () => {
     const operation = openapi.paths["/auth/flow-state"].get;
     const response = operation.responses["200"];
-    const flow = openapi.components.schemas.AuthFlowContext;
+    const flow = openapi.components.schemas.AuthFlowState;
     expect(operation.parameters).toContainEqual(
       expect.objectContaining({
         name: "X-EduVibe-Flow-Id",
@@ -34,18 +34,56 @@ describe("OpenAPI app detail schema", () => {
     );
     expect(operation.security).toEqual([{ RecoveryCookie: [] }]);
     expect(response.content["application/json"].schema.$ref).toBe(
-      "#/components/schemas/AuthFlowContext",
+      "#/components/schemas/AuthFlowState",
     );
     expect(flow.required).toEqual([
       "flow_id",
       "revision",
+      "server_time",
+      "expires_at",
+      "recovery_ready",
       "session_generation",
+      "session_cookie_present",
       "last_identity_change_revision",
+      "pending_transition",
+      "requested_transition",
+      "next_transition_id",
     ]);
     expect(flow.properties.revision.pattern).toBe("^(0|[1-9][0-9]*)$");
     expect(flow.properties.last_identity_change_revision.pattern).toBe(
       "^(0|[1-9][0-9]*)$",
     );
+  });
+
+  it("defines explicit recovery and auth-transition operations", () => {
+    const paths = openapi.paths;
+    const transition = openapi.components.schemas.AuthTransition;
+    expect(paths["/auth/flows"].post.responses["201"]).toBeDefined();
+    expect(
+      paths["/auth/flows/{flow_id}/recovery-cookie"].post.responses["201"],
+    ).toBeDefined();
+    expect(
+      paths["/auth/flows/{flow_id}/ready"].post.responses["200"],
+    ).toBeDefined();
+    expect(paths["/auth/recovery-context"].get.responses["200"]).toBeDefined();
+    expect(paths["/auth/transitions"].post.responses["201"]).toBeDefined();
+    expect(
+      paths["/auth/transitions/{transition_id}/settle"].post.responses["200"],
+    ).toBeDefined();
+    expect(
+      paths["/auth/transitions/{transition_id}/discard-session"].post.responses[
+        "200"
+      ],
+    ).toBeDefined();
+    expect(
+      paths["/auth/flows/{flow_id}/reset"].post.responses["200"],
+    ).toBeDefined();
+    expect(transition.properties.availability.enum).toEqual([
+      "available",
+      "unavailable",
+    ]);
+    expect(transition.properties.state.enum).toContain("cancelled");
+    expect(transition.properties.transition_id.pattern).toContain("\\.");
   });
 
   it("defines the Phase 1 authentication and session restore contract", () => {
@@ -94,13 +132,9 @@ describe("OpenAPI app detail schema", () => {
     const operation = openapi.paths["/auth/password"].post;
     const input = openapi.components.schemas.ChangePasswordInput;
     expect(operation.security).toEqual([{ SessionCookie: [] }]);
-    expect(operation.parameters).toContainEqual(
-      expect.objectContaining({
-        name: "X-CSRF-Token",
-        in: "header",
-        required: true,
-      }),
-    );
+    expect(operation.parameters).toContainEqual({
+      $ref: "#/components/parameters/CsrfToken",
+    });
     expect(input.required).toEqual(["password"]);
     expect(input.additionalProperties).toBe(false);
     expect(input.properties.password).toMatchObject({

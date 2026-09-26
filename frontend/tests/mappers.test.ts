@@ -3,6 +3,7 @@ import catalog from "../../contracts/catalog.json";
 import {
   mapAuthResult,
   mapAuthFlowContext,
+  mapAuthFlowState,
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
@@ -114,6 +115,61 @@ describe("response mappers", () => {
       expect(() =>
         mapAuthFlowContext({ ...flow, revision: invalid }),
       ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    }
+  });
+
+  it("maps a complete flow observation without treating an unavailable result as a state", () => {
+    const state = {
+      flow_id: "00000000-0000-4000-8000-000000000200",
+      revision: "12",
+      server_time: "2026-09-22T00:12:00.000Z",
+      expires_at: "2026-09-22T08:12:00.000Z",
+      recovery_ready: true,
+      session_generation: null,
+      session_cookie_present: false,
+      last_identity_change_revision: "9",
+      pending_transition: null,
+      requested_transition: {
+        transition_id: "00000000-0000-4000-8000-000000000200.11",
+        availability: "unavailable",
+        execution_blocked: false,
+        kind: null,
+        state: null,
+        permit_expires_at: null,
+        result_session_generation: null,
+        failure_code: null,
+      },
+      next_transition_id: "00000000-0000-4000-8000-000000000200.12",
+    };
+
+    expect(mapAuthFlowState(state)).toMatchObject({
+      flowId: state.flow_id,
+      revision: "12",
+      recoveryReady: true,
+      sessionCookiePresent: false,
+      requestedTransition: {
+        availability: "unavailable",
+        executionBlocked: false,
+        state: null,
+      },
+      nextTransitionId: state.next_transition_id,
+    });
+
+    for (const invalid of [
+      { ...state, session_cookie_present: true },
+      { ...state, revision: "012" },
+      {
+        ...state,
+        requested_transition: {
+          ...state.requested_transition,
+          execution_blocked: "true",
+        },
+      },
+      { ...state, surprise: true },
+    ]) {
+      expect(() => mapAuthFlowState(invalid)).toThrowError(
+        expect.objectContaining({ code: "CONTRACT_ERROR" }),
+      );
     }
   });
 

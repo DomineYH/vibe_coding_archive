@@ -5,6 +5,7 @@ import { adminService } from "../src/services/mock/admin";
 import {
   MOCK_STORAGE_KEY,
   resetMockState,
+  setMockAuthGateOpen,
   setMockClock,
   setMockScenario,
 } from "../src/services/mock/state";
@@ -218,6 +219,13 @@ describe("demo authentication and protected reads", () => {
         name: "AbortError",
       });
       await vi.advanceTimersByTimeAsync(0);
+      const flow = await authService.getFlowState();
+      const transitionId = flow.pendingTransition!.transitionId;
+      await authService.settleTransition(transitionId, {
+        flowId: flow.flowId,
+        expectedRevision: flow.revision,
+      });
+      setMockScenario("original");
       await authService.logout();
       await vi.advanceTimersByTimeAsync(300);
       await rejected;
@@ -240,7 +248,7 @@ describe("demo authentication and protected reads", () => {
       flow: {
         flowId: "00000000-0000-4000-8000-000000000200",
         revision: "0",
-        sessionGeneration: null,
+        sessionGeneration: "0",
         lastIdentityChangeRevision: "0",
       },
       observationGeneration: 0,
@@ -254,9 +262,9 @@ describe("demo authentication and protected reads", () => {
     expect(firstState).toMatchObject({
       user: { id: firstLogin.user.id },
       flow: {
-        revision: "1",
+        revision: "2",
         sessionGeneration: "1",
-        lastIdentityChangeRevision: "1",
+        lastIdentityChangeRevision: "2",
       },
       observationGeneration: 1,
     });
@@ -269,18 +277,329 @@ describe("demo authentication and protected reads", () => {
 
     await authService.logout();
     const loggedOut = await authService.getCurrentAuthState();
-    expect(loggedOut.flow.revision).toBe("2");
+    expect(loggedOut.flow.revision).toBe("4");
     await authService.login({ loginId: "교사김코딩", password: "1234" });
     const returned = await authService.getCurrentAuthState();
 
     expect(returned.user?.id).toBe(firstLogin.user.id);
     expect(returned.flow).toEqual({
       flowId: firstState.flow.flowId,
-      revision: "3",
+      revision: "6",
       sessionGeneration: "2",
-      lastIdentityChangeRevision: "3",
+      lastIdentityChangeRevision: "6",
     });
     expect(returned.observationGeneration).toBe(3);
+  });
+
+  it("settles an admitted transition before a later tab can admit another one", async () => {
+    const initial = await authService.getFlowState();
+    const permit = await authService.admitTransition({
+      flowId: initial.flowId,
+      transitionId: initial.nextTransitionId!,
+      kind: "login",
+      expectedRevision: initial.revision,
+      expectedSessionGeneration: initial.sessionGeneration,
+    });
+
+    expect(await authService.getFlowState(permit.transitionId)).toMatchObject({
+      pendingTransition: {
+        transitionId: permit.transitionId,
+        state: "admitted",
+      },
+    });
+
+    const settled = await authService.settleTransition(permit.transitionId, {
+      flowId: initial.flowId,
+      expectedRevision: permit.revision,
+    });
+    expect(settled).toMatchObject({
+      transition: {
+        availability: "available",
+        state: "cancelled",
+      },
+    });
+    await expect(
+      authService.admitTransition({
+        flowId: initial.flowId,
+        transitionId: initial.nextTransitionId!,
+        kind: "login",
+        expectedRevision: initial.revision,
+        expectedSessionGeneration: initial.sessionGeneration,
+      }),
+    ).rejects.toMatchObject({ code: "AUTH_STATE_CHANGED" });
+  });
+
+  it("settles a lost response as its actual result without hiding a received session", async () => {
+    setMockScenario("auth_response_lost");
+    await expect(
+      authService.login({ loginId: "교사김코딩", password: "1234" }),
+    ).rejects.toMatchObject({ outcome: "unknown" });
+
+    const unresolved = await authService.getCurrentAuthState();
+    expect(unresolved).toMatchObject({ user: null, status: "unresolved" });
+    const transitionId = unresolved.unresolvedTransitionId!;
+    const flow = await authService.getFlowState(transitionId);
+    const result = await authService.settleTransition(transitionId, {
+      flowId: flow.flowId,
+      expectedRevision: flow.revision,
+    });
+
+    expect(result.transition).toMatchObject({
+      availability: "available",
+      state: "succeeded",
+    });
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      status: "ready",
+      user: { loginId: "교사김코딩" },
+    });
+  });
+
+  it("does not let a no-session logout clear an unresolved login result", async () => {
+    setMockScenario("auth_response_lost");
+    await expect(
+      authService.login({ loginId: "교사김코딩", password: "1234" }),
+    ).rejects.toMatchObject({ outcome: "unknown" });
+    const unresolved = await authService.getCurrentAuthState();
+
+    await expect(authService.logout()).rejects.toMatchObject({
+      code: "AUTH_TRANSITION_PENDING",
+      httpStatus: 409,
+    });
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      status: "unresolved",
+      unresolvedTransitionId: unresolved.unresolvedTransitionId,
+      user: null,
+    });
+  });
+
+  it("discards only an issued session whose cookie was not received", async () => {
+    setMockScenario("auth_session_cookie_lost");
+    await expect(
+      authService.login({ loginId: "교사김코딩", password: "1234" }),
+    ).rejects.toMatchObject({ outcome: "unknown" });
+
+    const unresolved = await authService.getCurrentAuthState();
+    expect(unresolved).toMatchObject({
+      user: null,
+      status: "unresolved",
+      sessionCookiePresent: false,
+      flow: { sessionGeneration: "1" },
+    });
+    const transitionId = unresolved.unresolvedTransitionId!;
+    const flow = await authService.getFlowState(transitionId);
+    await authService.discardSession(transitionId, {
+      flowId: flow.flowId,
+      expectedRevision: flow.revision,
+      expectedSessionGeneration: flow.sessionGeneration!,
+    });
+
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      user: null,
+      status: "ready",
+      flow: { sessionGeneration: null },
+    });
+  });
+
+  it("keeps a password change after explicitly discarding its unreceived session", async () => {
+    await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+    const password = "Password changed before cookie loss 38";
+    setMockScenario("auth_session_cookie_lost");
+    await expect(
+      authService.changePassword({ password }),
+    ).rejects.toMatchObject({
+      outcome: "unknown",
+    });
+
+    const unresolved = await authService.getCurrentAuthState();
+    expect(unresolved).toMatchObject({
+      user: null,
+      status: "unresolved",
+      sessionCookiePresent: false,
+      flow: { sessionGeneration: "2" },
+    });
+    const transitionId = unresolved.unresolvedTransitionId!;
+    const flow = await authService.getFlowState(transitionId);
+    await authService.discardSession(transitionId, {
+      flowId: flow.flowId,
+      expectedRevision: flow.revision,
+      expectedSessionGeneration: flow.sessionGeneration!,
+    });
+    setMockScenario("original");
+
+    await expect(
+      authService.login({ loginId: "임시교사38", password }),
+    ).resolves.toMatchObject({ user: { sessionKind: "full" } });
+  });
+
+  it("keeps an unavailable result unresolved until the flow is explicitly reset", async () => {
+    setMockScenario("auth_result_unavailable");
+    await expect(
+      authService.login({ loginId: "교사김코딩", password: "1234" }),
+    ).rejects.toMatchObject({ outcome: "unknown" });
+
+    let unresolved = await authService.getCurrentAuthState();
+    const transitionId = unresolved.unresolvedTransitionId!;
+    let flow = await authService.getFlowState(transitionId);
+    const settled = await authService.settleTransition(transitionId, {
+      flowId: flow.flowId,
+      expectedRevision: flow.revision,
+    });
+    expect(settled.transition).toMatchObject({
+      availability: "unavailable",
+      executionBlocked: true,
+      state: null,
+    });
+    unresolved = await authService.getCurrentAuthState();
+    expect(unresolved.status).toBe("unresolved");
+
+    flow = await authService.getFlowState(transitionId);
+    await expect(
+      authService.resetFlow(flow.flowId, {
+        expectedRevision: flow.revision,
+        expectedSessionGeneration: flow.sessionGeneration,
+      }),
+    ).resolves.toEqual({ restartEligible: true });
+    const unprepared = await authService.createFlow({
+      restartFrom: [flow.flowId],
+    });
+    expect(await authService.getRestartEligibility(unprepared.flowId)).toEqual({
+      restartEligible: false,
+    });
+    await expect(authService.abandonFlow(unprepared.flowId)).resolves.toEqual({
+      restartEligible: true,
+    });
+    const created = await authService.createFlow({
+      restartFrom: [unprepared.flowId],
+    });
+    const recovery = await authService.issueRecoveryCookie(created.flowId);
+    expect(await authService.getRecoveryContext()).toEqual({
+      items: [
+        {
+          flowId: created.flowId,
+          revision: recovery.revision,
+          proofKind: "recovery",
+        },
+      ],
+    });
+    expect(await authService.getRecoveryCsrf(created.flowId)).toMatchObject({
+      flowId: created.flowId,
+      revision: recovery.revision,
+      recoveryCsrfToken: recovery.recoveryCsrfToken,
+    });
+    const ready = await authService.confirmRecoveryCookie(created.flowId, {
+      expectedRevision: recovery.revision,
+    });
+    const prepared = await authService.getFlowState();
+    await authService.issueAnonymousSession({
+      flowId: created.flowId,
+      expectedRevision: ready.revision,
+      transitionId: prepared.nextTransitionId!,
+    });
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      status: "ready",
+      user: null,
+      flow: { flowId: created.flowId },
+    });
+  });
+
+  it("uses a sequence gate for deterministic pending and release ordering", async () => {
+    setMockScenario("auth_transition_gate");
+    const pending = authService.login({
+      loginId: "교사김코딩",
+      password: "1234",
+    });
+    const flow = await authService.getFlowState();
+    expect(flow.pendingTransition).toMatchObject({ state: "admitted" });
+    setMockAuthGateOpen();
+    await expect(pending).resolves.toMatchObject({
+      user: { loginId: "교사김코딩" },
+    });
+  });
+
+  it("expires a pending permit by mock time and blocks its late completion", async () => {
+    const initial = await authService.getFlowState();
+    const permit = await authService.admitTransition({
+      flowId: initial.flowId,
+      transitionId: initial.nextTransitionId!,
+      kind: "login",
+      expectedRevision: initial.revision,
+      expectedSessionGeneration: initial.sessionGeneration,
+    });
+    setMockClock("2026-09-22T00:13:00.000Z");
+    const flow = await authService.getFlowState(permit.transitionId);
+    const settled = await authService.settleTransition(permit.transitionId, {
+      flowId: flow.flowId,
+      expectedRevision: flow.revision,
+    });
+    expect(settled.transition).toMatchObject({
+      availability: "available",
+      state: "expired",
+      executionBlocked: null,
+    });
+  });
+
+  it("rotates recovery proof without changing the current session", async () => {
+    const signedIn = await authService.login({
+      loginId: "교사김코딩",
+      password: "1234",
+    });
+    const initial = await authService.getFlowState();
+    const permit = await authService.admitTransition({
+      flowId: initial.flowId,
+      transitionId: initial.nextTransitionId!,
+      kind: "reauthenticate",
+      expectedRevision: initial.revision,
+      expectedSessionGeneration: initial.sessionGeneration,
+    });
+    await expect(
+      authService.rotateRecoveryCookie(initial.flowId, {
+        expectedRevision: permit.revision,
+        expectedSessionGeneration: initial.sessionGeneration!,
+      }),
+    ).rejects.toMatchObject({ code: "AUTH_TRANSITION_PENDING" });
+    await authService.settleTransition(permit.transitionId, {
+      flowId: initial.flowId,
+      expectedRevision: permit.revision,
+    });
+
+    const flow = await authService.getFlowState();
+    const previous = await authService.getRecoveryCsrf(flow.flowId);
+    const rotated = await authService.rotateRecoveryCookie(flow.flowId, {
+      expectedRevision: flow.revision,
+      expectedSessionGeneration: flow.sessionGeneration!,
+    });
+
+    expect(rotated.recoveryCsrfToken).not.toBe(previous.recoveryCsrfToken);
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      status: "ready",
+      user: { id: signedIn.user.id },
+      flow: {
+        flowId: flow.flowId,
+        sessionGeneration: flow.sessionGeneration,
+      },
+    });
+  });
+
+  it("records a failed reauthentication without changing the principal", async () => {
+    const signedIn = await authService.login({
+      loginId: "교사김코딩",
+      password: "1234",
+    });
+    const before = await authService.getCurrentAuthState();
+    await expect(
+      authService.reauthenticate({ password: "wrong" }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS", httpStatus: 401 });
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      status: "ready",
+      user: { id: signedIn.user.id },
+      flow: {
+        sessionGeneration: before.flow.sessionGeneration,
+        lastIdentityChangeRevision: before.flow.lastIdentityChangeRevision,
+      },
+    });
   });
 
   it("does not apply a delayed login after mock reset", async () => {

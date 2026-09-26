@@ -251,7 +251,14 @@ export const appsService: AppsService = {
       (item) => item.id === state.principal_id,
     );
     const session = state.principal_session;
+    const authReady =
+      state.auth_flow.recovery_ready &&
+      Date.parse(state.mock_now) < Date.parse(state.auth_flow.expires_at) &&
+      state.auth_flow.session_cookie_present &&
+      !state.auth_flow.pending_transition &&
+      !state.auth_flow.unresolved_transition_id;
     const fullSession =
+      authReady &&
       session?.session_kind === "full" &&
       Date.parse(state.mock_now) < Date.parse(session.expires_at);
     const canReadPrivate =

@@ -11,7 +11,24 @@ type WireHealthResult = Wire["HealthResult"];
 type WireReason = Wire["Reason"];
 type WireCapability = Wire["Capability"];
 type WireSelf = Wire["Self"];
-type WireAuthFlowContext = Wire["AuthFlowContext"];
+type WireAuthFlowContext = Pick<
+  Wire["AuthFlowState"],
+  | "flow_id"
+  | "revision"
+  | "session_generation"
+  | "last_identity_change_revision"
+>;
+type WireAuthFlowState = Wire["AuthFlowState"];
+type WireAuthTransition = Wire["AuthTransition"];
+type WireAuthFlowCreated = Wire["AuthFlowCreated"];
+type WireRecoveryCookieResult = Wire["RecoveryCookieResult"];
+type WireRecoveryReady = Wire["RecoveryReady"];
+type WireRestartEligibility = Wire["RestartEligibility"];
+type WireRecoveryContext = Wire["RecoveryContext"];
+type WireRecoveryCsrf = Wire["RecoveryCsrf"];
+type WireAuthTransitionPermit = Wire["AuthTransitionPermit"];
+type WireSettledAuthTransition = Wire["SettledAuthTransition"];
+type WireAnonymousSessionResult = Wire["AnonymousSessionResult"];
 type WireAuthResult = Wire["AuthResult"];
 type WireCsrfToken = Wire["CsrfToken"];
 type WireRegisteredUser = Wire["RegisteredUser"];
@@ -95,6 +112,71 @@ export type AuthFlowContext = {
   revision: string;
   sessionGeneration: string | null;
   lastIdentityChangeRevision: string;
+};
+export type AuthTransitionKind = Wire["AuthTransition"]["kind"] & string;
+export type AuthTransitionState = Wire["AuthTransition"]["state"] & string;
+export type AuthTransition = {
+  transitionId: string;
+  availability: "available" | "unavailable";
+  executionBlocked: boolean | null;
+  kind: AuthTransitionKind | null;
+  state: AuthTransitionState | null;
+  permitExpiresAt: string | null;
+  resultSessionGeneration: string | null;
+  failureCode: string | null;
+};
+export type AuthFlowState = {
+  flowId: string;
+  revision: string;
+  serverTime: string;
+  expiresAt: string;
+  recoveryReady: boolean;
+  sessionGeneration: string | null;
+  sessionCookiePresent: boolean;
+  lastIdentityChangeRevision: string;
+  pendingTransition: AuthTransition | null;
+  requestedTransition: AuthTransition | null;
+  nextTransitionId: string | null;
+};
+export type AuthFlowCreated = {
+  flowId: string;
+  revision: string;
+  expiresAt: string;
+};
+export type FlowRevision = { flowId: string; revision: string };
+export type RecoveryCookieResult = FlowRevision & {
+  recoveryCsrfToken: string;
+  expiresAt: string;
+};
+export type RecoveryReady = FlowRevision & {
+  expiresAt: string;
+  ready: true;
+};
+export type RestartEligibility = { restartEligible: boolean };
+export type RecoveryContext = {
+  items: Array<{
+    flowId: string;
+    revision: string;
+    proofKind: "recovery" | "session";
+  }>;
+};
+export type RecoveryCsrf = FlowRevision & {
+  recoveryCsrfToken: string;
+  expiresAt: string;
+};
+export type AuthTransitionPermit = FlowRevision & {
+  transitionId: string;
+  kind: AuthTransitionKind;
+  permitExpiresAt: string;
+};
+export type SettledAuthTransition = FlowRevision & {
+  transitionId: string;
+  transition: AuthTransition;
+};
+export type AnonymousSessionResult = FlowRevision & {
+  sessionGeneration: string;
+  csrfToken: string;
+  expiresAt: string;
 };
 export type AuthResult = { user: AuthUser; csrfToken: string };
 export type CsrfToken = { csrfToken: string; expiresAt: string };
@@ -338,6 +420,339 @@ export function mapAuthFlowContext(value: unknown): AuthFlowContext {
         ? null
         : sequence(item.session_generation),
     lastIdentityChangeRevision: sequence(item.last_identity_change_revision),
+  };
+}
+
+function mapAuthTransition(value: unknown, flowId: string): AuthTransition {
+  const item = record(value) as unknown as Partial<WireAuthTransition>;
+  if (
+    !hasOnlyKeys(item, [
+      "transition_id",
+      "availability",
+      "execution_blocked",
+      "kind",
+      "state",
+      "permit_expires_at",
+      "result_session_generation",
+      "failure_code",
+    ])
+  )
+    throw contractError();
+  const transitionId = nonEmpty(item.transition_id);
+  if (!transitionId.startsWith(`${flowId}.`)) throw contractError();
+  sequence(transitionId.slice(flowId.length + 1));
+
+  if (item.availability === "unavailable") {
+    if (
+      typeof item.execution_blocked !== "boolean" ||
+      item.kind !== null ||
+      item.state !== null ||
+      item.permit_expires_at !== null ||
+      item.result_session_generation !== null ||
+      item.failure_code !== null
+    )
+      throw contractError();
+    return {
+      transitionId,
+      availability: "unavailable",
+      executionBlocked: item.execution_blocked,
+      kind: null,
+      state: null,
+      permitExpiresAt: null,
+      resultSessionGeneration: null,
+      failureCode: null,
+    };
+  }
+  if (
+    item.availability !== "available" ||
+    item.execution_blocked !== null ||
+    (item.kind !== "anonymous_session" &&
+      item.kind !== "login" &&
+      item.kind !== "logout" &&
+      item.kind !== "password_change" &&
+      item.kind !== "reauthenticate") ||
+    (item.state !== "admitted" &&
+      item.state !== "executing" &&
+      item.state !== "succeeded" &&
+      item.state !== "failed" &&
+      item.state !== "cancelled" &&
+      item.state !== "expired")
+  )
+    throw contractError();
+  return {
+    transitionId,
+    availability: "available",
+    executionBlocked: null,
+    kind: item.kind,
+    state: item.state,
+    permitExpiresAt: dateTime(item.permit_expires_at),
+    resultSessionGeneration:
+      item.result_session_generation === null
+        ? null
+        : sequence(item.result_session_generation),
+    failureCode:
+      item.failure_code === null ? null : nonEmpty(item.failure_code),
+  };
+}
+
+export function mapAuthFlowState(value: unknown): AuthFlowState {
+  const item = record(value) as unknown as Partial<WireAuthFlowState>;
+  if (
+    !hasOnlyKeys(item, [
+      "flow_id",
+      "revision",
+      "server_time",
+      "expires_at",
+      "recovery_ready",
+      "session_generation",
+      "session_cookie_present",
+      "last_identity_change_revision",
+      "pending_transition",
+      "requested_transition",
+      "next_transition_id",
+    ])
+  )
+    throw contractError();
+  const flowId = nonEmpty(item.flow_id);
+  if (
+    !UUID.test(flowId) ||
+    typeof item.recovery_ready !== "boolean" ||
+    typeof item.session_cookie_present !== "boolean" ||
+    (item.session_generation === null && item.session_cookie_present)
+  )
+    throw contractError();
+  const revision = sequence(item.revision);
+  const lastIdentityChangeRevision = sequence(
+    item.last_identity_change_revision,
+  );
+  if (BigInt(lastIdentityChangeRevision) > BigInt(revision))
+    throw contractError();
+  const pendingTransition =
+    item.pending_transition === null
+      ? null
+      : mapAuthTransition(item.pending_transition, flowId);
+  if (
+    pendingTransition &&
+    (pendingTransition.availability !== "available" ||
+      (pendingTransition.state !== "admitted" &&
+        pendingTransition.state !== "executing"))
+  )
+    throw contractError();
+  const requestedTransition =
+    item.requested_transition === null
+      ? null
+      : mapAuthTransition(item.requested_transition, flowId);
+  const nextTransitionId = nullableString(item.next_transition_id);
+  if (nextTransitionId !== null) {
+    if (!nextTransitionId.startsWith(`${flowId}.`)) throw contractError();
+    if (sequence(nextTransitionId.slice(flowId.length + 1)) !== revision)
+      throw contractError();
+  }
+  return {
+    flowId,
+    revision,
+    serverTime: dateTime(item.server_time),
+    expiresAt: dateTime(item.expires_at),
+    recoveryReady: item.recovery_ready,
+    sessionGeneration:
+      item.session_generation === null
+        ? null
+        : sequence(item.session_generation),
+    sessionCookiePresent: item.session_cookie_present,
+    lastIdentityChangeRevision,
+    pendingTransition,
+    requestedTransition,
+    nextTransitionId,
+  };
+}
+
+export function mapFlowRevision(value: unknown): FlowRevision {
+  const item = record(value);
+  if (!hasOnlyKeys(item, ["flow_id", "revision"])) throw contractError();
+  const flowId = nonEmpty(item.flow_id);
+  if (!UUID.test(flowId)) throw contractError();
+  return { flowId, revision: sequence(item.revision) };
+}
+
+export function mapAuthFlowCreated(value: unknown): AuthFlowCreated {
+  const item = record(value) as unknown as Partial<WireAuthFlowCreated>;
+  if (!hasOnlyKeys(item, ["flow_id", "revision", "expires_at"]))
+    throw contractError();
+  const flow = mapFlowRevision({
+    flow_id: item.flow_id,
+    revision: item.revision,
+  });
+  return { ...flow, expiresAt: dateTime(item.expires_at) };
+}
+
+export function mapRecoveryCookieResult(value: unknown): RecoveryCookieResult {
+  const item = record(value) as unknown as Partial<WireRecoveryCookieResult>;
+  if (
+    !hasOnlyKeys(item, [
+      "flow_id",
+      "revision",
+      "recovery_csrf_token",
+      "expires_at",
+    ])
+  )
+    throw contractError();
+  return {
+    ...mapFlowRevision({
+      flow_id: item.flow_id,
+      revision: item.revision,
+    }),
+    recoveryCsrfToken: nonEmpty(item.recovery_csrf_token),
+    expiresAt: dateTime(item.expires_at),
+  };
+}
+
+export function mapRecoveryReady(value: unknown): RecoveryReady {
+  const item = record(value) as unknown as Partial<WireRecoveryReady>;
+  if (
+    !hasOnlyKeys(item, ["flow_id", "revision", "expires_at", "ready"]) ||
+    item.ready !== true
+  )
+    throw contractError();
+  return {
+    ...mapFlowRevision({
+      flow_id: item.flow_id,
+      revision: item.revision,
+    }),
+    expiresAt: dateTime(item.expires_at),
+    ready: true,
+  };
+}
+
+export function mapRestartEligibility(value: unknown): RestartEligibility {
+  const item = record(value) as unknown as Partial<WireRestartEligibility>;
+  if (
+    !hasOnlyKeys(item, ["restart_eligible"]) ||
+    typeof item.restart_eligible !== "boolean"
+  )
+    throw contractError();
+  return { restartEligible: item.restart_eligible };
+}
+
+export function mapRecoveryContext(value: unknown): RecoveryContext {
+  const item = record(value) as unknown as Partial<WireRecoveryContext>;
+  if (!hasOnlyKeys(item, ["items"]) || !Array.isArray(item.items))
+    throw contractError();
+  const items = item.items.map((raw) => {
+    const entry = record(raw);
+    if (
+      !hasOnlyKeys(entry, ["flow_id", "revision", "proof_kind"]) ||
+      (entry.proof_kind !== "recovery" && entry.proof_kind !== "session")
+    )
+      throw contractError();
+    return {
+      ...mapFlowRevision({
+        flow_id: entry.flow_id,
+        revision: entry.revision,
+      }),
+      proofKind: entry.proof_kind as "recovery" | "session",
+    };
+  });
+  if (new Set(items.map((entry) => entry.flowId)).size !== items.length)
+    throw contractError();
+  return { items };
+}
+
+export function mapRecoveryCsrf(value: unknown): RecoveryCsrf {
+  const item = record(value) as unknown as Partial<WireRecoveryCsrf>;
+  if (
+    !hasOnlyKeys(item, [
+      "flow_id",
+      "revision",
+      "recovery_csrf_token",
+      "expires_at",
+    ])
+  )
+    throw contractError();
+  return {
+    ...mapFlowRevision({
+      flow_id: item.flow_id,
+      revision: item.revision,
+    }),
+    recoveryCsrfToken: nonEmpty(item.recovery_csrf_token),
+    expiresAt: dateTime(item.expires_at),
+  };
+}
+
+export function mapAuthTransitionPermit(value: unknown): AuthTransitionPermit {
+  const item = record(value) as unknown as Partial<WireAuthTransitionPermit>;
+  if (
+    !hasOnlyKeys(item, [
+      "flow_id",
+      "transition_id",
+      "kind",
+      "revision",
+      "permit_expires_at",
+    ]) ||
+    (item.kind !== "anonymous_session" &&
+      item.kind !== "login" &&
+      item.kind !== "logout" &&
+      item.kind !== "password_change" &&
+      item.kind !== "reauthenticate")
+  )
+    throw contractError();
+  const flow = mapFlowRevision({
+    flow_id: item.flow_id,
+    revision: item.revision,
+  });
+  const transitionId = nonEmpty(item.transition_id);
+  if (
+    !transitionId.startsWith(`${flow.flowId}.`) ||
+    BigInt(transitionId.slice(flow.flowId.length + 1)) + 1n !==
+      BigInt(flow.revision)
+  )
+    throw contractError();
+  sequence(transitionId.slice(flow.flowId.length + 1));
+  return {
+    ...flow,
+    transitionId,
+    kind: item.kind,
+    permitExpiresAt: dateTime(item.permit_expires_at),
+  };
+}
+
+export function mapSettledAuthTransition(
+  value: unknown,
+): SettledAuthTransition {
+  const item = record(value) as unknown as Partial<WireSettledAuthTransition>;
+  if (!hasOnlyKeys(item, ["flow_id", "revision", "transition_id", "result"]))
+    throw contractError();
+  const flow = mapFlowRevision({
+    flow_id: item.flow_id,
+    revision: item.revision,
+  });
+  const transitionId = nonEmpty(item.transition_id);
+  const transition = mapAuthTransition(item.result, flow.flowId);
+  if (transition.transitionId !== transitionId) throw contractError();
+  return { ...flow, transitionId, transition };
+}
+
+export function mapAnonymousSessionResult(
+  value: unknown,
+): AnonymousSessionResult {
+  const item = record(value) as unknown as Partial<WireAnonymousSessionResult>;
+  if (
+    !hasOnlyKeys(item, [
+      "flow_id",
+      "revision",
+      "session_generation",
+      "csrf_token",
+      "expires_at",
+    ])
+  )
+    throw contractError();
+  return {
+    ...mapFlowRevision({
+      flow_id: item.flow_id,
+      revision: item.revision,
+    }),
+    sessionGeneration: sequence(item.session_generation),
+    csrfToken: nonEmpty(item.csrf_token),
+    expiresAt: dateTime(item.expires_at),
   };
 }
 

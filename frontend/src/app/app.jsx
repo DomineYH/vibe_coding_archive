@@ -146,6 +146,10 @@ function Header({
             <Btn size="sm" variant="line" onClick={onRetryAuth}>
               다시 확인
             </Btn>
+          ) : auth.status === "unresolved" ? (
+            <Btn size="sm" variant="line" onClick={onLogin}>
+              인증 복구
+            </Btn>
           ) : auth.user ? (
             <>
               <span className="inline-flex max-w-[145px] items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:gap-2 sm:text-[13px]">
@@ -448,6 +452,9 @@ function AuthRoute({
   onLogin,
   onRegister,
   onChangePassword,
+  onResolveAuth,
+  onResetAuth,
+  onDiscardMissingSession,
 }) {
   const route = readAuthRoute(location.search);
   const authUser =
@@ -465,6 +472,16 @@ function AuthRoute({
       onLogin={(input) => onLogin(input, route.returnTo)}
       onRegister={onRegister}
       onChangePassword={(input) => onChangePassword(input, route.returnTo)}
+      onResolveAuth={onResolveAuth}
+      onResetAuth={onResetAuth}
+      onDiscardMissingSession={onDiscardMissingSession}
+      canDiscardMissingSession={
+        auth.unresolvedTransitionId !== null &&
+        auth.unresolvedTransitionId !== undefined &&
+        auth.flow?.sessionGeneration !== null &&
+        auth.flow?.sessionGeneration !== undefined &&
+        auth.sessionCookiePresent === false
+      }
     />
   );
 }
@@ -616,7 +633,7 @@ export default function App() {
         authSnapshot.current = observed;
         const next = {
           ...observed,
-          status: "ready",
+          status: observed.status,
           observationId,
           error: null,
           concealed: pageAway.current || document.visibilityState === "hidden",
@@ -772,6 +789,83 @@ export default function App() {
     }
   }, [beginAuthTransition, logoutPending, navigate, restoreAuth]);
 
+  const resolveAuth = useCallback(async () => {
+    try {
+      const current = authSnapshot.current;
+      const transitionId = current.unresolvedTransitionId;
+      if (transitionId) {
+        const flow = await authService.getFlowState(transitionId);
+        await authService.settleTransition(transitionId, {
+          flowId: flow.flowId,
+          expectedRevision: flow.revision,
+        });
+      }
+    } catch {
+      setToast("인증 결과를 확인하지 못했어요. 인증 흐름을 초기화해 주세요.");
+    }
+    await restoreAuth();
+  }, [restoreAuth]);
+
+  const discardMissingSession = useCallback(async () => {
+    try {
+      const transitionId = authSnapshot.current.unresolvedTransitionId;
+      if (!transitionId) throw new Error("No unresolved auth transition");
+      const flow = await authService.getFlowState(transitionId);
+      if (!flow.sessionGeneration || flow.sessionCookiePresent)
+        throw new Error("No missing session to discard");
+      await authService.discardSession(transitionId, {
+        flowId: flow.flowId,
+        expectedRevision: flow.revision,
+        expectedSessionGeneration: flow.sessionGeneration,
+      });
+      setToast("받지 못한 세션을 초기화했어요.");
+    } catch {
+      setToast(
+        "세션을 안전하게 초기화하지 못했어요. 인증 흐름을 초기화해 주세요.",
+      );
+    }
+    await restoreAuth();
+  }, [restoreAuth]);
+
+  const resetAuth = useCallback(async () => {
+    try {
+      const previousFlowId = authSnapshot.current.flow?.flowId;
+      if (!previousFlowId) throw new Error("No auth flow to reset");
+      const flow = await authService.getFlowState(
+        authSnapshot.current.unresolvedTransitionId ?? undefined,
+      );
+      const eligibility = await authService.getRestartEligibility(flow.flowId);
+      if (!eligibility.restartEligible) {
+        if (!flow.recoveryReady && !flow.sessionCookiePresent)
+          await authService.abandonFlow(flow.flowId);
+        else
+          await authService.resetFlow(flow.flowId, {
+            expectedRevision: flow.revision,
+            expectedSessionGeneration: flow.sessionGeneration,
+          });
+      }
+      const created = await authService.createFlow({
+        restartFrom: [flow.flowId],
+      });
+      const recovery = await authService.issueRecoveryCookie(created.flowId);
+      const ready = await authService.confirmRecoveryCookie(created.flowId, {
+        expectedRevision: recovery.revision,
+      });
+      const next = await authService.getFlowState();
+      if (!next.nextTransitionId)
+        throw new Error("Anonymous session unavailable");
+      await authService.issueAnonymousSession({
+        flowId: created.flowId,
+        expectedRevision: ready.revision,
+        transitionId: next.nextTransitionId,
+      });
+      setToast("인증 흐름을 다시 준비했어요.");
+    } catch {
+      setToast("인증 흐름을 다시 준비하지 못했어요. 결과를 확인해 주세요.");
+    }
+    await restoreAuth();
+  }, [restoreAuth]);
+
   useEffect(() => {
     void restoreAuth();
   }, [restoreAuth]);
@@ -863,6 +957,9 @@ export default function App() {
               onLogin={login}
               onChangePassword={changePassword}
               onRegister={(input) => authService.register(input)}
+              onResolveAuth={resolveAuth}
+              onResetAuth={resetAuth}
+              onDiscardMissingSession={discardMissingSession}
             />
           }
         />
