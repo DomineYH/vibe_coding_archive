@@ -145,7 +145,53 @@ function SpecCell({ label, value }) {
   );
 }
 
-function StateView({ loading, error, retry }) {
+function StateView({
+  loading,
+  error,
+  retry,
+  authStatus,
+  authError,
+  concealed,
+}) {
+  if (concealed) {
+    return (
+      <div role="status" aria-live="polite">
+        <EmptyState
+          title="화면이 잠시 가려졌습니다"
+          desc="로그인 상태를 확인한 뒤 보호된 정보를 다시 보여 드릴게요."
+        />
+      </div>
+    );
+  }
+  if (authStatus === "checking") {
+    return (
+      <div role="status" aria-live="polite">
+        <EmptyState title="로그인 상태를 확인하고 있습니다" />
+      </div>
+    );
+  }
+  if (authStatus === "error") {
+    return (
+      <div role="alert" aria-live="assertive">
+        <EmptyState
+          title="로그인 상태를 확인할 수 없습니다"
+          desc={authError?.message || "연결을 확인하고 다시 시도해 주세요."}
+        >
+          <Btn onClick={retry}>다시 확인</Btn>
+          {__DATA_MODE__ === "mock" &&
+          authError instanceof ServiceError &&
+          authError.code === "MOCK_STORAGE_ERROR" ? (
+            <Link
+              to="/__dev/mock-reset"
+              className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+            >
+              mock 저장 초기화
+            </Link>
+          ) : null}
+        </EmptyState>
+      </div>
+    );
+  }
   if (loading) {
     return (
       <div role="status" aria-live="polite">
@@ -215,20 +261,48 @@ function StateView({ loading, error, retry }) {
   );
 }
 
-export function AppDetailView({ app, meta, loading, error, retry, onBack }) {
+export function AppDetailView({
+  app,
+  meta,
+  loading,
+  error,
+  retry,
+  onBack,
+  authStatus = "ready",
+  authError,
+  concealed = false,
+}) {
   const [notice, setNotice] = useState("");
   const mainRef = useRef(null);
   useEffect(() => {
-    if (loading) mainRef.current?.focus({ preventScroll: true });
-  }, [loading]);
-  if (loading || error) {
+    if (
+      loading ||
+      concealed ||
+      authStatus === "checking" ||
+      authStatus === "error"
+    )
+      mainRef.current?.focus({ preventScroll: true });
+  }, [authStatus, concealed, loading]);
+  const protectedScreen = app?.isPublic !== true;
+  if (
+    (protectedScreen && (concealed || authStatus !== "ready")) ||
+    loading ||
+    error
+  ) {
     return (
       <main
         ref={mainRef}
         tabIndex={-1}
         className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-12 focus:outline-none sm:px-8"
       >
-        <StateView loading={loading} error={error} retry={retry} />
+        <StateView
+          loading={loading}
+          error={error}
+          retry={retry}
+          authStatus={protectedScreen ? authStatus : "ready"}
+          authError={protectedScreen ? authError : null}
+          concealed={protectedScreen && concealed}
+        />
       </main>
     );
   }

@@ -39,6 +39,35 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+  /auth/flow-state:
+    get:
+      operationId: getAuthFlowState
+      summary: Read current authentication flow metadata
+      description: >-
+        Phase 1 view of the normal flow identity and sequence fields. Recovery
+        and pending-transition details remain outside this response. The
+        recovery-cookie name contains the flow ID and issued sequence.
+      security:
+        - RecoveryCookie: []
+      parameters:
+        - name: X-EduVibe-Flow-Id
+          in: header
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current authentication flow identity and sequence.
+          headers:
+            Cache-Control:
+              schema: { type: string, const: no-store }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthFlowContext"
+        "401":
+          $ref: "#/components/responses/ServiceError"
+        "503":
+          $ref: "#/components/responses/ServiceError"
   /auth/login:
     post:
       operationId: login
@@ -232,6 +261,13 @@ components:
       type: apiKey
       in: cookie
       name: __Host-eduvibe_session
+    RecoveryCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-eduvibe_recovery_<flow_id>_<issued_seq>
+      description: >-
+        The name is generated per flow. The placeholders stand for the request's
+        X-EduVibe-Flow-Id and the server-issued recovery sequence.
   responses:
     NotFound:
       description: The app does not exist or is not accessible to the current member.
@@ -354,6 +390,26 @@ components:
           then:
             properties:
               must_change_password: { const: true }
+    AuthFlowContext:
+      type: object
+      additionalProperties: false
+      description: >-
+        Phase 1 view of the identity and sequence fields from the approved
+        authentication flow-state contract. Recovery and pending-transition
+        details remain outside this view type.
+      required:
+        [flow_id, revision, session_generation, last_identity_change_revision]
+      properties:
+        flow_id: { type: string, format: uuid }
+        revision:
+          type: string
+          pattern: "^(0|[1-9][0-9]*)$"
+        session_generation:
+          type: [string, "null"]
+          pattern: "^(0|[1-9][0-9]*)$"
+        last_identity_change_revision:
+          type: string
+          pattern: "^(0|[1-9][0-9]*)$"
     AuthResult:
       type: object
       additionalProperties: false

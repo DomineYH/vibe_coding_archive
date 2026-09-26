@@ -1,0 +1,1146 @@
+{
+  "thresholdPixels": 0,
+  "results": [
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/01-gallery.png",
+      "screenshot": "gallery-1440x1000.png",
+      "width": 1440,
+      "height": 1826,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1826,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public.png",
+      "screenshot": "detail-1440x1000.png",
+      "width": 1440,
+      "height": 1360,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1360,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail-copy-done",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/05-copy-done.png",
+      "screenshot": "detail-copy-done-1440x1000.png",
+      "width": 1440,
+      "height": 1360,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1360,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": {
+        "left": 775,
+        "top": 925.5625,
+        "width": 69,
+        "height": 30
+      }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-1440x1000.png",
+      "screenshot": "gallery-loading-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/03-gallery-empty.png",
+      "screenshot": "gallery-empty-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-1440x1000.png",
+      "screenshot": "gallery-failure-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "corrupt-storage-recovery-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-api-order",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-api-order-1440x1000.png",
+      "screenshot": "gallery-api-order-1440x1000.png",
+      "width": 1440,
+      "height": 1826,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1826,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-filtered",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-filtered-1440x1000.png",
+      "screenshot": "gallery-filtered-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-query-overflow",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-query-overflow-1440x1000.png",
+      "screenshot": "gallery-query-overflow-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-duplicate-continue",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-duplicate-continue-1440x1000.png",
+      "screenshot": "gallery-duplicate-continue-1440x1000.png",
+      "width": 1440,
+      "height": 2509,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 2509,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-next-page-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-next-page-error-1440x1000.png",
+      "screenshot": "gallery-next-page-error-1440x1000.png",
+      "width": 1440,
+      "height": 2540,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1440,
+      "expectedHeight": 2540,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/01-gallery.png",
+      "screenshot": "gallery-1024x900.png",
+      "width": 1024,
+      "height": 2503,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 2503,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/04-detail-public.png",
+      "screenshot": "detail-1024x900.png",
+      "width": 1024,
+      "height": 1341,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 1341,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail-copy-done",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/05-copy-done.png",
+      "screenshot": "detail-copy-done-1024x900.png",
+      "width": 1024,
+      "height": 1341,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 1341,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": {
+        "left": 539,
+        "top": 906.3125,
+        "width": 69,
+        "height": 30
+      }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-1024x900.png",
+      "screenshot": "gallery-loading-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/03-gallery-empty.png",
+      "screenshot": "gallery-empty-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-1024x900.png",
+      "screenshot": "gallery-failure-1024x900.png",
+      "width": 1024,
+      "height": 918,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 918,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "corrupt-storage-recovery-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-api-order",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-api-order-1024x900.png",
+      "screenshot": "gallery-api-order-1024x900.png",
+      "width": 1024,
+      "height": 2503,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 2503,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-filtered",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-filtered-1024x900.png",
+      "screenshot": "gallery-filtered-1024x900.png",
+      "width": 1024,
+      "height": 921,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 921,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-query-overflow",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-query-overflow-1024x900.png",
+      "screenshot": "gallery-query-overflow-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-duplicate-continue",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-duplicate-continue-1024x900.png",
+      "screenshot": "gallery-duplicate-continue-1024x900.png",
+      "width": 1024,
+      "height": 3208,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 3208,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-next-page-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-next-page-error-1024x900.png",
+      "screenshot": "gallery-next-page-error-1024x900.png",
+      "width": 1024,
+      "height": 3239,
+      "comparisonStatus": "compared",
+      "expectedWidth": 1024,
+      "expectedHeight": 3239,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/01-gallery.png",
+      "screenshot": "gallery-768x1024.png",
+      "width": 768,
+      "height": 3313,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 3313,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/04-detail-public.png",
+      "screenshot": "detail-768x1024.png",
+      "width": 768,
+      "height": 1757,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1757,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail-copy-done",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/05-copy-done.png",
+      "screenshot": "detail-copy-done-768x1024.png",
+      "width": 768,
+      "height": 1757,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1757,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": {
+        "left": 647,
+        "top": 818.3125,
+        "width": 69,
+        "height": 30
+      }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-768x1024.png",
+      "screenshot": "gallery-loading-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/03-gallery-empty.png",
+      "screenshot": "gallery-empty-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-768x1024.png",
+      "screenshot": "gallery-failure-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "corrupt-storage-recovery-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-api-order",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-api-order-768x1024.png",
+      "screenshot": "gallery-api-order-768x1024.png",
+      "width": 768,
+      "height": 3313,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 3313,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-filtered",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-filtered-768x1024.png",
+      "screenshot": "gallery-filtered-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-query-overflow",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-query-overflow-768x1024.png",
+      "screenshot": "gallery-query-overflow-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-duplicate-continue",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-duplicate-continue-768x1024.png",
+      "screenshot": "gallery-duplicate-continue-768x1024.png",
+      "width": 768,
+      "height": 4739,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 4739,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-next-page-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-next-page-error-768x1024.png",
+      "screenshot": "gallery-next-page-error-768x1024.png",
+      "width": 768,
+      "height": 4770,
+      "comparisonStatus": "compared",
+      "expectedWidth": 768,
+      "expectedHeight": 4770,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/01-gallery.png",
+      "screenshot": "gallery-390x844.png",
+      "width": 390,
+      "height": 6143,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 6143,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/04-detail-public.png",
+      "screenshot": "detail-390x844.png",
+      "width": 390,
+      "height": 1968,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 1968,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail-copy-done",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/05-copy-done.png",
+      "screenshot": "detail-copy-done-390x844.png",
+      "width": 390,
+      "height": 1968,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 1968,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": {
+        "left": 281,
+        "top": 915.375,
+        "width": 69,
+        "height": 30
+      }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-390x844.png",
+      "screenshot": "gallery-loading-390x844.png",
+      "width": 390,
+      "height": 865,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 865,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/03-gallery-empty.png",
+      "screenshot": "gallery-empty-390x844.png",
+      "width": 390,
+      "height": 905,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 905,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-390x844.png",
+      "screenshot": "gallery-failure-390x844.png",
+      "width": 390,
+      "height": 921,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 921,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "corrupt-storage-recovery-390x844.png",
+      "width": 390,
+      "height": 844,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-api-order",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-api-order-390x844.png",
+      "screenshot": "gallery-api-order-390x844.png",
+      "width": 390,
+      "height": 6143,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 6143,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-filtered",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-filtered-390x844.png",
+      "screenshot": "gallery-filtered-390x844.png",
+      "width": 390,
+      "height": 991,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 991,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-query-overflow",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-query-overflow-390x844.png",
+      "screenshot": "gallery-query-overflow-390x844.png",
+      "width": 390,
+      "height": 926,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 926,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-duplicate-continue",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-duplicate-continue-390x844.png",
+      "screenshot": "gallery-duplicate-continue-390x844.png",
+      "width": 390,
+      "height": 8963,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 8963,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-next-page-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-next-page-error-390x844.png",
+      "screenshot": "gallery-next-page-error-390x844.png",
+      "width": 390,
+      "height": 8995,
+      "comparisonStatus": "compared",
+      "expectedWidth": 390,
+      "expectedHeight": 8995,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/01-gallery.png",
+      "screenshot": "gallery-360x844.png",
+      "width": 360,
+      "height": 5882,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 5882,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/04-detail-public.png",
+      "screenshot": "detail-360x844.png",
+      "width": 360,
+      "height": 1955,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 1955,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail-copy-done",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/05-copy-done.png",
+      "screenshot": "detail-copy-done-360x844.png",
+      "width": 360,
+      "height": 1955,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 1955,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": {
+        "left": 251,
+        "top": 902.25,
+        "width": 69,
+        "height": 30
+      }
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-360x844.png",
+      "screenshot": "gallery-loading-360x844.png",
+      "width": 360,
+      "height": 904,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 904,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-empty",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/03-gallery-empty.png",
+      "screenshot": "gallery-empty-360x844.png",
+      "width": 360,
+      "height": 965,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 965,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-failure",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-failure-360x844.png",
+      "screenshot": "gallery-failure-360x844.png",
+      "width": 360,
+      "height": 960,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 960,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "corrupt-storage-recovery",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "corrupt-storage-recovery-360x844.png",
+      "width": 360,
+      "height": 844,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-api-order",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-api-order-360x844.png",
+      "screenshot": "gallery-api-order-360x844.png",
+      "width": 360,
+      "height": 5882,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 5882,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-filtered",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-filtered-360x844.png",
+      "screenshot": "gallery-filtered-360x844.png",
+      "width": 360,
+      "height": 1011,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 1011,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-query-overflow",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-query-overflow-360x844.png",
+      "screenshot": "gallery-query-overflow-360x844.png",
+      "width": 360,
+      "height": 965,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 965,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-duplicate-continue",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-duplicate-continue-360x844.png",
+      "screenshot": "gallery-duplicate-continue-360x844.png",
+      "width": 360,
+      "height": 8552,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 8552,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-next-page-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-next-page-error-360x844.png",
+      "screenshot": "gallery-next-page-error-360x844.png",
+      "width": 360,
+      "height": 8584,
+      "comparisonStatus": "compared",
+      "expectedWidth": 360,
+      "expectedHeight": 8584,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-component",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/01-gallery-component.png",
+      "screenshot": "gallery-component-1440x1000.png",
+      "width": 289,
+      "height": 286,
+      "comparisonStatus": "compared",
+      "expectedWidth": 289,
+      "expectedHeight": 286,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    },
+    {
+      "state": "detail-component",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public-component.png",
+      "screenshot": "detail-component-1440x1000.png",
+      "width": 340,
+      "height": 555,
+      "comparisonStatus": "compared",
+      "expectedWidth": 340,
+      "expectedHeight": 555,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "comparedRegion": null
+    }
+  ]
+}

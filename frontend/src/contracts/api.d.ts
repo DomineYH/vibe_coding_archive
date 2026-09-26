@@ -38,6 +38,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/flow-state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read current authentication flow metadata
+         * @description Phase 1 view of the normal flow identity and sequence fields. Recovery and pending-transition details remain outside this response. The recovery-cookie name contains the flow ID and issued sequence.
+         */
+        get: operations["getAuthFlowState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -195,6 +215,14 @@ export interface components {
             /** Format: date-time */
             recent_auth_until?: string | null;
         } & (unknown & unknown);
+        /** @description Phase 1 view of the identity and sequence fields from the approved authentication flow-state contract. Recovery and pending-transition details remain outside this view type. */
+        AuthFlowContext: {
+            /** Format: uuid */
+            flow_id: string;
+            revision: string;
+            session_generation: string | null;
+            last_identity_change_revision: string;
+        };
         AuthResult: {
             user: components["schemas"]["Self"];
             csrf_token: string;
@@ -435,6 +463,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Self"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getAuthFlowState: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-EduVibe-Flow-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current authentication flow identity and sequence. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthFlowContext"];
                 };
             };
             401: components["responses"]["ServiceError"];

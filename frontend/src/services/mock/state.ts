@@ -24,6 +24,7 @@ const MOCK_SCENARIOS = [
   "long_copy",
   "visual_fixture",
   "auth_delayed",
+  "auth_observation_error",
   "auth_network_error",
   "detail_delayed",
 ] as const;
@@ -35,7 +36,16 @@ const V2_STATE_KEYS = [
   "private_apps",
   "principal_id",
 ];
-const STATE_KEYS = [...V2_STATE_KEYS, "registered_accounts"];
+const V3_STATE_KEYS = [...V2_STATE_KEYS, "registered_accounts"];
+const STATE_KEYS = [...V3_STATE_KEYS, "auth_flow", "observation_generation"];
+const AUTH_FLOW_KEYS = [
+  "flow_id",
+  "revision",
+  "session_generation",
+  "last_identity_change_revision",
+  "issued_session_generation",
+];
+const MOCK_FLOW_ID = "00000000-0000-4000-8000-000000000200";
 const LEGACY_STATE_KEYS = ["version", "generation", "scenario", "apps"];
 const REGISTERED_ACCOUNT_KEYS = [
   "id",
@@ -81,13 +91,21 @@ const CATALOG_GRADES = new Set(catalog.grades);
 const CATALOG_THEMES = new Set(catalog.themes.map((theme) => theme.id));
 export type MockScenario = (typeof MOCK_SCENARIOS)[number];
 type MockState = {
-  version: 3;
+  version: 4;
   generation: number;
+  observation_generation: number;
   scenario: MockScenario;
   apps: typeof publicApps;
   private_apps: typeof privateApps;
   principal_id: string | null;
   registered_accounts: MockRegisteredAccount[];
+  auth_flow: {
+    flow_id: string;
+    revision: string;
+    session_generation: string | null;
+    last_identity_change_revision: string;
+    issued_session_generation: string;
+  };
 };
 export type MockRegisteredAccount = {
   id: string;
@@ -200,13 +218,21 @@ function nextGeneration(currentGeneration: number): number {
 }
 
 const initialState = (): MockState => ({
-  version: 3,
+  version: 4,
   generation: resetGeneration,
+  observation_generation: 0,
   scenario: "original",
   apps: publicApps,
   private_apps: privateApps,
   principal_id: null,
   registered_accounts: [],
+  auth_flow: {
+    flow_id: MOCK_FLOW_ID,
+    revision: "0",
+    session_generation: null,
+    last_identity_change_revision: "0",
+    issued_session_generation: "0",
+  },
 });
 
 function storage(): Storage {
@@ -247,14 +273,30 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 3,
+      version: 4,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
+      observation_generation: 0,
+      auth_flow: initialState().auth_flow,
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
-    state = { ...value, version: 3, registered_accounts: [] };
+    state = {
+      ...value,
+      version: 4,
+      registered_accounts: [],
+      observation_generation: 0,
+      auth_flow: initialState().auth_flow,
+    };
+    needsMigration = true;
+  } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
+    state = {
+      ...value,
+      version: 4,
+      observation_generation: 0,
+      auth_flow: initialState().auth_flow,
+    };
     needsMigration = true;
   } else if (hasExactKeys(value, STATE_KEYS)) {
     state = value;
@@ -262,7 +304,7 @@ function readState(): MockState {
     throw storageError();
   }
   if (
-    state.version !== 3 ||
+    state.version !== 4 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -270,10 +312,26 @@ function readState(): MockState {
     !Array.isArray(state.apps) ||
     !Array.isArray(state.private_apps) ||
     !Array.isArray(state.registered_accounts) ||
+    typeof state.observation_generation !== "number" ||
+    !Number.isSafeInteger(state.observation_generation) ||
+    state.observation_generation < 0 ||
+    !hasExactKeys(state.auth_flow, AUTH_FLOW_KEYS) ||
     (state.principal_id !== null && typeof state.principal_id !== "string")
   ) {
     throw storageError();
   }
+  const flow = state.auth_flow as Record<string, unknown>;
+  const validSequence = (value: unknown) =>
+    typeof value === "string" && /^(0|[1-9][0-9]*)$/.test(value);
+  if (
+    flow.flow_id !== MOCK_FLOW_ID ||
+    !validSequence(flow.revision) ||
+    (flow.session_generation !== null &&
+      !validSequence(flow.session_generation)) ||
+    !validSequence(flow.last_identity_change_revision) ||
+    !validSequence(flow.issued_session_generation)
+  )
+    throw storageError();
   try {
     validateRegisteredAccounts(state.registered_accounts);
     validateApps(state.apps, true);
@@ -339,8 +397,16 @@ export function readMockScenario(): MockScenario {
   return readState().scenario;
 }
 
-export function setMockPrincipal(principalId: string | null): void {
+export function setMockPrincipal(
+  principalId: string | null,
+  expectedGeneration?: number,
+): void {
   const state = readState();
+  if (
+    expectedGeneration !== undefined &&
+    state.generation !== expectedGeneration
+  )
+    throw new DOMException("Mock state changed", "AbortError");
   if (
     principalId !== null &&
     !DEMO_ACCOUNTS.some((account) => account.id === principalId) &&
@@ -349,7 +415,27 @@ export function setMockPrincipal(principalId: string | null): void {
     throw new TypeError("Unsupported mock member");
   if (state.principal_id === principalId) return;
   const generation = nextGeneration(state.generation);
-  writeState({ ...state, principal_id: principalId, generation });
+  const revision = (BigInt(state.auth_flow.revision) + 1n).toString();
+  const sessionGeneration = principalId
+    ? (BigInt(state.auth_flow.issued_session_generation) + 1n).toString()
+    : null;
+  writeState({
+    ...state,
+    principal_id: principalId,
+    generation,
+    observation_generation:
+      state.observation_generation >= Number.MAX_SAFE_INTEGER
+        ? 0
+        : state.observation_generation + 1,
+    auth_flow: {
+      ...state.auth_flow,
+      revision,
+      session_generation: sessionGeneration,
+      last_identity_change_revision: revision,
+      issued_session_generation:
+        sessionGeneration ?? state.auth_flow.issued_session_generation,
+    },
+  });
   resetGeneration = generation;
 }
 

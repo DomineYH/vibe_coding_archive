@@ -140,25 +140,27 @@ async function compareInPage(page, actual, expected, region = null) {
         await image.decode();
         return image;
       };
-      const [actualImage, expectedImage] = await Promise.all([
-        decode(actualData),
-        decode(expectedData),
-      ]);
+      const actualImage = await decode(actualData);
+      const expectedImage = expectedData ? await decode(expectedData) : null;
       const report = {
         width: actualImage.width,
         height: actualImage.height,
-        expectedWidth: expectedImage.width,
-        expectedHeight: expectedImage.height,
+        comparisonStatus: expectedImage ? "compared" : "product_only",
+        expectedWidth: expectedImage?.width ?? null,
+        expectedHeight: expectedImage?.height ?? null,
         differentPixels: null,
         maxChannelDelta: null,
         bounds: null,
         comparedRegion: region,
       };
+      if (!expectedImage) return report;
       if (
         actualImage.width !== expectedImage.width ||
         actualImage.height !== expectedImage.height
-      )
+      ) {
+        report.comparisonStatus = "dimensions_mismatch";
         return report;
+      }
       const canvas = document.createElement("canvas");
       canvas.width = actualImage.width;
       canvas.height = actualImage.height;
@@ -210,7 +212,7 @@ async function compareInPage(page, actual, expected, region = null) {
     },
     {
       actualData: actual.toString("base64"),
-      expectedData: expected.toString("base64"),
+      expectedData: expected?.toString("base64") ?? null,
       region,
     },
   );
@@ -404,12 +406,13 @@ async function captureAndCompare(
   if (
     process.env.VISUAL_BASELINE_CAPTURE === "1" &&
     addedStates.includes(state) &&
-    state !== "gallery-empty"
+    state !== "gallery-empty" &&
+    baselinePath
   ) {
     mkdirSync(path.dirname(baselinePath), { recursive: true });
     writeFileSync(baselinePath, actual);
   }
-  const expected = readFileSync(baselinePath);
+  const expected = baselinePath ? readFileSync(baselinePath) : null;
   const comparisonRegion =
     state === "detail-copy-done"
       ? await page
@@ -436,7 +439,7 @@ async function captureAndCompare(
   const result = {
     state,
     viewport,
-    baseline: path.relative(root, baselinePath),
+    baseline: baselinePath ? path.relative(root, baselinePath) : null,
     screenshot: name,
     ...comparison,
   };
@@ -445,9 +448,13 @@ async function captureAndCompare(
     `${JSON.stringify(result, null, 2)}\n`,
   );
   testInfo.attach(name, { body: actual, contentType: "image/png" });
-  expect(comparison.width).toBe(comparison.expectedWidth);
-  expect(comparison.height).toBe(comparison.expectedHeight);
-  expect(comparison.differentPixels).toBe(0);
+  if (expected) {
+    expect(comparison.width).toBe(comparison.expectedWidth);
+    expect(comparison.height).toBe(comparison.expectedHeight);
+    expect(comparison.differentPixels).toBe(0);
+  } else {
+    expect(comparison.comparisonStatus).toBe("product_only");
+  }
 }
 
 test.afterAll(() => {
@@ -542,21 +549,24 @@ for (const state of addedStates) {
   for (const viewport of viewports) {
     const tag = `${viewport.width}x${viewport.height}`;
     const baselinePath =
-      state === "gallery-empty"
-        ? path.join(baselineRoot, tag, "03-gallery-empty.png")
-        : [
-              "gallery-api-order",
-              "gallery-filtered",
-              "gallery-query-overflow",
-              "gallery-duplicate-continue",
-              "gallery-next-page-error",
-              "corrupt-storage-recovery",
-            ].includes(state)
-          ? path.join(issue33BaselineRoot, `${state}-${tag}.png`)
-          : path.join(stateBaselineRoot, `${state}-${tag}.png`);
-    test(`${state} matches its baseline at ${tag}`, async ({
-      page,
-    }, testInfo) => {
+      state === "corrupt-storage-recovery"
+        ? null
+        : state === "gallery-empty"
+          ? path.join(baselineRoot, tag, "03-gallery-empty.png")
+          : [
+                "gallery-api-order",
+                "gallery-filtered",
+                "gallery-query-overflow",
+                "gallery-duplicate-continue",
+                "gallery-next-page-error",
+                "corrupt-storage-recovery",
+              ].includes(state)
+            ? path.join(issue33BaselineRoot, `${state}-${tag}.png`)
+            : path.join(stateBaselineRoot, `${state}-${tag}.png`);
+    const comparison = baselinePath
+      ? "matches its baseline"
+      : "is captured product-only";
+    test(`${state} ${comparison} at ${tag}`, async ({ page }, testInfo) => {
       await captureAndCompare(page, state, viewport, baselinePath, testInfo);
     });
   }

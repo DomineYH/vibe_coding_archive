@@ -3,14 +3,15 @@ import { expect, test } from "@playwright/test";
 const memberApp = "/apps/00000000-0000-4000-8000-000000000091";
 
 async function login(page, loginId = "교사김코딩", password = "1234") {
-  const passwordInput = page.getByLabel("비밀번호", { exact: true });
+  const form = page.locator("form");
+  await expect(form).toBeVisible();
+  const loginIdInput = form.getByLabel("로그인 아이디", { exact: true });
+  const passwordInput = form.getByLabel("비밀번호", { exact: true });
+  await expect(loginIdInput).toBeVisible();
   await expect(passwordInput).toBeVisible();
-  await page.getByLabel("로그인 아이디").fill(loginId);
+  await loginIdInput.fill(loginId);
   await passwordInput.fill(password);
-  await page
-    .getByRole("button", { name: "로그인", exact: true })
-    .last()
-    .click();
+  await form.getByRole("button", { name: "로그인", exact: true }).click();
 }
 
 async function fillRegistration(
@@ -24,12 +25,14 @@ async function fillRegistration(
     phone = "",
   } = {},
 ) {
-  await page.getByLabel("로그인 아이디").fill(loginId);
-  await page.getByLabel(/^비밀번호 \(필수\)$/).fill(password);
-  await page.getByLabel("비밀번호 확인").fill(passwordConfirm);
-  await page.getByLabel("별명").fill(nickname);
-  await page.getByLabel("이메일").fill(email);
-  await page.getByLabel("연락처").fill(phone);
+  const form = page.locator("form");
+  await expect(form).toBeVisible();
+  await form.getByLabel(/^로그인 아이디/).fill(loginId);
+  await form.getByLabel(/^비밀번호 \(필수\)$/).fill(password);
+  await form.getByLabel(/^비밀번호 확인/).fill(passwordConfirm);
+  await form.getByLabel(/^별명/).fill(nickname);
+  await form.getByLabel(/^이메일/).fill(email);
+  await form.getByLabel(/^연락처/).fill(phone);
 }
 
 test("an approved member stays signed in after refresh and can log out", async ({
@@ -231,6 +234,8 @@ test("a logout in another tab removes the old protected view", async ({
   await expect(
     otherTab.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
   ).toBeVisible();
+  await page.bringToFront();
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
 
   await page.getByRole("button", { name: "로그아웃" }).click();
   await expect(otherTab.getByRole("alert")).toContainText(
@@ -239,6 +244,196 @@ test("a logout in another tab removes the old protected view", async ({
   await expect(
     otherTab.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
   ).toHaveCount(0);
+});
+
+test("a delayed private read is discarded when authentication changes", async ({
+  page,
+}) => {
+  await page.goto("/auth?mode=login");
+  await login(page);
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({ ...state, scenario: "detail_delayed" }),
+    );
+  });
+  await page.evaluate((path) => {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, memberApp);
+  const main = page.getByRole("main");
+  await expect(
+    main.getByRole("status").filter({
+      hasText: "아카이브 앱을 불러오는 중이에요",
+    }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "로그아웃" }).click();
+  await expect(page).toHaveURL("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await page.evaluate((path) => {
+    window.history.pushState({}, "", path);
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }, memberApp);
+
+  await expect(main.getByRole("alert")).toContainText(
+    "아카이브 앱을 찾을 수 없어요",
+  );
+  await expect(
+    main.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
+  ).toHaveCount(0);
+});
+
+test("private detail stays hidden until a visible-tab auth check succeeds", async ({
+  page,
+}) => {
+  await page.goto("/auth?mode=login");
+  const loginForm = page.locator("form");
+  const loginId = loginForm.getByLabel("로그인 아이디", { exact: true });
+  const password = loginForm.getByLabel("비밀번호", { exact: true });
+  await expect(loginForm).toBeVisible();
+  await expect(loginId).toBeVisible();
+  await loginId.fill("교사김코딩");
+  await password.fill("1234");
+  await loginForm.getByRole("button", { name: "로그인", exact: true }).click();
+  await expect(page).toHaveURL("/");
+  await page.goto(memberApp);
+  const privateHeading = page.getByRole("heading", {
+    name: "과학 수행평가 루브릭 채점기",
+    exact: true,
+  });
+  await expect(privateHeading).toBeVisible();
+  const main = page.getByRole("main");
+
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect(
+    main.getByRole("status").filter({
+      hasText: "화면이 잠시 가려졌습니다",
+    }),
+  ).toBeVisible();
+  await expect(privateHeading).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(privateHeading).toBeVisible();
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "hidden",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(
+    main.getByRole("status").filter({
+      hasText: "화면이 잠시 가려졌습니다",
+    }),
+  ).toBeVisible();
+  await expect(privateHeading).toHaveCount(0);
+  await expect(main.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
+
+  await page.evaluate(() => {
+    Object.defineProperty(document, "visibilityState", {
+      configurable: true,
+      value: "visible",
+    });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect(privateHeading).toBeVisible();
+
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({ ...state, scenario: "auth_observation_error" }),
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key }));
+  });
+  await expect(
+    main.getByRole("alert").filter({
+      hasText: "로그인 상태를 확인할 수 없습니다",
+    }),
+  ).toBeVisible();
+  await expect(privateHeading).toHaveCount(0);
+
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({ ...state, scenario: "original" }),
+    );
+  });
+  await main.getByRole("button", { name: "다시 확인", exact: true }).click();
+  await expect(privateHeading).toBeVisible();
+
+  await page.goto("/apps/00000000-0000-4000-8000-000000000001");
+  const publicHeading = page.getByRole("heading", {
+    name: "분수 피자 가게",
+    exact: true,
+  });
+  await expect(publicHeading).toBeVisible();
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({ ...state, scenario: "auth_observation_error" }),
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key }));
+  });
+  await expect(publicHeading).toBeVisible();
+});
+
+test("direct public detail remains available when auth observation fails", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await page.evaluate(() => {
+    const key = "eduvibe-archive-mock-v1";
+    const state = JSON.parse(localStorage.getItem(key));
+    localStorage.setItem(
+      key,
+      JSON.stringify({ ...state, scenario: "auth_observation_error" }),
+    );
+    window.dispatchEvent(new StorageEvent("storage", { key }));
+  });
+  await expect(page.getByRole("button", { name: "다시 확인" })).toBeVisible();
+
+  await page.goto("/apps/00000000-0000-4000-8000-000000000001");
+  const publicHeading = page.getByRole("heading", {
+    name: "분수 피자 가게",
+    exact: true,
+  });
+  await expect(publicHeading).toBeVisible();
+  await page.reload();
+  await expect(publicHeading).toBeVisible();
+});
+
+test("a private route keeps explicit recovery for damaged mock storage", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("eduvibe-archive-mock-v1", "not valid JSON");
+  });
+  await page.goto(memberApp);
+  const main = page.getByRole("main");
+  await expect(main.getByRole("alert")).toContainText(
+    "로그인 상태를 확인할 수 없습니다",
+  );
+  await main.getByRole("link", { name: "mock 저장 초기화" }).click();
+  await expect(page).toHaveURL("/__dev/mock-reset");
+  await expect(
+    page.getByRole("button", { name: "기본 fixture로 명시적 초기화" }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "기본 fixture로 명시적 초기화" })
+    .click();
+  await expect(page).toHaveURL("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
 });
 
 test("an authenticated member gets 403 for the admin route while admin can open it", async ({
@@ -256,9 +451,24 @@ test("an authenticated member gets 403 for the admin route while admin can open 
   await page.reload();
   await expect(page).toHaveURL("/admin");
   await expect(page.getByRole("heading", { name: "관리자" })).toBeVisible();
-  await expect(
-    page.getByText("관리자 작업은 아직 제공하지 않아요."),
-  ).toBeVisible();
+  const adminPlaceholder = page.getByText(
+    "관리자 작업은 아직 제공하지 않아요.",
+    { exact: true },
+  );
+  const adminNavigation = page
+    .getByRole("navigation", { name: "주 메뉴" })
+    .getByRole("link", { name: "관리자", exact: true });
+  await expect(adminPlaceholder).toBeVisible();
+  await expect(adminNavigation).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+  await expect(page.getByRole("main").getByRole("status")).toContainText(
+    "화면이 잠시 가려졌습니다",
+  );
+  await expect(adminPlaceholder).toHaveCount(0);
+  await expect(adminNavigation).toHaveCount(0);
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(adminPlaceholder).toBeVisible();
+  await expect(adminNavigation).toBeVisible();
 });
 
 test("signup form exposes labeled required and optional fields", async ({
