@@ -19,14 +19,15 @@ const viewports = [
 const results = [];
 
 async function login(page, loginId = "교사김코딩", password = "1234") {
-  const passwordInput = page.getByLabel("비밀번호", { exact: true });
+  const form = page.locator("form");
+  await expect(form).toBeVisible();
+  const loginIdInput = form.getByLabel("로그인 아이디", { exact: true });
+  const passwordInput = form.getByLabel("비밀번호", { exact: true });
+  await expect(loginIdInput).toBeVisible();
   await expect(passwordInput).toBeVisible();
-  await page.getByLabel("로그인 아이디").fill(loginId);
+  await loginIdInput.fill(loginId);
   await passwordInput.fill(password);
-  await page
-    .getByRole("button", { name: "로그인", exact: true })
-    .last()
-    .click();
+  await form.getByRole("button", { name: "로그인", exact: true }).click();
 }
 
 async function register(
@@ -40,13 +41,15 @@ async function register(
     phone = "",
   } = {},
 ) {
-  await page.getByLabel("로그인 아이디").fill(loginId);
-  await page.getByLabel(/^비밀번호 \(필수\)$/).fill(password);
-  await page.getByLabel("비밀번호 확인").fill(passwordConfirm);
-  await page.getByLabel("별명").fill(nickname);
-  await page.getByLabel("이메일").fill(email);
-  await page.getByLabel("연락처").fill(phone);
-  await page.getByRole("button", { name: "가입 신청하기" }).click();
+  const form = page.locator("form");
+  await expect(form).toBeVisible();
+  await form.getByLabel(/^로그인 아이디/).fill(loginId);
+  await form.getByLabel(/^비밀번호 \(필수\)$/).fill(password);
+  await form.getByLabel(/^비밀번호 확인/).fill(passwordConfirm);
+  await form.getByLabel(/^별명/).fill(nickname);
+  await form.getByLabel(/^이메일/).fill(email);
+  await form.getByLabel(/^연락처/).fill(phone);
+  await form.getByRole("button", { name: "가입 신청하기" }).click();
 }
 
 async function reset(page, viewport) {
@@ -56,12 +59,21 @@ async function reset(page, viewport) {
   await page.reload();
 }
 
-async function capture(page, state, viewport, testInfo, baseline = null) {
-  await page.evaluate(async () => {
+async function capture(
+  page,
+  state,
+  viewport,
+  testInfo,
+  baseline = null,
+  waitForFrames = true,
+) {
+  await page.evaluate(async (waitForFrames) => {
     await document.fonts.ready;
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
-  });
+    if (waitForFrames) {
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+    }
+  }, waitForFrames);
   await page.mouse.move(0, 0);
   const actual = await page.screenshot({
     fullPage: true,
@@ -250,14 +262,14 @@ for (const viewport of viewports) {
 
     await reset(page, viewport);
     await page.goto("/auth?mode=login");
-    await page
+    const loginForm = page.locator("form");
+    await expect(loginForm).toBeVisible();
+    await loginForm
       .getByRole("button", { name: "로그인", exact: true })
-      .last()
       .click();
-    await expect(page.getByLabel("로그인 아이디")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    await expect(
+      loginForm.getByLabel("로그인 아이디", { exact: true }),
+    ).toHaveAttribute("aria-invalid", "true");
     await capture(page, "auth-field-errors", viewport, testInfo);
 
     await reset(page, viewport);
@@ -291,6 +303,78 @@ for (const viewport of viewports) {
       testInfo,
       "12-detail-private.png",
     );
+
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, scenario: "auth_delayed" }),
+      );
+    });
+    const privateHeading = page.getByRole("heading", {
+      name: "과학 수행평가 루브릭 채점기",
+      exact: true,
+    });
+    const privateMain = page.getByRole("main");
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(
+      privateMain.getByRole("status").filter({
+        hasText: "화면이 잠시 가려졌습니다",
+      }),
+    ).toBeVisible();
+    await expect(privateHeading).toHaveCount(0);
+    await capture(page, "private-detail-concealed", viewport, testInfo);
+
+    await page.clock.pauseAt(new Date(Date.now() + 60_000));
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(
+      privateMain.getByRole("status").filter({
+        hasText: "로그인 상태를 확인하고 있습니다",
+      }),
+    ).toBeVisible();
+    await capture(
+      page,
+      "private-auth-checking",
+      viewport,
+      testInfo,
+      null,
+      false,
+    );
+    await page.clock.runFor(300);
+    await page.clock.resume();
+    await expect(privateHeading).toBeVisible();
+
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, scenario: "auth_observation_error" }),
+      );
+      window.dispatchEvent(new StorageEvent("storage", { key }));
+    });
+    await expect(
+      privateMain.getByRole("alert").filter({
+        hasText: "로그인 상태를 확인할 수 없습니다",
+      }),
+    ).toBeVisible();
+    await expect(privateHeading).toHaveCount(0);
+    await capture(page, "private-auth-error", viewport, testInfo);
+
+    await page.evaluate(() => {
+      const key = "eduvibe-archive-mock-v1";
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, scenario: "original" }),
+      );
+    });
+    await privateMain
+      .getByRole("button", { name: "다시 확인", exact: true })
+      .click();
+    await expect(privateHeading).toBeVisible();
+    await capture(page, "private-detail-restored", viewport, testInfo);
 
     await reset(page, viewport);
     await page.goto("/auth?mode=login");

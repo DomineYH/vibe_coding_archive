@@ -21,6 +21,33 @@ const validateAppDetail = new Ajv({ allErrors: true }).compile({
 });
 
 describe("OpenAPI app detail schema", () => {
+  it("defines normal authentication flow observation metadata", () => {
+    const operation = openapi.paths["/auth/flow-state"].get;
+    const response = operation.responses["200"];
+    const flow = openapi.components.schemas.AuthFlowContext;
+    expect(operation.parameters).toContainEqual(
+      expect.objectContaining({
+        name: "X-EduVibe-Flow-Id",
+        in: "header",
+        required: true,
+      }),
+    );
+    expect(operation.security).toEqual([{ RecoveryCookie: [] }]);
+    expect(response.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/AuthFlowContext",
+    );
+    expect(flow.required).toEqual([
+      "flow_id",
+      "revision",
+      "session_generation",
+      "last_identity_change_revision",
+    ]);
+    expect(flow.properties.revision.pattern).toBe("^(0|[1-9][0-9]*)$");
+    expect(flow.properties.last_identity_change_revision.pattern).toBe(
+      "^(0|[1-9][0-9]*)$",
+    );
+  });
+
   it("defines the Phase 1 authentication and session restore contract", () => {
     expect(openapi.paths["/auth/me"].get.responses["200"]).toBeDefined();
     expect(openapi.paths["/auth/login"].post.requestBody).toBeDefined();

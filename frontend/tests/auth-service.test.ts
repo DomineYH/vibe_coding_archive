@@ -42,6 +42,85 @@ describe("demo authentication and protected reads", () => {
     });
   });
 
+  it("preserves auth transition history when the same member returns", async () => {
+    const anonymous = await authService.getCurrentAuthState();
+    expect(anonymous).toMatchObject({
+      user: null,
+      flow: {
+        flowId: "00000000-0000-4000-8000-000000000200",
+        revision: "0",
+        sessionGeneration: null,
+        lastIdentityChangeRevision: "0",
+      },
+      observationGeneration: 0,
+    });
+
+    const firstLogin = await authService.login({
+      loginId: "교사김코딩",
+      password: "1234",
+    });
+    const firstState = await authService.getCurrentAuthState();
+    expect(firstState).toMatchObject({
+      user: { id: firstLogin.user.id },
+      flow: {
+        revision: "1",
+        sessionGeneration: "1",
+        lastIdentityChangeRevision: "1",
+      },
+      observationGeneration: 1,
+    });
+
+    setMockScenario("empty");
+    expect(await authService.getCurrentAuthState()).toMatchObject({
+      flow: firstState.flow,
+      observationGeneration: firstState.observationGeneration,
+    });
+
+    await authService.logout();
+    const loggedOut = await authService.getCurrentAuthState();
+    expect(loggedOut.flow.revision).toBe("2");
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
+    const returned = await authService.getCurrentAuthState();
+
+    expect(returned.user?.id).toBe(firstLogin.user.id);
+    expect(returned.flow).toEqual({
+      flowId: firstState.flow.flowId,
+      revision: "3",
+      sessionGeneration: "2",
+      lastIdentityChangeRevision: "3",
+    });
+    expect(returned.observationGeneration).toBe(3);
+  });
+
+  it("does not apply a delayed login after mock reset", async () => {
+    vi.useFakeTimers();
+    try {
+      setMockScenario("auth_delayed");
+      const pending = authService.login({
+        loginId: "교사김코딩",
+        password: "1234",
+      });
+      const rejected = expect(pending).rejects.toMatchObject({
+        name: "AbortError",
+      });
+      await vi.advanceTimersByTimeAsync(0);
+      resetMockState();
+      await vi.advanceTimersByTimeAsync(300);
+      await rejected;
+      expect((await authService.getCurrentAuthState()).user).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps auth observation failures explicit for a retry", async () => {
+    setMockScenario("auth_observation_error");
+    await expect(authService.getCurrentAuthState()).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      httpStatus: 503,
+    });
+  });
+
   it("uses the same credential error for unknown accounts and wrong passwords", async () => {
     for (const loginId of ["missing-user", "교사김코딩"]) {
       await expect(

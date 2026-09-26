@@ -1,5 +1,6 @@
 import type {
   AuthResult,
+  AuthFlowContext,
   AuthUser,
   CsrfToken,
   RegisteredUser,
@@ -14,7 +15,13 @@ export type AuthRegisterInput = {
   phone?: string | null;
 };
 export type AuthRequestOptions = { signal?: AbortSignal };
+export type CurrentAuthState = {
+  user: AuthUser | null;
+  flow: AuthFlowContext;
+  observationGeneration: number;
+};
 export type AuthService = {
+  getCurrentAuthState(options?: AuthRequestOptions): Promise<CurrentAuthState>;
   getMe(options?: AuthRequestOptions): Promise<AuthUser>;
   getCsrf(options?: AuthRequestOptions): Promise<CsrfToken>;
   register(input: AuthRegisterInput): Promise<RegisteredUser>;

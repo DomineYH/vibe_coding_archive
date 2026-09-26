@@ -9,6 +9,9 @@ function unavailable(): ServiceError {
 }
 
 export const authService: AuthService = {
+  async getCurrentAuthState() {
+    throw unavailable();
+  },
   async getMe() {
     throw unavailable();
   },

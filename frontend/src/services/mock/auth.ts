@@ -1,5 +1,6 @@
 import {
   mapAuthResult,
+  mapAuthFlowContext,
   mapCsrfToken,
   mapRegisteredUser,
   mapSelf,
@@ -46,10 +47,9 @@ function asSelf(account: MockAccount) {
   };
 }
 
-function currentAccount() {
-  const state = getMockSnapshot();
+function accountFromState(state: ReturnType<typeof getMockSnapshot>) {
   const principalId = state.principal_id;
-  const account =
+  return (
     DEMO_ACCOUNTS.find((item) => item.id === principalId) ??
     state.registered_accounts
       .filter((item) => item.id === principalId)
@@ -57,7 +57,12 @@ function currentAccount() {
         ...item,
         role: "user" as const,
         approved: false as const,
-      }))[0];
+      }))[0]
+  );
+}
+
+function currentAccount() {
+  const account = accountFromState(getMockSnapshot());
   if (!account) throw authRequired();
   return account;
 }
@@ -209,6 +214,33 @@ function normalizePhone(
 }
 
 export const authService: AuthService = {
+  async getCurrentAuthState({ signal } = {}) {
+    checkSignal(signal);
+    const state = getMockSnapshot();
+    if (state.scenario === "auth_observation_error")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "로그인 상태를 확인할 수 없어요. 연결을 확인해 주세요.",
+        { httpStatus: 503 },
+      );
+    if (state.scenario === "auth_delayed") {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assertCurrentGeneration(state.generation, signal);
+    }
+    const flow = state.auth_flow;
+    const account = accountFromState(state);
+    return {
+      user: account ? mapSelf(asSelf(account)) : null,
+      flow: mapAuthFlowContext({
+        flow_id: flow.flow_id,
+        revision: flow.revision,
+        session_generation: flow.session_generation,
+        last_identity_change_revision: flow.last_identity_change_revision,
+      }),
+      observationGeneration: state.observation_generation,
+    };
+  },
+
   async getMe({ signal } = {}) {
     checkSignal(signal);
     return mapSelf(asSelf(currentAccount()));
@@ -278,6 +310,7 @@ export const authService: AuthService = {
     if (state.scenario === "auth_network_error") throw unavailable();
     if (state.scenario === "auth_delayed")
       await new Promise((resolve) => setTimeout(resolve, 300));
+    assertCurrentGeneration(state.generation);
     if (state.principal_id !== null)
       throw new ServiceError(
         "ALREADY_AUTHENTICATED",
@@ -316,7 +349,7 @@ export const authService: AuthService = {
         { httpStatus: 403, outcome: "rejected" },
       );
 
-    setMockPrincipal(account.id);
+    setMockPrincipal(account.id, state.generation);
     return mapAuthResult({
       user: asSelf(account),
       csrf_token: "mock-only-csrf-token",
@@ -326,6 +359,6 @@ export const authService: AuthService = {
   async logout() {
     const state = getMockSnapshot();
     if (state.scenario === "auth_network_error") throw unavailable();
-    setMockPrincipal(null);
+    setMockPrincipal(null, state.generation);
   },
 };

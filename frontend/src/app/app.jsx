@@ -82,7 +82,14 @@ function assertThemeIds(meta, items) {
   return items;
 }
 
-function Header({ active, auth, onLogin, onLogout, logoutPending }) {
+function Header({
+  active,
+  auth,
+  onLogin,
+  onLogout,
+  onRetryAuth,
+  logoutPending,
+}) {
   const navButton = (isActive) =>
     `h-9 rounded-full px-4 text-[13px] font-semibold transition-all ${isActive ? "bg-neutral-900/[0.06] text-neutral-900" : "text-neutral-500 hover:bg-neutral-900/[0.04] hover:text-neutral-900"}`;
   return (
@@ -113,7 +120,9 @@ function Header({ active, auth, onLogin, onLogout, logoutPending }) {
           >
             갤러리
           </Link>
-          {auth.user?.role === "admin" ? (
+          {auth.status === "ready" &&
+          !auth.concealed &&
+          auth.user?.role === "admin" ? (
             <Link
               to="/admin"
               aria-current={active === "admin" ? "page" : undefined}
@@ -124,10 +133,16 @@ function Header({ active, auth, onLogin, onLogout, logoutPending }) {
           ) : null}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          {auth.status === "checking" ? (
+          {auth.concealed || auth.status === "checking" ? (
             <span className="text-[12px] text-neutral-500" role="status">
-              로그인 상태 확인 중
+              {auth.concealed
+                ? "화면이 잠시 가려졌습니다"
+                : "로그인 상태 확인 중"}
             </span>
+          ) : auth.status === "error" ? (
+            <Btn size="sm" variant="line" onClick={onRetryAuth}>
+              다시 확인
+            </Btn>
           ) : auth.user ? (
             <>
               <span className="inline-flex max-w-[145px] items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:gap-2 sm:text-[13px]">
@@ -201,17 +216,18 @@ function usePublicMetadata() {
   };
 }
 
-function authCacheScope(auth) {
-  return [
-    __DATA_MODE__,
+function authScopeIdentity(auth) {
+  return JSON.stringify([
     auth.user?.id ?? "anonymous",
     auth.user?.sessionKind ?? "anonymous",
     auth.user?.role ?? null,
-    auth.epoch,
-  ];
+    auth.flow?.flowId ?? null,
+    auth.flow?.lastIdentityChangeRevision ?? null,
+    auth.observationGeneration ?? 0,
+  ]);
 }
 
-function GalleryRoute({ auth }) {
+function GalleryRoute() {
   const location = useLocation();
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
@@ -254,7 +270,7 @@ function GalleryRoute({ auth }) {
   ]);
   const list = useInfiniteQuery({
     queryKey: [
-      ...authCacheScope(auth),
+      __DATA_MODE__,
       "apps",
       "list",
       filters.q ?? "",
@@ -348,14 +364,27 @@ function DetailRoute({ auth, onRetryAuth }) {
   const location = useLocation();
   const navigate = useNavigate();
   const access = usePublicMetadata();
-  const authPending = __DATA_MODE__ === "mock" && auth.status === "checking";
-  const authError = __DATA_MODE__ === "mock" && auth.status === "error";
+  const observationId = useRef(auth.observationId);
+  observationId.current = auth.observationId;
   const detail = useQuery({
-    queryKey: [...authCacheScope(auth), "apps", "detail", id],
+    queryKey: [__DATA_MODE__, "apps", "detail", id],
     enabled:
-      access.canRead && (__DATA_MODE__ !== "mock" || auth.status === "ready"),
+      access.canRead &&
+      (__DATA_MODE__ !== "mock" ||
+        (auth.status !== "checking" && !auth.concealed)),
     queryFn: async ({ signal }) => {
       const app = await appsService.get(id, { signal });
+      if (
+        __DATA_MODE__ === "mock" &&
+        !app.isPublic &&
+        (observationId.current !== auth.observationId ||
+          auth.status !== "ready" ||
+          auth.concealed)
+      )
+        throw new DOMException(
+          "Authentication observation changed",
+          "AbortError",
+        );
       if (
         !app.isPublic &&
         __DATA_MODE__ === "mock" &&
@@ -371,16 +400,20 @@ function DetailRoute({ auth, onRetryAuth }) {
     },
   });
   const app = detail.data;
+  const protectedDetail = app?.isPublic !== true;
+  const authError =
+    __DATA_MODE__ === "mock" && protectedDetail && auth.status === "error";
   return (
     <AppDetailView
       app={app}
       meta={access.meta}
-      loading={
-        authPending ||
-        access.loading ||
-        (access.canRead && !authError && detail.isPending)
+      authStatus={
+        __DATA_MODE__ === "mock" && protectedDetail ? auth.status : "ready"
       }
-      error={authError ? auth.error : (access.error ?? detail.error)}
+      authError={authError ? auth.error : null}
+      concealed={__DATA_MODE__ === "mock" && protectedDetail && auth.concealed}
+      loading={access.loading || (!authError && detail.isPending)}
+      error={access.error ?? detail.error}
       retry={authError ? onRetryAuth : () => access.retry(detail.refetch)}
       onBack={() => navigate(location.state?.fromGallery === true ? -1 : "/")}
     />
@@ -422,6 +455,14 @@ function AuthRoute({ location, auth, onRetry, onLogin, onRegister }) {
 }
 
 function AdminRoute({ auth, onRetry }) {
+  if (auth.concealed)
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState title="화면이 잠시 가려졌습니다" />
+        </div>
+      </main>
+    );
   if (auth.status === "checking")
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
@@ -439,6 +480,16 @@ function AdminRoute({ auth, onRetry }) {
             desc={auth.error?.message}
           >
             <Btn onClick={onRetry}>다시 확인</Btn>
+            {__DATA_MODE__ === "mock" &&
+            auth.error instanceof ServiceError &&
+            auth.error.code === "MOCK_STORAGE_ERROR" ? (
+              <Link
+                to="/__dev/mock-reset"
+                className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+              >
+                mock 저장 초기화
+              </Link>
+            ) : null}
           </EmptyState>
         </div>
       </main>
@@ -482,82 +533,189 @@ export default function App() {
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
   const authRequest = useRef(0);
-  const authEpoch = useRef(0);
+  const authObservation = useRef(0);
+  const authController = useRef(null);
+  const pageAway = useRef(document.visibilityState === "hidden");
+  const authSnapshot = useRef({
+    user: null,
+    flow: null,
+    observationGeneration: 0,
+  });
   const [auth, setAuth] = useState({
     status: "checking",
     user: null,
+    flow: null,
+    observationGeneration: 0,
+    observationId: 0,
     error: null,
-    epoch: 0,
+    concealed: document.visibilityState === "hidden",
   });
   const [logoutPending, setLogoutPending] = useState(false);
 
-  const clearMemberQueries = useCallback(async () => {
-    const isMemberQuery = (query) =>
-      query.queryKey[0] === __DATA_MODE__ && query.queryKey[1] !== "meta";
-    await queryClient.cancelQueries({ predicate: isMemberQuery });
-    queryClient.removeQueries({ predicate: isMemberQuery });
-  }, [queryClient]);
-
-  const restoreAuth = useCallback(async () => {
-    const request = ++authRequest.current;
-    const epoch = ++authEpoch.current;
-    setAuth({ status: "checking", user: null, error: null, epoch });
-    await clearMemberQueries();
-    if (request !== authRequest.current) return;
-    try {
-      const user = await authService.getMe();
-      if (request === authRequest.current)
-        setAuth({ status: "ready", user, error: null, epoch });
-    } catch (error) {
-      if (request !== authRequest.current) return;
-      if (error instanceof ServiceError && error.code === "AUTH_REQUIRED")
-        setAuth({ status: "ready", user: null, error: null, epoch });
-      else setAuth({ status: "error", user: null, error, epoch });
-    }
-  }, [clearMemberQueries]);
-
-  const updateAuth = useCallback(
-    async (user) => {
-      ++authRequest.current;
-      const epoch = ++authEpoch.current;
-      await clearMemberQueries();
-      setAuth({ status: "ready", user, error: null, epoch });
-    },
-    [clearMemberQueries],
+  const isProtectedDetailQuery = useCallback(
+    (query) =>
+      query.queryKey[0] === __DATA_MODE__ &&
+      query.queryKey[1] === "apps" &&
+      query.queryKey[2] === "detail" &&
+      query.state.data?.isPublic !== true,
+    [],
   );
+  const cancelProtectedQueries = useCallback(async () => {
+    await queryClient.cancelQueries({ predicate: isProtectedDetailQuery });
+  }, [isProtectedDetailQuery, queryClient]);
+  const clearChangedScopeQueries = useCallback(() => {
+    queryClient.removeQueries({
+      predicate: isProtectedDetailQuery,
+    });
+  }, [isProtectedDetailQuery, queryClient]);
+
+  const restoreAuth = useCallback(
+    async ({ concealed = false } = {}) => {
+      const request = ++authRequest.current;
+      authController.current?.abort();
+      const controller = new AbortController();
+      authController.current = controller;
+      const observationId = ++authObservation.current;
+      setAuth({
+        ...authSnapshot.current,
+        status: "checking",
+        observationId,
+        error: null,
+        concealed:
+          concealed ||
+          pageAway.current ||
+          document.visibilityState === "hidden",
+      });
+      await cancelProtectedQueries();
+      if (request !== authRequest.current) return null;
+      try {
+        const observed = await authService.getCurrentAuthState({
+          signal: controller.signal,
+        });
+        if (request !== authRequest.current || controller.signal.aborted)
+          return null;
+        const previousScope = authScopeIdentity(authSnapshot.current);
+        const nextScope = authScopeIdentity(observed);
+        if (previousScope !== nextScope) clearChangedScopeQueries();
+        authSnapshot.current = observed;
+        const next = {
+          ...observed,
+          status: "ready",
+          observationId,
+          error: null,
+          concealed: pageAway.current || document.visibilityState === "hidden",
+        };
+        setAuth(next);
+        return next;
+      } catch (error) {
+        if (request !== authRequest.current || controller.signal.aborted)
+          return null;
+        const failed = {
+          ...authSnapshot.current,
+          status: "error",
+          observationId,
+          error,
+          concealed: pageAway.current || document.visibilityState === "hidden",
+        };
+        setAuth(failed);
+        return failed;
+      }
+    },
+    [cancelProtectedQueries, clearChangedScopeQueries],
+  );
+
+  const refreshMockState = useCallback(async () => {
+    await restoreAuth({ concealed: true });
+    await queryClient.invalidateQueries({
+      predicate: (query) => {
+        const key = query.queryKey;
+        return (
+          __DATA_MODE__ === "mock" &&
+          key[0] === __DATA_MODE__ &&
+          (key[1] === "meta" ||
+            (key[1] === "apps" &&
+              (key[2] === "list" ||
+                (key[2] === "detail" && query.state.data?.isPublic !== false))))
+        );
+      },
+    });
+  }, [queryClient, restoreAuth]);
+
+  const beginAuthTransition = useCallback(async () => {
+    ++authRequest.current;
+    authController.current?.abort();
+    const observationId = ++authObservation.current;
+    setAuth({
+      ...authSnapshot.current,
+      status: "ready",
+      observationId,
+      error: null,
+      concealed: true,
+    });
+    await cancelProtectedQueries();
+  }, [cancelProtectedQueries]);
+
+  const concealOnDeparture = useCallback(() => {
+    if (pageAway.current) return;
+    pageAway.current = true;
+    void beginAuthTransition();
+  }, [beginAuthTransition]);
+
+  const restoreOnReturn = useCallback(() => {
+    if (document.visibilityState === "hidden" || !pageAway.current) return;
+    pageAway.current = false;
+    void restoreAuth();
+  }, [restoreAuth]);
 
   const login = useCallback(
     async (input, returnTo) => {
-      const result = await authService.login(input);
-      await updateAuth(result.user);
-      const appMatch = returnTo.match(/^\/apps\/([0-9a-f-]+)$/i);
-      if (appMatch) {
-        try {
-          await appsService.get(appMatch[1]);
-        } catch {
-          // The destination route repeats this check and renders its safe error state.
+      await beginAuthTransition();
+      let confirmed = false;
+      try {
+        const result = await authService.login(input);
+        const current = await restoreAuth();
+        confirmed = true;
+        if (current?.status !== "ready" || current.user?.id !== result.user.id)
+          throw (
+            current?.error ??
+            new ServiceError(
+              "SERVICE_UNAVAILABLE",
+              "로그인 상태를 확인할 수 없습니다. 다시 확인해 주세요.",
+            )
+          );
+        const appMatch = returnTo.match(/^\/apps\/([0-9a-f-]+)$/i);
+        if (appMatch) {
+          try {
+            await appsService.get(appMatch[1]);
+          } catch {
+            // The destination route repeats this check and renders its safe error state.
+          }
         }
+        navigate(returnTo, { replace: true });
+      } catch (error) {
+        if (!confirmed) await restoreAuth();
+        throw error;
       }
-      navigate(returnTo, { replace: true });
     },
-    [navigate, updateAuth],
+    [beginAuthTransition, navigate, restoreAuth],
   );
 
   const logout = useCallback(async () => {
     if (logoutPending) return;
     setLogoutPending(true);
     try {
-      await clearMemberQueries();
+      await beginAuthTransition();
       await authService.logout();
-      await updateAuth(null);
-      navigate("/", { replace: true });
+      const current = await restoreAuth();
+      if (current?.status === "ready" && !current.user)
+        navigate("/", { replace: true });
     } catch {
       await restoreAuth();
       setToast("로그아웃하지 못했어요. 연결을 확인하고 다시 시도해 주세요.");
     } finally {
       setLogoutPending(false);
     }
-  }, [clearMemberQueries, logoutPending, navigate, restoreAuth, updateAuth]);
+  }, [beginAuthTransition, logoutPending, navigate, restoreAuth]);
 
   useEffect(() => {
     void restoreAuth();
@@ -577,18 +735,42 @@ export default function App() {
     )
       window.scrollTo({ top: 0 });
   }, [location.key, location.pathname, navigationType]);
+  const previousAuthLocation = useRef(location.key);
   useEffect(() => {
-    const refreshQueries = (event) => {
+    const previousKey = previousAuthLocation.current;
+    previousAuthLocation.current = location.key;
+    if (navigationType === "POP" && previousKey !== location.key)
+      void restoreAuth({ concealed: true });
+  }, [location.key, navigationType, restoreAuth]);
+  useEffect(() => {
+    const onStorage = (event) => {
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1")
-        void restoreAuth();
+        void refreshMockState();
     };
-    window.addEventListener("eduvibe:mock-reset", restoreAuth);
-    window.addEventListener("storage", refreshQueries);
+    const onMockReset = () => void refreshMockState();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") concealOnDeparture();
+      else restoreOnReturn();
+    };
+    window.addEventListener("eduvibe:mock-reset", onMockReset);
+    window.addEventListener("storage", onStorage);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("blur", concealOnDeparture);
+    window.addEventListener("focus", restoreOnReturn);
+    const onPageShow = (event) => {
+      if (event.persisted) void restoreAuth({ concealed: true });
+    };
+    window.addEventListener("pageshow", onPageShow);
     return () => {
-      window.removeEventListener("eduvibe:mock-reset", restoreAuth);
-      window.removeEventListener("storage", refreshQueries);
+      window.removeEventListener("eduvibe:mock-reset", onMockReset);
+      window.removeEventListener("storage", onStorage);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("blur", concealOnDeparture);
+      window.removeEventListener("focus", restoreOnReturn);
+      window.removeEventListener("pageshow", onPageShow);
     };
-  }, [restoreAuth]);
+  }, [concealOnDeparture, refreshMockState, restoreAuth, restoreOnReturn]);
+
   useEffect(() => {
     if (!toast) return undefined;
     const timer = window.setTimeout(() => setToast(""), 2200);
@@ -607,10 +789,11 @@ export default function App() {
         auth={auth}
         onLogin={() => navigate("/auth?mode=login")}
         onLogout={logout}
+        onRetryAuth={() => void restoreAuth()}
         logoutPending={logoutPending}
       />
       <Routes>
-        <Route path="/" element={<GalleryRoute auth={auth} />} />
+        <Route path="/" element={<GalleryRoute />} />
         <Route
           path="/apps/:id"
           element={<DetailRoute auth={auth} onRetryAuth={restoreAuth} />}
@@ -621,7 +804,7 @@ export default function App() {
             <AuthRoute
               location={location}
               auth={auth}
-              onRetry={restoreAuth}
+              onRetry={() => restoreAuth()}
               onLogin={login}
               onRegister={(input) => authService.register(input)}
             />
@@ -629,7 +812,7 @@ export default function App() {
         />
         <Route
           path="/admin"
-          element={<AdminRoute auth={auth} onRetry={restoreAuth} />}
+          element={<AdminRoute auth={auth} onRetry={() => restoreAuth()} />}
         />
         {__DATA_MODE__ === "mock" ? (
           <Route path="/__dev/mock-reset" element={<MockResetPage />} />

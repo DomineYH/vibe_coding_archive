@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import catalog from "../../contracts/catalog.json";
 import {
   mapAuthResult,
+  mapAuthFlowContext,
   mapAppDetailResponse,
   mapAppPage,
   mapMeta,
@@ -82,6 +83,40 @@ const page = {
 };
 
 describe("response mappers", () => {
+  it("maps authentication flow identity and sequence metadata", () => {
+    const flow = {
+      flow_id: "00000000-0000-4000-8000-000000000200",
+      revision: "12",
+      session_generation: "4",
+      last_identity_change_revision: "9",
+    };
+
+    expect(mapAuthFlowContext(flow)).toEqual({
+      flowId: flow.flow_id,
+      revision: "12",
+      sessionGeneration: "4",
+      lastIdentityChangeRevision: "9",
+    });
+    expect(
+      mapAuthFlowContext({ ...flow, session_generation: null })
+        .sessionGeneration,
+    ).toBeNull();
+  });
+
+  it("rejects malformed authentication flow sequence metadata", () => {
+    const flow = {
+      flow_id: "00000000-0000-4000-8000-000000000200",
+      revision: "12",
+      session_generation: "4",
+      last_identity_change_revision: "9",
+    };
+    for (const invalid of ["01", "-1", 12, "1.0"]) {
+      expect(() =>
+        mapAuthFlowContext({ ...flow, revision: invalid }),
+      ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    }
+  });
+
   it("keeps member ID, login ID, and nickname as separate auth fields", () => {
     const member = {
       id: "00000000-0000-4000-8000-000000000101",

@@ -44,7 +44,16 @@ function job(state: StoredState): StoredObject {
 
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 4)],
+  ["unsupported state version", (state) => (state.version = 5)],
+  ["missing auth flow context", (state) => delete state.auth_flow],
+  [
+    "invalid auth flow sequence",
+    (state) => (nested(state.auth_flow).revision = "01"),
+  ],
+  [
+    "invalid observation generation",
+    (state) => (state.observation_generation = -1),
+  ],
   ["extra state field", (state) => (state.extra = true)],
   ["missing generation", (state) => delete state.generation],
   ["string generation", (state) => (state.generation = "1")],
@@ -195,20 +204,24 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 3,
+      version: 4,
       principal_id: null,
       private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
       registered_accounts: [],
+      observation_generation: 0,
     });
   });
 
-  it("migrates the auth-capable state before adding registration storage", async () => {
+  it("migrates the previous auth-capable state and preserves the principal", async () => {
     resetMockState();
     const current = JSON.parse(
       localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
     ) as StoredState;
     const v2 = { ...current } as Record<string, unknown>;
     delete v2.registered_accounts;
+    delete v2.auth_flow;
+    delete v2.observation_generation;
+    v2.principal_id = "00000000-0000-4000-8000-000000000101";
     localStorage.setItem(
       MOCK_STORAGE_KEY,
       JSON.stringify({ ...v2, version: 2 }),
@@ -218,9 +231,33 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 3,
+      version: 4,
       registered_accounts: [],
-      principal_id: null,
+      principal_id: "00000000-0000-4000-8000-000000000101",
+      observation_generation: 0,
+    });
+  });
+
+  it("migrates registration-capable state to the flow metadata version", async () => {
+    resetMockState();
+    const current = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    const previous = { ...current } as Record<string, unknown>;
+    delete previous.auth_flow;
+    delete previous.observation_generation;
+    localStorage.setItem(
+      MOCK_STORAGE_KEY,
+      JSON.stringify({ ...previous, version: 3 }),
+    );
+
+    expect((await appsService.list()).items).toHaveLength(16);
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
+    ).toMatchObject({
+      version: 4,
+      observation_generation: 0,
+      auth_flow: { revision: "0", last_identity_change_revision: "0" },
     });
   });
 });

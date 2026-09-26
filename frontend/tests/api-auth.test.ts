@@ -3,6 +3,9 @@ import { authService } from "../src/services/api/auth";
 
 describe("Phase 1 API auth boundary", () => {
   it("keeps auth unavailable in API mode until its phase is implemented", async () => {
+    await expect(authService.getCurrentAuthState()).rejects.toMatchObject({
+      code: "FEATURE_UNAVAILABLE",
+    });
     await expect(authService.getMe()).rejects.toMatchObject({
       code: "FEATURE_UNAVAILABLE",
     });

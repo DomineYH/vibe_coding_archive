@@ -11,6 +11,7 @@ type WireHealthResult = Wire["HealthResult"];
 type WireReason = Wire["Reason"];
 type WireCapability = Wire["Capability"];
 type WireSelf = Wire["Self"];
+type WireAuthFlowContext = Wire["AuthFlowContext"];
 type WireAuthResult = Wire["AuthResult"];
 type WireCsrfToken = Wire["CsrfToken"];
 type WireRegisteredUser = Wire["RegisteredUser"];
@@ -84,6 +85,12 @@ export type AuthUser = {
   email: string | null;
   phone: string | null;
   recentAuthUntil: string | null;
+};
+export type AuthFlowContext = {
+  flowId: string;
+  revision: string;
+  sessionGeneration: string | null;
+  lastIdentityChangeRevision: string;
 };
 export type AuthResult = { user: AuthUser; csrfToken: string };
 export type CsrfToken = { csrfToken: string; expiresAt: string };
@@ -172,6 +179,12 @@ function integer(
   return value;
 }
 
+function sequence(value: unknown): string {
+  const result = string(value);
+  if (!/^(0|[1-9][0-9]*)$/.test(result)) throw contractError();
+  return result;
+}
+
 function stringArray(value: unknown): string[] {
   if (!Array.isArray(value)) throw contractError();
   return value.map((item) => string(item));
@@ -254,6 +267,33 @@ export function mapSelf(value: unknown): AuthUser {
     email,
     phone,
     recentAuthUntil,
+  };
+}
+
+export function mapAuthFlowContext(value: unknown): AuthFlowContext {
+  const item = record(value) as unknown as Partial<WireAuthFlowContext>;
+  if (
+    Object.keys(item).some(
+      (key) =>
+        ![
+          "flow_id",
+          "revision",
+          "session_generation",
+          "last_identity_change_revision",
+        ].includes(key),
+    )
+  )
+    throw contractError();
+  const flowId = nonEmpty(item.flow_id);
+  if (!UUID.test(flowId)) throw contractError();
+  return {
+    flowId,
+    revision: sequence(item.revision),
+    sessionGeneration:
+      item.session_generation === null
+        ? null
+        : sequence(item.session_generation),
+    lastIdentityChangeRevision: sequence(item.last_identity_change_revision),
   };
 }
 

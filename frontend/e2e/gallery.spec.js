@@ -1,12 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 async function tabTo(page, target, maxTabs = 40) {
-  await page.evaluate(() => {
-    if (document.activeElement instanceof HTMLElement)
-      document.activeElement.blur();
-  });
+  if (await target.evaluate((element) => element === document.activeElement))
+    return;
   for (let index = 0; index < maxTabs; index += 1) {
     await page.keyboard.press("Tab");
+    await expect(target).toBeVisible();
     if (await target.evaluate((element) => element === document.activeElement))
       return;
   }
@@ -72,13 +71,20 @@ test("opens public detail directly and rejects an unknown app", async ({
   await expect(page.getByRole("alert")).toContainText(
     "개발용 저장 데이터를 읽거나 저장하지 못했어요",
   );
-  const retry = page.getByRole("button", { name: "다시 시도" });
-  const resetLink = page.getByRole("link", { name: "mock 저장 초기화" });
-  await expect(retry).toHaveAccessibleName("다시 시도");
+  const alert = page.getByRole("alert");
+  const retry = alert.getByRole("button", {
+    name: "다시 확인",
+    exact: true,
+  });
+  const resetLink = alert.getByRole("link", {
+    name: "mock 저장 초기화",
+    exact: true,
+  });
+  await expect(retry).toHaveAccessibleName("다시 확인");
   await expect(resetLink).toHaveAccessibleName("mock 저장 초기화");
   await tabTo(page, resetLink);
   await expect(resetLink).toBeFocused();
-  await tabTo(page, retry);
+  await page.keyboard.press("Shift+Tab");
   await expect(retry).toBeFocused();
   await page.evaluate((value) => {
     localStorage.setItem("eduvibe-archive-mock-v1", value);
