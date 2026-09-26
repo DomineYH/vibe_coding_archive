@@ -12,6 +12,7 @@ import { DEMO_ACCOUNTS } from "./accounts";
 import {
   addMockRegisteredAccount,
   assertCurrentGeneration,
+  getMockAccounts,
   getMockSnapshot,
   setMockPrincipal,
   type MockRegisteredAccount,
@@ -27,9 +28,7 @@ function authRequired(): ServiceError {
   });
 }
 
-type MockAccount =
-  | (typeof DEMO_ACCOUNTS)[number]
-  | (MockRegisteredAccount & { role: "user"; approved: false });
+type MockAccount = ReturnType<typeof getMockAccounts>[number];
 
 function asSelf(account: MockAccount) {
   return {
@@ -49,16 +48,7 @@ function asSelf(account: MockAccount) {
 
 function accountFromState(state: ReturnType<typeof getMockSnapshot>) {
   const principalId = state.principal_id;
-  return (
-    DEMO_ACCOUNTS.find((item) => item.id === principalId) ??
-    state.registered_accounts
-      .filter((item) => item.id === principalId)
-      .map((item) => ({
-        ...item,
-        role: "user" as const,
-        approved: false as const,
-      }))[0]
-  );
+  return getMockAccounts(state).find((item) => item.id === principalId);
 }
 
 function currentAccount() {
@@ -268,7 +258,7 @@ export const authService: AuthService = {
         { httpStatus: 409, outcome: "rejected" },
       );
     const normalized = normalizeRegistration(input);
-    const accounts = [...DEMO_ACCOUNTS, ...state.registered_accounts];
+    const accounts = getMockAccounts(state);
     if (
       accounts.some(
         (account) =>
@@ -327,15 +317,9 @@ export const authService: AuthService = {
       });
 
     const loginId = input.loginId.trim().normalize("NFC").toLowerCase();
-    const account =
-      DEMO_ACCOUNTS.find((item) => item.loginId.toLowerCase() === loginId) ??
-      state.registered_accounts
-        .filter((item) => item.loginId.toLowerCase() === loginId)
-        .map((item) => ({
-          ...item,
-          role: "user" as const,
-          approved: false as const,
-        }))[0];
+    const account = getMockAccounts(state).find(
+      (item) => item.loginId.toLowerCase() === loginId,
+    );
     if (!account || account.password !== input.password.normalize("NFC"))
       throw new ServiceError(
         "INVALID_CREDENTIALS",

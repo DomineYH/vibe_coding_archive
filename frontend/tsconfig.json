@@ -20,6 +20,7 @@
     "baseUrl": ".",
     "paths": {
       "@services/apps": ["src/services/mock/apps.ts"],
+      "@services/admin": ["src/services/mock/admin.ts"],
       "@services/mock-reset": ["src/services/mock/reset-page.jsx"]
     }
   },

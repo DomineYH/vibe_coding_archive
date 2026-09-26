@@ -1,0 +1,142 @@
+{
+  "pixelTolerance": 0,
+  "comparisonEnforced": false,
+  "review": "Human UI-D approval pending",
+  "results": [
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-1440x1000.png",
+      "width": 1440,
+      "height": 1238,
+      "expectedWidth": 1440,
+      "expectedHeight": 1111,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-approval-confirm",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "admin-approval-confirm-1440x1000.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-1024x900.png",
+      "width": 1024,
+      "height": 1238,
+      "expectedWidth": 1024,
+      "expectedHeight": 1111,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-approval-confirm",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "admin-approval-confirm-1024x900.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-768x1024.png",
+      "width": 768,
+      "height": 1238,
+      "expectedWidth": 768,
+      "expectedHeight": 1218,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-approval-confirm",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "admin-approval-confirm-768x1024.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-390x844.png",
+      "width": 390,
+      "height": 1730,
+      "expectedWidth": 390,
+      "expectedHeight": 2456,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-approval-confirm",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "admin-approval-confirm-390x844.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-360x844.png",
+      "width": 360,
+      "height": 1730,
+      "expectedWidth": 360,
+      "expectedHeight": 1560,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-approval-confirm",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "admin-approval-confirm-360x844.png",
+      "comparisonStatus": "product_only"
+    }
+  ]
+}

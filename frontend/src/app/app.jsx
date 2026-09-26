@@ -26,6 +26,7 @@ import { GalleryView } from "../features/gallery/view-gallery";
 import { Avatar, Btn, EmptyState } from "../components/ui";
 import { AuthView } from "../features/auth/view-auth";
 import { readAuthRoute } from "../features/auth/auth-route";
+import { AdminView } from "../features/admin/view-admin";
 
 const galleryQueryKeys = new Set(["q", "subject", "grade"]);
 
@@ -509,16 +510,8 @@ function AdminRoute({ auth, onRetry }) {
         </div>
       </main>
     );
-  return (
-    <main className="mx-auto w-full max-w-[760px] px-5 pb-24 pt-12 sm:px-8">
-      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
-        관리자
-      </h1>
-      <p className="mt-2 text-[14px] text-neutral-500">
-        관리자 작업은 아직 제공하지 않아요.
-      </p>
-    </main>
-  );
+  const scopeKey = authScopeIdentity(auth);
+  return <AdminView key={scopeKey} scopeKey={scopeKey} />;
 }
 
 export default function App() {
@@ -552,22 +545,24 @@ export default function App() {
   });
   const [logoutPending, setLogoutPending] = useState(false);
 
-  const isProtectedDetailQuery = useCallback(
-    (query) =>
-      query.queryKey[0] === __DATA_MODE__ &&
-      query.queryKey[1] === "apps" &&
-      query.queryKey[2] === "detail" &&
-      query.state.data?.isPublic !== true,
-    [],
-  );
+  const isProtectedQuery = useCallback((query) => {
+    const key = query.queryKey;
+    return (
+      (key[0] === __DATA_MODE__ && key[1] === "admin") ||
+      (key[0] === __DATA_MODE__ &&
+        key[1] === "apps" &&
+        key[2] === "detail" &&
+        query.state.data?.isPublic !== true)
+    );
+  }, []);
   const cancelProtectedQueries = useCallback(async () => {
-    await queryClient.cancelQueries({ predicate: isProtectedDetailQuery });
-  }, [isProtectedDetailQuery, queryClient]);
+    await queryClient.cancelQueries({ predicate: isProtectedQuery });
+  }, [isProtectedQuery, queryClient]);
   const clearChangedScopeQueries = useCallback(() => {
     queryClient.removeQueries({
-      predicate: isProtectedDetailQuery,
+      predicate: isProtectedQuery,
     });
-  }, [isProtectedDetailQuery, queryClient]);
+  }, [isProtectedQuery, queryClient]);
 
   const restoreAuth = useCallback(
     async ({ concealed = false } = {}) => {
@@ -633,6 +628,7 @@ export default function App() {
           __DATA_MODE__ === "mock" &&
           key[0] === __DATA_MODE__ &&
           (key[1] === "meta" ||
+            (key[1] === "admin" && key[2] === "users") ||
             (key[1] === "apps" &&
               (key[2] === "list" ||
                 (key[2] === "detail" && query.state.data?.isPublic !== false))))

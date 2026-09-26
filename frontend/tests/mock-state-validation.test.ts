@@ -44,7 +44,7 @@ function job(state: StoredState): StoredObject {
 
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 5)],
+  ["unsupported state version", (state) => (state.version = 6)],
   ["missing auth flow context", (state) => delete state.auth_flow],
   [
     "invalid auth flow sequence",
@@ -204,10 +204,12 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 4,
+      version: 5,
       principal_id: null,
       private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
       registered_accounts: [],
+      admin_users: expect.any(Array),
+      approval_operations: [],
       observation_generation: 0,
     });
   });
@@ -221,6 +223,9 @@ describe("persisted mock state validation", () => {
     delete v2.registered_accounts;
     delete v2.auth_flow;
     delete v2.observation_generation;
+    delete v2.admin_users;
+    delete v2.approval_operations;
+    delete v2.approval_operation_sequence;
     v2.principal_id = "00000000-0000-4000-8000-000000000101";
     localStorage.setItem(
       MOCK_STORAGE_KEY,
@@ -231,9 +236,10 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 4,
+      version: 5,
       registered_accounts: [],
       principal_id: "00000000-0000-4000-8000-000000000101",
+      admin_users: expect.any(Array),
       observation_generation: 0,
     });
   });
@@ -246,6 +252,9 @@ describe("persisted mock state validation", () => {
     const previous = { ...current } as Record<string, unknown>;
     delete previous.auth_flow;
     delete previous.observation_generation;
+    delete previous.admin_users;
+    delete previous.approval_operations;
+    delete previous.approval_operation_sequence;
     localStorage.setItem(
       MOCK_STORAGE_KEY,
       JSON.stringify({ ...previous, version: 3 }),
@@ -255,9 +264,10 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 4,
+      version: 5,
       observation_generation: 0,
       auth_flow: { revision: "0", last_identity_change_revision: "0" },
+      admin_users: expect.any(Array),
     });
   });
 });

@@ -2,6 +2,7 @@ import catalog from "../../../../contracts/catalog.json";
 import publicApps from "../../fixtures/public-apps.json";
 import privateApps from "../../fixtures/private-apps.json";
 import {
+  isDateTime,
   mapAppDetailResponse,
   mapRegisteredUser,
 } from "../../contracts/mappers";
@@ -27,6 +28,11 @@ const MOCK_SCENARIOS = [
   "auth_observation_error",
   "auth_network_error",
   "detail_delayed",
+  "admin_list_failure",
+  "admin_more_failure",
+  "admin_write_unknown",
+  "admin_write_unresolved",
+  "admin_write_delayed",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
@@ -37,7 +43,13 @@ const V2_STATE_KEYS = [
   "principal_id",
 ];
 const V3_STATE_KEYS = [...V2_STATE_KEYS, "registered_accounts"];
-const STATE_KEYS = [...V3_STATE_KEYS, "auth_flow", "observation_generation"];
+const V4_STATE_KEYS = [...V3_STATE_KEYS, "auth_flow", "observation_generation"];
+const STATE_KEYS = [
+  ...V4_STATE_KEYS,
+  "admin_users",
+  "approval_operations",
+  "approval_operation_sequence",
+];
 const AUTH_FLOW_KEYS = [
   "flow_id",
   "revision",
@@ -53,6 +65,27 @@ const REGISTERED_ACCOUNT_KEYS = [
   "password",
   "nickname",
   "pendingExpiresAt",
+];
+const ADMIN_USER_KEYS = [
+  "id",
+  "approved",
+  "account_version",
+  "created_at",
+  "first_approved_at",
+];
+const APPROVAL_OPERATION_KEYS = [
+  "key",
+  "actor_id",
+  "target_id",
+  "expected_account_version",
+  "approved",
+  "issued_at",
+  "expires_at",
+  "state",
+  "applied_account_version",
+  "applied_approved",
+  "finalized_at",
+  "rejection_code",
 ];
 const APP_KEYS = [
   "id",
@@ -90,8 +123,29 @@ const CATALOG_SUBJECTS = new Set(catalog.subjects);
 const CATALOG_GRADES = new Set(catalog.grades);
 const CATALOG_THEMES = new Set(catalog.themes.map((theme) => theme.id));
 export type MockScenario = (typeof MOCK_SCENARIOS)[number];
-type MockState = {
-  version: 4;
+export type MockAdminUserState = {
+  id: string;
+  approved: boolean;
+  account_version: number;
+  created_at: string;
+  first_approved_at: string | null;
+};
+export type MockApprovalOperation = {
+  key: string;
+  actor_id: string;
+  target_id: string;
+  expected_account_version: number;
+  approved: boolean;
+  issued_at: string;
+  expires_at: string;
+  state: "unresolved" | "succeeded" | "rejected";
+  applied_account_version: number | null;
+  applied_approved: boolean | null;
+  finalized_at: string | null;
+  rejection_code: string | null;
+};
+export type MockState = {
+  version: 5;
   generation: number;
   observation_generation: number;
   scenario: MockScenario;
@@ -99,6 +153,9 @@ type MockState = {
   private_apps: typeof privateApps;
   principal_id: string | null;
   registered_accounts: MockRegisteredAccount[];
+  admin_users: MockAdminUserState[];
+  approval_operations: MockApprovalOperation[];
+  approval_operation_sequence: number;
   auth_flow: {
     flow_id: string;
     revision: string;
@@ -212,13 +269,111 @@ function validateRegisteredAccounts(accounts: unknown[]): void {
   }
 }
 
+function validateAdminUsers(
+  users: unknown[],
+  registeredAccounts: MockRegisteredAccount[],
+): void {
+  const expected = new Set([
+    ...DEMO_ACCOUNTS.map((account) => account.id),
+    ...registeredAccounts.map((account) => account.id),
+  ]);
+  const seen = new Set<string>();
+  for (const value of users) {
+    if (!hasExactKeys(value, ADMIN_USER_KEYS)) throw storageError();
+    const user = value as unknown as MockAdminUserState;
+    if (
+      !expected.has(user.id) ||
+      seen.has(user.id) ||
+      typeof user.approved !== "boolean" ||
+      !Number.isSafeInteger(user.account_version) ||
+      user.account_version < 1 ||
+      !isDateTime(user.created_at) ||
+      (user.first_approved_at !== null && !isDateTime(user.first_approved_at))
+    )
+      throw storageError();
+    seen.add(user.id);
+  }
+  if (seen.size !== expected.size) throw storageError();
+}
+
+function validateApprovalOperations(operations: unknown[]): void {
+  const keys = new Set<string>();
+  const adminIds = new Set<string>(
+    DEMO_ACCOUNTS.filter((account) => account.role === "admin").map(
+      (account) => account.id,
+    ),
+  );
+  for (const value of operations) {
+    if (!hasExactKeys(value, APPROVAL_OPERATION_KEYS)) throw storageError();
+    const operation = value as unknown as MockApprovalOperation;
+    if (
+      !/^[0-9a-f-]{36}$/i.test(operation.key) ||
+      keys.has(operation.key) ||
+      !adminIds.has(operation.actor_id) ||
+      !/^[0-9a-f-]{36}$/i.test(operation.target_id) ||
+      !Number.isSafeInteger(operation.expected_account_version) ||
+      operation.expected_account_version < 1 ||
+      typeof operation.approved !== "boolean" ||
+      !isDateTime(operation.issued_at) ||
+      !isDateTime(operation.expires_at) ||
+      Date.parse(operation.expires_at) <= Date.parse(operation.issued_at) ||
+      !["unresolved", "succeeded", "rejected"].includes(operation.state)
+    )
+      throw storageError();
+    if (
+      (operation.state === "unresolved" &&
+        (operation.applied_account_version !== null ||
+          operation.applied_approved !== null ||
+          operation.finalized_at !== null ||
+          operation.rejection_code !== null)) ||
+      (operation.state === "succeeded" &&
+        (!Number.isSafeInteger(operation.applied_account_version) ||
+          operation.applied_account_version! < 1 ||
+          typeof operation.applied_approved !== "boolean" ||
+          !isDateTime(operation.finalized_at) ||
+          operation.rejection_code !== null)) ||
+      (operation.state === "rejected" &&
+        (operation.applied_account_version !== null ||
+          operation.applied_approved !== null ||
+          !isDateTime(operation.finalized_at) ||
+          typeof operation.rejection_code !== "string" ||
+          !operation.rejection_code))
+    )
+      throw storageError();
+    keys.add(operation.key);
+  }
+}
+
 function nextGeneration(currentGeneration: number): number {
   const current = Math.max(currentGeneration, resetGeneration);
   return current >= Number.MAX_SAFE_INTEGER ? 0 : current + 1;
 }
 
+function initialAdminUsers(
+  registeredAccounts: MockRegisteredAccount[] = [],
+): MockAdminUserState[] {
+  return [
+    ...DEMO_ACCOUNTS.map((account) => ({
+      id: account.id,
+      approved: account.approved,
+      account_version: 1,
+      created_at: account.createdAt,
+      first_approved_at: account.approved ? account.createdAt : null,
+    })),
+    ...registeredAccounts.map((account) => ({
+      id: account.id,
+      approved: false,
+      account_version: 1,
+      created_at: new Date(
+        Date.parse(account.pendingExpiresAt) - 90 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      first_approved_at: null,
+    })),
+  ];
+}
+
 const initialState = (): MockState => ({
-  version: 4,
+  version: 5,
   generation: resetGeneration,
   observation_generation: 0,
   scenario: "original",
@@ -226,6 +381,9 @@ const initialState = (): MockState => ({
   private_apps: privateApps,
   principal_id: null,
   registered_accounts: [],
+  admin_users: initialAdminUsers(),
+  approval_operations: [],
+  approval_operation_sequence: 0,
   auth_flow: {
     flow_id: MOCK_FLOW_ID,
     revision: "0",
@@ -273,29 +431,47 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 4,
+      version: 5,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
+      admin_users: [],
+      approval_operations: [],
+      approval_operation_sequence: 0,
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
     state = {
       ...value,
-      version: 4,
+      version: 5,
       registered_accounts: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
+      admin_users: [],
+      approval_operations: [],
+      approval_operation_sequence: 0,
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
     state = {
       ...value,
-      version: 4,
+      version: 5,
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
+      admin_users: [],
+      approval_operations: [],
+      approval_operation_sequence: 0,
+    };
+    needsMigration = true;
+  } else if (hasExactKeys(value, V4_STATE_KEYS) && value.version === 4) {
+    state = {
+      ...value,
+      version: 5,
+      admin_users: [],
+      approval_operations: [],
+      approval_operation_sequence: 0,
     };
     needsMigration = true;
   } else if (hasExactKeys(value, STATE_KEYS)) {
@@ -304,7 +480,7 @@ function readState(): MockState {
     throw storageError();
   }
   if (
-    state.version !== 4 ||
+    state.version !== 5 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -315,6 +491,12 @@ function readState(): MockState {
     typeof state.observation_generation !== "number" ||
     !Number.isSafeInteger(state.observation_generation) ||
     state.observation_generation < 0 ||
+    (!needsMigration &&
+      (!Array.isArray(state.admin_users) ||
+        !Array.isArray(state.approval_operations) ||
+        typeof state.approval_operation_sequence !== "number" ||
+        !Number.isSafeInteger(state.approval_operation_sequence) ||
+        state.approval_operation_sequence < 0)) ||
     !hasExactKeys(state.auth_flow, AUTH_FLOW_KEYS) ||
     (state.principal_id !== null && typeof state.principal_id !== "string")
   ) {
@@ -332,8 +514,21 @@ function readState(): MockState {
     !validSequence(flow.issued_session_generation)
   )
     throw storageError();
+  const validState = state as unknown as MockState;
+  if (needsMigration) {
+    try {
+      validateRegisteredAccounts(validState.registered_accounts);
+    } catch {
+      throw storageError();
+    }
+    validState.admin_users = initialAdminUsers(validState.registered_accounts);
+    validState.approval_operations = [];
+    validState.approval_operation_sequence = 0;
+  }
   try {
     validateRegisteredAccounts(state.registered_accounts);
+    validateAdminUsers(validState.admin_users, validState.registered_accounts);
+    validateApprovalOperations(validState.approval_operations);
     validateApps(state.apps, true);
     validateApps(state.private_apps, false);
   } catch {
@@ -349,7 +544,6 @@ function readState(): MockState {
     )
   )
     throw storageError();
-  const validState = state as unknown as MockState;
   if (needsMigration) {
     validState.generation = nextGeneration(validState.generation);
     writeState(validState);
@@ -368,6 +562,178 @@ function writeState(state: MockState): void {
 
 export function getMockSnapshot(): MockState {
   return readState();
+}
+
+export type MockAccountRecord = {
+  id: string;
+  loginId: string;
+  nickname: string;
+  password: string;
+  role: "admin" | "user";
+  approved: boolean;
+  accountVersion: number;
+  createdAt: string;
+  firstApprovedAt: string | null;
+  pendingExpiresAt: string | null;
+};
+
+export function getMockAccounts(state = readState()): MockAccountRecord[] {
+  const bases = [...DEMO_ACCOUNTS, ...state.registered_accounts];
+  return bases.map((base) => {
+    const status = state.admin_users.find((user) => user.id === base.id);
+    if (!status) throw storageError();
+    return {
+      id: base.id,
+      loginId: base.loginId,
+      nickname: base.nickname,
+      password: base.password,
+      role: "role" in base ? base.role : "user",
+      approved: status.approved,
+      accountVersion: status.account_version,
+      createdAt: status.created_at,
+      firstApprovedAt: status.first_approved_at,
+      pendingExpiresAt:
+        "pendingExpiresAt" in base ? base.pendingExpiresAt : null,
+    };
+  });
+}
+
+export function createMockApprovalOperation(input: {
+  actorId: string;
+  targetId: string;
+  expectedAccountVersion: number;
+  approved: boolean;
+  issuedAt: string;
+  expiresAt: string;
+}): MockApprovalOperation {
+  const state = readState();
+  if (state.approval_operation_sequence >= Number.MAX_SAFE_INTEGER - 0x300)
+    throw new ServiceError(
+      "SERVICE_UNAVAILABLE",
+      "작업 키를 발급할 수 없어요.",
+    );
+  const key = `00000000-0000-4000-8000-${String(0x300 + state.approval_operation_sequence).padStart(12, "0")}`;
+  const operation: MockApprovalOperation = {
+    key,
+    actor_id: input.actorId,
+    target_id: input.targetId,
+    expected_account_version: input.expectedAccountVersion,
+    approved: input.approved,
+    issued_at: input.issuedAt,
+    expires_at: input.expiresAt,
+    state: "unresolved",
+    applied_account_version: null,
+    applied_approved: null,
+    finalized_at: null,
+    rejection_code: null,
+  };
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    approval_operations: [...state.approval_operations, operation],
+    approval_operation_sequence: state.approval_operation_sequence + 1,
+    generation,
+  });
+  resetGeneration = generation;
+  return operation;
+}
+
+export function getMockApprovalOperation(
+  key: string,
+): MockApprovalOperation | undefined {
+  return readState().approval_operations.find((item) => item.key === key);
+}
+
+export function finishMockApprovalOperation(
+  key: string,
+  finalizedAt: string,
+  cancel = false,
+): MockApprovalOperation | undefined {
+  const state = readState();
+  const current = state.approval_operations.find((item) => item.key === key);
+  if (!current || current.state !== "unresolved") return current;
+
+  let operation: MockApprovalOperation = {
+    ...current,
+    state: "rejected",
+    finalized_at: finalizedAt,
+    rejection_code: "OPERATION_CANCELLED",
+  };
+  let adminUsers = state.admin_users;
+  let principalId = state.principal_id;
+  let authFlow = state.auth_flow;
+  let observationGeneration = state.observation_generation;
+  if (!cancel) {
+    const target = getMockAccounts(state).find(
+      (account) => account.id === current.target_id,
+    );
+    const targetStatus = state.admin_users.find(
+      (user) => user.id === current.target_id,
+    );
+    if (!target || !targetStatus) operation.rejection_code = "USER_NOT_FOUND";
+    else if (target.role === "admin")
+      operation.rejection_code = "ADMIN_ACCOUNT_PROTECTED";
+    else if (targetStatus.account_version !== current.expected_account_version)
+      operation.rejection_code = "USER_STATE_CONFLICT";
+    else {
+      const accountVersion = targetStatus.account_version + 1;
+      if (!Number.isSafeInteger(accountVersion))
+        throw new ServiceError(
+          "SERVICE_UNAVAILABLE",
+          "계정 상태를 변경할 수 없어요.",
+        );
+      operation = {
+        ...current,
+        state: "succeeded",
+        applied_account_version: accountVersion,
+        applied_approved: current.approved,
+        finalized_at: finalizedAt,
+        rejection_code: null,
+      };
+      adminUsers = state.admin_users.map((user) =>
+        user.id === current.target_id
+          ? {
+              ...user,
+              approved: current.approved,
+              account_version: accountVersion,
+              first_approved_at:
+                current.approved && user.first_approved_at === null
+                  ? finalizedAt
+                  : user.first_approved_at,
+            }
+          : user,
+      );
+      if (!current.approved && principalId === current.target_id) {
+        principalId = null;
+        const revision = (BigInt(authFlow.revision) + 1n).toString();
+        authFlow = {
+          ...authFlow,
+          revision,
+          session_generation: null,
+          last_identity_change_revision: revision,
+        };
+        observationGeneration =
+          observationGeneration >= Number.MAX_SAFE_INTEGER
+            ? 0
+            : observationGeneration + 1;
+      }
+    }
+  }
+  const generation = nextGeneration(state.generation);
+  // ponytail: localStorage updates are one-browser mock state, not cross-tab DB transactions; production uses the transactional API contract.
+  writeState({
+    ...state,
+    admin_users: adminUsers,
+    approval_operations: state.approval_operations.map((item) =>
+      item.key === key ? operation : item,
+    ),
+    principal_id: principalId,
+    auth_flow: authFlow,
+    observation_generation: observationGeneration,
+    generation,
+  });
+  resetGeneration = generation;
+  return operation;
 }
 
 export function resetMockState(): void {
@@ -409,8 +775,9 @@ export function setMockPrincipal(
     throw new DOMException("Mock state changed", "AbortError");
   if (
     principalId !== null &&
-    !DEMO_ACCOUNTS.some((account) => account.id === principalId) &&
-    !state.registered_accounts.some((account) => account.id === principalId)
+    !getMockAccounts(state).some(
+      (account) => account.id === principalId && account.approved,
+    )
   )
     throw new TypeError("Unsupported mock member");
   if (state.principal_id === principalId) return;
@@ -458,6 +825,10 @@ export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
   writeState({
     ...state,
     registered_accounts: [...state.registered_accounts, account],
+    admin_users: [
+      ...state.admin_users,
+      ...initialAdminUsers([account]).slice(DEMO_ACCOUNTS.length),
+    ],
     generation,
   });
   resetGeneration = generation;

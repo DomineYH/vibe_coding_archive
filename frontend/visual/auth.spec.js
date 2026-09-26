@@ -390,8 +390,7 @@ for (const viewport of viewports) {
     await login(page, "admin", "admin123");
     await page.goto("/admin");
     await expect(
-      page.getByText("관리자 작업은 아직 제공하지 않아요."),
+      page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
     ).toBeVisible();
-    await capture(page, "admin-placeholder", viewport, testInfo);
   });
 }

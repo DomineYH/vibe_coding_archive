@@ -15,6 +15,10 @@ type WireAuthFlowContext = Wire["AuthFlowContext"];
 type WireAuthResult = Wire["AuthResult"];
 type WireCsrfToken = Wire["CsrfToken"];
 type WireRegisteredUser = Wire["RegisteredUser"];
+type WireAdminUser = Wire["AdminUser"];
+type WireAdminStats = Wire["AdminStats"];
+type WireAdminUserPage = Wire["AdminUserPage"];
+type WireApprovalOperation = Wire["ApprovalOperation"];
 
 export type Theme = Wire["Theme"];
 export type Subject = Wire["Subject"];
@@ -100,6 +104,46 @@ export type RegisteredUser = {
   nickname: string;
   approved: false;
   pendingExpiresAt: string;
+};
+export type AdminUser = {
+  id: string;
+  loginId: string;
+  nickname: string;
+  role: Wire["Role"];
+  approved: boolean;
+  accountVersion: number;
+  createdAt: string;
+  firstApprovedAt: string | null;
+  pendingExpiresAt: string | null;
+};
+export type AdminStats = {
+  totalUsers: number;
+  pendingUsers: number;
+  totalApps: number;
+  healthyApps: number;
+};
+export type AdminUserPage = {
+  items: AdminUser[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+  stats: AdminStats;
+  serverTime: string;
+};
+export type ApprovalOperation = {
+  key: string;
+  kind: "user_approval";
+  targetId: string;
+  issuedAt: string;
+  expiresAt: string;
+  state: "unresolved" | "succeeded" | "rejected";
+  appliedAccountVersion: number | null;
+  appliedApproved: boolean | null;
+  finalizedAt: string | null;
+  rejectionCode: string | null;
 };
 
 const UUID =
@@ -336,6 +380,159 @@ export function mapRegisteredUser(value: unknown): RegisteredUser {
     nickname: nonEmpty(item.nickname),
     approved: false,
     pendingExpiresAt: dateTime(item.pending_expires_at),
+  };
+}
+
+function hasOnlyKeys(item: Record<string, unknown>, keys: readonly string[]) {
+  return Object.keys(item).every((key) => keys.includes(key));
+}
+
+export function mapAdminUser(value: unknown): AdminUser {
+  const item = record(value) as unknown as Partial<WireAdminUser>;
+  if (
+    !hasOnlyKeys(item, [
+      "id",
+      "login_id",
+      "nickname",
+      "role",
+      "approved",
+      "account_version",
+      "created_at",
+      "first_approved_at",
+      "pending_expires_at",
+    ])
+  )
+    throw contractError();
+  const id = nonEmpty(item.id);
+  if (
+    !UUID.test(id) ||
+    (item.role !== "admin" && item.role !== "user") ||
+    typeof item.approved !== "boolean"
+  )
+    throw contractError();
+  return {
+    id,
+    loginId: nonEmpty(item.login_id),
+    nickname: nonEmpty(item.nickname),
+    role: item.role,
+    approved: item.approved,
+    accountVersion: integer(item.account_version, 1),
+    createdAt: dateTime(item.created_at),
+    firstApprovedAt: nullableDateTime(item.first_approved_at),
+    pendingExpiresAt: nullableDateTime(item.pending_expires_at),
+  };
+}
+
+export function mapAdminStats(value: unknown): AdminStats {
+  const item = record(value) as unknown as Partial<WireAdminStats>;
+  if (
+    !hasOnlyKeys(item, [
+      "total_users",
+      "pending_users",
+      "total_apps",
+      "healthy_apps",
+    ])
+  )
+    throw contractError();
+  const totalUsers = integer(item.total_users, 0);
+  const pendingUsers = integer(item.pending_users, 0);
+  const totalApps = integer(item.total_apps, 0);
+  const healthyApps = integer(item.healthy_apps, 0);
+  if (pendingUsers > totalUsers || healthyApps > totalApps)
+    throw contractError();
+  return { totalUsers, pendingUsers, totalApps, healthyApps };
+}
+
+export function mapAdminUserPage(value: unknown): AdminUserPage {
+  const item = record(value) as unknown as Partial<WireAdminUserPage>;
+  if (
+    !hasOnlyKeys(item, ["items", "pagination", "stats", "server_time"]) ||
+    !Array.isArray(item.items)
+  )
+    throw contractError();
+  const pagination = record(item.pagination);
+  if (
+    !hasOnlyKeys(pagination, ["limit", "offset", "total", "has_more"]) ||
+    typeof pagination.has_more !== "boolean"
+  )
+    throw contractError();
+  const limit = integer(pagination.limit, 1, 100);
+  const offset = integer(pagination.offset, 0);
+  const total = integer(pagination.total, 0);
+  const items = item.items.map(mapAdminUser);
+  if (
+    items.length > limit ||
+    pagination.has_more !== offset + items.length < total
+  )
+    throw contractError();
+  return {
+    items,
+    pagination: { limit, offset, total, hasMore: pagination.has_more },
+    stats: mapAdminStats(item.stats),
+    serverTime: dateTime(item.server_time),
+  };
+}
+
+export function mapApprovalOperation(value: unknown): ApprovalOperation {
+  const item = record(value) as unknown as Partial<WireApprovalOperation>;
+  if (
+    !hasOnlyKeys(item, [
+      "key",
+      "kind",
+      "target_id",
+      "issued_at",
+      "expires_at",
+      "state",
+      "applied_account_version",
+      "applied_approved",
+      "finalized_at",
+      "rejection_code",
+    ]) ||
+    item.kind !== "user_approval" ||
+    !["unresolved", "succeeded", "rejected"].includes(String(item.state))
+  )
+    throw contractError();
+  const key = nonEmpty(item.key);
+  const targetId = nonEmpty(item.target_id);
+  if (!UUID.test(key) || !UUID.test(targetId)) throw contractError();
+  const state = item.state as ApprovalOperation["state"];
+  const appliedAccountVersion =
+    item.applied_account_version === null
+      ? null
+      : integer(item.applied_account_version, 1);
+  const appliedApproved = item.applied_approved;
+  const finalizedAt = nullableDateTime(item.finalized_at);
+  const rejectionCode = nullableString(item.rejection_code);
+  if (
+    (appliedApproved !== null && typeof appliedApproved !== "boolean") ||
+    (state === "unresolved" &&
+      (appliedAccountVersion !== null ||
+        appliedApproved !== null ||
+        finalizedAt !== null ||
+        rejectionCode !== null)) ||
+    (state === "succeeded" &&
+      (appliedAccountVersion === null ||
+        appliedApproved === null ||
+        finalizedAt === null ||
+        rejectionCode !== null)) ||
+    (state === "rejected" &&
+      (appliedAccountVersion !== null ||
+        appliedApproved !== null ||
+        finalizedAt === null ||
+        rejectionCode === null))
+  )
+    throw contractError();
+  return {
+    key,
+    kind: "user_approval",
+    targetId,
+    issuedAt: dateTime(item.issued_at),
+    expiresAt: dateTime(item.expires_at),
+    state,
+    appliedAccountVersion,
+    appliedApproved,
+    finalizedAt,
+    rejectionCode,
   };
 }
 
