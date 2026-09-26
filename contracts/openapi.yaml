@@ -853,6 +853,7 @@ paths:
               schema:
                 oneOf:
                   - $ref: "#/components/schemas/ApprovalOperation"
+                  - $ref: "#/components/schemas/PasswordResetOperation"
                   - $ref: "#/components/schemas/AppWriteOperation"
         "400": { $ref: "#/components/responses/ServiceError" }
         "401": { $ref: "#/components/responses/ServiceError" }
@@ -905,6 +906,49 @@ paths:
         "409": { $ref: "#/components/responses/ServiceError" }
         "410": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+  /admin/users/{id}/password-reset:
+    post:
+      operationId: resetAdminUserPassword
+      summary: Set a current ordinary member password to an administrator supplied temporary password
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - {
+            name: Idempotency-Key,
+            in: header,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SetPasswordResetInput" }
+      responses:
+        "204":
+          description: The password was reset and the target's sessions were invalidated.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "410": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
   /write-operations/{key}:
     get:
       operationId: getWriteOperation
@@ -931,6 +975,7 @@ paths:
               schema:
                 oneOf:
                   - $ref: "#/components/schemas/ApprovalOperation"
+                  - $ref: "#/components/schemas/PasswordResetOperation"
                   - $ref: "#/components/schemas/AppWriteOperation"
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
@@ -940,8 +985,8 @@ paths:
         "503": { $ref: "#/components/responses/ServiceError" }
   /write-operations/{key}/cancel:
     post:
-      operationId: cancelApprovalOperation
-      summary: Cancel an unresolved approval key without changing its target input
+      operationId: cancelWriteOperation
+      summary: Cancel an unresolved approval or password reset key
       security:
         - SessionCookie: []
       parameters:
@@ -963,7 +1008,10 @@ paths:
             Cache-Control: { schema: { type: string, const: no-store } }
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/ApprovalOperation" }
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ApprovalOperation"
+                  - $ref: "#/components/schemas/PasswordResetOperation"
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
         "404": { $ref: "#/components/responses/ServiceError" }
@@ -1186,6 +1234,24 @@ components:
           minimum: 1
           maximum: 9007199254740991
         approved: { type: boolean }
+    CreatePasswordResetOperation:
+      type: object
+      additionalProperties: false
+      required: [kind, target_id, expected_account_version, new_password]
+      description: >-
+        The new_password is included only in this key-issuance request and is
+        never echoed or stored in the operation result. The implementation
+        enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point
+        password policy. The versioned local common-password blocklist applies
+        to the real API; Phase 1 mock does not apply that check.
+      properties:
+        kind: { type: string, const: user_password_reset }
+        target_id: { type: string, format: uuid }
+        expected_account_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
+        new_password: { type: string, minLength: 15, maxLength: 128 }
     CreateAppWriteOperation:
       type: object
       additionalProperties: false
@@ -1219,6 +1285,7 @@ components:
     CreateWriteOperation:
       oneOf:
         - $ref: "#/components/schemas/CreateApprovalOperation"
+        - $ref: "#/components/schemas/CreatePasswordResetOperation"
         - $ref: "#/components/schemas/CreateAppWriteOperation"
         - $ref: "#/components/schemas/CreateAppUpdateOperation"
         - $ref: "#/components/schemas/CreateAppDeleteOperation"
@@ -1288,6 +1355,22 @@ components:
           type: integer
           minimum: 1
           maximum: 9007199254740991
+    SetPasswordResetInput:
+      type: object
+      additionalProperties: false
+      required: [new_password, expected_account_version]
+      description: >-
+        The new_password is matched against the same key-issuance input and is
+        never echoed or stored in the operation result. The implementation
+        enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point
+        password policy. The versioned local common-password blocklist applies
+        to the real API; Phase 1 mock does not apply that check.
+      properties:
+        new_password: { type: string, minLength: 15, maxLength: 128 }
+        expected_account_version:
+          type: integer
+          minimum: 1
+          maximum: 9007199254740991
     ApprovalOperation:
       type: object
       additionalProperties: false
@@ -1303,6 +1386,7 @@ components:
           applied_approved,
           finalized_at,
           rejection_code,
+          server_time,
         ]
       properties:
         key: { type: string, format: uuid }
@@ -1318,6 +1402,41 @@ components:
         applied_approved: { type: [boolean, "null"] }
         finalized_at: { type: [string, "null"], format: date-time }
         rejection_code: { type: [string, "null"] }
+        server_time: { type: string, format: date-time }
+    PasswordResetOperation:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          key,
+          kind,
+          target_id,
+          issued_at,
+          expires_at,
+          state,
+          applied_account_version,
+          temporary_password_expires_at,
+          finalized_at,
+          rejection_code,
+          server_time,
+        ]
+      properties:
+        key: { type: string, format: uuid }
+        kind: { type: string, const: user_password_reset }
+        target_id: { type: string, format: uuid }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        state: { type: string, enum: [unresolved, succeeded, rejected] }
+        applied_account_version:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 9007199254740991
+        temporary_password_expires_at:
+          type: [string, "null"]
+          format: date-time
+        finalized_at: { type: [string, "null"], format: date-time }
+        rejection_code: { type: [string, "null"] }
+        server_time: { type: string, format: date-time }
     AppWriteOperation:
       type: object
       additionalProperties: false

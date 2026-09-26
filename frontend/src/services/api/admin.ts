@@ -3,17 +3,23 @@ import {
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
+  mapPasswordResetOperation,
 } from "../../contracts/mappers";
 import { authService } from "./auth";
 import type { ServiceErrorCode } from "../service-error";
 import { ServiceError } from "../service-error";
-import { normalizeAdminUsersQuery, type AdminService } from "../admin-service";
+import {
+  normalizeAdminUsersQuery,
+  normalizeResetPassword,
+  type AdminService,
+} from "../admin-service";
 
 type ApiEndpoint =
   | "GET /admin/users"
   | "GET /admin/users/{id}"
   | "POST /write-operations"
   | "PATCH /admin/users/{id}/approval"
+  | "POST /admin/users/{id}/password-reset"
   | "GET /write-operations/{key}"
   | "POST /write-operations/{key}/cancel";
 
@@ -68,6 +74,10 @@ const EXECUTE_ERRORS: ErrorCodesByStatus = {
   ],
   410: ["OPERATION_EXPIRED"],
 };
+const RESET_ERRORS: ErrorCodesByStatus = {
+  ...EXECUTE_ERRORS,
+  413: ["VALIDATION_ERROR"],
+};
 const CANCEL_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
   403: [
@@ -92,6 +102,7 @@ const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "GET /admin/users/{id}": TARGET_READ_ERRORS,
   "POST /write-operations": ISSUE_ERRORS,
   "PATCH /admin/users/{id}/approval": EXECUTE_ERRORS,
+  "POST /admin/users/{id}/password-reset": RESET_ERRORS,
   "GET /write-operations/{key}": KEY_READ_ERRORS,
   "POST /write-operations/{key}/cancel": CANCEL_ERRORS,
 };
@@ -196,6 +207,7 @@ async function request(
     idempotencyKey,
     write = false,
     uncertain = false,
+    noContent = false,
   }: {
     method?: string;
     body?: unknown;
@@ -203,6 +215,7 @@ async function request(
     idempotencyKey?: string;
     write?: boolean;
     uncertain?: boolean;
+    noContent?: boolean;
   } = {},
 ): Promise<unknown> {
   const headers = await requestHeaders(write, signal);
@@ -232,14 +245,26 @@ async function request(
       outcome: uncertain ? "unknown" : "not_applicable",
     });
   }
+  if (!response.ok) {
+    let errorBody: unknown;
+    try {
+      errorBody = await response.json();
+    } catch {
+      throw contractError(response.status, uncertain);
+    }
+    throw mapApiError(endpoint, errorBody, response.status, uncertain);
+  }
+  if (noContent) {
+    if (response.status !== 204)
+      throw contractError(response.status, uncertain);
+    return undefined;
+  }
   let value: unknown;
   try {
     value = await response.json();
   } catch {
     throw contractError(response.status, uncertain);
   }
-  if (!response.ok)
-    throw mapApiError(endpoint, value, response.status, uncertain);
   return value;
 }
 
@@ -290,6 +315,22 @@ export const adminService: AdminService = {
     );
   },
 
+  async createPasswordResetOperation(input) {
+    const newPassword = normalizeResetPassword(input.newPassword);
+    return mapPasswordResetOperation(
+      await request("POST /write-operations", "/write-operations", {
+        method: "POST",
+        write: true,
+        body: {
+          kind: "user_password_reset",
+          target_id: input.targetId,
+          expected_account_version: input.expectedAccountVersion,
+          new_password: newPassword,
+        },
+      }),
+    );
+  },
+
   async setApproval(id, approved, expectedAccountVersion, operationKey) {
     return mapWriteResult(
       mapAdminUser,
@@ -310,6 +351,38 @@ export const adminService: AdminService = {
     );
   },
 
+  async setPasswordReset(
+    id,
+    newPassword,
+    expectedAccountVersion,
+    operationKey,
+  ) {
+    await request(
+      "POST /admin/users/{id}/password-reset",
+      `/admin/users/${encodeURIComponent(id)}/password-reset`,
+      {
+        method: "POST",
+        write: true,
+        uncertain: true,
+        noContent: true,
+        idempotencyKey: operationKey,
+        body: {
+          new_password: normalizeResetPassword(newPassword),
+          expected_account_version: expectedAccountVersion,
+        },
+      },
+    );
+  },
+
+  async getPasswordResetOperation(key) {
+    return mapPasswordResetOperation(
+      await request(
+        "GET /write-operations/{key}",
+        `/write-operations/${encodeURIComponent(key)}`,
+      ),
+    );
+  },
+
   async getApprovalOperation(key) {
     return mapApprovalOperation(
       await request(
@@ -322,6 +395,20 @@ export const adminService: AdminService = {
   async cancelApprovalOperation(key) {
     return mapWriteResult(
       mapApprovalOperation,
+      await request(
+        "POST /write-operations/{key}/cancel",
+        `/write-operations/${encodeURIComponent(key)}/cancel`,
+        {
+          method: "POST",
+          write: true,
+          uncertain: true,
+        },
+      ),
+    );
+  },
+
+  async cancelPasswordResetOperation(key) {
+    return mapPasswordResetOperation(
       await request(
         "POST /write-operations/{key}/cancel",
         `/write-operations/${encodeURIComponent(key)}/cancel`,

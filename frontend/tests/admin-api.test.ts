@@ -47,6 +47,20 @@ const operation = {
   applied_approved: null,
   finalized_at: null,
   rejection_code: null,
+  server_time: "2026-09-22T00:12:00.000Z",
+};
+const resetOperation = {
+  key: "00000000-0000-4000-8000-000000000202",
+  kind: "user_password_reset",
+  target_id: target.id,
+  issued_at: "2026-09-22T00:12:00.000Z",
+  expires_at: "2026-09-23T00:12:00.000Z",
+  state: "unresolved",
+  applied_account_version: null,
+  temporary_password_expires_at: null,
+  finalized_at: null,
+  rejection_code: null,
+  server_time: "2026-09-22T00:12:00.000Z",
 };
 
 describe("admin API service", () => {
@@ -123,6 +137,101 @@ describe("admin API service", () => {
     expect(new Headers(keyRequest[1]?.headers).get("X-CSRF-Token")).toBe(
       "csrf-test-token",
     );
+  });
+
+  it("issues and executes a version-bound password reset without echoing its input", async () => {
+    const password = "A temporary Cafe\u0301 passphrase";
+    const normalizedPassword = password.normalize("NFC");
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(resetOperation), { status: 201 }),
+        )
+        .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              ...resetOperation,
+              state: "succeeded",
+              applied_account_version: 2,
+              temporary_password_expires_at: "2026-09-23T00:12:03.000Z",
+              finalized_at: "2026-09-22T00:12:03.000Z",
+              server_time: "2026-09-22T00:12:03.000Z",
+            }),
+            { status: 200 },
+          ),
+        ),
+    );
+
+    const issued = await adminService.createPasswordResetOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.account_version,
+      newPassword: password,
+    });
+    await adminService.setPasswordReset(
+      target.id,
+      password,
+      target.account_version,
+      issued.key,
+    );
+    const result = await adminService.getPasswordResetOperation(issued.key);
+    expect(result).toMatchObject({
+      state: "succeeded",
+      appliedAccountVersion: 2,
+      temporaryPasswordExpiresAt: "2026-09-23T00:12:03.000Z",
+    });
+    expect(JSON.stringify(result)).not.toContain(normalizedPassword);
+
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(JSON.parse(String(calls[0][1]?.body))).toEqual({
+      kind: "user_password_reset",
+      target_id: target.id,
+      expected_account_version: target.account_version,
+      new_password: normalizedPassword,
+    });
+    expect(calls[0][0]).toBe("/api/v1/write-operations");
+    expect(JSON.parse(String(calls[1][1]?.body))).toEqual({
+      new_password: normalizedPassword,
+      expected_account_version: target.account_version,
+    });
+    expect(calls[1][0]).toBe(`/api/v1/admin/users/${target.id}/password-reset`);
+    expect(new Headers(calls[1][1]?.headers).get("Idempotency-Key")).toBe(
+      issued.key,
+    );
+    expect(new Headers(calls[1][1]?.headers).get("X-CSRF-Token")).toBe(
+      "csrf-test-token",
+    );
+    expect(calls).toHaveLength(3);
+  });
+
+  it("keeps a lost password-reset response unknown and never retries it", async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: "SERVICE_UNAVAILABLE",
+            message: "Retry later",
+            request_id: null,
+          },
+        }),
+        { status: 503 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      adminService.setPasswordReset(
+        target.id,
+        "A temporary passphrase 2026",
+        1,
+        resetOperation.key,
+      ),
+    ).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("reports a lost write response as unknown and never retries it", async () => {

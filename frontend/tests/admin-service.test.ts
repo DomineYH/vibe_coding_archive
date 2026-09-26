@@ -9,6 +9,7 @@ import {
 } from "../src/services/mock/state";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000100";
+const MEMBER_ID = "00000000-0000-4000-8000-000000000101";
 const PENDING_ID = "00000000-0000-4000-8000-000000000102";
 
 async function loginAdmin() {
@@ -216,6 +217,178 @@ describe("admin service", () => {
     expect(await adminService.getUser(target.id)).toMatchObject({
       approved: true,
       accountVersion: 2,
+    });
+  });
+
+  it("reauthenticates before resetting and lets the member change the temporary password", async () => {
+    await loginAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    const temporaryPassword = "A temporary passphrase 2026";
+    await expect(
+      adminService.createPasswordResetOperation({
+        targetId: target.id,
+        expectedAccountVersion: target.accountVersion,
+        newPassword: temporaryPassword,
+      }),
+    ).rejects.toMatchObject({ code: "REAUTH_REQUIRED", httpStatus: 403 });
+
+    await authService.reauthenticate({ password: "admin123" });
+    const currentTarget = await adminService.getUser(MEMBER_ID);
+    const operation = await adminService.createPasswordResetOperation({
+      targetId: currentTarget.id,
+      expectedAccountVersion: currentTarget.accountVersion,
+      newPassword: temporaryPassword,
+    });
+    expect(operation).toMatchObject({
+      kind: "user_password_reset",
+      state: "unresolved",
+      appliedAccountVersion: null,
+      temporaryPasswordExpiresAt: null,
+    });
+    await adminService.setPasswordReset(
+      currentTarget.id,
+      temporaryPassword,
+      currentTarget.accountVersion,
+      operation.key,
+    );
+    const result = await adminService.getPasswordResetOperation(operation.key);
+    expect(result).toMatchObject({
+      state: "succeeded",
+      appliedAccountVersion: 2,
+      temporaryPasswordExpiresAt: "2026-09-23T00:12:00.000Z",
+    });
+    expect(await adminService.getUser(MEMBER_ID)).toMatchObject({
+      approved: true,
+      accountVersion: 2,
+    });
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).not.toContain(
+      temporaryPassword,
+    );
+
+    await authService.logout();
+    const temporaryLogin = await authService.login({
+      loginId: "교사김코딩",
+      password: temporaryPassword,
+    });
+    expect(temporaryLogin.user).toMatchObject({
+      sessionKind: "change_only",
+      mustChangePassword: true,
+    });
+    await authService.changePassword({
+      password: "My own replacement passphrase 2026",
+    });
+    await authService.logout();
+    await expect(
+      authService.login({
+        loginId: "교사김코딩",
+        password: temporaryPassword,
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS", httpStatus: 401 });
+    await loginAdmin();
+    await expect(
+      adminService.getPasswordResetOperation(operation.key),
+    ).resolves.toMatchObject({ state: "succeeded", appliedAccountVersion: 2 });
+  });
+
+  it("keeps an unresolved reset bound to the same input until explicit cancel", async () => {
+    await loginAdmin();
+    await authService.reauthenticate({ password: "admin123" });
+    const target = await adminService.getUser(MEMBER_ID);
+    const temporaryPassword = "Unresolved temporary passphrase 44";
+    const operation = await adminService.createPasswordResetOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      newPassword: temporaryPassword,
+    });
+    setMockScenario("admin_write_unresolved");
+
+    await expect(
+      adminService.setPasswordReset(
+        target.id,
+        "Different temporary passphrase 44",
+        target.accountVersion,
+        operation.key,
+      ),
+    ).rejects.toMatchObject({
+      code: "OPERATION_KEY_MISMATCH",
+      outcome: "rejected",
+    });
+    await expect(
+      adminService.setPasswordReset(
+        target.id,
+        temporaryPassword,
+        target.accountVersion,
+        operation.key,
+      ),
+    ).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
+    expect(
+      await adminService.getPasswordResetOperation(operation.key),
+    ).toMatchObject({
+      state: "unresolved",
+      appliedAccountVersion: null,
+    });
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).not.toContain(
+      temporaryPassword,
+    );
+
+    expect(
+      await adminService.cancelPasswordResetOperation(operation.key),
+    ).toMatchObject({
+      state: "rejected",
+      rejectionCode: "OPERATION_CANCELLED",
+    });
+    await expect(
+      adminService.cancelPasswordResetOperation(operation.key),
+    ).resolves.toMatchObject({
+      state: "rejected",
+      rejectionCode: "OPERATION_CANCELLED",
+    });
+    expect(await adminService.getUser(MEMBER_ID)).toMatchObject({
+      accountVersion: 1,
+      approved: true,
+    });
+    setMockScenario("original");
+    await authService.logout();
+    await expect(
+      authService.login({ loginId: "교사김코딩", password: "1234" }),
+    ).resolves.toMatchObject({ user: { sessionKind: "full" } });
+  });
+
+  it("rejects protected, missing, and stale reset targets before issuing a key", async () => {
+    await loginAdmin();
+    await authService.reauthenticate({ password: "admin123" });
+    const newPassword = "A suitable temporary password 44";
+
+    await expect(
+      adminService.createPasswordResetOperation({
+        targetId: ADMIN_ID,
+        expectedAccountVersion: 1,
+        newPassword,
+      }),
+    ).rejects.toMatchObject({
+      code: "ADMIN_ACCOUNT_PROTECTED",
+      httpStatus: 403,
+    });
+    await expect(
+      adminService.createPasswordResetOperation({
+        targetId: "00000000-0000-4000-8000-000000000999",
+        expectedAccountVersion: 1,
+        newPassword,
+      }),
+    ).rejects.toMatchObject({ code: "USER_NOT_FOUND", httpStatus: 404 });
+    await expect(
+      adminService.createPasswordResetOperation({
+        targetId: MEMBER_ID,
+        expectedAccountVersion: 2,
+        newPassword,
+      }),
+    ).rejects.toMatchObject({ code: "USER_STATE_CONFLICT", httpStatus: 409 });
+    expect(await adminService.getUser(MEMBER_ID)).toMatchObject({
+      accountVersion: 1,
+      approved: true,
     });
   });
 

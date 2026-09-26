@@ -188,6 +188,191 @@ function PasswordChangeCard({ expiresAt, onChangePassword }) {
   );
 }
 
+function ReauthenticationCard({
+  authUser,
+  authStatus,
+  authError,
+  returnTo,
+  resumeState,
+  onRetry,
+  onResolveAuth,
+  onResetAuth,
+  onReauthenticate,
+}) {
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [pending, setPending] = useState(false);
+  const submitting = useRef(false);
+  const canReauthenticate =
+    authUser?.role === "admin" &&
+    authUser.approved &&
+    authUser.sessionKind === "full" &&
+    !authUser.mustChangePassword;
+
+  async function submit(event) {
+    event.preventDefault();
+    if (submitting.current || pending) return;
+    if (!password) {
+      setMessage("관리자 비밀번호를 입력해 주세요.");
+      return;
+    }
+    const currentPassword = password;
+    setPassword("");
+    setMessage("");
+    submitting.current = true;
+    setPending(true);
+    try {
+      await onReauthenticate(
+        { password: currentPassword },
+        returnTo,
+        resumeState,
+      );
+    } catch (error) {
+      setMessage(
+        error instanceof ServiceError && error.code === "INVALID_CREDENTIALS"
+          ? "관리자 비밀번호를 확인해 주세요. 현재 로그인은 유지됩니다."
+          : error instanceof Error
+            ? error.message
+            : "관리자 재인증을 완료하지 못했어요. 다시 시도해 주세요.",
+      );
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
+  }
+
+  if (authStatus === "checking")
+    return (
+      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="관리자 인증 상태를 확인하고 있어요"
+            desc="민감한 작업을 다시 진행하기 전에 현재 로그인 상태를 확인합니다."
+          />
+        </div>
+      </main>
+    );
+
+  if (authStatus === "error" || authStatus === "unresolved")
+    return (
+      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+        <div
+          role={authStatus === "error" ? "alert" : "status"}
+          aria-live="polite"
+        >
+          <EmptyState
+            title={
+              authStatus === "error"
+                ? "관리자 인증 상태를 확인할 수 없어요"
+                : "관리자 인증 결과를 확인할 수 없어요"
+            }
+            desc={authError?.message || "연결을 확인하고 다시 시도해 주세요."}
+          >
+            <div className="flex flex-wrap justify-center gap-2">
+              {authStatus === "unresolved" ? (
+                <Btn onClick={onResolveAuth}>결과 확인</Btn>
+              ) : (
+                <Btn onClick={onRetry}>다시 확인</Btn>
+              )}
+              <Btn variant="line" onClick={onResetAuth}>
+                인증 흐름 초기화
+              </Btn>
+            </div>
+          </EmptyState>
+        </div>
+      </main>
+    );
+
+  if (!canReauthenticate)
+    return (
+      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+        <div role="alert" aria-live="assertive">
+          <EmptyState
+            title="현재 로그인한 관리자가 필요해요"
+            desc="관리자 계정으로 로그인한 뒤 다시 시도해 주세요."
+          >
+            <Link
+              to="/auth?mode=login&return_to=%2Fadmin"
+              className="inline-flex h-10 items-center rounded-full bg-neutral-900 px-4 text-[13px] font-semibold text-white"
+            >
+              관리자 로그인
+            </Link>
+          </EmptyState>
+        </div>
+      </main>
+    );
+
+  return (
+    <main
+      className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
+      data-screen-label="관리자 재인증"
+    >
+      <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
+        <span className="text-[17px] font-extrabold tracking-tight">EV</span>
+      </span>
+      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+        관리자 본인 확인
+      </h1>
+      <p className="mt-1.5 text-center text-[13.5px] leading-relaxed text-neutral-500">
+        민감한 계정 작업을 위해 현재 관리자 비밀번호를 다시 확인해 주세요.
+      </p>
+      <form
+        onSubmit={submit}
+        aria-busy={pending}
+        className="mt-7 flex w-full flex-col gap-3.5 rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)]"
+      >
+        <div>
+          <label
+            htmlFor="reauth-password"
+            className="mb-1.5 block text-[12px] font-semibold text-neutral-700"
+          >
+            현재 관리자 비밀번호
+          </label>
+          <input
+            id="reauth-password"
+            type="password"
+            className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            disabled={pending}
+            autoComplete="current-password"
+            aria-required="true"
+            aria-invalid={message ? "true" : undefined}
+            aria-describedby={message ? "reauth-error" : undefined}
+          />
+        </div>
+        <p
+          className="text-[11.5px] leading-relaxed text-neutral-500"
+          role="note"
+        >
+          재인증 성공만으로 회원 작업은 실행되지 않습니다. 돌아온 뒤 현재 대상
+          상태를 다시 확인하고 명시적으로 진행해 주세요.
+        </p>
+        {message ? (
+          <p
+            id="reauth-error"
+            role="alert"
+            aria-live="assertive"
+            className="text-[12.5px] text-red-700"
+          >
+            {message}
+          </p>
+        ) : null}
+        <Btn type="submit" size="lg" className="w-full" disabled={pending}>
+          {pending ? "재인증 중…" : "본인 확인"}
+        </Btn>
+        <Link
+          to={returnTo}
+          state={resumeState?.adminReset?.operationKey ? resumeState : null}
+          className="inline-flex min-h-10 items-center justify-center rounded-full text-[12.5px] font-semibold text-neutral-500"
+        >
+          취소하고 돌아가기
+        </Link>
+      </form>
+    </main>
+  );
+}
+
 export function AuthView({
   mode,
   authUser,
@@ -198,6 +383,9 @@ export function AuthView({
   onLogin,
   onRegister,
   onChangePassword,
+  onReauthenticate,
+  returnTo,
+  reauthState,
   onResolveAuth,
   onResetAuth,
   onDiscardMissingSession,
@@ -234,6 +422,21 @@ export function AuthView({
       </main>
     );
   }
+
+  if (mode === "reauth" && !(authStatus === "ready" && !authUser))
+    return (
+      <ReauthenticationCard
+        authUser={authUser}
+        authStatus={authStatus}
+        authError={authError}
+        returnTo={returnTo}
+        resumeState={reauthState}
+        onRetry={onRetry}
+        onResolveAuth={onResolveAuth}
+        onResetAuth={onResetAuth}
+        onReauthenticate={onReauthenticate}
+      />
+    );
 
   if (authStatus === "checking" || authStatus === "error") {
     return (
