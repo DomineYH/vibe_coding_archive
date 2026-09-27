@@ -475,23 +475,30 @@ async function captureAndCompare(
       ).toBeVisible();
     }
   }
-  if (state === "gallery-loading")
-    await page.evaluate(() => document.fonts.ready);
-  else
+  await page.evaluate(() => document.fonts.ready);
+  if (state === "gallery-loading") {
+    const frameCounter = await page.evaluateHandle(() => ({ count: 0 }));
+    try {
+      const frameWait = await page.waitForFunction(
+        (counter) => ++counter.count >= 3,
+        frameCounter,
+        { polling: "raf" },
+      );
+      await frameWait.dispose();
+    } finally {
+      await frameCounter.dispose();
+    }
+  } else {
     await page.evaluate(async () => {
-      await document.fonts.ready;
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
     });
+  }
   if (state === "detail-copy-done") {
     await page.getByRole("button", { name: "복사하기" }).click();
     await expect(page.getByRole("status")).toHaveText("복사됨");
     await page.evaluate(() => document.activeElement.blur());
   }
-  if (state === "gallery-loading")
-    await expect(page.getByRole("status")).toContainText(
-      "공개 아카이브를 불러오는 중이에요",
-    );
   if (state === "gallery-empty")
     await page
       .getByPlaceholder("앱·작성자 검색")
@@ -506,6 +513,10 @@ async function captureAndCompare(
       viewport.width < 640 ? "144px" : "176px",
     );
   }
+  if (state === "gallery-loading")
+    await expect(page.getByRole("status")).toContainText(
+      "공개 아카이브를 불러오는 중이에요",
+    );
   const actual = componentSelector
     ? await page.locator(componentSelector).first().screenshot({
         animations: "disabled",
