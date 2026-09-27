@@ -475,16 +475,14 @@ async function captureAndCompare(
       ).toBeVisible();
     }
   }
-  if (state === "gallery-loading") {
+  if (state === "gallery-loading")
     await page.evaluate(() => document.fonts.ready);
-    await page.clock.runFor(40);
-  } else {
+  else
     await page.evaluate(async () => {
       await document.fonts.ready;
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
     });
-  }
   if (state === "detail-copy-done") {
     await page.getByRole("button", { name: "복사하기" }).click();
     await expect(page.getByRole("status")).toHaveText("복사됨");

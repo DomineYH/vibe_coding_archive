@@ -16,7 +16,9 @@ The first focused browser run passed 19/21. The queued-state locator matched mul
 
 Review round 1 confirmed that the detail baselines are taller only because #47 adds the public health panel. The original 500px top crop found 96 one-channel header raster differences at 390px; the final crop starts at y=60, below that existing header, and checks y=60–500. Copy-button bounds and the unchanged component tech-stack crop are also compared at zero tolerance. The focused source comparisons passed 12/12, and the complete CI-mode visual suite then passed 122/122.
 
-Review round 2 traced the repeated 768×1024 loading-gallery delta to the search input's rounded left border (`elementFromPoint(563, 389)`), whose top is at fractional y=372.5625px. That state paused the Playwright clock but skipped the two-frame paint wait used elsewhere; the raster edge could differ by one channel value. Waiting on `requestAnimationFrame` directly timed out because the paused clock freezes frames. The test now advances its controlled clock by 40ms (under the mock list's 300ms delay) before capture and verifies the loading status remains visible. The 150-case repeat run and full visual run pass without changing baselines or tolerance. The separate registration screenshot timeout did not reproduce; its capture already waits for fonts and two frames.
+Review round 3 confirmed that the gallery-loading visual flake is pre-existing and outside #47, and remains unresolved. CI run 36295295247 failed at 768×1024 and run 36297209075 failed at 1024×900 with 10 pixels differing by one channel value along the rounded border of `input#gallery-search` (left edge at 768×1024; right edge at 1024×900). The input is at fractional y=372.5625px. The prior `page.clock.runFor(40)` change advanced only Playwright's virtual JavaScript clock; no timer was due before the mock's 300ms delay, and it did not synchronize native browser rasterization. That ineffective change was reverted. The antialiasing variation is not fixed; no baseline or comparison tolerance was changed.
+
+The separate app registration screenshot timeout did not reproduce in its review round 2 retry.
 
 ## Verification
 
@@ -31,14 +33,13 @@ Commands ran from `frontend/` unless noted.
 | `npm run build` | PASS: API bundle. |
 | `npm run check:dist` | PASS: 96 API files; no mock fixtures, tweaks, references, or source maps. |
 | `npm run check:reference` | PASS: all 11 preserved originals match their SHA-256 hashes and byte counts. |
-| `npm run typecheck` | PASS on review round 2 rerun. |
-| `npm run lint` | PASS on review round 2 rerun. |
-| `npm run format:check` | PASS on review round 2 rerun. |
+| `npm run typecheck` | PASS on review round 3 rerun after reverting the ineffective visual clock advance. |
+| `npm run lint` | PASS on review round 3 rerun after reverting the ineffective visual clock advance. |
+| `npm run format:check` | PASS on review round 3 rerun after reverting the ineffective visual clock advance. |
 | `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "public detail matches|public detail copy success|key component"` | PASS: 12/12; full-page mismatches remain recorded and the unchanged regions compare at zero pixels. |
-| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "gallery-loading matches its baseline at 768x1024"` | PASS: 1/1 after paint stabilization. |
-| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --repeat-each 30 --grep gallery-loading` | PASS: 150/150 across five viewports, one worker. |
-| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "app registration form at 1024x900"` | PASS: 1/1; the one-off screenshot timeout did not reproduce. |
-| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual` | PASS on review round 2 rerun: 122/122 with one worker in pinned Chromium 151.0.7922.34. The 11 full-page detail mismatches are retained in the report; all 11 scoped zero-tolerance region comparisons pass. |
+| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual` | PASS: 122/122 with one worker in pinned Chromium 151.0.7922.34, rerun during review round 2. The 11 full-page detail mismatches are retained in the report; all 11 scoped zero-tolerance region comparisons pass. |
+| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "app registration form at 1024x900"` | PASS in review round 2: 1/1; the one-off screenshot timeout did not reproduce. |
+| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --repeat-each 30 --grep gallery-loading` | PASS: 150/150 across five viewports with one worker after reverting the ineffective clock advance. This local run does not reproduce the two CI failures recorded above; the flake remains unresolved. |
 | `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "health-(result-error|job-failed|query-error|stale)"` | PASS: all 20 health-state product-only captures, one worker. |
 | `git diff --check` | PASS. |
 
