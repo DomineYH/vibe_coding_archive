@@ -2384,11 +2384,9 @@ export function AdminView({ scopeKey }) {
                             <span className="min-w-0 truncate" title={app.url}>
                               {app.url}
                             </span>
-                            <span className="shrink-0">작성자 {app.owner}</span>
-                            <span className="shrink-0">버전 {app.version}</span>
-                            <span className="shrink-0">
-                              {app.isPublic ? "공개" : "비공개"}
-                            </span>
+                            <span>작성자 {app.owner}</span>
+                            <span>버전 {app.version}</span>
+                            <span>{app.isPublic ? "공개" : "비공개"}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-[11.5px] text-neutral-500">

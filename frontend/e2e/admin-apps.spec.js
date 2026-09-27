@@ -64,6 +64,42 @@ function appRow(panel, name) {
     .filter({ hasText: name });
 }
 
+const narrowViewports = [
+  { width: 360, height: 844 },
+  { width: 390, height: 844 },
+];
+
+async function expectHeaderTextOnOneLine(page) {
+  const logo = page
+    .getByRole("link", { name: "EduVibe 아카이브 홈" })
+    .locator("span")
+    .filter({ hasText: "EduVibe" });
+  const logout = page.getByRole("button", { name: "로그아웃", exact: true });
+  await expect(logo).toBeVisible();
+  await expect(logout).toBeVisible();
+
+  const logoLineCount = await logo.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return new Set(
+      Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
+    ).size;
+  });
+  const logoutLineCount = await logout.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return new Set(
+      Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
+    ).size;
+  });
+  const documentWidth = await page.evaluate(
+    () => document.documentElement.scrollWidth,
+  );
+  expect(logoLineCount).toBe(1);
+  expect(logoutLineCount).toBe(1);
+  expect(documentWidth).toBe(await page.evaluate(() => window.innerWidth));
+}
+
 test("admin can edit and delete another member's private app from the monitor", async ({
   page,
 }) => {
@@ -154,6 +190,79 @@ test("admin can edit and delete another member's private app from the monitor", 
   await expect(ownerRow.getByText(/^등록 앱 \d+개$/)).toHaveText(
     `등록 앱 ${beforeOwnerAppCount - 1}개`,
   );
+});
+
+test("Health Monitor metadata stays clear of status badges at narrow widths", async ({
+  page,
+}) => {
+  await loginAsAdmin(page);
+
+  for (const viewport of narrowViewports) {
+    await page.setViewportSize(viewport);
+    const panel = await openHealthMonitor(page);
+    const row = appRow(panel, "과학 수행평가 루브릭 채점기");
+    const metadata = row
+      .locator("span")
+      .filter({ hasText: /^(작성자|버전|공개|비공개)/ });
+    const badge = row.locator('[aria-label^="연결 결과:"]');
+    await expect(metadata).toHaveCount(3);
+    await expect(badge).toBeVisible();
+
+    const metadataRects = await metadata.evaluateAll((elements) =>
+      elements.flatMap((element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return Array.from(range.getClientRects(), (rect) => ({
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+        }));
+      }),
+    );
+    const badgeBox = await badge.boundingBox();
+    expect(badgeBox).not.toBeNull();
+
+    for (const rect of metadataRects) {
+      const separatedByTwoPixels =
+        badgeBox.x - rect.right >= 2 ||
+        rect.left - (badgeBox.x + badgeBox.width) >= 2 ||
+        badgeBox.y - rect.bottom >= 2 ||
+        rect.top - (badgeBox.y + badgeBox.height) >= 2;
+      expect(
+        separatedByTwoPixels,
+        `${viewport.width}px metadata must have a visible gap from its status badge`,
+      ).toBe(true);
+    }
+  }
+});
+
+test("authenticated header text stays on one line at narrow widths", async ({
+  page,
+}) => {
+  await loginAsAdmin(page);
+
+  for (const viewport of narrowViewports) {
+    await page.setViewportSize(viewport);
+    await page.goto("/admin?tab=health");
+    await expect(
+      page.getByRole("tabpanel", { name: "Health Monitor" }),
+    ).toBeVisible();
+    await expectHeaderTextOnOneLine(page);
+
+    await page.goto("/admin?tab=users");
+    await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
+    await expectHeaderTextOnOneLine(page);
+
+    await page.goto(`/apps/${privateAppId}`);
+    await expect(
+      page.getByRole("heading", {
+        name: "과학 수행평가 루브릭 채점기",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expectHeaderTextOnOneLine(page);
+  }
 });
 
 test("admin monitor retains the first page and retries a failed next page", async ({
