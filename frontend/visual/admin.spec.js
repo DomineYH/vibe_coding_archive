@@ -297,5 +297,23 @@ for (const viewport of viewports) {
       "임시 비밀번호 설정이 확정됐어요",
     );
     await capture(page, "admin-password-reset-success", viewport, testInfo);
+
+    await page.goto("/admin?tab=health");
+    const healthPanel = page.getByRole("tabpanel", {
+      name: "Health Monitor",
+    });
+    await expect(healthPanel).toBeVisible();
+    await expect(
+      healthPanel
+        .getByRole("list", { name: "전체 앱 목록" })
+        .getByRole("listitem"),
+    ).toHaveCount(17);
+    await capture(
+      page,
+      "admin-health",
+      viewport,
+      testInfo,
+      "21-admin-health.png",
+    );
   });
 }

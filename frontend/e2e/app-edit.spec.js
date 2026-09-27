@@ -116,22 +116,43 @@ test("owner edits an app, changes visibility, and the gallery no longer lists it
   ).toHaveCount(0);
 });
 
-test("private app content stays hidden from members and admin editing stays disabled", async ({
+test("private app content stays hidden from non-owner members", async ({
   browser,
   page,
 }) => {
   const id = await createOwnedApp(page, "비공개 권한 확인 대상");
   const form = await openEdit(page, id);
-  await form.getByRole("switch", { name: "전체 공개", exact: true }).click();
-  await form
-    .getByRole("button", { name: "변경사항 저장", exact: true })
-    .click();
+  const visibility = form.getByRole("switch", {
+    name: "전체 공개",
+    exact: true,
+  });
+  await visibility.click();
+  await expect(visibility).toHaveAttribute("aria-checked", "false");
+  const save = form.getByRole("button", {
+    name: "변경사항 저장",
+    exact: true,
+  });
+  await expect(save).toBeEnabled();
+  await save.click();
   await expect(page).toHaveURL(new RegExp(`/apps/${id}$`));
   await expect(
     page.getByRole("heading", { name: "비공개 권한 확인 대상", exact: true }),
   ).toBeVisible();
 
+  await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "로그아웃", exact: true }),
+  ).toHaveCount(0);
+  const mockState = await page.evaluate((storageKey) => {
+    return localStorage.getItem(storageKey);
+  }, key);
   const viewer = await browser.newPage();
+  await viewer.goto("/");
+  await viewer.evaluate(
+    ({ storageKey, state }) => localStorage.setItem(storageKey, state),
+    { storageKey: key, state: mockState },
+  );
+  await viewer.reload();
   await loginAs(viewer, "과학덕후박샘");
   await viewer.goto(`/apps/${id}`);
   await expect(viewer.getByRole("alert")).toContainText(
@@ -140,18 +161,14 @@ test("private app content stays hidden from members and admin editing stays disa
   await expect(
     viewer.getByRole("heading", { name: "비공개 권한 확인 대상", exact: true }),
   ).toHaveCount(0);
-  await viewer.close();
-
-  const admin = await browser.newPage();
-  await loginAs(admin, "admin", "admin123");
-  await admin.goto(`/apps/${id}/edit`);
-  await expect(
-    admin.getByRole("form", { name: "앱 수정 양식", exact: true }),
-  ).toHaveCount(0);
-  await expect(admin.getByRole("alert")).toContainText(
+  await viewer.goto(`/apps/${id}/edit`);
+  await expect(viewer.getByRole("alert")).toContainText(
     "아카이브 앱을 찾을 수 없어요",
   );
-  await admin.close();
+  await expect(
+    viewer.getByRole("form", { name: "앱 수정 양식", exact: true }),
+  ).toHaveCount(0);
+  await viewer.close();
 });
 
 test("locks a delayed edit and waits before leaving for the confirmed detail", async ({

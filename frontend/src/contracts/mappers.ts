@@ -34,6 +34,8 @@ type WireCsrfToken = Wire["CsrfToken"];
 type WireRegisteredUser = Wire["RegisteredUser"];
 type WireAdminUser = Wire["AdminUser"];
 type WireAdminStats = Wire["AdminStats"];
+type WireAdminApp = Wire["AdminApp"];
+type WireAdminAppPage = Wire["AdminAppPage"];
 type WireAdminUserPage = Wire["AdminUserPage"];
 type WireApprovalOperation = Wire["ApprovalOperation"];
 type WirePasswordResetOperation = Wire["PasswordResetOperation"];
@@ -209,6 +211,7 @@ export type AdminUser = {
   role: Wire["Role"];
   approved: boolean;
   accountVersion: number;
+  appCount: number;
   createdAt: string;
   firstApprovedAt: string | null;
   pendingExpiresAt: string | null;
@@ -218,6 +221,24 @@ export type AdminStats = {
   pendingUsers: number;
   totalApps: number;
   healthyApps: number;
+};
+export type AdminApp = {
+  id: string;
+  ownerId: string;
+  owner: string;
+  name: string;
+  url: string;
+  isPublic: boolean;
+  themeId: string;
+  version: number;
+  urlVersion: number;
+  createdAt: string;
+  health: HealthResult;
+};
+export type AdminAppPage = {
+  items: AdminApp[];
+  pagination: AdminUserPage["pagination"];
+  serverTime: string;
 };
 export type AdminUserPage = {
   items: AdminUser[];
@@ -841,6 +862,7 @@ export function mapAdminUser(value: unknown): AdminUser {
       "role",
       "approved",
       "account_version",
+      "app_count",
       "created_at",
       "first_approved_at",
       "pending_expires_at",
@@ -861,6 +883,7 @@ export function mapAdminUser(value: unknown): AdminUser {
     role: item.role,
     approved: item.approved,
     accountVersion: integer(item.account_version, 1),
+    appCount: integer(item.app_count, 0),
     createdAt: dateTime(item.created_at),
     firstApprovedAt: nullableDateTime(item.first_approved_at),
     pendingExpiresAt: nullableDateTime(item.pending_expires_at),
@@ -913,6 +936,78 @@ export function mapAdminUserPage(value: unknown): AdminUserPage {
     items,
     pagination: { limit, offset, total, hasMore: pagination.has_more },
     stats: mapAdminStats(item.stats),
+    serverTime: dateTime(item.server_time),
+  };
+}
+
+export function mapAdminApp(value: unknown): AdminApp {
+  const item = record(value) as unknown as Partial<WireAdminApp>;
+  if (
+    !hasOnlyKeys(item, [
+      "id",
+      "owner",
+      "name",
+      "url",
+      "is_public",
+      "theme_id",
+      "version",
+      "url_version",
+      "created_at",
+      "health",
+    ])
+  )
+    throw contractError();
+  const owner = record(item.owner);
+  const id = nonEmpty(item.id);
+  const ownerId = nonEmpty(owner.id);
+  if (
+    !hasOnlyKeys(owner, ["id", "nickname"]) ||
+    !UUID.test(id) ||
+    !UUID.test(ownerId) ||
+    typeof item.is_public !== "boolean"
+  )
+    throw contractError();
+  const url = httpUrl(item.url);
+  return {
+    id,
+    ownerId,
+    owner: nonEmpty(owner.nickname),
+    name: nonEmpty(item.name),
+    url,
+    isPublic: item.is_public,
+    themeId: nonEmpty(item.theme_id),
+    version: integer(item.version, 1),
+    urlVersion: integer(item.url_version, 1),
+    createdAt: dateTime(item.created_at),
+    health: mapHealthResult(item.health),
+  };
+}
+
+export function mapAdminAppPage(value: unknown): AdminAppPage {
+  const item = record(value) as unknown as Partial<WireAdminAppPage>;
+  if (
+    !hasOnlyKeys(item, ["items", "pagination", "server_time"]) ||
+    !Array.isArray(item.items)
+  )
+    throw contractError();
+  const pagination = record(item.pagination);
+  if (
+    !hasOnlyKeys(pagination, ["limit", "offset", "total", "has_more"]) ||
+    typeof pagination.has_more !== "boolean"
+  )
+    throw contractError();
+  const limit = integer(pagination.limit, 1, 100);
+  const offset = integer(pagination.offset, 0);
+  const total = integer(pagination.total, 0);
+  const items = item.items.map(mapAdminApp);
+  if (
+    items.length > limit ||
+    pagination.has_more !== offset + items.length < total
+  )
+    throw contractError();
+  return {
+    items,
+    pagination: { limit, offset, total, hasMore: pagination.has_more },
     serverTime: dateTime(item.server_time),
   };
 }
@@ -1215,9 +1310,6 @@ export function mapMeta(value: unknown): Meta {
 function mapHealth(value: unknown): HealthView {
   const item = record(value);
   const result = record(item.result);
-  const state = result.state;
-  if (!HEALTH_STATES.includes(state as (typeof HEALTH_STATES)[number]))
-    throw contractError();
   const latestJob = item.latest_job;
   if (latestJob !== null) {
     const job = record(latestJob);
@@ -1230,13 +1322,23 @@ function mapHealth(value: unknown): HealthView {
     nullableString(job.failure_code);
   }
   return {
-    result: {
-      state: state as WireHealthResult["state"],
-      checked_at: nullableDateTime(result.checked_at),
-      fresh_until: nullableDateTime(result.fresh_until),
-    },
+    result: mapHealthResult(result),
     latestJob: latestJob as WireHealth["latest_job"],
     nextCheckAt: nullableDateTime(item.next_check_at),
+  };
+}
+
+function mapHealthResult(value: unknown): HealthResult {
+  const result = record(value);
+  if (
+    !hasOnlyKeys(result, ["state", "checked_at", "fresh_until"]) ||
+    !HEALTH_STATES.includes(result.state as (typeof HEALTH_STATES)[number])
+  )
+    throw contractError();
+  return {
+    state: result.state as WireHealthResult["state"],
+    checked_at: nullableDateTime(result.checked_at),
+    fresh_until: nullableDateTime(result.fresh_until),
   };
 }
 
@@ -1291,15 +1393,7 @@ export function mapAppDetailResponse(value: unknown): {
 } {
   const response = record(value);
   const detail = record(response.item) as unknown as Partial<WireAppDetail>;
-  const rawUrl = nonEmpty(detail.url);
-  let url: URL;
-  try {
-    url = new URL(rawUrl);
-  } catch {
-    throw contractError();
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:")
-    throw contractError();
+  const rawUrl = httpUrl(detail.url);
   return {
     item: {
       ...mapCard(detail),
@@ -1318,6 +1412,22 @@ export function mapAppDetailResponse(value: unknown): {
     },
     serverTime: dateTime(response.server_time),
   };
+}
+
+function httpUrl(value: unknown): string {
+  const rawUrl = nonEmpty(value);
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw contractError();
+  }
+  if (
+    rawUrl.length > 2048 ||
+    (url.protocol !== "http:" && url.protocol !== "https:")
+  )
+    throw contractError();
+  return rawUrl;
 }
 
 export type AppCardWire = WireAppCard;

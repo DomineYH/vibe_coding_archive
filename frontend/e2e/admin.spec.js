@@ -102,6 +102,56 @@ test("non-admins are denied and the protected admin account has no approval cont
   await expect(protectedRow.getByRole("button")).toHaveCount(0);
 });
 
+test("admins see the complete public and private app monitor summaries", async ({
+  page,
+}) => {
+  await login(page, "admin", "admin123");
+  await page.goto("/admin?tab=health");
+
+  const healthTab = page.getByRole("tab", {
+    name: "Health Monitor",
+    exact: true,
+  });
+  await expect(healthTab).toBeVisible();
+  await expect(healthTab).toHaveAttribute("aria-current", "page");
+  const statistics = page.getByRole("region", { name: "전체 통계" });
+  await expect(statistics).toContainText("15 / 17");
+
+  const list = page.getByRole("list", { name: "전체 앱 목록" });
+  await expect(list).toBeVisible();
+  const privateRow = list
+    .getByRole("listitem")
+    .filter({ hasText: "과학 수행평가 루브릭 채점기" });
+  await expect(privateRow).toHaveCount(1);
+  await expect(privateRow).toContainText("교사김코딩");
+  await expect(privateRow).toContainText("비공개");
+  await expect(privateRow).toContainText("rubric-grader.vercel.app");
+  await expect(privateRow).toContainText("버전 1");
+  await expect(
+    privateRow.getByLabel("연결 결과: 정상", { exact: true }),
+  ).toBeVisible();
+  await expect(privateRow).not.toContainText(
+    "교사 전용 수행평가 루브릭 채점 도구",
+  );
+  await expect(privateRow).not.toContainText("학생 명렬");
+  const checkAll = page.getByRole("button", {
+    name: "전체 재검사",
+    exact: true,
+  });
+  const checkOne = privateRow.getByRole("button", {
+    name: "즉시 재검사",
+    exact: true,
+  });
+  await expect(checkAll).toBeDisabled();
+  await expect(checkOne).toBeDisabled();
+  await expect(checkAll).toHaveAccessibleDescription(
+    "연결 검사는 아직 사용할 수 없어요.",
+  );
+  await expect(checkOne).toHaveAccessibleDescription(
+    "연결 검사는 아직 사용할 수 없어요.",
+  );
+});
+
 test("member password reset requires reauthentication and an explicit submit", async ({
   page,
 }) => {

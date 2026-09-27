@@ -31,6 +31,7 @@ const target = {
   role: "user",
   approved: false,
   account_version: 1,
+  app_count: 3,
   created_at: "2026-09-22T00:12:00.000Z",
   first_approved_at: null,
   pending_expires_at: "2026-12-21T00:12:00.000Z",
@@ -62,6 +63,25 @@ const resetOperation = {
   rejection_code: null,
   server_time: "2026-09-22T00:12:00.000Z",
 };
+const monitorApp = {
+  id: "00000000-0000-4000-8000-000000000091",
+  owner: {
+    id: "00000000-0000-4000-8000-000000000101",
+    nickname: "교사김코딩",
+  },
+  name: "과학 수행평가 루브릭 채점기",
+  url: "https://rubric-grader.vercel.app",
+  is_public: false,
+  theme_id: "niagara",
+  version: 2,
+  url_version: 1,
+  created_at: "2026-06-05T00:00:00.000Z",
+  health: {
+    state: "healthy",
+    checked_at: "2026-09-22T00:12:00.000Z",
+    fresh_until: null,
+  },
+};
 
 describe("admin API service", () => {
   it("sends list reads with offset paging and current flow metadata", async () => {
@@ -88,6 +108,37 @@ describe("admin API service", () => {
     expect(page.items[0].accountVersion).toBe(1);
     const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(url).toBe("/api/v1/admin/users?limit=24&offset=0");
+    expect(init?.credentials).toBe("include");
+    expect(new Headers(init?.headers).get("X-EduVibe-Auth-Revision")).toBe("4");
+    expect(new Headers(init?.headers).get("X-EduVibe-Session-Generation")).toBe(
+      "2",
+    );
+  });
+
+  it("reads the dedicated minimal administrator app page", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            items: [monitorApp],
+            pagination: { limit: 50, offset: 100, total: 120, has_more: true },
+            server_time: "2026-09-22T00:12:00.000Z",
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    const page = await adminService.listApps({ limit: 50, offset: 100 });
+    expect(page.items[0]).toMatchObject({
+      id: monitorApp.id,
+      owner: "교사김코딩",
+      isPublic: false,
+      url: monitorApp.url,
+    });
+    expect(page.items[0]).not.toHaveProperty("prompt");
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/v1/admin/apps?limit=50&offset=100");
     expect(init?.credentials).toBe("include");
     expect(new Headers(init?.headers).get("X-EduVibe-Auth-Revision")).toBe("4");
     expect(new Headers(init?.headers).get("X-EduVibe-Session-Generation")).toBe(

@@ -1,15 +1,18 @@
 import {
+  mapAdminAppPage,
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
   mapPasswordResetOperation,
   type AdminUserPage,
+  type AdminAppPage,
   type ApprovalOperation,
   type PasswordResetOperation,
 } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
 import {
   normalizeAdminUsersQuery,
+  normalizeAdminAppsQuery,
   normalizeResetPassword,
   type AdminService,
 } from "../admin-service";
@@ -93,7 +96,13 @@ function currentAdmin(requireRecentAuth = false) {
   return { state, account };
 }
 
-function wireUser(account: ReturnType<typeof getMockAccounts>[number]) {
+function wireUser(
+  account: ReturnType<typeof getMockAccounts>[number],
+  state = getMockSnapshot(),
+) {
+  const appCount = [...state.apps, ...state.private_apps].filter(
+    (app) => app.owner.id === account.id,
+  ).length;
   return {
     id: account.id,
     login_id: account.loginId,
@@ -101,6 +110,7 @@ function wireUser(account: ReturnType<typeof getMockAccounts>[number]) {
     role: account.role,
     approved: account.approved,
     account_version: account.accountVersion,
+    app_count: appCount,
     created_at: account.createdAt,
     first_approved_at: account.firstApprovedAt,
     pending_expires_at: account.pendingExpiresAt,
@@ -210,7 +220,7 @@ export const adminService: AdminService = {
         { httpStatus: 503 },
       );
     const users = getMockAccounts(state)
-      .map(wireUser)
+      .map((account) => wireUser(account, state))
       .sort(
         (left, right) =>
           Number(left.approved) - Number(right.approved) ||
@@ -242,13 +252,71 @@ export const adminService: AdminService = {
     return page;
   },
 
+  async listApps(query, { signal } = {}) {
+    if (signal?.aborted)
+      throw signal.reason ?? new DOMException("Request aborted", "AbortError");
+    const { state } = currentAdmin();
+    const normalized = normalizeAdminAppsQuery(query);
+    if (
+      state.scenario === "admin_apps_list_failure" ||
+      (state.scenario === "admin_apps_more_failure" && normalized.offset > 0)
+    )
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "앱 목록을 불러오지 못했어요. 연결을 확인해 주세요.",
+        { httpStatus: 503 },
+      );
+
+    const allApps = [...state.apps, ...state.private_apps].sort(
+      (left, right) =>
+        right.created_at.localeCompare(left.created_at) ||
+        right.id.localeCompare(left.id),
+    );
+    const total = state.scenario === "admin_apps_empty" ? 0 : allApps.length;
+    const apps =
+      state.scenario === "admin_apps_empty"
+        ? []
+        : allApps.slice(
+            normalized.offset,
+            normalized.offset + normalized.limit,
+          );
+    const pageApps =
+      state.scenario === "admin_apps_duplicate_page" &&
+      normalized.offset > 0 &&
+      allApps[normalized.offset - 1]
+        ? [allApps[normalized.offset - 1], ...apps].slice(0, normalized.limit)
+        : apps;
+    const page: AdminAppPage = mapAdminAppPage({
+      items: pageApps.map((app) => ({
+        id: app.id,
+        owner: app.owner,
+        name: app.name,
+        url: app.url,
+        is_public: app.is_public,
+        theme_id: app.theme_id,
+        version: app.version,
+        url_version: app.url_version,
+        created_at: app.created_at,
+        health: app.health.result,
+      })),
+      pagination: {
+        limit: normalized.limit,
+        offset: normalized.offset,
+        total,
+        has_more: normalized.offset + pageApps.length < total,
+      },
+      server_time: state.mock_now,
+    });
+    return page;
+  },
+
   async getUser(id, { signal } = {}) {
     if (signal?.aborted)
       throw signal.reason ?? new DOMException("Request aborted", "AbortError");
-    currentAdmin();
-    const account = getMockAccounts().find((item) => item.id === id);
+    const { state } = currentAdmin();
+    const account = getMockAccounts(state).find((item) => item.id === id);
     if (!account) throw fail("USER_NOT_FOUND", "회원을 찾을 수 없어요.", 404);
-    return mapAdminUser(wireUser(account));
+    return mapAdminUser(wireUser(account, state));
   },
 
   async createApprovalOperation(input) {

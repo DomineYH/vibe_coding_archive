@@ -289,6 +289,7 @@ export function AppDetailView({
   onRetryDelete,
   onCancelDelete,
   fromGallery = false,
+  fromAdmin = false,
 }) {
   const [notice, setNotice] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -374,14 +375,14 @@ export function AppDetailView({
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold text-neutral-500 transition-colors hover:bg-neutral-200/60 hover:text-neutral-800"
         >
           <ChevronLeft size={15} aria-hidden="true" />
-          갤러리로
+          {fromAdmin ? "앱 목록으로" : "갤러리로"}
         </button>
         {canEdit || canDelete ? (
           <div className="flex items-center gap-2">
             {canEdit ? (
               <Link
                 to={`/apps/${app.id}/edit`}
-                state={{ fromDetail: true, fromGallery }}
+                state={{ fromDetail: true, fromGallery, fromAdmin }}
                 className="inline-flex h-9 items-center rounded-full border border-neutral-200 px-4 text-[12.5px] font-semibold text-neutral-700 hover:bg-neutral-100"
               >
                 앱 수정
