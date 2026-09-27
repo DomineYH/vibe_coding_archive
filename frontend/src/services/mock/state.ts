@@ -86,6 +86,7 @@ const MOCK_SCENARIOS = [
   "health_late_response",
   "health_batch_empty",
   "health_batch_mixed",
+  "health_batch_slow",
   "health_batch_query_failure",
 ] as const;
 const V2_STATE_KEYS = [
@@ -432,6 +433,7 @@ function validateApps(
       new Set(item.grades).size !== item.grades.length ||
       !CATALOG_THEMES.has(item.themeId) ||
       item.isPublic !== isPublic ||
+      !ownerIds.has(item.ownerId) ||
       appIds.has(item.id) ||
       (jobId !== undefined && jobIds.has(jobId)) ||
       (ownerName !== undefined && ownerName !== item.owner)
@@ -441,7 +443,6 @@ function validateApps(
     appIds.add(item.id);
     if (jobId !== undefined) jobIds.add(jobId);
     ownerNames.set(item.ownerId, item.owner);
-    if (!isPublic && !ownerIds.has(item.ownerId)) throw storageError();
   }
 }
 

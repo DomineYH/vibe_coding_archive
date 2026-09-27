@@ -24,6 +24,7 @@ import {
 
 type MockApp = components["schemas"]["AppDetail"];
 const REQUEST_WINDOWS_KEY = "eduvibe-archive-health-request-windows-v1";
+const batchQueryDelayMs = 500;
 window.addEventListener(MOCK_HEALTH_RESET_EVENT, () => {
   try {
     sessionStorage.removeItem(REQUEST_WINDOWS_KEY);
@@ -650,12 +651,22 @@ export const healthService: HealthService = {
         { outcome: "rejected" },
       );
     let state = getMockSnapshot();
+    const delayedRead = state.scenario === "health_batch_slow";
+    if (delayedRead) {
+      await new Promise((resolve) => setTimeout(resolve, batchQueryDelayMs));
+      if (signal?.aborted)
+        throw (
+          signal.reason ?? new DOMException("Request aborted", "AbortError")
+        );
+      state = getMockSnapshot();
+    }
     const current = state.health_batches.find((batch) => batch.id === batchId);
     if (!current)
       throw new ServiceError("NOT_FOUND", "전체 검사 배치를 찾을 수 없어요.", {
         httpStatus: 404,
         outcome: "rejected",
       });
+    if (delayedRead) return healthBatch(current, state);
     if (state.scenario === "health_batch_query_failure")
       throw new ServiceError(
         "SERVICE_UNAVAILABLE",

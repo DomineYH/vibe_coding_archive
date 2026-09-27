@@ -215,36 +215,142 @@ test("signup through approval, app health, account deletion, and reset works as 
   await expect(
     secondTab.getByRole("heading", { name: publishedName, exact: true }),
   ).toBeVisible();
+  const healthTab = await context.newPage();
+  await healthTab.goto(`/apps/${appId}`);
+  await expect(
+    healthTab.getByRole("heading", { name: publishedName, exact: true }),
+  ).toBeVisible();
 
-  await setScenario(page, "health_batch_mixed");
-  await page.getByRole("button", { name: "로그아웃", exact: true }).click();
-  await signIn(page, "admin", "admin123");
-  await page.goto("/admin?tab=health");
-  await expect(page).toHaveURL("/admin?tab=health");
-  const monitor = page.getByRole("tabpanel", { name: "Health Monitor" });
-  await expect(monitor).toBeVisible();
-  const apps = monitor.getByRole("list", { name: "전체 앱 목록" });
-  const initialRows = await apps.getByRole("listitem").count();
+  await page.getByRole("link", { name: "앱 수정", exact: true }).click();
+  await expect(page).toHaveURL(`/apps/${appId}/edit`);
+  editForm = page.getByRole("form", { name: "앱 수정 양식", exact: true });
+  await expect(editForm).toBeVisible();
+  const draftName = "T19 인증 복귀 초안";
+  const nameField = editForm.getByRole("textbox", {
+    name: "어플리케이션 이름",
+    exact: true,
+  });
+  await nameField.fill(draftName);
+  await setScenario(page, "auth_observation_error");
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  const authStatus = page
+    .getByRole("main")
+    .getByText("로그인 상태를 확인할 수 없어요", { exact: true });
+  await expect(authStatus).toBeVisible();
+  await expect(editForm).toBeHidden();
+  const retryAuth = page
+    .getByRole("main")
+    .getByRole("button", { name: "다시 확인", exact: true });
+  await retryAuth.click();
+  await expect(editForm).toBeHidden();
+  await setScenario(page, "original");
+  await retryAuth.click();
+  await expect(editForm).toBeVisible();
+  await expect(nameField).toHaveValue(draftName);
+
+  const frozenAt = new Date("2026-09-22T00:12:00.000Z");
+  await page.clock.install({ time: frozenAt });
+  await page.clock.pauseAt(frozenAt);
+  await setScenario(page, "app_update_delayed");
+  await editForm
+    .getByRole("button", { name: "변경사항 저장", exact: true })
+    .click();
+  await expect(nameField).toBeDisabled();
+  await expect(
+    editForm.getByRole("button", { name: "수정 중…", exact: true }),
+  ).toBeDisabled();
+
+  await healthTab
+    .getByRole("button", { name: "로그아웃", exact: true })
+    .click();
+  await expect(
+    healthTab.getByRole("button", { name: "로그인", exact: true }),
+  ).toBeVisible();
+  await expect(editForm).toBeHidden();
+  await signIn(healthTab, "admin", "admin123");
+  await expect(editForm).toBeHidden();
+  await expect(
+    page.getByRole("link", { name: "관리자", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "관리자", exact: true }).click();
+  await expect(page).toHaveURL("/admin");
+  await page.clock.runFor(0);
+  await expect(
+    page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
   const statistics = page.getByRole("region", { name: "전체 통계" });
+  await expect(statistics).toBeVisible();
   const totals = statistics.getByRole("definition");
   const initialUsers = Number(await totals.nth(0).innerText());
   const initialApps = Number(await totals.nth(2).innerText());
-  expect(initialApps).toBe(initialRows);
-  const createdRow = apps
-    .getByRole("listitem")
-    .filter({ hasText: publishedName });
-  await expect(createdRow).toHaveCount(1);
+
+  await healthTab.clock.install({ time: frozenAt });
+  await healthTab.clock.pauseAt(frozenAt);
+  await healthTab.goto("/admin?tab=health");
+  await expect(healthTab).toHaveURL("/admin?tab=health");
+  const monitor = healthTab.getByRole("tabpanel", {
+    name: "Health Monitor",
+  });
+  await expect(monitor).toBeVisible();
+  const apps = monitor.getByRole("list", { name: "전체 앱 목록" });
+  await expect(apps).toBeVisible();
+  const initialRows = initialApps;
+  await setScenario(healthTab, "health_batch_slow");
   await monitor
     .getByRole("button", { name: "전체 재검사", exact: true })
     .click();
-  const summary = monitor.getByRole("region", {
-    name: "전체 검사 진행 상황",
-  });
-  await expect(summary).toContainText("전체 검사 완료", { timeout: 10000 });
-  await expect(summary).toContainText(`처리 ${initialRows}/${initialRows}`);
+  await expect(monitor.locator("#health-check-note")).toHaveText(
+    "최근 전체 검사 진행 상태를 불러오고 있어요.",
+  );
+  const targetIndex = await healthTab.evaluate(
+    ({ key, appId }) =>
+      JSON.parse(localStorage.getItem(key)).health_batches[0].targets.findIndex(
+        (target) => target.app_id === appId,
+      ),
+    { key: storageKey, appId },
+  );
+  expect(targetIndex).toBeGreaterThanOrEqual(0);
+  expect(targetIndex).toBeLessThan(initialRows);
+  const batchId = await healthTab.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)).health_batches[0].id,
+    storageKey,
+  );
+  const memberAccountId = await healthTab.evaluate(
+    (key) =>
+      JSON.parse(localStorage.getItem(key)).registered_accounts.find(
+        (account) => account.loginId === "issue49teacher",
+      ).id,
+    storageKey,
+  );
+  await healthTab.evaluate(async (id) => {
+    const { healthService } = await import("/src/services/mock/health.ts");
+    window.__issue49LateBatchRead = { status: "pending" };
+    void healthService.getBatch(id).then(
+      (batch) => {
+        window.__issue49LateBatchRead = {
+          status: "resolved",
+          isFinished: batch.isFinished,
+          targetCount: batch.targetCount,
+          processedCount: batch.processedCount,
+          cancelled: batch.counts.cancelled,
+        };
+      },
+      (error) => {
+        window.__issue49LateBatchRead = {
+          status: "rejected",
+          error: String(error),
+        };
+      },
+    );
+  }, batchId);
+  await expect
+    .poll(() => healthTab.evaluate(() => window.__issue49LateBatchRead.status))
+    .toBe("pending");
 
-  await page.goto("/admin");
-  await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
   const member = userRow(page);
   await expect(member).toHaveCount(1);
   await expect(member).toContainText("등록 앱 1개");
@@ -260,6 +366,7 @@ test("signup through approval, app health, account deletion, and reset works as 
     .getByRole("button", { name: "본인 확인", exact: true })
     .click();
   await expect(page).toHaveURL("/admin");
+  await page.clock.runFor(0);
   const deletion = page.getByRole("region", {
     name: /계정 삭제 확인|계정을 삭제할까요/,
   });
@@ -271,10 +378,90 @@ test("signup through approval, app health, account deletion, and reset works as 
   await expect(deletion.getByRole("status")).toContainText(
     "소유 앱 1개 삭제가 확정됐어요",
   );
-  await expect(member).toHaveCount(0);
+  const deletedBatch = await page.evaluate(
+    ({ key, appId, targetIndex, memberAccountId }) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      return {
+        accountExists: state.registered_accounts.some(
+          (account) => account.loginId === "issue49teacher",
+        ),
+        adminUserExists: state.admin_users.some(
+          (user) => user.id === memberAccountId,
+        ),
+        appExists: [...state.apps, ...state.private_apps].some(
+          (app) => app.id === appId,
+        ),
+        target: state.health_batches[0].targets[targetIndex],
+      };
+    },
+    { key: storageKey, appId, targetIndex, memberAccountId },
+  );
+  expect(deletedBatch.accountExists).toBe(false);
+  expect(deletedBatch.adminUserExists).toBe(false);
+  expect(deletedBatch.appExists).toBe(false);
+  expect(deletedBatch.target.state).toBe("cancelled");
+  expect(deletedBatch.target.app_id).toBeNull();
+
+  await setScenario(page, "original");
+  await page.clock.fastForward(600);
+  await healthTab.clock.fastForward(600);
+  await expect
+    .poll(() => healthTab.evaluate(() => window.__issue49LateBatchRead.status))
+    .toBe("resolved");
+  const lateBatch = await healthTab.evaluate(
+    () => window.__issue49LateBatchRead,
+  );
+  expect(lateBatch).toMatchObject({ status: "resolved", cancelled: 1 });
+
+  const completedBatch = await healthTab.evaluate(
+    async ({ id, attempts }) => {
+      const { healthService } = await import("/src/services/mock/health.ts");
+      let batch;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        batch = await healthService.getBatch(id);
+        if (batch.isFinished) break;
+      }
+      return batch;
+    },
+    { id: batchId, attempts: 8 },
+  );
+  expect(completedBatch).toMatchObject({
+    isFinished: true,
+    targetCount: initialRows,
+    processedCount: initialRows,
+    counts: { cancelled: 1 },
+  });
+  const finalState = await healthTab.evaluate(
+    ({ key, appId, memberAccountId }) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      return {
+        accountExists: state.registered_accounts.some(
+          (account) => account.loginId === "issue49teacher",
+        ),
+        adminUserExists: state.admin_users.some(
+          (user) => user.id === memberAccountId,
+        ),
+        appExists: [...state.apps, ...state.private_apps].some(
+          (app) => app.id === appId,
+        ),
+        batch: state.health_batches[0],
+      };
+    },
+    { key: storageKey, appId, memberAccountId },
+  );
+  expect(finalState.accountExists).toBe(false);
+  expect(finalState.adminUserExists).toBe(false);
+  expect(finalState.appExists).toBe(false);
   await expect(totals.nth(0)).toHaveText(String(initialUsers - 1));
   await expect(totals.nth(2)).toHaveText(String(initialApps - 1));
+  expect(finalState.batch.finished_at).not.toBeNull();
+  expect(finalState.batch.targets[targetIndex]).toMatchObject({
+    app_id: null,
+    job_id: null,
+    state: "cancelled",
+  });
 
+  await secondTab.goto(`/apps/${appId}`);
   await expect(
     secondTab
       .getByRole("alert")
@@ -282,20 +469,22 @@ test("signup through approval, app health, account deletion, and reset works as 
   ).toBeVisible();
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await expect(
-    page.getByRole("button", { name: "로그인", exact: true }),
+    healthTab
+      .getByRole("banner")
+      .getByRole("button", { name: "로그인", exact: true }),
   ).toBeVisible();
 
-  await secondTab.goto("/__dev/mock-reset");
+  await healthTab.goto("/__dev/mock-reset");
   await expect(
-    secondTab.getByRole("heading", { name: "mock 저장 관리", exact: true }),
+    healthTab.getByRole("heading", { name: "mock 저장 관리", exact: true }),
   ).toBeVisible();
-  await secondTab
+  await healthTab
     .getByRole("button", { name: "기본 fixture로 명시적 초기화", exact: true })
     .click();
-  await expect(secondTab).toHaveURL("/");
+  await expect(healthTab).toHaveURL("/");
   await expect
     .poll(() =>
-      secondTab.evaluate((key) => {
+      healthTab.evaluate((key) => {
         const state = JSON.parse(localStorage.getItem(key));
         return {
           principal: state.principal_id,
@@ -319,6 +508,7 @@ test("signup through approval, app health, account deletion, and reset works as 
     });
   await expect(page.locator("a.card-r")).toHaveCount(16);
   await secondTab.close();
+  await healthTab.close();
 });
 
 test("explicit reset discards an in-flight app registration response", async ({
