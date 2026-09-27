@@ -177,6 +177,51 @@ describe("OpenAPI app detail schema", () => {
       "pending_users",
       "total_apps",
       "healthy_apps",
+      "next_health_expiry_at",
+      "active_health_batch_id",
+      "latest_health_batch_id",
+    ]);
+  });
+
+  it("defines admin health batch acceptance and read contracts", () => {
+    const request = openapi.paths["/admin/health-check-batches"].post;
+    const read = openapi.paths["/admin/health-check-batches/{id}"].get;
+    expect(request.security).toEqual([{ SessionCookie: [] }]);
+    expect(
+      request.responses["202"].content["application/json"].schema.$ref,
+    ).toBe("#/components/schemas/BatchAccepted");
+    expect(request.responses["429"]).toBeDefined();
+    expect(request.responses["409"]).toBeDefined();
+    expect(request.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ $ref: "#/components/parameters/Origin" }),
+        expect.objectContaining({ $ref: "#/components/parameters/CsrfToken" }),
+        expect.objectContaining({ $ref: "#/components/parameters/AuthFlowId" }),
+        expect.objectContaining({
+          $ref: "#/components/parameters/AuthRevision",
+        }),
+        expect.objectContaining({
+          $ref: "#/components/parameters/SessionGeneration",
+        }),
+      ]),
+    );
+    expect(read.security).toEqual([{ SessionCookie: [] }]);
+    expect(read.parameters.find(({ name }) => name === "id")).toMatchObject({
+      in: "path",
+      required: true,
+      schema: { format: "uuid" },
+    });
+    expect(read.responses["200"].content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/HealthBatch",
+    );
+    expect(read.responses["409"]).toBeDefined();
+    expect(openapi.components.schemas.HealthBatchCounts.required).toEqual([
+      "queued",
+      "running",
+      "result_obtained",
+      "failed",
+      "cancelled",
+      "reused",
     ]);
   });
 

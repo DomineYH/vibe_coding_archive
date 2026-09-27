@@ -1,5 +1,7 @@
 import {
+  mapBatchAccepted,
   mapCheckAccepted,
+  mapHealthBatch,
   mapHealthJobResponse,
   mapHealthSnapshot,
 } from "../../contracts/mappers";
@@ -49,6 +51,25 @@ export const healthService: HealthService = {
         "GET /health-checks/{id}",
         `/health-checks/${requireUuid(jobId)}`,
         { signal },
+      ),
+    );
+  },
+
+  async requestBatch() {
+    const response = (await getJson(
+      "POST /admin/health-check-batches",
+      "/admin/health-check-batches",
+      { method: "POST", write: true, includeStatus: true },
+    )) as { status: number; body: unknown };
+    return mapBatchAccepted(response.body, response.status);
+  },
+
+  async getBatch(batchId, { signal } = {}) {
+    return mapHealthBatch(
+      await getJson(
+        "GET /admin/health-check-batches/{id}",
+        `/admin/health-check-batches/${requireUuid(batchId)}`,
+        { authenticated: true, signal },
       ),
     );
   },

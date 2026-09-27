@@ -84,6 +84,9 @@ const MOCK_SCENARIOS = [
   "health_actor_rate_limit",
   "health_app_cooldown",
   "health_late_response",
+  "health_batch_empty",
+  "health_batch_mixed",
+  "health_batch_query_failure",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
@@ -109,7 +112,8 @@ const V6_STATE_KEYS = [
 ];
 const V7_STATE_KEYS = V6_STATE_KEYS;
 const V8_STATE_KEYS = [...V7_STATE_KEYS, "deleted_account_ids"];
-const STATE_KEYS = [...V8_STATE_KEYS, "health_measurements"];
+const V9_STATE_KEYS = [...V8_STATE_KEYS, "health_measurements"];
+const STATE_KEYS = [...V9_STATE_KEYS, "health_batches", "health_id_sequence"];
 const AUTH_FLOW_V6_KEYS = [
   "flow_id",
   "revision",
@@ -268,7 +272,7 @@ export type MockPrincipalSession = {
   recent_auth_until: string | null;
 };
 export type MockState = {
-  version: 9;
+  version: 10;
   generation: number;
   observation_generation: number;
   scenario: MockScenario;
@@ -285,6 +289,21 @@ export type MockState = {
   principal_session: MockPrincipalSession | null;
   auth_flow: MockAuthFlow;
   health_measurements: MockHealthMeasurement[];
+  health_batches: MockHealthBatch[];
+  health_id_sequence: number;
+};
+export type MockHealthBatchTarget = {
+  app_id: string | null;
+  url_version: number;
+  job_id: string | null;
+  state: "queued" | "running" | "result_obtained" | "failed" | "cancelled";
+  reused: boolean;
+};
+export type MockHealthBatch = {
+  id: string;
+  created_at: string;
+  finished_at: string | null;
+  targets: MockHealthBatchTarget[];
 };
 export type MockHealthMeasurement = {
   app_id: string;
@@ -464,6 +483,73 @@ function validateHealthMeasurements(
     )
       throw storageError();
     seen.add(key);
+  }
+}
+
+function validateHealthBatches(batches: unknown[]): void {
+  const ids = new Set<string>();
+  for (const value of batches) {
+    if (!hasExactKeys(value, ["id", "created_at", "finished_at", "targets"]))
+      throw storageError();
+    const batch = value as unknown as MockHealthBatch;
+    if (
+      !/^[0-9a-f-]{36}$/i.test(batch.id) ||
+      ids.has(batch.id) ||
+      !isDateTime(batch.created_at) ||
+      (batch.finished_at !== null && !isDateTime(batch.finished_at)) ||
+      !Array.isArray(batch.targets)
+    )
+      throw storageError();
+    ids.add(batch.id);
+    const targetApps = new Set<string>();
+    for (const value of batch.targets) {
+      if (
+        !hasExactKeys(value, [
+          "app_id",
+          "url_version",
+          "job_id",
+          "state",
+          "reused",
+        ])
+      )
+        throw storageError();
+      const target = value as unknown as MockHealthBatchTarget;
+      const active = target.state === "queued" || target.state === "running";
+      if (
+        (target.app_id !== null &&
+          (!/^[0-9a-f-]{36}$/i.test(target.app_id) ||
+            targetApps.has(target.app_id))) ||
+        !Number.isSafeInteger(target.url_version) ||
+        target.url_version < 1 ||
+        (target.job_id !== null && !/^[0-9a-f-]{36}$/i.test(target.job_id)) ||
+        ![
+          "queued",
+          "running",
+          "result_obtained",
+          "failed",
+          "cancelled",
+        ].includes(target.state) ||
+        typeof target.reused !== "boolean" ||
+        (target.reused && target.state !== "result_obtained") ||
+        (target.app_id === null && target.state !== "cancelled")
+      )
+        throw storageError();
+      if (active && (target.app_id === null || target.job_id === null))
+        throw storageError();
+      if (target.app_id !== null) targetApps.add(target.app_id);
+    }
+    if (
+      (batch.finished_at === null &&
+        !batch.targets.some(
+          (target) => target.state === "queued" || target.state === "running",
+        )) ||
+      (batch.finished_at !== null &&
+        (Date.parse(batch.finished_at) < Date.parse(batch.created_at) ||
+          batch.targets.some(
+            (target) => target.state === "queued" || target.state === "running",
+          )))
+    )
+      throw storageError();
   }
 }
 
@@ -694,7 +780,7 @@ function migrateAuthFlow(value: unknown, hasPrincipal: boolean): MockAuthFlow {
 }
 
 const initialState = (): MockState => ({
-  version: 9,
+  version: 10,
   generation: resetGeneration,
   observation_generation: 0,
   scenario: "original",
@@ -711,6 +797,8 @@ const initialState = (): MockState => ({
   principal_session: null,
   auth_flow: initialAuthFlow(),
   health_measurements: [],
+  health_batches: [],
+  health_id_sequence: 0,
 });
 
 function storage(): Storage {
@@ -752,7 +840,7 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 9,
+      version: 10,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
@@ -771,7 +859,7 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
     state = {
       ...value,
-      version: 9,
+      version: 10,
       registered_accounts: [],
       deleted_account_ids: [],
       observation_generation: 0,
@@ -788,7 +876,7 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
     state = {
       ...value,
-      version: 9,
+      version: 10,
       deleted_account_ids: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
@@ -804,7 +892,7 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V4_STATE_KEYS) && value.version === 4) {
     state = {
       ...value,
-      version: 9,
+      version: 10,
       deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       admin_users: [],
@@ -825,7 +913,7 @@ function readState(): MockState {
     );
     state = {
       ...value,
-      version: 9,
+      version: 10,
       deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       mock_now: MOCK_INITIAL_TIME,
@@ -839,7 +927,7 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V6_STATE_KEYS) && value.version === 6) {
     state = {
       ...value,
-      version: 9,
+      version: 10,
       deleted_account_ids: [],
       health_measurements: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
@@ -849,23 +937,31 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V7_STATE_KEYS) && value.version === 7) {
     state = {
       ...value,
-      version: 9,
+      version: 10,
       deleted_account_ids: [],
       health_measurements: [],
     };
     needsMigration = true;
     preserveAdminUsers = true;
   } else if (hasExactKeys(value, V8_STATE_KEYS) && value.version === 8) {
-    state = { ...value, version: 9, health_measurements: [] };
+    state = { ...value, version: 10, health_measurements: [] };
     needsMigration = true;
     preserveAdminUsers = true;
-  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 9) {
+  } else if (hasExactKeys(value, V9_STATE_KEYS) && value.version === 9) {
+    state = { ...value, version: 10 };
+    needsMigration = true;
+    preserveAdminUsers = true;
+  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 10) {
     state = value;
   } else {
     throw storageError();
   }
+  if (needsMigration) {
+    state.health_batches = [];
+    state.health_id_sequence = 0;
+  }
   if (
-    state.version !== 9 ||
+    state.version !== 10 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -875,6 +971,10 @@ function readState(): MockState {
     !Array.isArray(state.registered_accounts) ||
     !Array.isArray(state.deleted_account_ids) ||
     !Array.isArray(state.health_measurements) ||
+    !Array.isArray(state.health_batches) ||
+    typeof state.health_id_sequence !== "number" ||
+    !Number.isSafeInteger(state.health_id_sequence) ||
+    state.health_id_sequence < 0 ||
     !state.deleted_account_ids.every(
       (id) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id),
     ) ||
@@ -981,6 +1081,7 @@ function readState(): MockState {
       ...state.apps,
       ...state.private_apps,
     ]);
+    validateHealthBatches(validState.health_batches);
   } catch {
     throw storageError();
   }
@@ -1024,6 +1125,107 @@ function writeState(state: MockState): void {
   }
 }
 
+function cancelHealthBatchTargets(
+  batches: MockHealthBatch[],
+  appId: string,
+  now: string,
+  nextUrlVersion?: number,
+): MockHealthBatch[] {
+  return batches.map((batch) => {
+    if (batch.finished_at !== null) return batch;
+    const targets = batch.targets.map((target) =>
+      target.app_id === appId &&
+      (nextUrlVersion === undefined || target.url_version !== nextUrlVersion)
+        ? {
+            ...target,
+            app_id: null,
+            job_id: null,
+            state: "cancelled" as const,
+            reused: false,
+          }
+        : target,
+    );
+    return {
+      ...batch,
+      targets,
+      finished_at: targets.some(
+        (target) => target.state === "queued" || target.state === "running",
+      )
+        ? null
+        : now,
+    };
+  });
+}
+
+function settleHealthBatchJob(
+  batches: MockHealthBatch[],
+  app: components["schemas"]["AppDetail"],
+  now: string,
+): MockHealthBatch[] {
+  const job = app.health.latest_job;
+  if (!job || !["completed", "failed", "cancelled"].includes(job.status))
+    return batches;
+  const state: MockHealthBatchTarget["state"] =
+    job.status === "completed"
+      ? "result_obtained"
+      : job.status === "failed"
+        ? "failed"
+        : "cancelled";
+  return batches.map((batch) => {
+    if (batch.finished_at !== null) return batch;
+    const targets = batch.targets.map((target) =>
+      target.app_id === app.id && target.job_id === job.id
+        ? { ...target, state, reused: false }
+        : target,
+    );
+    return {
+      ...batch,
+      targets,
+      finished_at: targets.some(
+        (target) => target.state === "queued" || target.state === "running",
+      )
+        ? null
+        : now,
+    };
+  });
+}
+
+export function nextMockHealthId(): string {
+  const state = readState();
+  const sequence = state.health_id_sequence + 1;
+  if (!Number.isSafeInteger(sequence) || sequence > 999_999_999_699)
+    throw new ServiceError(
+      "SERVICE_UNAVAILABLE",
+      "검사 기록을 만들 수 없어요.",
+    );
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    health_id_sequence: sequence,
+    generation,
+  });
+  resetGeneration = generation;
+  return `00000000-0000-4000-8000-${String(300 + sequence).padStart(12, "0")}`;
+}
+
+export function saveMockHealthBatch(batch: MockHealthBatch): void {
+  const state = readState();
+  const index = state.health_batches.findIndex((item) => item.id === batch.id);
+  const current = state.health_batches[index];
+  if (
+    current?.finished_at !== null &&
+    current !== undefined &&
+    JSON.stringify(current) !== JSON.stringify(batch)
+  )
+    throw new TypeError("A finished health batch cannot be changed");
+  const healthBatches = [...state.health_batches];
+  if (index === -1) healthBatches.push(batch);
+  else healthBatches[index] = batch;
+  const generation = nextGeneration(state.generation);
+  writeState({ ...state, health_batches: healthBatches, generation });
+  resetGeneration = generation;
+}
+
 export function getMockSnapshot(): MockState {
   return readState();
 }
@@ -1063,9 +1265,13 @@ export function createMockApp(
 export function updateMockApp(
   app: components["schemas"]["AppDetail"],
   measurement?: MockHealthMeasurement | null,
+  notify = true,
 ): void {
   const state = readState();
   const generation = nextGeneration(state.generation);
+  const previous = [...state.apps, ...state.private_apps].find(
+    (item) => item.id === app.id,
+  );
   const apps = state.apps.filter((item) => item.id !== app.id);
   const privateApps = state.private_apps.filter((item) => item.id !== app.id);
   const healthMeasurements = state.health_measurements.filter(
@@ -1091,10 +1297,22 @@ export function updateMockApp(
         : measurement === null
           ? healthMeasurements
           : [...healthMeasurements, measurement],
+    health_batches: settleHealthBatchJob(
+      previous && previous.url_version !== app.url_version
+        ? cancelHealthBatchTargets(
+            state.health_batches,
+            app.id,
+            state.mock_now,
+            app.url_version,
+          )
+        : state.health_batches,
+      app,
+      state.mock_now,
+    ),
     generation,
   });
   resetGeneration = generation;
-  window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+  if (notify) window.dispatchEvent(new Event(MOCK_RESET_EVENT));
 }
 
 export function deleteMockApp(id: string): void {
@@ -1108,6 +1326,11 @@ export function deleteMockApp(id: string): void {
     ) as MockState["private_apps"],
     health_measurements: state.health_measurements.filter(
       (measurement) => measurement.app_id !== id,
+    ),
+    health_batches: cancelHealthBatchTargets(
+      state.health_batches,
+      id,
+      state.mock_now,
     ),
     generation,
   });
@@ -1262,6 +1485,11 @@ export function deleteMockUserAccount(
       [...state.apps, ...state.private_apps].some(
         (app) => app.id === measurement.app_id && app.owner.id !== accountId,
       ),
+    ),
+    health_batches: apps.reduce(
+      (batches, app) =>
+        cancelHealthBatchTargets(batches, app.id, state.mock_now),
+      state.health_batches,
     ),
     principal_id: deletedPrincipal ? null : state.principal_id,
     principal_session: deletedPrincipal ? null : state.principal_session,

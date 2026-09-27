@@ -1,5 +1,7 @@
 import {
+  mapBatchAccepted,
   mapCheckAccepted,
+  mapHealthBatch,
   mapHealthJobResponse,
   mapHealthSnapshot,
 } from "../../contracts/mappers";
@@ -11,8 +13,12 @@ import { appsService } from "./apps";
 import {
   assertCurrentGeneration,
   getMockSnapshot,
+  MOCK_RESET_EVENT,
   MOCK_HEALTH_RESET_EVENT,
+  nextMockHealthId,
+  saveMockHealthBatch,
   updateMockApp,
+  type MockHealthBatch,
   type MockHealthMeasurement,
 } from "./state";
 
@@ -177,6 +183,73 @@ async function isAdmin() {
     user.role === "admin" &&
     user.sessionKind === "full" &&
     !user.mustChangePassword,
+  );
+}
+
+async function requireAdmin() {
+  const auth = await authService.getCurrentAuthState();
+  if (auth.status !== "ready")
+    throw new ServiceError(
+      "AUTH_TRANSITION_PENDING",
+      "인증 상태를 확인한 뒤 다시 시도해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+  if (!auth.user || !auth.user.approved || auth.user.role !== "admin")
+    throw new ServiceError("FORBIDDEN", "관리자 권한이 필요해요.", {
+      httpStatus: auth.user ? 403 : 401,
+      outcome: "rejected",
+    });
+  if (auth.user.mustChangePassword || auth.user.sessionKind !== "full")
+    throw new ServiceError(
+      "PASSWORD_CHANGE_REQUIRED",
+      "관리자 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
+      { httpStatus: 403, outcome: "rejected" },
+    );
+}
+
+function healthBatchWire(
+  batch: MockHealthBatch,
+  state: ReturnType<typeof getMockSnapshot>,
+) {
+  const counts = {
+    queued: 0,
+    running: 0,
+    result_obtained: 0,
+    failed: 0,
+    cancelled: 0,
+    reused: 0,
+  };
+  for (const target of batch.targets) {
+    counts[target.state] += 1;
+    if (target.reused) counts.reused += 1;
+  }
+  return {
+    id: batch.id,
+    created_at: batch.created_at,
+    finished_at: batch.finished_at,
+    is_finished: batch.finished_at !== null,
+    server_time: state.mock_now,
+    target_count: batch.targets.length,
+    processed_count: counts.result_obtained + counts.failed + counts.cancelled,
+    counts,
+  };
+}
+
+function healthBatch(
+  batch: MockHealthBatch,
+  state: ReturnType<typeof getMockSnapshot>,
+) {
+  return mapHealthBatch(healthBatchWire(batch, state));
+}
+
+function acceptedBatch(
+  batch: MockHealthBatch,
+  state: ReturnType<typeof getMockSnapshot>,
+  disposition: "created" | "active_reused",
+) {
+  return mapBatchAccepted(
+    { disposition, batch: healthBatchWire(batch, state) },
+    202,
   );
 }
 
@@ -461,5 +534,273 @@ export const healthService: HealthService = {
       job,
       health: healthView(app, state, await isAdmin()),
     });
+  },
+
+  async requestBatch() {
+    await requireAdmin();
+    const state = getMockSnapshot();
+    checkCapability(state);
+    const active = state.health_batches.find(
+      (batch) => batch.finished_at === null,
+    );
+    if (active) return acceptedBatch(active, state, "active_reused");
+
+    const latest = [...state.health_batches].sort(
+      (left, right) =>
+        right.created_at.localeCompare(left.created_at) ||
+        right.id.localeCompare(left.id),
+    )[0];
+    if (latest) {
+      const retryAt = future(latest.created_at, 5 * 60_000);
+      if (Date.parse(state.mock_now) < Date.parse(retryAt))
+        throw new ServiceError("RATE_LIMITED", "전체 재검사 대기 시간입니다.", {
+          httpStatus: 429,
+          outcome: "rejected",
+          reasons: ["batch_cooldown"],
+          retryAt,
+          serverTime: state.mock_now,
+        });
+    }
+
+    const apps = state.scenario === "health_batch_empty" ? [] : allApps(state);
+    const now = state.mock_now;
+    const batch: MockHealthBatch = {
+      id: nextMockHealthId(),
+      created_at: now,
+      finished_at: null,
+      targets: [],
+    };
+    for (const app of apps) {
+      const job = app.health.latest_job;
+      if (job && ["queued", "running"].includes(job.status)) {
+        const jobState = job.status === "queued" ? "queued" : "running";
+        batch.targets.push({
+          app_id: app.id,
+          url_version: app.url_version,
+          job_id: job.id,
+          state: jobState,
+          reused: false,
+        });
+        continue;
+      }
+      const coolingDown =
+        app.health.next_check_at !== null &&
+        Date.parse(app.health.next_check_at) > Date.parse(now);
+      if (
+        coolingDown &&
+        app.health.result.checked_at !== null &&
+        app.health.result.fresh_until !== null &&
+        Date.parse(now) < Date.parse(app.health.result.fresh_until)
+      ) {
+        batch.targets.push({
+          app_id: app.id,
+          url_version: app.url_version,
+          job_id: null,
+          state: "result_obtained",
+          reused: true,
+        });
+        continue;
+      }
+      const jobId = nextMockHealthId();
+      batch.targets.push({
+        app_id: app.id,
+        url_version: app.url_version,
+        job_id: jobId,
+        state: "queued",
+        reused: false,
+      });
+      updateMockApp(
+        {
+          ...app,
+          health: {
+            ...app.health,
+            latest_job: {
+              id: jobId,
+              status: "queued",
+              created_at: now,
+              started_at: null,
+              finished_at: null,
+              failure_code: null,
+            },
+          },
+        },
+        undefined,
+        false,
+      );
+    }
+    if (
+      !batch.targets.some(
+        (target) => target.state === "queued" || target.state === "running",
+      )
+    )
+      batch.finished_at = now;
+    saveMockHealthBatch(batch);
+    window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+    return acceptedBatch(batch, getMockSnapshot(), "created");
+  },
+
+  async getBatch(batchId, { signal } = {}) {
+    await requireAdmin();
+    if (signal?.aborted)
+      throw signal.reason ?? new DOMException("Request aborted", "AbortError");
+    if (!/^[0-9a-f-]{36}$/i.test(batchId))
+      throw new ServiceError(
+        "VALIDATION_ERROR",
+        "전체 검사 배치를 확인해 주세요.",
+        { outcome: "rejected" },
+      );
+    let state = getMockSnapshot();
+    const current = state.health_batches.find((batch) => batch.id === batchId);
+    if (!current)
+      throw new ServiceError("NOT_FOUND", "전체 검사 배치를 찾을 수 없어요.", {
+        httpStatus: 404,
+        outcome: "rejected",
+      });
+    if (state.scenario === "health_batch_query_failure")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "전체 검사 진행을 조회하지 못했습니다.",
+        { httpStatus: 503 },
+      );
+    if (current.finished_at !== null) return healthBatch(current, state);
+
+    const now = state.mock_now;
+    const targets = current.targets.map((target) => ({ ...target }));
+    const wasRunning = targets.flatMap((target, index) =>
+      target.state === "running" ? [index] : [],
+    );
+    for (const index of wasRunning) {
+      const target = targets[index];
+      const app = target.app_id ? rawApp(target.app_id) : undefined;
+      const job = app?.health.latest_job;
+      if (
+        !app ||
+        app.url_version !== target.url_version ||
+        job?.id !== target.job_id
+      ) {
+        targets[index] = {
+          ...target,
+          app_id: null,
+          job_id: null,
+          state: "cancelled",
+          reused: false,
+        };
+        continue;
+      }
+      const mixed = state.scenario === "health_batch_mixed";
+      const outcome =
+        mixed && index === 1
+          ? "failed"
+          : mixed && index === 2
+            ? "cancelled"
+            : "result_obtained";
+      const finishedAt = now;
+      const latestJob = {
+        ...job,
+        status:
+          outcome === "result_obtained"
+            ? ("completed" as const)
+            : (outcome as "failed" | "cancelled"),
+        started_at: job.started_at ?? now,
+        finished_at: finishedAt,
+        failure_code: outcome === "failed" ? "worker_unavailable" : null,
+      };
+      if (outcome === "result_obtained") {
+        const resultState = mixed && index === 0 ? "http_error" : "healthy";
+        const measurement = resultMeasures[resultState];
+        updateMockApp(
+          {
+            ...app,
+            health: {
+              ...app.health,
+              result: {
+                state: resultState,
+                checked_at: finishedAt,
+                fresh_until: future(finishedAt, 15 * 60_000),
+              },
+              latest_job: latestJob,
+              next_check_at: future(latestJob.started_at, 60_000),
+            },
+          },
+          {
+            app_id: app.id,
+            url_version: app.url_version,
+            ...measurement,
+          },
+          false,
+        );
+      } else {
+        updateMockApp(
+          {
+            ...app,
+            health: { ...app.health, latest_job: latestJob },
+          },
+          undefined,
+          false,
+        );
+      }
+      targets[index] = { ...target, state: outcome, reused: false };
+    }
+
+    const startLimit = Math.max(1, Math.ceil(targets.length / 3));
+    const queued = targets.flatMap((target, index) =>
+      target.state === "queued" ? [index] : [],
+    );
+    for (const index of queued.slice(0, startLimit)) {
+      const target = targets[index];
+      const app = target.app_id ? rawApp(target.app_id) : undefined;
+      const job = app?.health.latest_job;
+      if (
+        !app ||
+        app.url_version !== target.url_version ||
+        job?.id !== target.job_id
+      ) {
+        targets[index] = {
+          ...target,
+          app_id: null,
+          job_id: null,
+          state: "cancelled",
+          reused: false,
+        };
+        continue;
+      }
+      if (
+        app.health.next_check_at !== null &&
+        Date.parse(app.health.next_check_at) > Date.parse(now)
+      )
+        continue;
+      if (job.status === "queued")
+        updateMockApp(
+          {
+            ...app,
+            health: {
+              ...app.health,
+              latest_job: { ...job, status: "running", started_at: now },
+              next_check_at: future(now, 60_000),
+            },
+          },
+          undefined,
+          false,
+        );
+      targets[index] = { ...target, state: "running" };
+    }
+
+    const updatedBatch: MockHealthBatch = {
+      ...current,
+      targets,
+      finished_at: targets.some(
+        (target) => target.state === "queued" || target.state === "running",
+      )
+        ? null
+        : now,
+    };
+    saveMockHealthBatch(updatedBatch);
+    window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+    state = getMockSnapshot();
+    return healthBatch(
+      state.health_batches.find((batch) => batch.id === batchId) ??
+        updatedBatch,
+      state,
+    );
   },
 };

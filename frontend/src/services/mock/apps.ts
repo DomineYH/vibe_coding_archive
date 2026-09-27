@@ -88,7 +88,7 @@ const capabilities = {
   admin_user_delete: { enabled: false, reasons: ["not_implemented"] },
   health_read: { enabled: true, reasons: [] },
   health_check: { enabled: true, reasons: [] },
-  health_batch: { enabled: false, reasons: ["not_implemented"] },
+  health_batch: { enabled: true, reasons: [] },
   email_collection: { enabled: false, reasons: ["collection_disabled"] },
   phone_collection: { enabled: false, reasons: ["collection_disabled"] },
 } satisfies MockMeta["capabilities"];

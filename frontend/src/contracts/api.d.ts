@@ -490,6 +490,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/health-check-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start or rediscover the current administrator health batch
+         * @description Requires the current administrator session and CSRF proof. A new batch fixes the complete app target set at acceptance; an active batch is reused. A completed batch cannot be replaced until five minutes after its creation. The response contains aggregate progress only.
+         */
+        post: operations["requestAdminHealthBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/health-check-batches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one administrator health batch
+         * @description Requires the current administrator session. This read is safe to repeat and never starts external checks.
+         */
+        get: operations["getAdminHealthBatch"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -686,6 +726,12 @@ export interface components {
             pending_users: number;
             total_apps: number;
             healthy_apps: number;
+            /** Format: date-time */
+            next_health_expiry_at: string | null;
+            /** Format: uuid */
+            active_health_batch_id: string | null;
+            /** Format: uuid */
+            latest_health_batch_id: string | null;
         };
         AdminApp: {
             /** Format: uuid */
@@ -1227,6 +1273,33 @@ export interface components {
             server_time: string;
             job: components["schemas"]["Job"];
             health: components["schemas"]["HealthView"] | components["schemas"]["AdminHealthView"];
+        };
+        HealthBatchCounts: {
+            queued: number;
+            running: number;
+            result_obtained: number;
+            failed: number;
+            cancelled: number;
+            reused: number;
+        };
+        HealthBatch: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            finished_at: string | null;
+            is_finished: boolean;
+            /** Format: date-time */
+            server_time: string;
+            target_count: number;
+            processed_count: number;
+            counts: components["schemas"]["HealthBatchCounts"];
+        };
+        BatchAccepted: {
+            /** @enum {string} */
+            disposition: "created" | "active_reused";
+            batch: components["schemas"]["HealthBatch"];
         };
         AppCard: {
             /** Format: uuid */
@@ -2270,6 +2343,69 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    requestAdminHealthBatch: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A new batch was accepted or the active batch was reused. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchAccepted"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getAdminHealthBatch: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current fixed-target batch counts and status. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthBatch"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

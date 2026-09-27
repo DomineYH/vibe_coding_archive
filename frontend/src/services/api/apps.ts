@@ -27,6 +27,8 @@ export type ApiEndpoint =
   | "GET /apps/{id}/health"
   | "POST /apps/{id}/health-checks"
   | "GET /health-checks/{id}"
+  | "POST /admin/health-check-batches"
+  | "GET /admin/health-check-batches/{id}"
   | "POST /write-operations"
   | "POST /apps"
   | "PATCH /apps/{id}"
@@ -418,6 +420,126 @@ const API_ERROR_TRIPLES = [
     status: 503,
     code: "SERVICE_UNAVAILABLE",
   },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 401,
+    code: "AUTH_REQUIRED",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 403,
+    code: "FORBIDDEN",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 403,
+    code: "CSRF_INVALID",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 403,
+    code: "ORIGIN_REJECTED",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 409,
+    code: "AUTH_STATE_CHANGED",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 409,
+    code: "AUTH_TRANSITION_PENDING",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 429,
+    code: "RATE_LIMITED",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 503,
+    code: "FEATURE_UNAVAILABLE",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 503,
+    code: "DB_BUSY",
+  },
+  {
+    endpoint: "POST /admin/health-check-batches",
+    status: 503,
+    code: "AUTH_BUSY",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 401,
+    code: "AUTH_REQUIRED",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 403,
+    code: "FORBIDDEN",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 404,
+    code: "NOT_FOUND",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 409,
+    code: "AUTH_STATE_CHANGED",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 409,
+    code: "AUTH_TRANSITION_PENDING",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 503,
+    code: "FEATURE_UNAVAILABLE",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 503,
+    code: "DB_BUSY",
+  },
+  {
+    endpoint: "GET /admin/health-check-batches/{id}",
+    status: 503,
+    code: "AUTH_BUSY",
+  },
 ] as const satisfies readonly {
   endpoint: ApiEndpoint;
   status: number;
@@ -614,7 +736,10 @@ function mapApiError(
         ? "아카이브 앱을 찾을 수 없어요."
         : endpoint === "GET /health-checks/{id}" && allowed.code === "NOT_FOUND"
           ? "연결 검사 작업을 찾을 수 없어요."
-          : fields.message;
+          : endpoint === "GET /admin/health-check-batches/{id}" &&
+              allowed.code === "NOT_FOUND"
+            ? "전체 검사 배치를 찾을 수 없어요."
+            : fields.message;
   const resultLookup = endpoint === "GET /write-operations/{key}";
   const retryMayBeUnresolved =
     uncertain &&
