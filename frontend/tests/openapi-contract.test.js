@@ -205,6 +205,45 @@ describe("OpenAPI app detail schema", () => {
     ).toEqual(["unresolved", "succeeded", "rejected"]);
   });
 
+  it("binds account deletion to a current app count and durable result key", () => {
+    const deletion = openapi.paths["/admin/users/{id}"].delete;
+    const issue = openapi.paths["/write-operations"].post;
+    const input = openapi.components.schemas.DeleteAdminUserInput;
+    const operation = openapi.components.schemas.UserDeleteOperation;
+    expect(deletion.parameters).toContainEqual({
+      $ref: "#/components/parameters/IdempotencyKey",
+    });
+    expect(deletion.requestBody.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/DeleteAdminUserInput",
+    );
+    expect(deletion.responses["204"]).toBeDefined();
+    expect(deletion.responses["503"].description).toContain(
+      "DELETION_CONFIRMATION_PENDING",
+    );
+    expect(input.required).toEqual(["expected_app_count"]);
+    expect(input.properties.expected_app_count).toMatchObject({
+      minimum: 0,
+      maximum: Number.MAX_SAFE_INTEGER,
+    });
+    expect(issue.requestBody.content["application/json"].schema.$ref).toBe(
+      "#/components/schemas/CreateWriteOperation",
+    );
+    expect(
+      openapi.components.schemas.CreateWriteOperation.oneOf,
+    ).toContainEqual({
+      $ref: "#/components/schemas/CreateUserDeleteOperation",
+    });
+    expect(
+      openapi.components.schemas.CreateUserDeleteOperation.required,
+    ).toEqual(["kind", "target_id", "expected_app_count"]);
+    expect(operation.properties.state.enum).toEqual([
+      "unresolved",
+      "confirming_deletion",
+      "succeeded",
+      "rejected",
+    ]);
+  });
+
   it("binds app deletion to its issued key and expected app version", () => {
     const deletion = openapi.paths["/apps/{id}"].delete;
     const issue = openapi.paths["/write-operations"].post;

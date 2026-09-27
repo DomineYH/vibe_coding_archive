@@ -481,7 +481,11 @@ export interface paths {
         get: operations["getAdminUser"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete an ordinary member and all owned archive apps
+         * @description Requires current administrator reauthentication. The expected app count is checked when the operation key is issued and again when deletion is committed. A same-count change in app composition does not block the deletion. A 503 DELETION_CONFIRMATION_PENDING means account and app deletion committed; read the existing operation key and never infer failure or issue a new deletion.
+         */
+        delete: operations["deleteAdminUser"];
         options?: never;
         head?: never;
         patch?: never;
@@ -668,6 +672,13 @@ export interface components {
             expected_account_version: number;
             new_password: string;
         };
+        CreateUserDeleteOperation: {
+            /** @constant */
+            kind: "user_delete";
+            /** Format: uuid */
+            target_id: string;
+            expected_app_count: number;
+        };
         CreateAppWriteOperation: {
             /** @constant */
             kind: "app_create";
@@ -688,7 +699,7 @@ export interface components {
             target_id: string;
             expected_version: number;
         };
-        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreatePasswordResetOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"] | components["schemas"]["CreateAppDeleteOperation"];
+        CreateWriteOperation: components["schemas"]["CreateApprovalOperation"] | components["schemas"]["CreatePasswordResetOperation"] | components["schemas"]["CreateUserDeleteOperation"] | components["schemas"]["CreateAppWriteOperation"] | components["schemas"]["CreateAppUpdateOperation"] | components["schemas"]["CreateAppDeleteOperation"];
         DeleteAppInput: {
             expected_version: number;
         };
@@ -732,6 +743,9 @@ export interface components {
             new_password: string;
             expected_account_version: number;
         };
+        DeleteAdminUserInput: {
+            expected_app_count: number;
+        };
         ApprovalOperation: {
             /** Format: uuid */
             key: string;
@@ -769,6 +783,27 @@ export interface components {
             applied_account_version: number | null;
             /** Format: date-time */
             temporary_password_expires_at: string | null;
+            /** Format: date-time */
+            finalized_at: string | null;
+            rejection_code: string | null;
+            /** Format: date-time */
+            server_time: string;
+        };
+        UserDeleteOperation: {
+            /** Format: uuid */
+            key: string;
+            /** @constant */
+            kind: "user_delete";
+            /** Format: uuid */
+            target_id: string;
+            /** Format: date-time */
+            issued_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** @enum {string} */
+            state: "unresolved" | "confirming_deletion" | "succeeded" | "rejected";
+            /** Format: date-time */
+            db_applied_at: string | null;
             /** Format: date-time */
             finalized_at: string | null;
             rejection_code: string | null;
@@ -2135,6 +2170,46 @@ export interface operations {
             503: components["responses"]["ServiceError"];
         };
     };
+    deleteAdminUser: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteAdminUserInput"];
+            };
+        };
+        responses: {
+            /** @description The member and all owned archive apps were deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["ServiceError"];
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            410: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            /** @description Includes DELETION_CONFIRMATION_PENDING after account and app deletion commit. Read the existing operation key; do not delete again or use a new key. */
+            503: components["responses"]["ServiceError"];
+        };
+    };
     createWriteOperation: {
         parameters: {
             query?: never;
@@ -2161,7 +2236,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"] | components["schemas"]["AppWriteOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"] | components["schemas"]["UserDeleteOperation"] | components["schemas"]["AppWriteOperation"];
                 };
             };
             400: components["responses"]["ServiceError"];
@@ -2277,7 +2352,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"] | components["schemas"]["AppWriteOperation"];
+                    "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"] | components["schemas"]["UserDeleteOperation"] | components["schemas"]["AppWriteOperation"];
                 };
             };
             401: components["responses"]["ServiceError"];

@@ -4,6 +4,7 @@ import type {
   AdminUserPage,
   ApprovalOperation,
   PasswordResetOperation,
+  UserDeleteOperation,
 } from "../contracts/mappers";
 import { ServiceError } from "./service-error";
 
@@ -19,6 +20,10 @@ export type CreatePasswordResetOperationInput = {
   targetId: string;
   expectedAccountVersion: number;
   newPassword: string;
+};
+export type CreateUserDeleteOperationInput = {
+  targetId: string;
+  expectedAppCount: number;
 };
 
 export type AdminService = {
@@ -37,6 +42,9 @@ export type AdminService = {
   createPasswordResetOperation(
     input: CreatePasswordResetOperationInput,
   ): Promise<PasswordResetOperation>;
+  createUserDeleteOperation(
+    input: CreateUserDeleteOperationInput,
+  ): Promise<UserDeleteOperation>;
   setApproval(
     id: string,
     approved: boolean,
@@ -53,6 +61,12 @@ export type AdminService = {
   ): Promise<void>;
   getPasswordResetOperation(key: string): Promise<PasswordResetOperation>;
   cancelPasswordResetOperation(key: string): Promise<PasswordResetOperation>;
+  deleteUser(
+    id: string,
+    expectedAppCount: number,
+    operationKey: string,
+  ): Promise<void>;
+  getUserDeleteOperation(key: string): Promise<UserDeleteOperation>;
 };
 
 export function normalizeResetPassword(password: string): string {

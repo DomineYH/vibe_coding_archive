@@ -258,18 +258,34 @@ function isUuid(value) {
   );
 }
 
-function adminResetResumeState(value) {
+function adminReauthResumeState(value) {
   const pendingReset = value?.adminReset;
-  if (!isUuid(pendingReset?.targetId)) return null;
-  const operationKey = pendingReset.operationKey;
-  const expectedAccountVersion = pendingReset.expectedAccountVersion;
+  if (isUuid(pendingReset?.targetId)) {
+    const operationKey = pendingReset.operationKey;
+    const expectedAccountVersion = pendingReset.expectedAccountVersion;
+    return {
+      adminReset: {
+        targetId: pendingReset.targetId,
+        ...(isUuid(operationKey) &&
+        Number.isSafeInteger(expectedAccountVersion) &&
+        expectedAccountVersion >= 1
+          ? { operationKey, expectedAccountVersion }
+          : {}),
+      },
+    };
+  }
+
+  const pendingDelete = value?.adminDelete;
+  if (!isUuid(pendingDelete?.targetId)) return null;
+  const operationKey = pendingDelete.operationKey;
+  const expectedAppCount = pendingDelete.expectedAppCount;
   return {
-    adminReset: {
-      targetId: pendingReset.targetId,
+    adminDelete: {
+      targetId: pendingDelete.targetId,
       ...(isUuid(operationKey) &&
-      Number.isSafeInteger(expectedAccountVersion) &&
-      expectedAccountVersion >= 1
-        ? { operationKey, expectedAccountVersion }
+      Number.isSafeInteger(expectedAppCount) &&
+      expectedAppCount >= 0
+        ? { operationKey, expectedAppCount }
         : {}),
     },
   };
@@ -978,7 +994,7 @@ function AuthRoute({
   onDiscardMissingSession,
 }) {
   const route = readAuthRoute(location.search);
-  const reauthState = adminResetResumeState(location.state);
+  const reauthState = adminReauthResumeState(location.state);
   const authUser =
     auth.status === "ready" && !auth.concealed ? auth.user : null;
   const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
@@ -1412,7 +1428,7 @@ export default function App() {
             )
           );
         confirmed = true;
-        const safeResumeState = adminResetResumeState(resumeState);
+        const safeResumeState = adminReauthResumeState(resumeState);
         navigate(returnTo, {
           replace: true,
           state: safeResumeState,

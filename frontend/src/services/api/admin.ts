@@ -5,6 +5,7 @@ import {
   mapAdminUserPage,
   mapApprovalOperation,
   mapPasswordResetOperation,
+  mapUserDeleteOperation,
 } from "../../contracts/mappers";
 import { authService } from "./auth";
 import type { ServiceErrorCode } from "../service-error";
@@ -23,6 +24,7 @@ type ApiEndpoint =
   | "POST /write-operations"
   | "PATCH /admin/users/{id}/approval"
   | "POST /admin/users/{id}/password-reset"
+  | "DELETE /admin/users/{id}"
   | "GET /write-operations/{key}"
   | "POST /write-operations/{key}/cancel";
 
@@ -61,7 +63,12 @@ const ISSUE_ERRORS: ErrorCodesByStatus = {
     "ORIGIN_REJECTED",
   ],
   404: ["USER_NOT_FOUND"],
-  409: ["USER_STATE_CONFLICT", "AUTH_STATE_CHANGED", "AUTH_TRANSITION_PENDING"],
+  409: [
+    "USER_STATE_CONFLICT",
+    "APP_COUNT_CONFLICT",
+    "AUTH_STATE_CHANGED",
+    "AUTH_TRANSITION_PENDING",
+  ],
   422: ["VALIDATION_ERROR"],
 };
 const EXECUTE_ERRORS: ErrorCodesByStatus = {
@@ -80,6 +87,25 @@ const EXECUTE_ERRORS: ErrorCodesByStatus = {
 const RESET_ERRORS: ErrorCodesByStatus = {
   ...EXECUTE_ERRORS,
   413: ["VALIDATION_ERROR"],
+};
+const USER_DELETE_ERRORS: ErrorCodesByStatus = {
+  ...EXECUTE_ERRORS,
+  409: [
+    "APP_COUNT_CONFLICT",
+    "USER_NOT_FOUND",
+    "OPERATION_KEY_MISMATCH",
+    "OPERATION_ALREADY_RESOLVED",
+    "OPERATION_INVALIDATED",
+    "AUTH_STATE_CHANGED",
+    "AUTH_TRANSITION_PENDING",
+  ],
+  503: [
+    "DELETION_CONFIRMATION_PENDING",
+    "FEATURE_UNAVAILABLE",
+    "SERVICE_UNAVAILABLE",
+    "DB_BUSY",
+    "AUTH_BUSY",
+  ],
 };
 const CANCEL_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
@@ -107,6 +133,7 @@ const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "POST /write-operations": ISSUE_ERRORS,
   "PATCH /admin/users/{id}/approval": EXECUTE_ERRORS,
   "POST /admin/users/{id}/password-reset": RESET_ERRORS,
+  "DELETE /admin/users/{id}": USER_DELETE_ERRORS,
   "GET /write-operations/{key}": KEY_READ_ERRORS,
   "POST /write-operations/{key}/cancel": CANCEL_ERRORS,
 };
@@ -346,6 +373,20 @@ export const adminService: AdminService = {
     );
   },
 
+  async createUserDeleteOperation(input) {
+    return mapUserDeleteOperation(
+      await request("POST /write-operations", "/write-operations", {
+        method: "POST",
+        write: true,
+        body: {
+          kind: "user_delete",
+          target_id: input.targetId,
+          expected_app_count: input.expectedAppCount,
+        },
+      }),
+    );
+  },
+
   async setApproval(id, approved, expectedAccountVersion, operationKey) {
     return mapWriteResult(
       mapAdminUser,
@@ -386,6 +427,30 @@ export const adminService: AdminService = {
           expected_account_version: expectedAccountVersion,
         },
       },
+    );
+  },
+
+  async deleteUser(id, expectedAppCount, operationKey) {
+    await request(
+      "DELETE /admin/users/{id}",
+      `/admin/users/${encodeURIComponent(id)}`,
+      {
+        method: "DELETE",
+        write: true,
+        uncertain: true,
+        noContent: true,
+        idempotencyKey: operationKey,
+        body: { expected_app_count: expectedAppCount },
+      },
+    );
+  },
+
+  async getUserDeleteOperation(key) {
+    return mapUserDeleteOperation(
+      await request(
+        "GET /write-operations/{key}",
+        `/write-operations/${encodeURIComponent(key)}`,
+      ),
     );
   },
 

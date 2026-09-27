@@ -23,6 +23,7 @@ import {
   getMockAccounts,
   getMockSnapshot,
   MOCK_WRITE_OPERATIONS_RESET_EVENT,
+  MOCK_ACCOUNT_DELETED_EVENT,
   updateMockApp,
 } from "./state";
 
@@ -56,6 +57,13 @@ const appWriteOperations = new Map<string, MockAppWriteOperation>();
 window.addEventListener(MOCK_WRITE_OPERATIONS_RESET_EVENT, () =>
   appWriteOperations.clear(),
 );
+window.addEventListener(MOCK_ACCOUNT_DELETED_EVENT, (event) => {
+  const accountId = (event as CustomEvent<{ accountId: string }>).detail
+    .accountId;
+  for (const [key, operation] of appWriteOperations) {
+    if (operation.actorId === accountId) appWriteOperations.delete(key);
+  }
+});
 const longCopy = Array.from(
   { length: 32 },
   (_, index) =>

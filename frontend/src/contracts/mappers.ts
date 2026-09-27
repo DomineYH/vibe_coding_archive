@@ -39,6 +39,7 @@ type WireAdminAppPage = Wire["AdminAppPage"];
 type WireAdminUserPage = Wire["AdminUserPage"];
 type WireApprovalOperation = Wire["ApprovalOperation"];
 type WirePasswordResetOperation = Wire["PasswordResetOperation"];
+type WireUserDeleteOperation = Wire["UserDeleteOperation"];
 type WireAppWriteOperation = Wire["AppWriteOperation"];
 
 export type Theme = Wire["Theme"];
@@ -273,6 +274,18 @@ export type PasswordResetOperation = {
   state: "unresolved" | "succeeded" | "rejected";
   appliedAccountVersion: number | null;
   temporaryPasswordExpiresAt: string | null;
+  finalizedAt: string | null;
+  rejectionCode: string | null;
+  serverTime: string;
+};
+export type UserDeleteOperation = {
+  key: string;
+  kind: "user_delete";
+  targetId: string;
+  issuedAt: string;
+  expiresAt: string;
+  state: "unresolved" | "confirming_deletion" | "succeeded" | "rejected";
+  dbAppliedAt: string | null;
   finalizedAt: string | null;
   rejectionCode: string | null;
   serverTime: string;
@@ -1139,6 +1152,69 @@ export function mapPasswordResetOperation(
     state,
     appliedAccountVersion,
     temporaryPasswordExpiresAt,
+    finalizedAt,
+    rejectionCode,
+    serverTime: dateTime(item.server_time),
+  };
+}
+
+export function mapUserDeleteOperation(value: unknown): UserDeleteOperation {
+  const item = record(value) as unknown as Partial<WireUserDeleteOperation>;
+  if (
+    !hasOnlyKeys(item, [
+      "key",
+      "kind",
+      "target_id",
+      "issued_at",
+      "expires_at",
+      "state",
+      "db_applied_at",
+      "finalized_at",
+      "rejection_code",
+      "server_time",
+    ]) ||
+    item.kind !== "user_delete" ||
+    !["unresolved", "confirming_deletion", "succeeded", "rejected"].includes(
+      String(item.state),
+    )
+  )
+    throw contractError();
+
+  const key = nonEmpty(item.key);
+  const targetId = nonEmpty(item.target_id);
+  if (!UUID.test(key) || !UUID.test(targetId)) throw contractError();
+  const issuedAt = dateTime(item.issued_at);
+  const expiresAt = dateTime(item.expires_at);
+  const state = item.state as UserDeleteOperation["state"];
+  const dbAppliedAt = nullableDateTime(item.db_applied_at);
+  const finalizedAt = nullableDateTime(item.finalized_at);
+  const rejectionCode = nullableString(item.rejection_code);
+  if (
+    Date.parse(expiresAt) <= Date.parse(issuedAt) ||
+    (state === "unresolved" &&
+      (dbAppliedAt !== null ||
+        finalizedAt !== null ||
+        rejectionCode !== null)) ||
+    (state === "confirming_deletion" &&
+      (dbAppliedAt === null ||
+        finalizedAt !== null ||
+        rejectionCode !== null)) ||
+    (state === "succeeded" &&
+      (dbAppliedAt === null ||
+        finalizedAt === null ||
+        rejectionCode !== null)) ||
+    (state === "rejected" &&
+      (dbAppliedAt !== null || finalizedAt === null || !rejectionCode))
+  )
+    throw contractError();
+  return {
+    key,
+    kind: "user_delete",
+    targetId,
+    issuedAt,
+    expiresAt,
+    state,
+    dbAppliedAt,
     finalizedAt,
     rejectionCode,
     serverTime: dateTime(item.server_time),
