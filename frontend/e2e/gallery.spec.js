@@ -41,13 +41,37 @@ test("public gallery opens a detail route and supports refresh and browser histo
     await expect(action).toBeFocused();
   }
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toContainText(
-    "실제 연결 검사는 실행하지 않았어요",
-  );
+  const healthPanel = page.locator("aside section").filter({
+    has: page.getByRole("heading", { name: "연결 상태", exact: true }),
+  });
+  await expect(
+    healthPanel.getByRole("status").filter({
+      hasText: "검사 작업이 완료됐어요",
+    }),
+  ).toBeVisible();
+  const savedJobId = await page.evaluate(() => {
+    const state = JSON.parse(localStorage.getItem("eduvibe-archive-mock-v1"));
+    return state.apps.find((item) => item.id.endsWith("000000000001")).health
+      .latest_job.id;
+  });
   await page.reload();
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "연결 다시 확인" }),
+  ).toBeEnabled();
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const state = JSON.parse(
+          localStorage.getItem("eduvibe-archive-mock-v1"),
+        );
+        return state.apps.find((item) => item.id.endsWith("000000000001"))
+          .health.latest_job.id;
+      }),
+    )
+    .toBe(savedJobId);
   await page.goBack();
   await expect(page.locator("a.card-r")).toHaveCount(16);
 });

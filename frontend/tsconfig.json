@@ -21,6 +21,7 @@
     "paths": {
       "@services/apps": ["src/services/mock/apps.ts"],
       "@services/admin": ["src/services/mock/admin.ts"],
+      "@services/health": ["src/services/mock/health.ts"],
       "@services/mock-reset": ["src/services/mock/reset-page.jsx"]
     }
   },

@@ -37,7 +37,7 @@ const adminApp = {
   health: {
     state: "healthy",
     checked_at: "2026-09-22T00:12:00.000Z",
-    fresh_until: null,
+    fresh_until: "2026-09-22T00:27:00.000Z",
   },
 };
 const adminPrivateApp = {
@@ -125,7 +125,7 @@ describe("admin contract mappers", () => {
           health: {
             state: "healthy",
             checked_at: "2026-09-22T00:12:00.000Z",
-            fresh_until: null,
+            fresh_until: "2026-09-22T00:27:00.000Z",
           },
         },
         {
@@ -142,7 +142,7 @@ describe("admin contract mappers", () => {
           health: {
             state: "healthy",
             checked_at: "2026-09-22T00:12:00.000Z",
-            fresh_until: null,
+            fresh_until: "2026-09-22T00:27:00.000Z",
           },
         },
       ],

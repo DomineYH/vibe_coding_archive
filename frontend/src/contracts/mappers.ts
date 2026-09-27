@@ -56,10 +56,32 @@ export type Meta = {
   initialPendingDays: number;
 };
 export type HealthResult = WireHealthResult;
+export type AdminHealthResult = Wire["AdminHealthResult"];
 export type HealthView = {
   result: HealthResult;
   latestJob: WireHealth["latest_job"];
   nextCheckAt: string | null;
+};
+export type AdminHealthView = {
+  result: AdminHealthResult;
+  latestJob: WireHealth["latest_job"];
+  nextCheckAt: string | null;
+};
+export type HealthSnapshot = {
+  appId: string;
+  urlVersion: number;
+  serverTime: string;
+  health: HealthView | AdminHealthView;
+};
+export type CheckAccepted = HealthSnapshot & {
+  disposition: "created" | "active_reused" | "result_reused";
+};
+export type HealthJobResponse = {
+  appId: string;
+  urlVersion: number;
+  serverTime: string;
+  job: Wire["Job"];
+  health: HealthView | AdminHealthView;
 };
 export type AppCard = {
   id: string;
@@ -865,6 +887,14 @@ function hasOnlyKeys(item: Record<string, unknown>, keys: readonly string[]) {
   return Object.keys(item).every((key) => keys.includes(key));
 }
 
+function hasExactKeys(item: Record<string, unknown>, keys: readonly string[]) {
+  return (
+    Object.keys(item).length === keys.length &&
+    hasOnlyKeys(item, keys) &&
+    keys.every((key) => Object.hasOwn(item, key))
+  );
+}
+
 export function mapAdminUser(value: unknown): AdminUser {
   const item = record(value) as unknown as Partial<WireAdminUser>;
   if (
@@ -1383,23 +1413,39 @@ export function mapMeta(value: unknown): Meta {
   };
 }
 
+function mapJob(value: unknown): Wire["Job"] {
+  const job = record(value);
+  if (
+    !hasExactKeys(job, [
+      "id",
+      "status",
+      "created_at",
+      "started_at",
+      "finished_at",
+      "failure_code",
+    ]) ||
+    !["queued", "running", "completed", "failed", "cancelled"].includes(
+      string(job.status),
+    ) ||
+    !UUID.test(nonEmpty(job.id))
+  )
+    throw contractError();
+  dateTime(job.created_at);
+  nullableDateTime(job.started_at);
+  nullableDateTime(job.finished_at);
+  nullableString(job.failure_code);
+  return job as unknown as Wire["Job"];
+}
+
 function mapHealth(value: unknown): HealthView {
   const item = record(value);
+  if (!hasExactKeys(item, ["result", "latest_job", "next_check_at"]))
+    throw contractError();
   const result = record(item.result);
   const latestJob = item.latest_job;
-  if (latestJob !== null) {
-    const job = record(latestJob);
-    const statuses = ["queued", "running", "completed", "failed", "cancelled"];
-    if (!statuses.includes(string(job.status))) throw contractError();
-    if (!UUID.test(nonEmpty(job.id))) throw contractError();
-    dateTime(job.created_at);
-    nullableDateTime(job.started_at);
-    nullableDateTime(job.finished_at);
-    nullableString(job.failure_code);
-  }
   return {
     result: mapHealthResult(result),
-    latestJob: latestJob as WireHealth["latest_job"],
+    latestJob: latestJob === null ? null : mapJob(latestJob),
     nextCheckAt: nullableDateTime(item.next_check_at),
   };
 }
@@ -1407,14 +1453,184 @@ function mapHealth(value: unknown): HealthView {
 function mapHealthResult(value: unknown): HealthResult {
   const result = record(value);
   if (
-    !hasOnlyKeys(result, ["state", "checked_at", "fresh_until"]) ||
+    !hasExactKeys(result, ["state", "checked_at", "fresh_until"]) ||
     !HEALTH_STATES.includes(result.state as (typeof HEALTH_STATES)[number])
+  )
+    throw contractError();
+  const checkedAt = nullableDateTime(result.checked_at);
+  const freshUntil = nullableDateTime(result.fresh_until);
+  if (
+    (result.state === "unchecked") !== (checkedAt === null) ||
+    (checkedAt === null) !== (freshUntil === null) ||
+    (checkedAt !== null &&
+      Date.parse(freshUntil!) - Date.parse(checkedAt) !== 15 * 60 * 1000)
   )
     throw contractError();
   return {
     state: result.state as WireHealthResult["state"],
-    checked_at: nullableDateTime(result.checked_at),
-    fresh_until: nullableDateTime(result.fresh_until),
+    checked_at: checkedAt,
+    fresh_until: freshUntil,
+  };
+}
+
+function mapAdminHealthResult(value: unknown): AdminHealthResult {
+  const result = record(value);
+  if (
+    !hasExactKeys(result, [
+      "state",
+      "checked_at",
+      "fresh_until",
+      "http_status",
+      "response_ms",
+      "error_kind",
+      "error_stage",
+    ]) ||
+    !HEALTH_STATES.includes(result.state as (typeof HEALTH_STATES)[number])
+  )
+    throw contractError();
+  const base = mapHealthResult({
+    state: result.state,
+    checked_at: result.checked_at,
+    fresh_until: result.fresh_until,
+  });
+  const httpStatus = result.http_status;
+  const responseMs = result.response_ms;
+  const errorKind = nullableString(result.error_kind);
+  const errorStage = nullableString(result.error_stage);
+  if (
+    (httpStatus !== null &&
+      (typeof httpStatus !== "number" ||
+        !Number.isInteger(httpStatus) ||
+        httpStatus < 100 ||
+        httpStatus > 599)) ||
+    (responseMs !== null &&
+      (typeof responseMs !== "number" ||
+        !Number.isFinite(responseMs) ||
+        responseMs < 0)) ||
+    (errorKind !== null && !/^[a-z][a-z0-9_]{0,63}$/u.test(errorKind)) ||
+    (errorStage !== null && !/^[a-z][a-z0-9_]{0,63}$/u.test(errorStage)) ||
+    (httpStatus === null) !== (responseMs === null) ||
+    (base.state === "unchecked" &&
+      (httpStatus !== null || errorKind !== null || errorStage !== null)) ||
+    (["healthy", "http_error"].includes(base.state) &&
+      httpStatus !== null &&
+      ((base.state === "healthy" && (httpStatus < 200 || httpStatus >= 300)) ||
+        (base.state === "http_error" &&
+          httpStatus >= 200 &&
+          httpStatus < 300))) ||
+    (["timeout", "network_error", "blocked"].includes(base.state) &&
+      httpStatus !== null) ||
+    (base.state === "redirect_error" &&
+      httpStatus !== null &&
+      (httpStatus < 300 || httpStatus >= 400))
+  )
+    throw contractError();
+  return {
+    ...base,
+    http_status: httpStatus as number | null,
+    response_ms: responseMs as number | null,
+    error_kind: errorKind,
+    error_stage: errorStage,
+  };
+}
+
+function mapHealthSnapshotView(value: unknown): HealthView | AdminHealthView {
+  const item = record(value);
+  if (!hasExactKeys(item, ["result", "latest_job", "next_check_at"]))
+    throw contractError();
+  const result = record(item.result);
+  const latestJob = item.latest_job;
+  return {
+    result: hasExactKeys(result, [
+      "state",
+      "checked_at",
+      "fresh_until",
+      "http_status",
+      "response_ms",
+      "error_kind",
+      "error_stage",
+    ])
+      ? mapAdminHealthResult(result)
+      : mapHealthResult(result),
+    latestJob: latestJob === null ? null : mapJob(latestJob),
+    nextCheckAt: nullableDateTime(item.next_check_at),
+  } as HealthView | AdminHealthView;
+}
+
+export function mapHealthSnapshot(value: unknown): HealthSnapshot {
+  const item = record(value);
+  if (!hasExactKeys(item, ["app_id", "url_version", "server_time", "health"]))
+    throw contractError();
+  const appId = nonEmpty(item.app_id);
+  if (!UUID.test(appId)) throw contractError();
+  return {
+    appId,
+    urlVersion: integer(item.url_version, 1),
+    serverTime: dateTime(item.server_time),
+    health: mapHealthSnapshotView(item.health),
+  };
+}
+
+export function mapCheckAccepted(
+  value: unknown,
+  httpStatus?: number,
+): CheckAccepted {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, [
+      "app_id",
+      "url_version",
+      "server_time",
+      "health",
+      "disposition",
+    ])
+  )
+    throw contractError();
+  const disposition = item.disposition;
+  if (
+    !["created", "active_reused", "result_reused"].includes(
+      string(disposition),
+    ) ||
+    (httpStatus !== undefined &&
+      httpStatus !== (disposition === "result_reused" ? 200 : 202))
+  )
+    throw contractError();
+  const snapshot = mapHealthSnapshot({
+    app_id: item.app_id,
+    url_version: item.url_version,
+    server_time: item.server_time,
+    health: item.health,
+  });
+  if (
+    (disposition === "result_reused" &&
+      snapshot.health.result.state === "unchecked") ||
+    (disposition !== "result_reused" &&
+      !["queued", "running"].includes(snapshot.health.latestJob?.status ?? ""))
+  )
+    throw contractError();
+  return { ...snapshot, disposition } as CheckAccepted;
+}
+
+export function mapHealthJobResponse(value: unknown): HealthJobResponse {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, [
+      "app_id",
+      "url_version",
+      "server_time",
+      "job",
+      "health",
+    ])
+  )
+    throw contractError();
+  const appId = nonEmpty(item.app_id);
+  if (!UUID.test(appId)) throw contractError();
+  return {
+    appId,
+    urlVersion: integer(item.url_version, 1),
+    serverTime: dateTime(item.server_time),
+    job: mapJob(item.job),
+    health: mapHealthSnapshotView(item.health),
   };
 }
 

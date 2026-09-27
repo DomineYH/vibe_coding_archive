@@ -70,7 +70,7 @@ const card = {
     result: {
       state: "healthy",
       checked_at: "2026-09-22T00:12:00.000Z",
-      fresh_until: null,
+      fresh_until: "2026-09-22T00:27:00.000Z",
     },
     latest_job: null,
     next_check_at: null,

@@ -14,9 +14,44 @@ import {
   Chip,
   DeviceScreen,
   EmptyState,
-  StatusBadge,
 } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
+
+const healthLabels = {
+  unchecked: "미검사",
+  healthy: "정상",
+  http_error: "HTTP 오류",
+  timeout: "응답 시간 초과",
+  network_error: "네트워크 오류",
+  blocked: "검사 제한",
+  redirect_error: "리다이렉트 오류",
+};
+
+function HealthResultBadge({ state, stale }) {
+  const label = stale
+    ? state === "healthy"
+      ? "이전 정상"
+      : state === "blocked"
+        ? "이전 검사 제한"
+        : "이전 오류"
+    : (healthLabels[state] ?? "미검사");
+  const tone =
+    state === "healthy"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : state === "unchecked"
+        ? "border-neutral-200 bg-neutral-100 text-neutral-600"
+        : state === "blocked"
+          ? "border-amber-200 bg-amber-50 text-amber-800"
+          : "border-red-200 bg-red-50 text-red-700";
+  return (
+    <span
+      aria-label={`연결 결과: ${label}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11.5px] font-semibold ${tone}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 function CopyButton({ text }) {
   const [result, setResult] = useState(null);
@@ -273,6 +308,20 @@ function StateView({
 
 export function AppDetailView({
   app,
+  health,
+  healthServerTime,
+  healthStale = false,
+  isAdmin = false,
+  canCheckHealth = false,
+  checkingHealth = false,
+  checkHealthError,
+  checkFeedback = "",
+  checkCompleted = false,
+  onCheckHealth,
+  healthReadError,
+  onRetryHealthRead,
+  jobReadError,
+  onRetryJobRead,
   meta,
   loading,
   error,
@@ -291,7 +340,6 @@ export function AppDetailView({
   fromGallery = false,
   fromAdmin = false,
 }) {
-  const [notice, setNotice] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const mainRef = useRef(null);
   const deleteTriggerRef = useRef(null);
@@ -355,10 +403,14 @@ export function AppDetailView({
   if (!app || !meta) return null;
   const theme = meta.themes.find((item) => item.id === app.themeId);
   if (!theme) return null;
+  const currentHealth = health ?? app.health;
+  const result = currentHealth.result;
   const checkedAt = formatCheckedAt(
-    app.health.result.checked_at,
-    app.serverTime,
+    result.checked_at,
+    healthServerTime ?? app.serverTime,
   );
+  const job = currentHealth.latestJob;
+  const activeJob = job && ["queued", "running"].includes(job.status);
   const creationDate = formatDate(app.createdAt);
 
   return (
@@ -596,44 +648,155 @@ export function AppDetailView({
               <h2 className="text-[14px] font-bold text-neutral-900">
                 연결 상태
               </h2>
-              <StatusBadge state={app.health.result.state} />
+              <HealthResultBadge state={result.state} stale={healthStale} />
             </div>
             <dl className="grid gap-2 text-[13px]">
               <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
-                <dt className="text-neutral-500">마지막 검사</dt>
+                <dt className="text-neutral-500">결과 구분</dt>
+                <dd className="font-semibold text-neutral-800">
+                  {healthLabels[result.state] ?? "미검사"}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                <dt className="text-neutral-500">마지막 판정 시각 (KST)</dt>
                 <dd className="font-semibold text-neutral-800">{checkedAt}</dd>
               </div>
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                <dt className="text-neutral-500">결과 신선도</dt>
+                <dd className="font-semibold text-neutral-800">
+                  {result.state === "unchecked"
+                    ? "검사 기록 없음"
+                    : healthStale
+                      ? "오래된 결과"
+                      : "15분 이내"}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                <dt className="text-neutral-500">다음 검사 가능 시각</dt>
+                <dd className="font-semibold text-neutral-800">
+                  {currentHealth.nextCheckAt
+                    ? formatCheckedAt(
+                        currentHealth.nextCheckAt,
+                        healthServerTime ?? app.serverTime,
+                      )
+                    : "—"}
+                </dd>
+              </div>
             </dl>
-            {app.health.result.state !== "healthy" &&
-            app.health.result.state !== "unchecked" ? (
-              <div className="mt-3 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3.5">
-                <div>
-                  <div className="text-[13px] font-bold text-red-700">
-                    지금은 열 수 없는 앱이에요
-                  </div>
-                  <p className="mt-1 break-keep text-[12px] leading-relaxed text-red-600/90">
-                    앱 주소가 응답하지 않습니다. 잠시 후 다시 시도해 보시고,
-                    계속 열리지 않으면 등록한 선생님이나 관리자에게 알려 주세요.
-                  </p>
+            {isAdmin ? (
+              <dl className="mt-2 grid gap-2 text-[12px]">
+                <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                  <dt className="text-neutral-500">HTTP 상태 코드</dt>
+                  <dd className="font-mono font-semibold text-neutral-800">
+                    {result.http_status ?? "—"}
+                  </dd>
                 </div>
+                <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                  <dt className="text-neutral-500">응답 시간</dt>
+                  <dd className="font-mono font-semibold text-neutral-800">
+                    {result.response_ms === null ||
+                    result.response_ms === undefined
+                      ? "—"
+                      : `${result.response_ms} ms`}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between rounded-xl bg-neutral-50 px-3.5 py-2.5">
+                  <dt className="text-neutral-500">오류 종류 / 단계</dt>
+                  <dd className="font-mono text-right font-semibold text-neutral-800">
+                    {result.error_kind || "—"} / {result.error_stage || "—"}
+                  </dd>
+                </div>
+              </dl>
+            ) : null}
+            {__DATA_MODE__ === "mock" ? (
+              <p className="mt-3 break-keep text-[11.5px] leading-relaxed text-neutral-500">
+                합성 시연 결과입니다. 외부 사이트로 요청을 보내지 않았습니다.
+              </p>
+            ) : null}
+            {healthReadError ? (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-900">
+                <p role="alert">
+                  최신 연결 결과를 읽지 못했어요. {healthReadError.message}
+                </p>
+                <button
+                  type="button"
+                  onClick={onRetryHealthRead}
+                  className="mt-2 rounded-lg px-2 py-1 font-semibold underline underline-offset-2"
+                >
+                  결과 다시 조회
+                </button>
               </div>
             ) : null}
-            <Btn
-              variant="soft"
-              className="mt-4 w-full"
-              onClick={() =>
-                setNotice(
-                  "이 화면은 저장된 시연 결과를 보여 줍니다. 실제 연결 검사는 실행하지 않았어요.",
-                )
-              }
-            >
-              <RefreshCw size={14} aria-hidden="true" />
-              <span>연결 다시 확인</span>
-            </Btn>
-            {notice ? (
-              <p className="mt-2 text-[12px] text-neutral-500" role="status">
-                {notice}
+            {job?.status === "queued" || job?.status === "running" ? (
+              <p
+                className="mt-3 rounded-xl bg-blue-50 px-3.5 py-2.5 text-[12px] font-semibold text-blue-800"
+                role="status"
+              >
+                {job.status === "queued"
+                  ? "검사 작업 대기 중"
+                  : "연결 검사 진행 중"}
               </p>
+            ) : job?.status === "failed" || job?.status === "cancelled" ? (
+              <p
+                className="mt-3 rounded-xl bg-amber-50 px-3.5 py-2.5 text-[12px] leading-relaxed text-amber-900"
+                role="alert"
+              >
+                {job.status === "failed"
+                  ? "검사 작업에 실패했어요. 마지막 유효 연결 결과는 유지됩니다."
+                  : "검사 작업이 취소됐어요. 마지막 유효 연결 결과는 유지됩니다."}
+              </p>
+            ) : job?.status === "completed" && checkCompleted ? (
+              <p className="mt-3 text-[12px] text-neutral-600" role="status">
+                검사 작업이 완료됐어요. 연결 상태는 위 결과 구분을 확인해
+                주세요.
+              </p>
+            ) : null}
+            {jobReadError ? (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-[12px] text-red-800">
+                <p role="alert">
+                  진행 상태를 확인하지 못했어요. 자동 조회를 멈췄습니다.
+                </p>
+                <button
+                  type="button"
+                  onClick={onRetryJobRead}
+                  className="mt-2 rounded-lg px-2 py-1 font-semibold underline underline-offset-2"
+                >
+                  진행 다시 조회
+                </button>
+              </div>
+            ) : null}
+            {checkFeedback ? (
+              <p className="mt-3 text-[12px] text-neutral-600" role="status">
+                {checkFeedback}
+              </p>
+            ) : null}
+            {checkHealthError ? (
+              <p
+                className="mt-3 text-[12px] leading-relaxed text-red-700"
+                role="alert"
+              >
+                {checkHealthError.message}
+                {checkHealthError.retryAt
+                  ? ` 다시 요청할 수 있는 시각: ${formatCheckedAt(checkHealthError.retryAt, checkHealthError.serverTime ?? healthServerTime ?? app.serverTime)}.`
+                  : ""}
+              </p>
+            ) : null}
+            {canCheckHealth ? (
+              <Btn
+                variant="soft"
+                className="mt-4 w-full"
+                disabled={checkingHealth || Boolean(activeJob)}
+                onClick={onCheckHealth}
+              >
+                <RefreshCw size={14} aria-hidden="true" />
+                <span>
+                  {checkingHealth
+                    ? "검사 요청 중…"
+                    : activeJob
+                      ? "검사 진행 중"
+                      : "연결 다시 확인"}
+                </span>
+              </Btn>
             ) : null}
           </section>
           <div className="px-1 text-[12px] leading-relaxed text-neutral-400">

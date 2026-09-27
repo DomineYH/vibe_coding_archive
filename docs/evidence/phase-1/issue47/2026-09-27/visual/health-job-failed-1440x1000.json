@@ -1,0 +1,19 @@
+{
+  "state": "health-job-failed",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": null,
+  "screenshot": "health-job-failed-1440x1000.png",
+  "width": 1440,
+  "height": 1634,
+  "comparisonStatus": "product_only",
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

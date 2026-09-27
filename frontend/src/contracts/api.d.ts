@@ -430,6 +430,66 @@ export interface paths {
         patch: operations["updateApp"];
         trace?: never;
     };
+    "/apps/{id}/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the current connection result and latest check job
+         * @description Requires current permission to read the app. This read never starts a new external check. Administrator-only measurement fields are omitted for other viewers.
+         */
+        get: operations["getAppHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/apps/{id}/health-checks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request an individual connection check
+         * @description Requires a current session and CSRF proof. A public app may be checked from an anonymous session; a private app requires current read access. This endpoint accepts no arbitrary URL. New and active-reused jobs use 202; completed-result reuse uses 200. No browser request is sent to the external site.
+         */
+        post: operations["requestAppHealthCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/health-checks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one check job and its current app result
+         * @description Requires current permission to read the associated app. This read never starts a new external check. The requested job and latest app result remain separate values.
+         */
+        get: operations["getHealthCheckJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -1105,8 +1165,25 @@ export interface components {
             /** Format: date-time */
             fresh_until: string | null;
         };
+        AdminHealthResult: {
+            state: components["schemas"]["HealthState"];
+            /** Format: date-time */
+            checked_at: string | null;
+            /** Format: date-time */
+            fresh_until: string | null;
+            http_status: number | null;
+            response_ms: number | null;
+            error_kind: string | null;
+            error_stage: string | null;
+        };
         HealthView: {
             result: components["schemas"]["HealthResult"];
+            latest_job: null | components["schemas"]["Job"];
+            /** Format: date-time */
+            next_check_at: string | null;
+        };
+        AdminHealthView: {
+            result: components["schemas"]["AdminHealthResult"];
             latest_job: null | components["schemas"]["Job"];
             /** Format: date-time */
             next_check_at: string | null;
@@ -1123,6 +1200,33 @@ export interface components {
             /** Format: date-time */
             finished_at: string | null;
             failure_code: string | null;
+        };
+        HealthSnapshot: {
+            /** Format: uuid */
+            app_id: string;
+            url_version: number;
+            /** Format: date-time */
+            server_time: string;
+            health: components["schemas"]["HealthView"] | components["schemas"]["AdminHealthView"];
+        };
+        CheckAccepted: {
+            /** Format: uuid */
+            app_id: string;
+            url_version: number;
+            /** Format: date-time */
+            server_time: string;
+            health: components["schemas"]["HealthView"] | components["schemas"]["AdminHealthView"];
+            /** @enum {string} */
+            disposition: "created" | "active_reused" | "result_reused";
+        };
+        HealthJobResponse: {
+            /** Format: uuid */
+            app_id: string;
+            url_version: number;
+            /** Format: date-time */
+            server_time: string;
+            job: components["schemas"]["Job"];
+            health: components["schemas"]["HealthView"] | components["schemas"]["AdminHealthView"];
         };
         AppCard: {
             /** Format: uuid */
@@ -2071,6 +2175,101 @@ export interface operations {
             410: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getAppHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current result, freshness, and latest job. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthSnapshot"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["NotFound"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    requestAppHealthCheck: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A result for the current URL was reused; no new check started. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckAccepted"];
+                };
+            };
+            /** @description A new job was accepted or an active job was reused. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckAccepted"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    getHealthCheckJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The requested job and current health snapshot. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthJobResponse"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            404: components["responses"]["NotFound"];
             503: components["responses"]["ServiceError"];
         };
     };

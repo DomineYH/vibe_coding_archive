@@ -124,6 +124,27 @@ export default function MockResetPage() {
           <option value="app_create_unknown">앱 저장 응답 유실</option>
           <option value="app_create_unresolved">앱 저장 결과 미확정</option>
           <option value="app_create_delayed">앱 저장 지연</option>
+          <option value="health_result_healthy">연결 검사 정상 결과</option>
+          <option value="health_result_http_error">연결 검사 HTTP 오류</option>
+          <option value="health_result_timeout">연결 검사 시간 초과</option>
+          <option value="health_result_network_error">
+            연결 검사 네트워크 오류
+          </option>
+          <option value="health_result_blocked">연결 검사 제한</option>
+          <option value="health_result_redirect_error">
+            연결 검사 리다이렉트 오류
+          </option>
+          <option value="health_job_queued">연결 검사 대기 작업</option>
+          <option value="health_job_running">연결 검사 진행 중 작업</option>
+          <option value="health_job_failed">연결 검사 작업 실패</option>
+          <option value="health_job_cancelled">연결 검사 작업 취소</option>
+          <option value="health_job_query_failure">연결 검사 조회 실패</option>
+          <option value="health_check_unavailable">
+            연결 검사 기능 사용 불가
+          </option>
+          <option value="health_actor_rate_limit">연결 검사 사용자 제한</option>
+          <option value="health_app_cooldown">연결 검사 앱 대기</option>
+          <option value="health_late_response">연결 검사 늦은 응답</option>
           <option value="admin_delete_unresolved">회원 삭제 결과 미확정</option>
           <option value="admin_delete_unknown">회원 삭제 응답 유실</option>
           <option value="admin_delete_delayed">회원 삭제 지연</option>

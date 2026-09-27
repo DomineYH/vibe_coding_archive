@@ -60,8 +60,17 @@ const addedStates = [
   "gallery-query-overflow",
   "gallery-duplicate-continue",
   "gallery-next-page-error",
+  "health-result-error",
+  "health-job-failed",
+  "health-query-error",
+  "health-stale",
 ];
 const states = ["gallery", "detail", "detail-copy-done", ...addedStates];
+const dimensionMismatchStates = new Set([
+  "detail",
+  "detail-copy-done",
+  "detail-component",
+]);
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
   let fontPath;
@@ -146,6 +155,7 @@ async function compareInPage(page, actual, expected, region = null) {
         width: actualImage.width,
         height: actualImage.height,
         comparisonStatus: expectedImage ? "compared" : "product_only",
+        pixelComparison: region ? "region" : "full",
         expectedWidth: expectedImage?.width ?? null,
         expectedHeight: expectedImage?.height ?? null,
         differentPixels: null,
@@ -155,12 +165,12 @@ async function compareInPage(page, actual, expected, region = null) {
         comparedRegion: region,
       };
       if (!expectedImage) return report;
-      if (
+      const dimensionsDiffer =
         actualImage.width !== expectedImage.width ||
-        actualImage.height !== expectedImage.height
-      ) {
+        actualImage.height !== expectedImage.height;
+      if (dimensionsDiffer) {
         report.comparisonStatus = "dimensions_mismatch";
-        return report;
+        if (!region || actualImage.width !== expectedImage.width) return report;
       }
       const canvas = document.createElement("canvas");
       canvas.width = actualImage.width;
@@ -188,6 +198,14 @@ async function compareInPage(page, actual, expected, region = null) {
       const bottomEdge = region
         ? Math.ceil(region.top + region.height)
         : actualImage.height;
+      if (
+        region &&
+        (leftEdge < 0 ||
+          topEdge < 0 ||
+          rightEdge > Math.min(actualImage.width, expectedImage.width) ||
+          bottomEdge > Math.min(actualImage.height, expectedImage.height))
+      )
+        throw new Error("Visual comparison region exceeds a captured image");
       for (let y = topEdge; y < bottomEdge; y += 1) {
         for (let x = leftEdge; x < rightEdge; x += 1) {
           const offset = (y * actualImage.width + x) * 4;
@@ -256,6 +274,22 @@ async function captureAndCompare(
     "gallery-loading": { scenario: "list_delayed", apps: [] },
     "gallery-failure": { scenario: "list_failure", apps: [] },
     "corrupt-storage-recovery": { scenario: "original", apps: [{}] },
+    "health-result-error": {
+      scenario: "health_result_http_error",
+      apps: originalApps,
+    },
+    "health-job-failed": {
+      scenario: "health_job_failed",
+      apps: originalApps,
+    },
+    "health-query-error": {
+      scenario: "health_job_query_failure",
+      apps: originalApps,
+    },
+    "health-stale": {
+      scenario: "health_app_cooldown",
+      apps: originalApps,
+    },
   };
   const savedState = scenarios[state];
   if (savedState) {
@@ -276,7 +310,8 @@ async function captureAndCompare(
   const detailState =
     state === "detail" ||
     state === "detail-copy-done" ||
-    state === "detail-component";
+    state === "detail-component" ||
+    state.startsWith("health-");
   if (state === "detail-copy-done")
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "clipboard", {
@@ -285,14 +320,48 @@ async function captureAndCompare(
       });
     });
   await page.goto(
-    detailState
-      ? "/apps/00000000-0000-4000-8000-000000000001"
-      : state === "corrupt-storage-recovery"
-        ? "/__dev/mock-reset"
-        : state === "gallery-filtered"
-          ? "/?q=%EB%B6%84%EC%88%98+%ED%94%BC%EC%9E%90&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883"
-          : "/",
+    state === "health-stale"
+      ? "/__dev/mock-reset"
+      : detailState
+        ? "/apps/00000000-0000-4000-8000-000000000001"
+        : state === "corrupt-storage-recovery"
+          ? "/__dev/mock-reset"
+          : state === "gallery-filtered"
+            ? "/?q=%EB%B6%84%EC%88%98+%ED%94%BC%EC%9E%90&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883"
+            : "/",
   );
+  if (state === "health-stale") {
+    await expect(
+      page.getByRole("heading", { name: "mock 저장 관리", exact: true }),
+    ).toBeVisible();
+    const clock = page.getByLabel("개발용 mock 시각", { exact: true });
+    await clock.fill("2026-09-22T09:27");
+    await page.getByRole("button", { name: "시각 저장", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText(
+      "mock 시각을 저장했어요",
+    );
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            JSON.parse(localStorage.getItem("eduvibe-archive-mock-v1"))
+              .mock_now,
+        ),
+      )
+      .toBe("2026-09-22T00:27:00.000Z");
+    await page.clock.setFixedTime(new Date("2026-09-22T00:27:00.000Z"));
+    await page.evaluate(() => {
+      window.history.pushState(
+        {},
+        "",
+        "/apps/00000000-0000-4000-8000-000000000001",
+      );
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    await expect(
+      page.getByRole("heading", { name: "분수 피자 가게", exact: true }),
+    ).toBeVisible();
+  }
   if (state === "gallery-query-overflow") {
     await page
       .getByRole("textbox", { name: "앱·작성자 검색" })
@@ -371,6 +440,41 @@ async function captureAndCompare(
       page.getByRole("button", { name: "기본 fixture로 명시적 초기화" }),
     ).toBeVisible();
   }
+  if (state.startsWith("health-")) {
+    const panel = page.locator("aside section").filter({
+      has: page.getByRole("heading", { name: "연결 상태", exact: true }),
+    });
+    await expect(panel).toBeVisible();
+    if (state === "health-result-error") {
+      await panel
+        .getByRole("button", { name: "연결 다시 확인", exact: true })
+        .click();
+      await expect(
+        panel.locator("dl").first().getByRole("definition").first(),
+      ).toHaveText("HTTP 오류");
+      await expect(
+        panel.getByRole("status").filter({ hasText: "검사 작업이 완료됐어요" }),
+      ).toBeVisible();
+    } else if (state === "health-job-failed") {
+      await panel
+        .getByRole("button", { name: "연결 다시 확인", exact: true })
+        .click();
+      await expect(panel.getByRole("alert")).toContainText(
+        "검사 작업에 실패했어요",
+      );
+    } else if (state === "health-query-error") {
+      await panel
+        .getByRole("button", { name: "연결 다시 확인", exact: true })
+        .click();
+      await expect(panel.getByRole("alert")).toContainText(
+        "자동 조회를 멈췄습니다",
+      );
+    } else if (state === "health-stale") {
+      await expect(
+        panel.getByLabel("연결 결과: 이전 정상", { exact: true }),
+      ).toBeVisible();
+    }
+  }
   if (state === "gallery-loading")
     await page.evaluate(() => document.fonts.ready);
   else
@@ -422,20 +526,25 @@ async function captureAndCompare(
     writeFileSync(baselinePath, actual);
   }
   const expected = baselinePath ? readFileSync(baselinePath) : null;
+  // The source header has a small pre-existing raster delta at 390px.
   const comparisonRegion =
-    state === "detail-copy-done"
-      ? await page
-          .getByRole("button", { name: "복사됨" })
-          .evaluate((button) => {
-            const bounds = button.getBoundingClientRect();
-            return {
-              left: bounds.left + window.scrollX,
-              top: bounds.top + window.scrollY,
-              width: bounds.width,
-              height: bounds.height,
-            };
-          })
-      : null;
+    state === "detail"
+      ? { left: 0, top: 60, width: viewport.width, height: 440 }
+      : state === "detail-component"
+        ? { left: 0, top: 0, width: 340, height: 220 }
+        : state === "detail-copy-done"
+          ? await page
+              .getByRole("button", { name: "복사됨" })
+              .evaluate((button) => {
+                const bounds = button.getBoundingClientRect();
+                return {
+                  left: bounds.left + window.scrollX,
+                  top: bounds.top + window.scrollY,
+                  width: bounds.width,
+                  height: bounds.height,
+                };
+              })
+          : null;
   const comparison = await compareInPage(
     page,
     actual,
@@ -464,7 +573,13 @@ async function captureAndCompare(
   testInfo.attach(name, { body: actual, contentType: "image/png" });
   if (expected) {
     expect(comparison.width).toBe(comparison.expectedWidth);
-    expect(comparison.height).toBe(comparison.expectedHeight);
+    if (dimensionMismatchStates.has(state)) {
+      expect(comparison.comparisonStatus).toBe("dimensions_mismatch");
+      expect(comparison.comparedRegion).not.toBeNull();
+      expect(comparison.pixelComparison).toBe("region");
+    } else {
+      expect(comparison.height).toBe(comparison.expectedHeight);
+    }
     expect(comparison.differentPixels).toBe(0);
   } else {
     expect(comparison.comparisonStatus).toBe("product_only");
@@ -563,7 +678,7 @@ for (const state of addedStates) {
   for (const viewport of viewports) {
     const tag = `${viewport.width}x${viewport.height}`;
     const baselinePath =
-      state === "corrupt-storage-recovery"
+      state === "corrupt-storage-recovery" || state.startsWith("health-")
         ? null
         : state === "gallery-empty"
           ? path.join(baselineRoot, tag, "03-gallery-empty.png")

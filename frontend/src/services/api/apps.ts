@@ -20,10 +20,13 @@ import {
 } from "../apps-service";
 import { authService } from "./auth";
 
-type ApiEndpoint =
+export type ApiEndpoint =
   | "GET /meta"
   | "GET /apps"
   | "GET /apps/{id}"
+  | "GET /apps/{id}/health"
+  | "POST /apps/{id}/health-checks"
+  | "GET /health-checks/{id}"
   | "POST /write-operations"
   | "POST /apps"
   | "PATCH /apps/{id}"
@@ -287,13 +290,141 @@ const API_ERROR_TRIPLES = [
   },
   { endpoint: "GET /write-operations/{key}", status: 503, code: "DB_BUSY" },
   { endpoint: "GET /write-operations/{key}", status: 503, code: "AUTH_BUSY" },
+  { endpoint: "GET /apps/{id}/health", status: 401, code: "AUTH_REQUIRED" },
+  { endpoint: "GET /apps/{id}/health", status: 403, code: "FORBIDDEN" },
+  {
+    endpoint: "GET /apps/{id}/health",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "GET /apps/{id}/health",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  { endpoint: "GET /apps/{id}/health", status: 404, code: "NOT_FOUND" },
+  {
+    endpoint: "GET /apps/{id}/health",
+    status: 503,
+    code: "FEATURE_UNAVAILABLE",
+  },
+  {
+    endpoint: "GET /apps/{id}/health",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 400,
+    code: "VALIDATION_ERROR",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 401,
+    code: "AUTH_REQUIRED",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 403,
+    code: "FORBIDDEN",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 403,
+    code: "CSRF_INVALID",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 403,
+    code: "ORIGIN_REJECTED",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 404,
+    code: "NOT_FOUND",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 409,
+    code: "AUTH_STATE_CHANGED",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 409,
+    code: "AUTH_TRANSITION_PENDING",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 429,
+    code: "RATE_LIMITED",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 503,
+    code: "AUTH_BUSY",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 503,
+    code: "FEATURE_UNAVAILABLE",
+  },
+  {
+    endpoint: "POST /apps/{id}/health-checks",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 401,
+    code: "AUTH_REQUIRED",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 403,
+    code: "FORBIDDEN",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 403,
+    code: "PASSWORD_CHANGE_REQUIRED",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 403,
+    code: "SESSION_KIND_NOT_ALLOWED",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 404,
+    code: "NOT_FOUND",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 503,
+    code: "FEATURE_UNAVAILABLE",
+  },
+  {
+    endpoint: "GET /health-checks/{id}",
+    status: 503,
+    code: "SERVICE_UNAVAILABLE",
+  },
 ] as const satisfies readonly {
   endpoint: ApiEndpoint;
   status: number;
   code: ServiceErrorCode;
 }[];
 
-async function getJson(
+export async function getJson(
   endpoint: ApiEndpoint,
   path: string,
   {
@@ -302,18 +433,22 @@ async function getJson(
     requestBody,
     authenticated = false,
     write = false,
+    allowAnonymousWrite = false,
     idempotencyKey,
     uncertain = false,
     noContent = false,
+    includeStatus = false,
   }: {
     signal?: AbortSignal;
     method?: "GET" | "POST" | "PATCH" | "DELETE";
     requestBody?: unknown;
     authenticated?: boolean;
     write?: boolean;
+    allowAnonymousWrite?: boolean;
     idempotencyKey?: string;
     uncertain?: boolean;
     noContent?: boolean;
+    includeStatus?: boolean;
   } = {},
 ): Promise<unknown> {
   const headers = new Headers({ Accept: "application/json" });
@@ -333,12 +468,16 @@ async function getJson(
       );
     }
     const user = auth.user;
-    if (auth.status !== "ready" || !user || !user.approved)
+    if (
+      auth.status !== "ready" ||
+      (!user && !allowAnonymousWrite) ||
+      (user !== null && !user.approved)
+    )
       throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
         outcome: uncertain ? "unknown" : "rejected",
         httpStatus: 401,
       });
-    if (user.mustChangePassword || user.sessionKind === "change_only")
+    if (user?.mustChangePassword || user?.sessionKind === "change_only")
       throw new ServiceError(
         "PASSWORD_CHANGE_REQUIRED",
         "회원 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
@@ -418,7 +557,9 @@ async function getJson(
         outcome: uncertain ? "unknown" : "not_applicable",
       },
     );
-  return responseBody;
+  return includeStatus
+    ? { status: response.status, body: responseBody }
+    : responseBody;
 }
 
 function mapApiError(
@@ -469,7 +610,11 @@ function mapApiError(
   const message =
     endpoint === "GET /apps/{id}" && allowed.code === "NOT_FOUND"
       ? "아카이브 앱을 찾을 수 없어요."
-      : fields.message;
+      : endpoint === "GET /apps/{id}/health" && allowed.code === "NOT_FOUND"
+        ? "아카이브 앱을 찾을 수 없어요."
+        : endpoint === "GET /health-checks/{id}" && allowed.code === "NOT_FOUND"
+          ? "연결 검사 작업을 찾을 수 없어요."
+          : fields.message;
   const resultLookup = endpoint === "GET /write-operations/{key}";
   const retryMayBeUnresolved =
     uncertain &&

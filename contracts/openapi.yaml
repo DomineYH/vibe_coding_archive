@@ -762,6 +762,97 @@ paths:
             Includes DELETION_CONFIRMATION_PENDING when the app deletion is
             committed but its related deletion record is not yet confirmed.
             Check the existing operation key; do not submit a new key.
+  /apps/{id}/health:
+    get:
+      operationId: getAppHealth
+      summary: Read the current connection result and latest check job
+      description: >-
+        Requires current permission to read the app. This read never starts a
+        new external check. Administrator-only measurement fields are omitted
+        for other viewers.
+      security:
+        - {}
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Current result, freshness, and latest job.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthSnapshot" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /apps/{id}/health-checks:
+    post:
+      operationId: requestAppHealthCheck
+      summary: Request an individual connection check
+      description: >-
+        Requires a current session and CSRF proof. A public app may be checked
+        from an anonymous session; a private app requires current read access.
+        This endpoint accepts no arbitrary URL. New and active-reused jobs use
+        202; completed-result reuse uses 200. No browser request is sent to the
+        external site.
+      security:
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: A result for the current URL was reused; no new check started.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckAccepted" }
+        "202":
+          description: A new job was accepted or an active job was reused.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckAccepted" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "429": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+  /health-checks/{id}:
+    get:
+      operationId: getHealthCheckJob
+      summary: Read one check job and its current app result
+      description: >-
+        Requires current permission to read the associated app. This read never
+        starts a new external check. The requested job and latest app result
+        remain separate values.
+      security:
+        - {}
+        - SessionCookie: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The requested job and current health snapshot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthJobResponse" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users:
     get:
       operationId: listAdminUsers
@@ -2171,12 +2262,44 @@ components:
         state: { $ref: "#/components/schemas/HealthState" }
         checked_at: { type: [string, "null"], format: date-time }
         fresh_until: { type: [string, "null"], format: date-time }
+    AdminHealthResult:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          state,
+          checked_at,
+          fresh_until,
+          http_status,
+          response_ms,
+          error_kind,
+          error_stage,
+        ]
+      properties:
+        state: { $ref: "#/components/schemas/HealthState" }
+        checked_at: { type: [string, "null"], format: date-time }
+        fresh_until: { type: [string, "null"], format: date-time }
+        http_status: { type: [integer, "null"], minimum: 100, maximum: 599 }
+        response_ms: { type: [number, "null"], minimum: 0 }
+        error_kind: { type: [string, "null"], minLength: 1, maxLength: 64 }
+        error_stage: { type: [string, "null"], minLength: 1, maxLength: 64 }
     HealthView:
       type: object
       additionalProperties: false
       required: [result, latest_job, next_check_at]
       properties:
         result: { $ref: "#/components/schemas/HealthResult" }
+        latest_job:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/Job"
+        next_check_at: { type: [string, "null"], format: date-time }
+    AdminHealthView:
+      type: object
+      additionalProperties: false
+      required: [result, latest_job, next_check_at]
+      properties:
+        result: { $ref: "#/components/schemas/AdminHealthResult" }
         latest_job:
           oneOf:
             - type: "null"
@@ -2197,6 +2320,45 @@ components:
         started_at: { type: [string, "null"], format: date-time }
         finished_at: { type: [string, "null"], format: date-time }
         failure_code: { type: [string, "null"] }
+    HealthSnapshot:
+      type: object
+      additionalProperties: false
+      required: [app_id, url_version, server_time, health]
+      properties:
+        app_id: { type: string, format: uuid }
+        url_version: { type: integer, minimum: 1 }
+        server_time: { type: string, format: date-time }
+        health:
+          anyOf:
+            - $ref: "#/components/schemas/HealthView"
+            - $ref: "#/components/schemas/AdminHealthView"
+    CheckAccepted:
+      type: object
+      additionalProperties: false
+      required: [app_id, url_version, server_time, health, disposition]
+      properties:
+        app_id: { type: string, format: uuid }
+        url_version: { type: integer, minimum: 1 }
+        server_time: { type: string, format: date-time }
+        health:
+          anyOf:
+            - $ref: "#/components/schemas/HealthView"
+            - $ref: "#/components/schemas/AdminHealthView"
+        disposition:
+          { type: string, enum: [created, active_reused, result_reused] }
+    HealthJobResponse:
+      type: object
+      additionalProperties: false
+      required: [app_id, url_version, server_time, job, health]
+      properties:
+        app_id: { type: string, format: uuid }
+        url_version: { type: integer, minimum: 1 }
+        server_time: { type: string, format: date-time }
+        job: { $ref: "#/components/schemas/Job" }
+        health:
+          anyOf:
+            - $ref: "#/components/schemas/HealthView"
+            - $ref: "#/components/schemas/AdminHealthView"
     AppCard:
       type: object
       additionalProperties: false

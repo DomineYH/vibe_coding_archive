@@ -21,6 +21,7 @@ export const MOCK_APP_DELETED_EVENT = "eduvibe:mock-app-deleted";
 export const MOCK_ACCOUNT_DELETED_EVENT = "eduvibe:mock-account-deleted";
 export const MOCK_WRITE_OPERATIONS_RESET_EVENT =
   "eduvibe:mock-write-operations-reset";
+export const MOCK_HEALTH_RESET_EVENT = "eduvibe:mock-health-reset";
 
 const MOCK_SCENARIOS = [
   "original",
@@ -68,6 +69,21 @@ const MOCK_SCENARIOS = [
   "app_delete_unresolved",
   "app_delete_delayed",
   "app_delete_pending_confirmation",
+  "health_result_healthy",
+  "health_result_http_error",
+  "health_result_timeout",
+  "health_result_network_error",
+  "health_result_blocked",
+  "health_result_redirect_error",
+  "health_job_queued",
+  "health_job_running",
+  "health_job_failed",
+  "health_job_cancelled",
+  "health_job_query_failure",
+  "health_check_unavailable",
+  "health_actor_rate_limit",
+  "health_app_cooldown",
+  "health_late_response",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
@@ -92,7 +108,8 @@ const V6_STATE_KEYS = [
   "principal_session",
 ];
 const V7_STATE_KEYS = V6_STATE_KEYS;
-const STATE_KEYS = [...V7_STATE_KEYS, "deleted_account_ids"];
+const V8_STATE_KEYS = [...V7_STATE_KEYS, "deleted_account_ids"];
+const STATE_KEYS = [...V8_STATE_KEYS, "health_measurements"];
 const AUTH_FLOW_V6_KEYS = [
   "flow_id",
   "revision",
@@ -251,7 +268,7 @@ export type MockPrincipalSession = {
   recent_auth_until: string | null;
 };
 export type MockState = {
-  version: 8;
+  version: 9;
   generation: number;
   observation_generation: number;
   scenario: MockScenario;
@@ -267,6 +284,15 @@ export type MockState = {
   credential_overrides: MockCredentialOverride[];
   principal_session: MockPrincipalSession | null;
   auth_flow: MockAuthFlow;
+  health_measurements: MockHealthMeasurement[];
+};
+export type MockHealthMeasurement = {
+  app_id: string;
+  url_version: number;
+  http_status: number | null;
+  response_ms: number | null;
+  error_kind: string | null;
+  error_stage: string | null;
 };
 export type MockAuthTransition = {
   transition_id: string;
@@ -397,6 +423,47 @@ function validateApps(apps: unknown[], isPublic: boolean): void {
       !MOCK_ACCOUNTS.some((account) => account.id === item.ownerId)
     )
       throw storageError();
+  }
+}
+
+function validateHealthMeasurements(
+  measurements: unknown[],
+  apps: components["schemas"]["AppDetail"][],
+): void {
+  const currentApps = new Map(
+    apps.map((app) => [app.id, app.url_version] as const),
+  );
+  const keys = [
+    "app_id",
+    "url_version",
+    "http_status",
+    "response_ms",
+    "error_kind",
+    "error_stage",
+  ];
+  const seen = new Set<string>();
+  for (const value of measurements) {
+    if (!hasExactKeys(value, keys)) throw storageError();
+    const measurement = value as unknown as MockHealthMeasurement;
+    const key = `${measurement.app_id}:${measurement.url_version}`;
+    if (
+      currentApps.get(measurement.app_id) !== measurement.url_version ||
+      seen.has(key) ||
+      (measurement.http_status !== null &&
+        (!Number.isInteger(measurement.http_status) ||
+          measurement.http_status < 100 ||
+          measurement.http_status > 599)) ||
+      (measurement.response_ms !== null &&
+        (!Number.isFinite(measurement.response_ms) ||
+          measurement.response_ms < 0)) ||
+      (measurement.http_status === null) !==
+        (measurement.response_ms === null) ||
+      ![measurement.error_kind, measurement.error_stage].every(
+        (item) => item === null || /^[a-z][a-z0-9_]{0,63}$/u.test(item),
+      )
+    )
+      throw storageError();
+    seen.add(key);
   }
 }
 
@@ -627,7 +694,7 @@ function migrateAuthFlow(value: unknown, hasPrincipal: boolean): MockAuthFlow {
 }
 
 const initialState = (): MockState => ({
-  version: 8,
+  version: 9,
   generation: resetGeneration,
   observation_generation: 0,
   scenario: "original",
@@ -643,6 +710,7 @@ const initialState = (): MockState => ({
   credential_overrides: [],
   principal_session: null,
   auth_flow: initialAuthFlow(),
+  health_measurements: [],
 });
 
 function storage(): Storage {
@@ -684,7 +752,7 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 8,
+      version: 9,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
@@ -697,12 +765,13 @@ function readState(): MockState {
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
       principal_session: null,
+      health_measurements: [],
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
     state = {
       ...value,
-      version: 8,
+      version: 9,
       registered_accounts: [],
       deleted_account_ids: [],
       observation_generation: 0,
@@ -713,12 +782,13 @@ function readState(): MockState {
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
       principal_session: initialPrincipalSession(value.principal_id),
+      health_measurements: [],
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
     state = {
       ...value,
-      version: 8,
+      version: 9,
       deleted_account_ids: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
@@ -728,12 +798,13 @@ function readState(): MockState {
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
       principal_session: initialPrincipalSession(value.principal_id),
+      health_measurements: [],
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V4_STATE_KEYS) && value.version === 4) {
     state = {
       ...value,
-      version: 8,
+      version: 9,
       deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       admin_users: [],
@@ -742,6 +813,7 @@ function readState(): MockState {
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
       principal_session: initialPrincipalSession(value.principal_id),
+      health_measurements: [],
     };
     needsMigration = true;
   } else if (hasExactKeys(value, V5_STATE_KEYS) && value.version === 5) {
@@ -753,36 +825,47 @@ function readState(): MockState {
     );
     state = {
       ...value,
-      version: 8,
+      version: 9,
       deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
       principal_session: initialPrincipalSession(value.principal_id),
       admin_users: [...previousUsers, ...addedUsers],
+      health_measurements: [],
     };
     needsMigration = true;
     preserveAdminUsers = true;
   } else if (hasExactKeys(value, V6_STATE_KEYS) && value.version === 6) {
     state = {
       ...value,
-      version: 8,
+      version: 9,
       deleted_account_ids: [],
+      health_measurements: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
     };
     needsMigration = true;
     preserveAdminUsers = true;
   } else if (hasExactKeys(value, V7_STATE_KEYS) && value.version === 7) {
-    state = { ...value, version: 8, deleted_account_ids: [] };
+    state = {
+      ...value,
+      version: 9,
+      deleted_account_ids: [],
+      health_measurements: [],
+    };
     needsMigration = true;
     preserveAdminUsers = true;
-  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 8) {
+  } else if (hasExactKeys(value, V8_STATE_KEYS) && value.version === 8) {
+    state = { ...value, version: 9, health_measurements: [] };
+    needsMigration = true;
+    preserveAdminUsers = true;
+  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 9) {
     state = value;
   } else {
     throw storageError();
   }
   if (
-    state.version !== 8 ||
+    state.version !== 9 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -791,6 +874,7 @@ function readState(): MockState {
     !Array.isArray(state.private_apps) ||
     !Array.isArray(state.registered_accounts) ||
     !Array.isArray(state.deleted_account_ids) ||
+    !Array.isArray(state.health_measurements) ||
     !state.deleted_account_ids.every(
       (id) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id),
     ) ||
@@ -893,6 +977,10 @@ function readState(): MockState {
     );
     validateApps(state.apps, true);
     validateApps(state.private_apps, false);
+    validateHealthMeasurements(validState.health_measurements, [
+      ...state.apps,
+      ...state.private_apps,
+    ]);
   } catch {
     throw storageError();
   }
@@ -972,17 +1060,37 @@ export function createMockApp(
   return app;
 }
 
-export function updateMockApp(app: components["schemas"]["AppDetail"]): void {
+export function updateMockApp(
+  app: components["schemas"]["AppDetail"],
+  measurement?: MockHealthMeasurement | null,
+): void {
   const state = readState();
   const generation = nextGeneration(state.generation);
   const apps = state.apps.filter((item) => item.id !== app.id);
   const privateApps = state.private_apps.filter((item) => item.id !== app.id);
+  const healthMeasurements = state.health_measurements.filter(
+    (item) =>
+      item.app_id !== app.id ||
+      (measurement === undefined && item.url_version === app.url_version),
+  );
+  if (
+    measurement &&
+    (measurement.app_id !== app.id ||
+      measurement.url_version !== app.url_version)
+  )
+    throw new TypeError("Health measurement does not match its app version");
   writeState({
     ...state,
     apps: (app.is_public ? [...apps, app] : apps) as MockState["apps"],
     private_apps: (app.is_public
       ? privateApps
       : [...privateApps, app]) as MockState["private_apps"],
+    health_measurements:
+      measurement === undefined
+        ? healthMeasurements
+        : measurement === null
+          ? healthMeasurements
+          : [...healthMeasurements, measurement],
     generation,
   });
   resetGeneration = generation;
@@ -998,6 +1106,9 @@ export function deleteMockApp(id: string): void {
     private_apps: state.private_apps.filter(
       (app) => app.id !== id,
     ) as MockState["private_apps"],
+    health_measurements: state.health_measurements.filter(
+      (measurement) => measurement.app_id !== id,
+    ),
     generation,
   });
   resetGeneration = generation;
@@ -1146,6 +1257,11 @@ export function deleteMockUserAccount(
     apps: state.apps.filter((app) => app.owner.id !== accountId),
     private_apps: state.private_apps.filter(
       (app) => app.owner.id !== accountId,
+    ),
+    health_measurements: state.health_measurements.filter((measurement) =>
+      [...state.apps, ...state.private_apps].some(
+        (app) => app.id === measurement.app_id && app.owner.id !== accountId,
+      ),
     ),
     principal_id: deletedPrincipal ? null : state.principal_id,
     principal_session: deletedPrincipal ? null : state.principal_session,
@@ -1416,6 +1532,7 @@ export function resetMockState(): void {
   resetGeneration = next;
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
   window.dispatchEvent(new Event(MOCK_WRITE_OPERATIONS_RESET_EVENT));
+  window.dispatchEvent(new Event(MOCK_HEALTH_RESET_EVENT));
 }
 
 export function setMockScenario(scenario: MockScenario): void {
