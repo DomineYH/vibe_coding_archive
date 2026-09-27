@@ -863,6 +863,52 @@ paths:
         "404": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+    delete:
+      operationId: deleteAdminUser
+      summary: Delete an ordinary member and all owned archive apps
+      description: >-
+        Requires current administrator reauthentication. The expected app count
+        is checked when the operation key is issued and again when deletion is
+        committed. A same-count change in app composition does not block the
+        deletion. A 503 DELETION_CONFIRMATION_PENDING means account and app
+        deletion committed; read the existing operation key and never infer
+        failure or issue a new deletion.
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: string, format: uuid },
+          }
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeleteAdminUserInput" }
+      responses:
+        "204":
+          description: The member and all owned archive apps were deleted.
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "404": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "410": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "503":
+          $ref: "#/components/responses/ServiceError"
+          description: >-
+            Includes DELETION_CONFIRMATION_PENDING after account and app
+            deletion commit. Read the existing operation key; do not delete
+            again or use a new key.
   /write-operations:
     post:
       operationId: createWriteOperation
@@ -891,6 +937,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/ApprovalOperation"
                   - $ref: "#/components/schemas/PasswordResetOperation"
+                  - $ref: "#/components/schemas/UserDeleteOperation"
                   - $ref: "#/components/schemas/AppWriteOperation"
         "400": { $ref: "#/components/responses/ServiceError" }
         "401": { $ref: "#/components/responses/ServiceError" }
@@ -1013,6 +1060,7 @@ paths:
                 oneOf:
                   - $ref: "#/components/schemas/ApprovalOperation"
                   - $ref: "#/components/schemas/PasswordResetOperation"
+                  - $ref: "#/components/schemas/UserDeleteOperation"
                   - $ref: "#/components/schemas/AppWriteOperation"
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
@@ -1331,6 +1379,17 @@ components:
           minimum: 1
           maximum: 9007199254740991
         new_password: { type: string, minLength: 15, maxLength: 128 }
+    CreateUserDeleteOperation:
+      type: object
+      additionalProperties: false
+      required: [kind, target_id, expected_app_count]
+      properties:
+        kind: { type: string, const: user_delete }
+        target_id: { type: string, format: uuid }
+        expected_app_count:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
     CreateAppWriteOperation:
       type: object
       additionalProperties: false
@@ -1365,6 +1424,7 @@ components:
       oneOf:
         - $ref: "#/components/schemas/CreateApprovalOperation"
         - $ref: "#/components/schemas/CreatePasswordResetOperation"
+        - $ref: "#/components/schemas/CreateUserDeleteOperation"
         - $ref: "#/components/schemas/CreateAppWriteOperation"
         - $ref: "#/components/schemas/CreateAppUpdateOperation"
         - $ref: "#/components/schemas/CreateAppDeleteOperation"
@@ -1450,6 +1510,15 @@ components:
           type: integer
           minimum: 1
           maximum: 9007199254740991
+    DeleteAdminUserInput:
+      type: object
+      additionalProperties: false
+      required: [expected_app_count]
+      properties:
+        expected_app_count:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
     ApprovalOperation:
       type: object
       additionalProperties: false
@@ -1513,6 +1582,35 @@ components:
         temporary_password_expires_at:
           type: [string, "null"]
           format: date-time
+        finalized_at: { type: [string, "null"], format: date-time }
+        rejection_code: { type: [string, "null"] }
+        server_time: { type: string, format: date-time }
+    UserDeleteOperation:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          key,
+          kind,
+          target_id,
+          issued_at,
+          expires_at,
+          state,
+          db_applied_at,
+          finalized_at,
+          rejection_code,
+          server_time,
+        ]
+      properties:
+        key: { type: string, format: uuid }
+        kind: { type: string, const: user_delete }
+        target_id: { type: string, format: uuid }
+        issued_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time }
+        state:
+          type: string
+          enum: [unresolved, confirming_deletion, succeeded, rejected]
+        db_applied_at: { type: [string, "null"], format: date-time }
         finalized_at: { type: [string, "null"], format: date-time }
         rejection_code: { type: [string, "null"] }
         server_time: { type: string, format: date-time }

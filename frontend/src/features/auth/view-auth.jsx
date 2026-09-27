@@ -363,7 +363,12 @@ function ReauthenticationCard({
         </Btn>
         <Link
           to={returnTo}
-          state={resumeState?.adminReset?.operationKey ? resumeState : null}
+          state={
+            resumeState?.adminReset?.operationKey ||
+            resumeState?.adminDelete?.operationKey
+              ? resumeState
+              : null
+          }
           className="inline-flex min-h-10 items-center justify-center rounded-full text-[12.5px] font-semibold text-neutral-500"
         >
           취소하고 돌아가기

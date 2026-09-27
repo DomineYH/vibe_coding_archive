@@ -5,6 +5,7 @@ import {
   mapAdminUserPage,
   mapApprovalOperation,
   mapPasswordResetOperation,
+  mapUserDeleteOperation,
 } from "../src/contracts/mappers";
 
 const adminUser = {
@@ -252,6 +253,48 @@ describe("admin contract mappers", () => {
         rejection_code: null,
         server_time: result.serverTime,
         new_password: "must never be returned",
+      }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+  });
+
+  it("keeps deleted data pending until the deletion record is confirmed", () => {
+    const result = mapUserDeleteOperation({
+      key: "00000000-0000-4000-8000-000000000202",
+      kind: "user_delete",
+      target_id: adminUser.id,
+      issued_at: "2026-09-22T00:12:00.000Z",
+      expires_at: "2026-09-23T00:12:00.000Z",
+      state: "confirming_deletion",
+      db_applied_at: "2026-09-22T00:12:03.000Z",
+      finalized_at: null,
+      rejection_code: null,
+      server_time: "2026-09-22T00:12:03.000Z",
+    });
+    expect(result).toEqual({
+      key: "00000000-0000-4000-8000-000000000202",
+      kind: "user_delete",
+      targetId: adminUser.id,
+      issuedAt: "2026-09-22T00:12:00.000Z",
+      expiresAt: "2026-09-23T00:12:00.000Z",
+      state: "confirming_deletion",
+      dbAppliedAt: "2026-09-22T00:12:03.000Z",
+      finalizedAt: null,
+      rejectionCode: null,
+      serverTime: "2026-09-22T00:12:03.000Z",
+    });
+    expect(() =>
+      mapUserDeleteOperation({
+        key: result.key,
+        kind: result.kind,
+        target_id: result.targetId,
+        issued_at: result.issuedAt,
+        expires_at: result.expiresAt,
+        state: "succeeded",
+        db_applied_at: null,
+        finalized_at: null,
+        rejection_code: null,
+        server_time: result.serverTime,
+        target: adminUser,
       }),
     ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });

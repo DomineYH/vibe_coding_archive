@@ -18,6 +18,7 @@ export const MOCK_STORAGE_KEY = "eduvibe-archive-mock-v1";
 export const MOCK_RESET_EVENT = "eduvibe:mock-reset";
 export const MOCK_AUTH_STATE_EVENT = "eduvibe:mock-auth-state";
 export const MOCK_APP_DELETED_EVENT = "eduvibe:mock-app-deleted";
+export const MOCK_ACCOUNT_DELETED_EVENT = "eduvibe:mock-account-deleted";
 export const MOCK_WRITE_OPERATIONS_RESET_EVENT =
   "eduvibe:mock-write-operations-reset";
 
@@ -50,6 +51,10 @@ const MOCK_SCENARIOS = [
   "admin_write_unknown",
   "admin_write_unresolved",
   "admin_write_delayed",
+  "admin_delete_unknown",
+  "admin_delete_unresolved",
+  "admin_delete_delayed",
+  "admin_delete_pending_confirmation",
   "app_key_issue_failure",
   "app_create_failure",
   "app_create_unknown",
@@ -86,7 +91,8 @@ const V6_STATE_KEYS = [
   "credential_overrides",
   "principal_session",
 ];
-const STATE_KEYS = V6_STATE_KEYS;
+const V7_STATE_KEYS = V6_STATE_KEYS;
+const STATE_KEYS = [...V7_STATE_KEYS, "deleted_account_ids"];
 const AUTH_FLOW_V6_KEYS = [
   "flow_id",
   "revision",
@@ -245,7 +251,7 @@ export type MockPrincipalSession = {
   recent_auth_until: string | null;
 };
 export type MockState = {
-  version: 7;
+  version: 8;
   generation: number;
   observation_generation: number;
   scenario: MockScenario;
@@ -253,6 +259,7 @@ export type MockState = {
   private_apps: typeof privateApps;
   principal_id: string | null;
   registered_accounts: MockRegisteredAccount[];
+  deleted_account_ids: string[];
   admin_users: MockAdminUserState[];
   approval_operations: MockApprovalOperation[];
   approval_operation_sequence: number;
@@ -428,9 +435,12 @@ function validateRegisteredAccounts(accounts: unknown[]): void {
 function validateAdminUsers(
   users: unknown[],
   registeredAccounts: MockRegisteredAccount[],
+  deletedAccountIds: string[],
 ): void {
   const expected = new Set([
-    ...MOCK_ACCOUNTS.map((account) => account.id),
+    ...MOCK_ACCOUNTS.filter(
+      (account) => !deletedAccountIds.includes(account.id),
+    ).map((account) => account.id),
     ...registeredAccounts.map((account) => account.id),
   ]);
   const seen = new Set<string>();
@@ -549,9 +559,12 @@ function nextGeneration(currentGeneration: number): number {
 
 function initialAdminUsers(
   registeredAccounts: MockRegisteredAccount[] = [],
+  deletedAccountIds: string[] = [],
 ): MockAdminUserState[] {
   return [
-    ...MOCK_ACCOUNTS.map((account) => ({
+    ...MOCK_ACCOUNTS.filter(
+      (account) => !deletedAccountIds.includes(account.id),
+    ).map((account) => ({
       id: account.id,
       approved: account.approved,
       account_version: 1,
@@ -614,7 +627,7 @@ function migrateAuthFlow(value: unknown, hasPrincipal: boolean): MockAuthFlow {
 }
 
 const initialState = (): MockState => ({
-  version: 7,
+  version: 8,
   generation: resetGeneration,
   observation_generation: 0,
   scenario: "original",
@@ -622,6 +635,7 @@ const initialState = (): MockState => ({
   private_apps: privateApps,
   principal_id: null,
   registered_accounts: [],
+  deleted_account_ids: [],
   admin_users: initialAdminUsers(),
   approval_operations: [],
   approval_operation_sequence: 0,
@@ -670,10 +684,11 @@ function readState(): MockState {
   if (hasExactKeys(value, LEGACY_STATE_KEYS) && value.version === 1) {
     state = {
       ...value,
-      version: 7,
+      version: 8,
       private_apps: privateApps,
       principal_id: null,
       registered_accounts: [],
+      deleted_account_ids: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
       admin_users: [],
@@ -687,8 +702,9 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V2_STATE_KEYS) && value.version === 2) {
     state = {
       ...value,
-      version: 7,
+      version: 8,
       registered_accounts: [],
+      deleted_account_ids: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
       admin_users: [],
@@ -702,7 +718,8 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V3_STATE_KEYS) && value.version === 3) {
     state = {
       ...value,
-      version: 7,
+      version: 8,
+      deleted_account_ids: [],
       observation_generation: 0,
       auth_flow: initialState().auth_flow,
       admin_users: [],
@@ -716,7 +733,8 @@ function readState(): MockState {
   } else if (hasExactKeys(value, V4_STATE_KEYS) && value.version === 4) {
     state = {
       ...value,
-      version: 7,
+      version: 8,
+      deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       admin_users: [],
       approval_operations: [],
@@ -735,7 +753,8 @@ function readState(): MockState {
     );
     state = {
       ...value,
-      version: 7,
+      version: 8,
+      deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
       mock_now: MOCK_INITIAL_TIME,
       credential_overrides: [],
@@ -744,21 +763,26 @@ function readState(): MockState {
     };
     needsMigration = true;
     preserveAdminUsers = true;
-  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 6) {
+  } else if (hasExactKeys(value, V6_STATE_KEYS) && value.version === 6) {
     state = {
       ...value,
-      version: 7,
+      version: 8,
+      deleted_account_ids: [],
       auth_flow: migrateAuthFlow(value.auth_flow, value.principal_id !== null),
     };
     needsMigration = true;
     preserveAdminUsers = true;
-  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 7) {
+  } else if (hasExactKeys(value, V7_STATE_KEYS) && value.version === 7) {
+    state = { ...value, version: 8, deleted_account_ids: [] };
+    needsMigration = true;
+    preserveAdminUsers = true;
+  } else if (hasExactKeys(value, STATE_KEYS) && value.version === 8) {
     state = value;
   } else {
     throw storageError();
   }
   if (
-    state.version !== 7 ||
+    state.version !== 8 ||
     typeof state.generation !== "number" ||
     !Number.isSafeInteger(state.generation) ||
     state.generation < 0 ||
@@ -766,6 +790,12 @@ function readState(): MockState {
     !Array.isArray(state.apps) ||
     !Array.isArray(state.private_apps) ||
     !Array.isArray(state.registered_accounts) ||
+    !Array.isArray(state.deleted_account_ids) ||
+    !state.deleted_account_ids.every(
+      (id) => typeof id === "string" && /^[0-9a-f-]{36}$/i.test(id),
+    ) ||
+    new Set(state.deleted_account_ids).size !==
+      state.deleted_account_ids.length ||
     !Array.isArray(state.credential_overrides) ||
     !isDateTime(state.mock_now) ||
     typeof state.observation_generation !== "number" ||
@@ -843,6 +873,7 @@ function readState(): MockState {
     if (!preserveAdminUsers) {
       validState.admin_users = initialAdminUsers(
         validState.registered_accounts,
+        validState.deleted_account_ids,
       );
       validState.approval_operations = [];
       validState.approval_operation_sequence = 0;
@@ -850,7 +881,11 @@ function readState(): MockState {
   }
   try {
     validateRegisteredAccounts(state.registered_accounts);
-    validateAdminUsers(validState.admin_users, validState.registered_accounts);
+    validateAdminUsers(
+      validState.admin_users,
+      validState.registered_accounts,
+      validState.deleted_account_ids,
+    );
     validateApprovalOperations(validState.approval_operations);
     validateCredentialOverrides(
       validState.credential_overrides,
@@ -878,10 +913,11 @@ function readState(): MockState {
   if (state.private_apps.some((app) => ids.has(app.id))) throw storageError();
   if (
     state.principal_id !== null &&
-    !MOCK_ACCOUNTS.some((account) => account.id === state.principal_id) &&
-    !state.registered_accounts.some(
-      (account) => account.id === state.principal_id,
-    )
+    (state.deleted_account_ids.includes(state.principal_id) ||
+      (!MOCK_ACCOUNTS.some((account) => account.id === state.principal_id) &&
+        !state.registered_accounts.some(
+          (account) => account.id === state.principal_id,
+        )))
   )
     throw storageError();
   if (needsMigration) {
@@ -1006,13 +1042,20 @@ export function getMockAccounts(
 ): MockAccountRecord[] {
   const demoAccounts = MOCK_ACCOUNTS.filter(
     (account) =>
-      !("temporaryDemoFixture" in account) ||
-      includeTemporaryFixtures ||
-      state.credential_overrides.some(
-        (item) => item.account_id === account.id && !item.must_change_password,
-      ),
+      !state.deleted_account_ids.includes(account.id) &&
+      (!("temporaryDemoFixture" in account) ||
+        includeTemporaryFixtures ||
+        state.credential_overrides.some(
+          (item) =>
+            item.account_id === account.id && !item.must_change_password,
+        )),
   );
-  const bases = [...demoAccounts, ...state.registered_accounts];
+  const bases = [
+    ...demoAccounts,
+    ...state.registered_accounts.filter(
+      (account) => !state.deleted_account_ids.includes(account.id),
+    ),
+  ];
   return bases.map((base) => {
     const status = state.admin_users.find((user) => user.id === base.id);
     const override = state.credential_overrides.find(
@@ -1050,6 +1093,92 @@ export function getMockAccounts(
         "pendingExpiresAt" in base ? base.pendingExpiresAt : null,
     };
   });
+}
+
+export function deleteMockUserAccount(
+  accountId: string,
+  expectedAppCount: number,
+): number {
+  const state = readState();
+  const target = getMockAccounts(state).find(
+    (account) => account.id === accountId,
+  );
+  if (!target)
+    throw new ServiceError("USER_NOT_FOUND", "회원을 찾을 수 없어요.", {
+      httpStatus: 404,
+      outcome: "rejected",
+    });
+  if (target.role === "admin")
+    throw new ServiceError(
+      "ADMIN_ACCOUNT_PROTECTED",
+      "관리자 계정은 삭제할 수 없어요.",
+      { httpStatus: 403, outcome: "rejected" },
+    );
+
+  const apps = [...state.apps, ...state.private_apps].filter(
+    (app) => app.owner.id === accountId,
+  );
+  if (apps.length !== expectedAppCount)
+    throw new ServiceError(
+      "APP_COUNT_CONFLICT",
+      "소유 앱 수가 바뀌었어요. 현재 정보를 다시 확인해 주세요.",
+      { httpStatus: 409, outcome: "rejected" },
+    );
+
+  const deletedPrincipal = state.principal_id === accountId;
+  const revision = deletedPrincipal
+    ? nextFlowRevision(state.auth_flow)
+    : state.auth_flow.revision;
+  const generation = nextGeneration(state.generation);
+  writeState({
+    ...state,
+    registered_accounts: state.registered_accounts.filter(
+      (account) => account.id !== accountId,
+    ),
+    deleted_account_ids: [...state.deleted_account_ids, accountId],
+    admin_users: state.admin_users.filter((user) => user.id !== accountId),
+    approval_operations: state.approval_operations.filter(
+      (operation) => operation.actor_id !== accountId,
+    ),
+    credential_overrides: state.credential_overrides.filter(
+      (item) => item.account_id !== accountId,
+    ),
+    apps: state.apps.filter((app) => app.owner.id !== accountId),
+    private_apps: state.private_apps.filter(
+      (app) => app.owner.id !== accountId,
+    ),
+    principal_id: deletedPrincipal ? null : state.principal_id,
+    principal_session: deletedPrincipal ? null : state.principal_session,
+    auth_flow: deletedPrincipal
+      ? {
+          ...state.auth_flow,
+          revision,
+          session_generation: null,
+          last_identity_change_revision: revision,
+          session_cookie_present: false,
+          pending_transition: null,
+          transitions: [],
+          blocked_transition_ids: [],
+          unresolved_transition_id: null,
+        }
+      : state.auth_flow,
+    observation_generation: deletedPrincipal
+      ? state.observation_generation >= Number.MAX_SAFE_INTEGER
+        ? 0
+        : state.observation_generation + 1
+      : state.observation_generation,
+    generation,
+  });
+  mockTemporaryPasswords.delete(accountId);
+  resetGeneration = generation;
+  window.dispatchEvent(
+    new CustomEvent(MOCK_ACCOUNT_DELETED_EVENT, { detail: { accountId } }),
+  );
+  if (deletedPrincipal) {
+    window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+    window.dispatchEvent(new Event(MOCK_AUTH_STATE_EVENT));
+  }
+  return apps.length;
 }
 
 export function setMockTemporaryPassword(input: {
@@ -2223,6 +2352,7 @@ export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
         item.id === account.id ||
         item.loginId.toLowerCase() === account.loginId.toLowerCase(),
     ) ||
+    state.deleted_account_ids.includes(account.id) ||
     MOCK_ACCOUNTS.some(
       (item) =>
         item.id === account.id ||
@@ -2236,7 +2366,9 @@ export function addMockRegisteredAccount(account: MockRegisteredAccount): void {
     registered_accounts: [...state.registered_accounts, account],
     admin_users: [
       ...state.admin_users,
-      ...initialAdminUsers([account]).slice(MOCK_ACCOUNTS.length),
+      ...initialAdminUsers([account], state.deleted_account_ids).filter(
+        (user) => user.id === account.id,
+      ),
     ],
     generation,
   });

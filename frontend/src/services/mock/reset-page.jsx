@@ -124,6 +124,12 @@ export default function MockResetPage() {
           <option value="app_create_unknown">앱 저장 응답 유실</option>
           <option value="app_create_unresolved">앱 저장 결과 미확정</option>
           <option value="app_create_delayed">앱 저장 지연</option>
+          <option value="admin_delete_unresolved">회원 삭제 결과 미확정</option>
+          <option value="admin_delete_unknown">회원 삭제 응답 유실</option>
+          <option value="admin_delete_delayed">회원 삭제 지연</option>
+          <option value="admin_delete_pending_confirmation">
+            회원 삭제 확인 대기
+          </option>
         </select>
         <label
           className="mt-5 block text-[13px] font-semibold text-neutral-800"

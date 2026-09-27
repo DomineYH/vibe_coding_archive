@@ -21,6 +21,30 @@ function userRow(page, nickname) {
     .filter({ has: page.getByText(nickname, { exact: true }) });
 }
 
+function userDeletePanel(page) {
+  return page.getByRole("region", {
+    name: /계정 삭제 확인|계정을 삭제할까요/,
+  });
+}
+
+async function deleteAfterReauthentication(page, nickname) {
+  const row = userRow(page, nickname);
+  await expect(row).toHaveCount(1);
+  await row.getByRole("button", { name: "삭제", exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
+  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
+  const form = reauth.locator("form");
+  await expect(form).toBeVisible();
+  await reauth
+    .getByLabel("현재 관리자 비밀번호", { exact: true })
+    .fill("admin123");
+  await form.getByRole("button", { name: "본인 확인", exact: true }).click();
+  await expect(page).toHaveURL("/admin");
+  const panel = userDeletePanel(page);
+  await expect(panel).toContainText(`${nickname} 계정을 삭제할까요?`);
+  return { row, panel };
+}
+
 async function openApproval(page, nickname, action, confirmation) {
   const row = userRow(page, nickname);
   await expect(row).toHaveCount(1);
@@ -293,6 +317,294 @@ test("member password reset requires reauthentication and an explicit submit", a
   await expect(
     page.getByRole("button", { name: "로그아웃", exact: true }),
   ).toBeVisible();
+});
+
+test("member deletion reauthenticates, preserves cancellation, and removes owned apps", async ({
+  page,
+}) => {
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const statistics = page.getByRole("region", { name: "전체 통계" });
+  const row = userRow(page, "교사김코딩");
+  await expect(row).toHaveCount(1);
+  const deleteButton = row.getByRole("button", { name: "삭제", exact: true });
+  await deleteButton.focus();
+  await expect(deleteButton).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
+  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
+  const reauthForm = reauth.locator("form");
+  await expect(reauthForm).toBeVisible();
+  await reauth
+    .getByLabel("현재 관리자 비밀번호", { exact: true })
+    .fill("admin123");
+  await reauthForm
+    .getByRole("button", { name: "본인 확인", exact: true })
+    .click();
+  await expect(page).toHaveURL("/admin");
+
+  let panel = userDeletePanel(page);
+  await expect(panel).toContainText("교사김코딩 계정을 삭제할까요?");
+  const appCountText = (await row.innerText()).match(/등록 앱 (\d+)개/);
+  expect(appCountText).not.toBeNull();
+  const appCount = Number(appCountText[1]);
+  expect(appCount).toBeGreaterThan(0);
+  await expect(panel).toContainText(`등록한 앱 ${appCount}개도 함께 삭제`);
+  await expect(panel).toContainText("로그인 아이디: 교사김코딩");
+  await panel.getByRole("button", { name: "취소", exact: true }).click();
+  await expect(panel).toHaveCount(0);
+  await expect(row).toHaveCount(1);
+  await expect(statistics.getByText("7", { exact: true })).toBeVisible();
+  await expect(statistics.getByText("17", { exact: true })).toBeVisible();
+
+  panel = (await deleteAfterReauthentication(page, "교사김코딩")).panel;
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    `소유 앱 ${appCount}개 삭제가 확정됐어요`,
+  );
+  await expect(row).toHaveCount(0);
+  await expect(statistics.getByText("6", { exact: true })).toBeVisible();
+  await expect(
+    statistics.getByText(String(17 - appCount), { exact: true }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate((key) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      const id = "00000000-0000-4000-8000-000000000101";
+      return {
+        member: state.admin_users.some((user) => user.id === id),
+        ownedApps: [...state.apps, ...state.private_apps].filter(
+          (app) => app.owner.id === id,
+        ).length,
+      };
+    }, STORAGE_KEY),
+  ).toEqual({ member: false, ownedApps: 0 });
+
+  await page.goto("/admin?tab=health");
+  const allApps = page.getByRole("list", { name: "전체 앱 목록" });
+  await expect(allApps.getByRole("listitem")).toHaveCount(17 - appCount);
+  await expect(allApps).not.toContainText("교사김코딩");
+});
+
+test("app-count conflict requires an explicit current-member refresh", async ({
+  page,
+}) => {
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const { panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const row = userRow(page, "교사김코딩");
+  const originalAppCount = Number(
+    (await row.innerText()).match(/등록 앱 (\d+)개/)[1],
+  );
+  expect(originalAppCount).toBeGreaterThan(0);
+  await page.evaluate(
+    ({ key, accountId }) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      const listName = ["apps", "private_apps"].find((name) =>
+        state[name].some((app) => app.owner.id === accountId),
+      );
+      const index = state[listName].findIndex(
+        (app) => app.owner.id === accountId,
+      );
+      state[listName].splice(index, 1);
+      localStorage.setItem(key, JSON.stringify(state));
+      window.dispatchEvent(new StorageEvent("storage", { key }));
+    },
+    { key: STORAGE_KEY, accountId: "00000000-0000-4000-8000-000000000101" },
+  );
+
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText(
+    "소유 앱 수가 바뀌었어요",
+  );
+  await panel
+    .getByRole("button", { name: "현재 회원 정보 다시 확인", exact: true })
+    .click();
+  await expect(panel).toContainText(
+    `등록한 앱 ${originalAppCount - 1}개도 함께 삭제`,
+  );
+  await panel.getByRole("button", { name: "취소", exact: true }).click();
+  await expect(row).toHaveCount(1);
+});
+
+test("unknown deletion result needs lookup and an explicit same-key retry", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("admin_delete_unresolved");
+  });
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "삭제 결과가 아직 확정되지 않았어요",
+  );
+  await expect(row).toHaveCount(1);
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("original");
+  });
+  await panel.getByRole("button", { name: "결과 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "삭제 결과가 아직 확정되지 않았어요",
+  );
+  await panel
+    .getByRole("button", { name: "같은 삭제 요청 다시 제출", exact: true })
+    .click();
+  await expect(panel.getByRole("status")).toContainText("삭제가 확정됐어요");
+  await expect(row).toHaveCount(0);
+});
+
+test("a lost delete response is resolved with its issued key without replay", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("admin_delete_unknown");
+  });
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText("삭제가 확정됐어요");
+  await expect(row).toHaveCount(0);
+  expect(
+    await page.evaluate((key) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      return {
+        memberExists: state.admin_users.some(
+          (user) => user.id === "00000000-0000-4000-8000-000000000101",
+        ),
+        ownedApps: [...state.apps, ...state.private_apps].filter(
+          (app) => app.owner.id === "00000000-0000-4000-8000-000000000101",
+        ).length,
+      };
+    }, STORAGE_KEY),
+  ).toEqual({ memberExists: false, ownedApps: 0 });
+});
+
+test("pending deletion confirmation stays distinct and resolves by its known key", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("admin_delete_pending_confirmation");
+  });
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "삭제는 반영됐고 별도 확인을 기다리고 있어요",
+  );
+  await expect(
+    panel.getByRole("button", {
+      name: "같은 삭제 요청 다시 제출",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(row).toHaveCount(0);
+  await panel.getByRole("button", { name: "결과 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "삭제는 반영됐고 별도 확인을 기다리고 있어요",
+  );
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key));
+    state.mock_now = "2026-09-22T00:13:00.000Z";
+    localStorage.setItem(key, JSON.stringify(state));
+  }, STORAGE_KEY);
+  await panel.getByRole("button", { name: "결과 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText("삭제가 확정됐어요");
+});
+
+test("reauthenticating an expired recent-auth delete preserves its key without replay", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("admin_delete_unresolved");
+  });
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "삭제 결과가 아직 확정되지 않았어요",
+  );
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key));
+    state.mock_now = "2026-09-22T00:28:00.000Z";
+    localStorage.setItem(key, JSON.stringify(state));
+  }, STORAGE_KEY);
+  await panel
+    .getByRole("button", { name: "같은 삭제 요청 다시 제출", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
+  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
+  const form = reauth.locator("form");
+  await expect(form).toBeVisible();
+  await reauth
+    .getByLabel("현재 관리자 비밀번호", { exact: true })
+    .fill("admin123");
+  await form.getByRole("button", { name: "본인 확인", exact: true }).click();
+  await expect(page).toHaveURL("/admin");
+  const resumedPanel = userDeletePanel(page);
+  await expect(resumedPanel.getByRole("status")).toContainText(
+    "삭제 결과가 아직 확정되지 않았어요",
+  );
+  await expect(row).toHaveCount(1);
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("original");
+  });
+  await resumedPanel
+    .getByRole("button", { name: "같은 삭제 요청 다시 제출", exact: true })
+    .click();
+  await expect(resumedPanel.getByRole("status")).toContainText(
+    "삭제가 확정됐어요",
+  );
+  await expect(row).toHaveCount(0);
+});
+
+test("a delayed delete cannot apply after the admin permission changes", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+  await page.goto("/");
+  await page.evaluate(async () => {
+    const { setMockScenario } = await import("/src/services/mock/state.ts");
+    setMockScenario("admin_delete_delayed");
+  });
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  const { panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "삭제 결과가 아직 확정되지 않았어요",
+  );
+  await page.evaluate(async (memberId) => {
+    const { setMockPrincipal } = await import("/src/services/mock/state.ts");
+    setMockPrincipal(memberId);
+    window.dispatchEvent(
+      new StorageEvent("storage", { key: "eduvibe-archive-mock-v1" }),
+    );
+  }, MEMBER_ID);
+  await page.clock.fastForward(600);
+  await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요해요");
+  expect(
+    await page.evaluate((key) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      return state.admin_users.some(
+        (user) => user.id === "00000000-0000-4000-8000-000000000101",
+      );
+    }, STORAGE_KEY),
+  ).toBe(true);
 });
 
 test("unknown password-reset results require explicit query, same-key retry, or cancel", async ({

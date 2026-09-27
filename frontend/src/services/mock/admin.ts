@@ -4,10 +4,12 @@ import {
   mapAdminUserPage,
   mapApprovalOperation,
   mapPasswordResetOperation,
+  mapUserDeleteOperation,
   type AdminUserPage,
   type AdminAppPage,
   type ApprovalOperation,
   type PasswordResetOperation,
+  type UserDeleteOperation,
 } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
 import {
@@ -19,11 +21,13 @@ import {
 import { mockMetaWire } from "./apps";
 import {
   createMockApprovalOperation,
+  deleteMockUserAccount,
   finishMockApprovalOperation,
   getMockAccounts,
   getMockApprovalOperation,
   getMockSnapshot,
   MOCK_WRITE_OPERATIONS_RESET_EVENT,
+  MOCK_ACCOUNT_DELETED_EVENT,
   setMockTemporaryPassword,
 } from "./state";
 
@@ -45,10 +49,39 @@ const passwordResetOperations = new Map<string, MockPasswordResetOperation>();
 // ponytail: reset inputs bind keys in tab memory; the real API owns durable HMAC binding.
 const passwordResetInputs = new Map<string, string>();
 let passwordResetSequence = 0;
+type MockUserDeleteOperation = {
+  key: string;
+  actor_id: string;
+  target_id: string;
+  expected_app_count: number;
+  issued_at: string;
+  expires_at: string;
+  state: "unresolved" | "confirming_deletion" | "succeeded" | "rejected";
+  db_applied_at: string | null;
+  finalized_at: string | null;
+  rejection_code: string | null;
+};
+const userDeleteOperations = new Map<string, MockUserDeleteOperation>();
+let userDeleteSequence = 0;
 window.addEventListener(MOCK_WRITE_OPERATIONS_RESET_EVENT, () => {
   passwordResetOperations.clear();
   passwordResetInputs.clear();
   passwordResetSequence = 0;
+  userDeleteOperations.clear();
+  userDeleteSequence = 0;
+});
+window.addEventListener(MOCK_ACCOUNT_DELETED_EVENT, (event) => {
+  const accountId = (event as CustomEvent<{ accountId: string }>).detail
+    .accountId;
+  for (const [key, operation] of passwordResetOperations) {
+    if (operation.actor_id === accountId) {
+      passwordResetOperations.delete(key);
+      passwordResetInputs.delete(key);
+    }
+  }
+  for (const [key, operation] of userDeleteOperations) {
+    if (operation.actor_id === accountId) userDeleteOperations.delete(key);
+  }
 });
 
 function fail(
@@ -186,6 +219,82 @@ function readPasswordResetOperation(
   return mapPasswordResetOperation(
     wirePasswordResetOperation(operation, getMockSnapshot().mock_now),
   );
+}
+
+function ownedAppCount(
+  state: ReturnType<typeof getMockSnapshot>,
+  accountId: string,
+) {
+  return [...state.apps, ...state.private_apps].filter(
+    (app) => app.owner.id === accountId,
+  ).length;
+}
+
+function wireUserDeleteOperation(
+  operation: MockUserDeleteOperation,
+  serverTime: string,
+) {
+  return {
+    key: operation.key,
+    kind: "user_delete" as const,
+    target_id: operation.target_id,
+    issued_at: operation.issued_at,
+    expires_at: operation.expires_at,
+    state: operation.state,
+    db_applied_at: operation.db_applied_at,
+    finalized_at: operation.finalized_at,
+    rejection_code: operation.rejection_code,
+    server_time: serverTime,
+  };
+}
+
+function getOwnedUserDeleteOperation(key: string, actorId: string) {
+  const operation = userDeleteOperations.get(key);
+  if (!operation || operation.actor_id !== actorId)
+    throw fail("OPERATION_NOT_FOUND", "삭제 작업을 찾을 수 없어요.", 404);
+  if (
+    Date.parse(getMockSnapshot().mock_now) >= Date.parse(operation.expires_at)
+  )
+    throw fail("OPERATION_EXPIRED", "삭제 작업 키가 만료되었어요.", 410);
+  return operation;
+}
+
+function readUserDeleteOperation(
+  operation: MockUserDeleteOperation,
+  state = getMockSnapshot(),
+): UserDeleteOperation {
+  if (
+    operation.state === "confirming_deletion" &&
+    operation.db_applied_at &&
+    Date.parse(state.mock_now) >=
+      Date.parse(operation.db_applied_at) + 60 * 1000
+  ) {
+    // ponytail: logical time stands in for outbox confirmation; the mock has no durable provider.
+    operation = {
+      ...operation,
+      state: "succeeded",
+      finalized_at: state.mock_now,
+    };
+    userDeleteOperations.set(operation.key, operation);
+  }
+  return mapUserDeleteOperation(
+    wireUserDeleteOperation(operation, state.mock_now),
+  );
+}
+
+function rejectUserDeleteOperation(
+  operation: MockUserDeleteOperation,
+  rejectionCode: string,
+  finalizedAt: string,
+) {
+  const rejected = {
+    ...operation,
+    state: "rejected" as const,
+    finalized_at: finalizedAt,
+    rejection_code: rejectionCode,
+  };
+  userDeleteOperations.set(operation.key, rejected);
+  return rejected;
 }
 
 function rejectPasswordReset(
@@ -408,6 +517,54 @@ export const adminService: AdminService = {
     return readPasswordResetOperation(operation);
   },
 
+  async createUserDeleteOperation(input) {
+    const { state, account: actor } = currentAdmin(true);
+    if (
+      typeof input?.targetId !== "string" ||
+      !Number.isSafeInteger(input?.expectedAppCount) ||
+      input.expectedAppCount < 0
+    )
+      throw fail("VALIDATION_ERROR", "삭제 대상을 다시 확인해 주세요.", 422);
+    const target = getMockAccounts(state).find(
+      (item) => item.id === input.targetId,
+    );
+    if (!target) throw fail("USER_NOT_FOUND", "회원을 찾을 수 없어요.", 404);
+    if (target.role === "admin")
+      throw fail(
+        "ADMIN_ACCOUNT_PROTECTED",
+        "관리자 계정은 삭제할 수 없어요.",
+        403,
+      );
+    const appCount = ownedAppCount(state, target.id);
+    if (appCount !== input.expectedAppCount)
+      throw fail(
+        "APP_COUNT_CONFLICT",
+        "소유 앱 수가 바뀌었어요. 현재 정보를 다시 확인해 주세요.",
+        409,
+      );
+    if (userDeleteSequence >= Number.MAX_SAFE_INTEGER - 0x500)
+      throw fail("SERVICE_UNAVAILABLE", "작업 키를 발급할 수 없어요.", 503);
+
+    const issuedAt = state.mock_now;
+    const operation: MockUserDeleteOperation = {
+      key: `00000000-0000-4003-8000-${String(0x500 + userDeleteSequence).padStart(12, "0")}`,
+      actor_id: actor.id,
+      target_id: target.id,
+      expected_app_count: input.expectedAppCount,
+      issued_at: issuedAt,
+      expires_at: new Date(
+        Date.parse(issuedAt) + OPERATION_LIFETIME_MS,
+      ).toISOString(),
+      state: "unresolved",
+      db_applied_at: null,
+      finalized_at: null,
+      rejection_code: null,
+    };
+    userDeleteSequence += 1;
+    userDeleteOperations.set(operation.key, operation);
+    return readUserDeleteOperation(operation, state);
+  },
+
   async setApproval(id, approved, expectedAccountVersion, operationKey) {
     const { account: actor, state } = currentAdmin();
     let operation = getOwnedOperation(operationKey, actor.id);
@@ -603,10 +760,116 @@ export const adminService: AdminService = {
       );
   },
 
+  async deleteUser(id, expectedAppCount, operationKey) {
+    const { state, account: actor } = currentAdmin(true);
+    let operation = getOwnedUserDeleteOperation(operationKey, actor.id);
+    if (
+      operation.target_id !== id ||
+      operation.expected_app_count !== expectedAppCount
+    )
+      throw fail("OPERATION_KEY_MISMATCH", "삭제 요청 내용이 달라요.", 409);
+    if (operation.state === "succeeded") return;
+    if (operation.state === "confirming_deletion") {
+      operation = userDeleteOperations.get(operationKey)!;
+      if (readUserDeleteOperation(operation).state === "succeeded") return;
+      throw new ServiceError(
+        "DELETION_CONFIRMATION_PENDING",
+        "회원과 소유 앱 삭제는 반영되었고 확인을 기다리고 있어요.",
+        { httpStatus: 503, outcome: "unknown" },
+      );
+    }
+    if (operation.state !== "unresolved")
+      throw fail(
+        "OPERATION_ALREADY_RESOLVED",
+        "삭제 작업 결과를 먼저 확인해 주세요.",
+        409,
+      );
+
+    if (state.scenario === "admin_delete_unresolved")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "삭제 결과를 확인할 수 없어요. 먼저 같은 작업 키의 결과를 확인해 주세요.",
+        { httpStatus: 503, outcome: "unknown" },
+      );
+
+    if (state.scenario === "admin_delete_delayed") {
+      const flow = state.auth_flow;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const current = getMockSnapshot();
+      if (
+        current.principal_id !== actor.id ||
+        current.auth_flow.flow_id !== flow.flow_id ||
+        current.auth_flow.revision !== flow.revision ||
+        current.auth_flow.session_generation !== flow.session_generation
+      )
+        throw fail(
+          "AUTH_STATE_CHANGED",
+          "인증 상태가 바뀌어 삭제 요청을 적용하지 않았어요.",
+          409,
+        );
+      currentAdmin(true);
+      operation = getOwnedUserDeleteOperation(operationKey, actor.id);
+      if (operation.state !== "unresolved")
+        throw fail(
+          "OPERATION_ALREADY_RESOLVED",
+          "삭제 작업 결과를 먼저 확인해 주세요.",
+          409,
+        );
+    }
+
+    const now = getMockSnapshot().mock_now;
+    try {
+      deleteMockUserAccount(id, expectedAppCount);
+    } catch (error) {
+      if (
+        error instanceof ServiceError &&
+        [
+          "USER_NOT_FOUND",
+          "ADMIN_ACCOUNT_PROTECTED",
+          "APP_COUNT_CONFLICT",
+        ].includes(error.code)
+      ) {
+        rejectUserDeleteOperation(operation, error.code, now);
+      }
+      throw error;
+    }
+
+    const confirming = state.scenario === "admin_delete_pending_confirmation";
+    const finalizedAt = getMockSnapshot().mock_now;
+    operation = {
+      ...operation,
+      state: confirming ? "confirming_deletion" : "succeeded",
+      db_applied_at: finalizedAt,
+      finalized_at: confirming ? null : finalizedAt,
+      rejection_code: null,
+    };
+    userDeleteOperations.set(operationKey, operation);
+    if (confirming)
+      throw new ServiceError(
+        "DELETION_CONFIRMATION_PENDING",
+        "회원과 소유 앱 삭제는 반영되었고 확인을 기다리고 있어요.",
+        { httpStatus: 503, outcome: "unknown" },
+      );
+    if (state.scenario === "admin_delete_unknown")
+      throw new ServiceError(
+        "SERVICE_UNAVAILABLE",
+        "삭제 결과를 확인할 수 없어요. 먼저 같은 작업 키의 결과를 확인해 주세요.",
+        { httpStatus: 503, outcome: "unknown" },
+      );
+  },
+
   async getPasswordResetOperation(key) {
     const { account } = currentAdmin();
     return readPasswordResetOperation(
       getOwnedPasswordResetOperation(key, account.id),
+    );
+  },
+
+  async getUserDeleteOperation(key) {
+    const { account, state } = currentAdmin();
+    return readUserDeleteOperation(
+      getOwnedUserDeleteOperation(key, account.id),
+      state,
     );
   },
 

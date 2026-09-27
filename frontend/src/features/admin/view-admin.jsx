@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Avatar, Btn, StatusBadge } from "../../components/ui";
 import { formatCheckedAt } from "../../components/presentation";
@@ -265,6 +265,24 @@ function resetOperationMessage(error) {
     return "이 작업은 이미 확정됐어요. 결과를 확인해 주세요.";
   return error.outcome === "unknown"
     ? "처리가 끝났을 수 있지만 응답이 확정되지 않았어요. 결과를 확인해 주세요."
+    : error.message;
+}
+
+function deleteOperationMessage(error) {
+  if (!(error instanceof ServiceError))
+    return "삭제 결과를 확인할 수 없어요. 같은 작업 키의 결과를 확인해 주세요.";
+  if (error.code === "ADMIN_ACCOUNT_PROTECTED")
+    return "관리자 계정은 삭제할 수 없어요.";
+  if (error.code === "APP_COUNT_CONFLICT")
+    return "소유 앱 수가 바뀌었어요. 현재 회원과 앱 수를 다시 확인해 주세요.";
+  if (error.code === "USER_NOT_FOUND")
+    return "현재 회원을 찾을 수 없어요. 과거 삭제 결과는 작업 키로 확인해 주세요.";
+  if (error.code === "OPERATION_KEY_MISMATCH")
+    return "같은 작업 키의 삭제 조건이 달라 처리하지 않았어요.";
+  if (error.code === "OPERATION_ALREADY_RESOLVED")
+    return "이 삭제 작업은 이미 확정됐어요. 결과를 확인해 주세요.";
+  return error.outcome === "unknown"
+    ? "삭제 결과가 아직 확정되지 않았어요. 현재 대상이 없다는 사실만으로 성공을 추정하지 말고 작업 키로 확인해 주세요."
     : error.message;
 }
 
@@ -575,22 +593,199 @@ function PasswordResetPanel({
   );
 }
 
+function UserDeletePanel({
+  target,
+  loading,
+  busy,
+  error,
+  operation,
+  operationKey,
+  expectedAppCount,
+  operationExpired,
+  refreshRequired,
+  onConfirm,
+  onReadResult,
+  onRetrySame,
+  onRetryTarget,
+  onClose,
+}) {
+  const hasPendingKey = Boolean(operationKey && !operation);
+  const unresolved = operation?.state === "unresolved" || hasPendingKey;
+  const confirming = operation?.state === "confirming_deletion";
+  const expectedCount = expectedAppCount ?? target?.appCount;
+  const canConfirm =
+    !loading &&
+    !busy &&
+    target?.role === "user" &&
+    !operation &&
+    !operationKey &&
+    !refreshRequired;
+
+  return (
+    <section
+      className="mx-5 mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 sm:mx-6"
+      role="region"
+      aria-labelledby="admin-user-delete-title"
+      aria-busy={busy || loading}
+    >
+      <div className="min-w-[220px] flex-1">
+        <h3
+          id="admin-user-delete-title"
+          className="break-keep text-[13.5px] font-bold text-red-700"
+        >
+          {target
+            ? `${target.nickname} 계정을 삭제할까요?`
+            : "회원 계정 삭제 확인"}
+        </h3>
+        {target ? (
+          <>
+            <p className="mt-0.5 break-keep text-[12px] leading-relaxed text-red-600/90">
+              이 사용자가 등록한 앱 {target.appCount}개도 함께 삭제되며 되돌릴
+              수 없습니다.
+            </p>
+            <p className="mt-1 break-keep text-[12px] leading-relaxed text-neutral-600">
+              로그인 아이디: <strong>{target.loginId}</strong>
+              <span className="mx-2" aria-hidden="true">
+                ·
+              </span>
+              승인 상태: <strong>{target.approved ? "승인" : "미승인"}</strong>
+              <span className="mx-2" aria-hidden="true">
+                ·
+              </span>
+              가입 신청 {dateOnly(target.createdAt)}
+            </p>
+          </>
+        ) : null}
+        {loading ? (
+          <p role="status" className="mt-1 text-[12px] text-neutral-600">
+            현재 회원 정보와 소유 앱 수를 다시 확인하고 있어요.
+          </p>
+        ) : null}
+        {operation?.state === "succeeded" ? (
+          <p
+            role="status"
+            className="mt-2 text-[12px] font-semibold text-emerald-800"
+          >
+            {expectedCount === null || expectedCount === undefined
+              ? "회원 계정과 소유 앱 삭제가 확정됐어요."
+              : `회원 계정과 소유 앱 ${expectedCount}개 삭제가 확정됐어요.`}
+          </p>
+        ) : operation?.state === "rejected" ? (
+          <p
+            role="status"
+            className="mt-2 text-[12px] font-semibold text-red-700"
+          >
+            {operation.rejectionCode === "APP_COUNT_CONFLICT"
+              ? "소유 앱 수가 달라 삭제하지 않았어요. 현재 회원 정보를 다시 확인한 뒤 재확인해 주세요."
+              : operation.rejectionCode === "ADMIN_ACCOUNT_PROTECTED"
+                ? "관리자 계정은 삭제할 수 없어요."
+                : operation.rejectionCode === "USER_NOT_FOUND"
+                  ? "현재 회원이 없어 이 작업으로 삭제하지 않았어요. 과거 삭제 여부는 이 결과와 별개예요."
+                  : "삭제를 적용하지 않았어요. 현재 상태를 다시 확인해 주세요."}
+          </p>
+        ) : confirming ? (
+          <p
+            role="status"
+            className="mt-2 text-[12px] font-semibold text-amber-800"
+          >
+            삭제는 반영됐고 별도 확인을 기다리고 있어요. 이 상태는 삭제 실패나
+            롤백이 아니며 계정과 앱을 되살리지 않습니다.
+          </p>
+        ) : unresolved ? (
+          <p
+            role="status"
+            className="mt-2 text-[12px] font-semibold text-amber-800"
+          >
+            삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지
+            않았습니다.
+          </p>
+        ) : target?.role === "admin" ? (
+          <p role="alert" className="mt-2 text-[12px] text-red-700">
+            관리자 계정은 삭제 대상이 아닙니다.
+          </p>
+        ) : null}
+        {operationExpired ? (
+          <p role="status" className="mt-1 text-[12px] text-neutral-600">
+            작업 키가 만료되어 과거 결과를 확인할 수 없어요. 현재 회원 조회는
+            이전 작업의 성공 여부를 증명하지 않습니다.
+          </p>
+        ) : null}
+        {!target && !loading && !operation ? (
+          <p role="alert" className="mt-1 text-[12px] text-red-700">
+            현재 대상을 불러오지 못했어요. 대상이 없다는 이유만으로 삭제 성공을
+            추정하지 않습니다.
+          </p>
+        ) : null}
+        {error ? (
+          <p role="alert" className="mt-1 text-[12px] text-red-700">
+            {error}
+          </p>
+        ) : null}
+      </div>
+      {canConfirm ? (
+        <>
+          <Btn size="sm" variant="danger" onClick={onConfirm}>
+            삭제 확인
+          </Btn>
+          <Btn size="sm" variant="ghost" onClick={onClose}>
+            취소
+          </Btn>
+        </>
+      ) : null}
+      {operationKey && !operationExpired && !busy ? (
+        <Btn size="sm" variant="line" onClick={onReadResult}>
+          결과 확인
+        </Btn>
+      ) : null}
+      {unresolved &&
+      target &&
+      expectedAppCount !== null &&
+      expectedAppCount !== undefined &&
+      !operationExpired ? (
+        <Btn size="sm" variant="line" onClick={onRetrySame} disabled={busy}>
+          같은 삭제 요청 다시 제출
+        </Btn>
+      ) : null}
+      {(operationExpired ||
+        operation?.rejectionCode === "APP_COUNT_CONFLICT" ||
+        refreshRequired ||
+        (!target && !loading && !operationKey)) && (
+        <Btn size="sm" variant="line" onClick={onRetryTarget} disabled={busy}>
+          현재 회원 정보 다시 확인
+        </Btn>
+      )}
+      {(operation?.state === "succeeded" ||
+        operation?.state === "rejected") && (
+        <Btn size="sm" variant="line" onClick={onClose} disabled={busy}>
+          닫기
+        </Btn>
+      )}
+    </section>
+  );
+}
+
 export function AdminView({ scopeKey }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const route = readAdminTab(location.search);
   const tab = route.tab;
   const [selection, setSelection] = useState(null);
   const [resetSelection, setResetSelection] = useState(null);
+  const [deleteSelection, setDeleteSelection] = useState(null);
   const [busy, setBusy] = useState(false);
   const [resetBusy, setResetBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [actionError, setActionError] = useState("");
   const [resetError, setResetError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const [operationExpired, setOperationExpired] = useState(false);
   const [resetOperationExpired, setResetOperationExpired] = useState(false);
+  const [deleteOperationExpired, setDeleteOperationExpired] = useState(false);
   const alive = useRef(true);
   const detailRequest = useRef(0);
   const resetDetailRequest = useRef(0);
+  const deleteDetailRequest = useRef(0);
   const usersKey = [__DATA_MODE__, "admin", "users", scopeKey];
   const query = useInfiniteQuery({
     queryKey: usersKey,
@@ -650,11 +845,21 @@ export function AdminView({ scopeKey }) {
     (resetSelection.operation?.state === "unresolved" ||
       (resetSelection.operationKey && !resetSelection.operation)),
   );
+  const deletePending = Boolean(
+    deleteSelection &&
+    (["unresolved", "confirming_deletion"].includes(
+      deleteSelection.operation?.state,
+    ) ||
+      (deleteSelection.operationKey && !deleteSelection.operation)),
+  );
 
   function changeTab(nextTab) {
+    if (deletePending || deleteBusy) return;
     setSelection(null);
     setResetSelection(null);
+    setDeleteSelection(null);
     setResetError("");
+    setDeleteError("");
     navigate(nextTab === "health" ? "/admin?tab=health" : "/admin");
   }
 
@@ -671,6 +876,11 @@ export function AdminView({ scopeKey }) {
   function markExpired(error) {
     if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
       setOperationExpired(true);
+  }
+
+  function markDeleteExpired(error) {
+    if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
+      setDeleteOperationExpired(true);
   }
 
   useEffect(() => {
@@ -760,6 +970,73 @@ export function AdminView({ scopeKey }) {
     })();
   }, [location.key, location.state, navigate]);
 
+  useEffect(() => {
+    const resume = location.state?.adminDelete;
+    if (!resume || typeof resume.targetId !== "string") return;
+    const targetId = resume.targetId;
+    const operationKey =
+      typeof resume.operationKey === "string" ? resume.operationKey : null;
+    const expectedAppCount = Number.isSafeInteger(resume.expectedAppCount)
+      ? resume.expectedAppCount
+      : null;
+    const request = ++deleteDetailRequest.current;
+    navigate("/admin", { replace: true, state: null });
+    setSelection(null);
+    setResetSelection(null);
+    setDeleteError("");
+    setDeleteBusy(false);
+    setDeleteOperationExpired(false);
+    setDeleteSelection({
+      id: targetId,
+      target: null,
+      loading: true,
+      operationKey,
+      expectedAppCount,
+      operation: null,
+    });
+
+    void (async () => {
+      let operation = null;
+      let operationError = null;
+      if (operationKey) {
+        try {
+          operation = await adminService.getUserDeleteOperation(operationKey);
+        } catch (error) {
+          operationError = error;
+        }
+      }
+      try {
+        const target = await adminService.getUser(targetId);
+        if (!alive.current || request !== deleteDetailRequest.current) return;
+        setDeleteSelection({
+          id: targetId,
+          target,
+          loading: false,
+          operationKey,
+          expectedAppCount:
+            expectedAppCount ?? (operationKey ? null : target.appCount),
+          operation,
+        });
+      } catch (error) {
+        if (!alive.current || request !== deleteDetailRequest.current) return;
+        setDeleteSelection({
+          id: targetId,
+          target: null,
+          loading: false,
+          operationKey,
+          expectedAppCount,
+          operation,
+          error:
+            error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
+        });
+      }
+      if (operationError) {
+        markDeleteExpired(operationError);
+        setDeleteError(deleteOperationMessage(operationError));
+      }
+    })();
+  }, [location.key, location.state, navigate]);
+
   async function openApproval(user) {
     if (resetPending) return;
     ++resetDetailRequest.current;
@@ -813,8 +1090,252 @@ export function AdminView({ scopeKey }) {
     });
   }
 
+  function startDeleteReauthentication(
+    targetId,
+    operationKey = null,
+    expectedAppCount = null,
+  ) {
+    ++detailRequest.current;
+    ++resetDetailRequest.current;
+    setBusy(false);
+    setResetBusy(false);
+    setDeleteBusy(false);
+    setSelection(null);
+    setResetSelection(null);
+    setDeleteSelection(null);
+    setDeleteError("");
+    setDeleteOperationExpired(false);
+    navigate("/auth?mode=reauth&return_to=%2Fadmin", {
+      state: {
+        adminDelete: {
+          targetId,
+          ...(operationKey ? { operationKey, expectedAppCount } : {}),
+        },
+      },
+    });
+  }
+
   function beginPasswordReset(targetId) {
     if (!resetPending) startResetReauthentication(targetId);
+  }
+
+  function beginUserDelete(targetId) {
+    if (!busy && !resetBusy && !resetPending && !deletePending && !deleteBusy)
+      startDeleteReauthentication(targetId);
+  }
+
+  async function refreshAfterDelete() {
+    queryClient.removeQueries({ queryKey: [__DATA_MODE__, "apps", "detail"] });
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      }),
+      queryClient.invalidateQueries({ queryKey: [__DATA_MODE__, "admin"] }),
+    ]);
+  }
+
+  async function readDeleteResult() {
+    const operationKey =
+      deleteSelection?.operation?.key ?? deleteSelection?.operationKey;
+    if (!operationKey || deleteBusy) return;
+    setDeleteBusy(true);
+    setDeleteError("");
+    try {
+      const operation = await adminService.getUserDeleteOperation(operationKey);
+      if (!alive.current) return;
+      setDeleteSelection((current) => ({
+        ...current,
+        operationKey,
+        operation,
+      }));
+      if (operation.state === "succeeded") await refreshAfterDelete();
+    } catch (error) {
+      if (alive.current) {
+        markDeleteExpired(error);
+        setDeleteError(deleteOperationMessage(error));
+      }
+    } finally {
+      if (alive.current) setDeleteBusy(false);
+    }
+  }
+
+  async function refreshDeleteTarget() {
+    if (!deleteSelection || deleteBusy) return;
+    const id = deleteSelection.id;
+    const request = ++deleteDetailRequest.current;
+    setDeleteError("");
+    setDeleteOperationExpired(false);
+    setDeleteSelection({ ...deleteSelection, loading: true, error: "" });
+    try {
+      const target = await adminService.getUser(id);
+      if (alive.current && request === deleteDetailRequest.current) {
+        setDeleteSelection({
+          id,
+          target,
+          loading: false,
+          operationKey: null,
+          expectedAppCount: target.appCount,
+          operation: null,
+        });
+      }
+    } catch (error) {
+      if (alive.current && request === deleteDetailRequest.current) {
+        setDeleteSelection({
+          id,
+          target: null,
+          loading: false,
+          operationKey: null,
+          expectedAppCount: null,
+          operation: null,
+          error:
+            error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
+        });
+      }
+    }
+  }
+
+  async function submitUserDelete() {
+    if (!deleteSelection?.target || deleteBusy || deleteSelection.operation)
+      return;
+    const { id, target } = deleteSelection;
+    const expectedAppCount =
+      deleteSelection.expectedAppCount ?? target.appCount;
+    setDeleteBusy(true);
+    setDeleteError("");
+    setDeleteOperationExpired(false);
+    let operation = null;
+    let recoveredOperation = null;
+    try {
+      operation = await adminService.createUserDeleteOperation({
+        targetId: id,
+        expectedAppCount,
+      });
+      if (!alive.current) return;
+      setDeleteSelection((current) => ({
+        ...current,
+        operationKey: operation.key,
+        expectedAppCount,
+        operation,
+      }));
+      await adminService.deleteUser(id, expectedAppCount, operation.key);
+      const result = await adminService.getUserDeleteOperation(operation.key);
+      if (!alive.current) return;
+      setDeleteSelection((current) => ({ ...current, operation: result }));
+      if (
+        result.state === "succeeded" ||
+        result.state === "confirming_deletion"
+      )
+        await refreshAfterDelete();
+    } catch (error) {
+      if (!alive.current) return;
+      if (error instanceof ServiceError && error.code === "REAUTH_REQUIRED") {
+        startDeleteReauthentication(
+          id,
+          operation?.key ?? null,
+          operation ? expectedAppCount : null,
+        );
+        return;
+      }
+      if (operation) {
+        try {
+          const result = await adminService.getUserDeleteOperation(
+            operation.key,
+          );
+          if (!alive.current) return;
+          recoveredOperation = result;
+          setDeleteSelection((current) => ({ ...current, operation: result }));
+          if (
+            result.state === "succeeded" ||
+            result.state === "confirming_deletion"
+          )
+            await refreshAfterDelete();
+        } catch (readError) {
+          if (
+            readError instanceof ServiceError &&
+            readError.code === "OPERATION_EXPIRED"
+          )
+            setDeleteOperationExpired(true);
+          setDeleteError(deleteOperationMessage(error));
+        }
+      } else if (
+        error instanceof ServiceError &&
+        ["APP_COUNT_CONFLICT", "USER_NOT_FOUND"].includes(error.code)
+      ) {
+        setDeleteSelection((current) => ({
+          ...current,
+          refreshRequired: true,
+        }));
+      }
+      markDeleteExpired(error);
+      setDeleteError(
+        recoveredOperation?.state === "succeeded" ||
+          recoveredOperation?.state === "confirming_deletion"
+          ? ""
+          : deleteOperationMessage(error),
+      );
+    } finally {
+      if (alive.current) setDeleteBusy(false);
+    }
+  }
+
+  async function retryUserDelete() {
+    const operationKey =
+      deleteSelection?.operation?.key ?? deleteSelection?.operationKey;
+    if (
+      !operationKey ||
+      !deleteSelection?.target ||
+      (deleteSelection.operation &&
+        deleteSelection.operation.state !== "unresolved") ||
+      deleteBusy
+    )
+      return;
+    setDeleteBusy(true);
+    setDeleteError("");
+    try {
+      await adminService.deleteUser(
+        deleteSelection.id,
+        deleteSelection.expectedAppCount,
+        operationKey,
+      );
+      const operation = await adminService.getUserDeleteOperation(operationKey);
+      if (!alive.current) return;
+      setDeleteSelection((current) => ({ ...current, operation }));
+      if (
+        operation.state === "succeeded" ||
+        operation.state === "confirming_deletion"
+      )
+        await refreshAfterDelete();
+    } catch (error) {
+      if (!alive.current) return;
+      if (error instanceof ServiceError && error.code === "REAUTH_REQUIRED") {
+        startDeleteReauthentication(
+          deleteSelection.id,
+          operationKey,
+          deleteSelection.expectedAppCount,
+        );
+        return;
+      }
+      try {
+        const operation =
+          await adminService.getUserDeleteOperation(operationKey);
+        if (!alive.current) return;
+        setDeleteSelection((current) => ({ ...current, operation }));
+        if (
+          operation.state === "succeeded" ||
+          operation.state === "confirming_deletion"
+        )
+          await refreshAfterDelete();
+      } catch (readError) {
+        if (
+          readError instanceof ServiceError &&
+          readError.code === "OPERATION_EXPIRED"
+        )
+          setDeleteOperationExpired(true);
+        setDeleteError(deleteOperationMessage(error));
+      }
+    } finally {
+      if (alive.current) setDeleteBusy(false);
+    }
   }
 
   async function retryResetTarget() {
@@ -1313,6 +1834,31 @@ export function AdminView({ scopeKey }) {
           ) : null}
         </div>
 
+        {deleteSelection &&
+        !query.isPending &&
+        !users.some((user) => user.id === deleteSelection.id) ? (
+          <UserDeletePanel
+            target={deleteSelection.target}
+            loading={deleteSelection.loading}
+            busy={deleteBusy}
+            error={deleteError || deleteSelection.error}
+            operation={deleteSelection.operation}
+            operationKey={deleteSelection.operationKey}
+            expectedAppCount={deleteSelection.expectedAppCount}
+            operationExpired={deleteOperationExpired}
+            refreshRequired={deleteSelection.refreshRequired}
+            onConfirm={() => void submitUserDelete()}
+            onReadResult={() => void readDeleteResult()}
+            onRetrySame={() => void retryUserDelete()}
+            onRetryTarget={() => void refreshDeleteTarget()}
+            onClose={() => {
+              ++deleteDetailRequest.current;
+              setDeleteSelection(null);
+              setDeleteError("");
+            }}
+          />
+        ) : null}
+
         {query.isPending ? (
           <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
             사용자 목록을 불러오고 있어요.
@@ -1388,19 +1934,45 @@ export function AdminView({ scopeKey }) {
                         </span>
                         <Btn
                           size="sm"
-                          variant={user.approved ? "line" : "primary"}
-                          onClick={() => void openApproval(user)}
-                          disabled={busy || resetBusy || resetPending}
+                          variant="line"
+                          onClick={() => beginPasswordReset(user.id)}
+                          disabled={
+                            busy ||
+                            resetBusy ||
+                            resetPending ||
+                            deleteBusy ||
+                            deletePending
+                          }
                         >
-                          {user.approved ? "승인 해제" : "승인하기"}
+                          임시 비밀번호 설정
                         </Btn>
                         <Btn
                           size="sm"
                           variant="line"
-                          onClick={() => beginPasswordReset(user.id)}
-                          disabled={busy || resetBusy || resetPending}
+                          onClick={() => beginUserDelete(user.id)}
+                          disabled={
+                            busy ||
+                            resetBusy ||
+                            resetPending ||
+                            deleteBusy ||
+                            deletePending
+                          }
                         >
-                          임시 비밀번호 설정
+                          삭제
+                        </Btn>
+                        <Btn
+                          size="sm"
+                          variant={user.approved ? "line" : "primary"}
+                          onClick={() => void openApproval(user)}
+                          disabled={
+                            busy ||
+                            resetBusy ||
+                            resetPending ||
+                            deleteBusy ||
+                            deletePending
+                          }
+                        >
+                          {user.approved ? "승인 해제" : "승인하기"}
                         </Btn>
                       </div>
                     )}
@@ -1441,6 +2013,28 @@ export function AdminView({ scopeKey }) {
                         ++resetDetailRequest.current;
                         setResetSelection(null);
                         setResetError("");
+                      }}
+                    />
+                  ) : null}
+                  {deleteSelection?.id === user.id ? (
+                    <UserDeletePanel
+                      target={deleteSelection.target}
+                      loading={deleteSelection.loading}
+                      busy={deleteBusy}
+                      error={deleteError || deleteSelection.error}
+                      operation={deleteSelection.operation}
+                      operationKey={deleteSelection.operationKey}
+                      expectedAppCount={deleteSelection.expectedAppCount}
+                      operationExpired={deleteOperationExpired}
+                      refreshRequired={deleteSelection.refreshRequired}
+                      onConfirm={() => void submitUserDelete()}
+                      onReadResult={() => void readDeleteResult()}
+                      onRetrySame={() => void retryUserDelete()}
+                      onRetryTarget={() => void refreshDeleteTarget()}
+                      onClose={() => {
+                        ++deleteDetailRequest.current;
+                        setDeleteSelection(null);
+                        setDeleteError("");
                       }}
                     />
                   ) : null}

@@ -190,6 +190,39 @@ for (const viewport of viewports) {
     await expect(confirm).toContainText("대상 버전: 1");
     await capture(page, "admin-approval-confirm", viewport, testInfo);
 
+    await pendingRow.getByRole("button", { name: "삭제", exact: true }).click();
+    await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
+    const deleteReauth = page.locator('[data-screen-label="관리자 재인증"]');
+    const deleteReauthForm = deleteReauth.locator("form");
+    await expect(deleteReauthForm).toBeVisible();
+    await deleteReauth
+      .getByLabel("현재 관리자 비밀번호", { exact: true })
+      .fill("admin123");
+    await deleteReauthForm
+      .getByRole("button", { name: "본인 확인", exact: true })
+      .click();
+    await expect(page).toHaveURL("/admin");
+    const deletePanel = page.getByRole("region", {
+      name: /비기너개발자 계정을 삭제할까요/,
+    });
+    const deleteAppCount = Number(
+      (await pendingRow.innerText()).match(/등록 앱 (\d+)개/)[1],
+    );
+    await expect(deletePanel).toContainText(
+      `등록한 앱 ${deleteAppCount}개도 함께 삭제`,
+    );
+    await capture(
+      page,
+      "admin-user-delete-confirm",
+      viewport,
+      testInfo,
+      "19-admin-user-confirm.png",
+    );
+    await deletePanel
+      .getByRole("button", { name: "취소", exact: true })
+      .click();
+    await expect(deletePanel).toHaveCount(0);
+
     const member = page
       .getByRole("listitem")
       .filter({ has: page.getByText("교사김코딩", { exact: true }) });

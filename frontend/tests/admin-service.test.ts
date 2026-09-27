@@ -1,19 +1,38 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { authService } from "../src/services/mock/auth";
+import { appsService } from "../src/services/mock/apps";
 import { adminService } from "../src/services/mock/admin";
 import {
+  getMockAccounts,
   getMockSnapshot,
   MOCK_STORAGE_KEY,
   resetMockState,
+  setMockClock,
   setMockScenario,
 } from "../src/services/mock/state";
 
 const ADMIN_ID = "00000000-0000-4000-8000-000000000100";
 const MEMBER_ID = "00000000-0000-4000-8000-000000000101";
 const PENDING_ID = "00000000-0000-4000-8000-000000000102";
+const memberAppInput = {
+  name: "삭제 경합 확인 앱",
+  url: "https://example.org/delete-race",
+  prompt: "수업 자료",
+  description: "합성 테스트",
+  subject: "수학" as const,
+  grades: ["초3"] as const,
+  isPublic: true,
+  themeId: "niagara",
+  stack: { db: "", backend: "", frontend: "", hosting: "" },
+};
 
 async function loginAdmin() {
   await authService.login({ loginId: "admin", password: "admin123" });
+}
+
+async function reauthenticateAdmin() {
+  await loginAdmin();
+  await authService.reauthenticate({ password: "admin123" });
 }
 
 async function registerPendingAccounts(count: number) {
@@ -608,5 +627,285 @@ describe("admin service", () => {
       state: "rejected",
       rejectionCode: "USER_NOT_FOUND",
     });
+  });
+
+  it("requires reauthentication, protects administrators, and binds deletion to its key", async () => {
+    await loginAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    await expect(
+      adminService.createUserDeleteOperation({
+        targetId: target.id,
+        expectedAppCount: target.appCount,
+      }),
+    ).rejects.toMatchObject({ code: "REAUTH_REQUIRED", httpStatus: 403 });
+
+    await authService.reauthenticate({ password: "admin123" });
+    await expect(
+      adminService.createUserDeleteOperation({
+        targetId: ADMIN_ID,
+        expectedAppCount: 0,
+      }),
+    ).rejects.toMatchObject({
+      code: "ADMIN_ACCOUNT_PROTECTED",
+      httpStatus: 403,
+    });
+
+    const operation = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+    await expect(
+      adminService.deleteUser(target.id, target.appCount + 1, operation.key),
+    ).rejects.toMatchObject({ code: "OPERATION_KEY_MISMATCH" });
+  });
+
+  it("removes registered credentials and prevents a deleted account from returning", async () => {
+    const registered = await authService.register({
+      loginId: "delete-this-member",
+      password: "A long fake member password for deletion",
+      nickname: "삭제할 가입 회원",
+    });
+    await reauthenticateAdmin();
+    const target = await adminService.getUser(registered.id);
+    const operation = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+
+    await adminService.deleteUser(target.id, target.appCount, operation.key);
+
+    const state = getMockSnapshot();
+    expect(state.deleted_account_ids).toContain(target.id);
+    expect(state.registered_accounts).not.toContainEqual(
+      expect.objectContaining({ id: target.id }),
+    );
+    expect(state.admin_users).not.toContainEqual(
+      expect.objectContaining({ id: target.id }),
+    );
+    expect(getMockAccounts()).not.toContainEqual(
+      expect.objectContaining({ id: target.id }),
+    );
+    await authService.logout();
+    await expect(
+      authService.login({
+        loginId: registered.loginId,
+        password: "A long fake member password for deletion",
+      }),
+    ).rejects.toMatchObject({ code: "INVALID_CREDENTIALS" });
+  });
+
+  it("deletes the current app set after unrelated account-state changes", async () => {
+    await reauthenticateAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    const before = await adminService.listUsers();
+    const deletion = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+    const reset = await adminService.createPasswordResetOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      newPassword: "New temporary password for account delete",
+    });
+    await adminService.setPasswordReset(
+      target.id,
+      "New temporary password for account delete",
+      target.accountVersion,
+      reset.key,
+    );
+
+    await adminService.deleteUser(target.id, target.appCount, deletion.key);
+    expect(
+      await adminService.getUserDeleteOperation(deletion.key),
+    ).toMatchObject({ state: "succeeded", targetId: target.id });
+    expect(
+      await adminService.getPasswordResetOperation(reset.key),
+    ).toMatchObject({ state: "succeeded" });
+    await expect(adminService.getUser(target.id)).rejects.toMatchObject({
+      code: "USER_NOT_FOUND",
+    });
+    const after = await adminService.listUsers();
+    expect(after.stats).toMatchObject({
+      totalUsers: before.stats.totalUsers - 1,
+      totalApps: before.stats.totalApps - target.appCount,
+    });
+    expect(
+      (await adminService.listApps()).items.some(
+        (app) => app.ownerId === target.id,
+      ),
+    ).toBe(false);
+    expect(getMockAccounts()).not.toContainEqual(
+      expect.objectContaining({ id: target.id }),
+    );
+  });
+
+  it("rejects queued approval and password-reset work after account deletion", async () => {
+    await reauthenticateAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    const deletion = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+    const approval = await adminService.createApprovalOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      approved: false,
+    });
+    const resetPassword = "A pending reset operation for deleted member";
+    const reset = await adminService.createPasswordResetOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      newPassword: resetPassword,
+    });
+
+    await adminService.deleteUser(target.id, target.appCount, deletion.key);
+    await expect(
+      adminService.setApproval(
+        target.id,
+        false,
+        target.accountVersion,
+        approval.key,
+      ),
+    ).rejects.toMatchObject({ code: "USER_NOT_FOUND", httpStatus: 404 });
+    await expect(
+      adminService.setPasswordReset(
+        target.id,
+        resetPassword,
+        target.accountVersion,
+        reset.key,
+      ),
+    ).rejects.toMatchObject({ code: "USER_NOT_FOUND", httpStatus: 404 });
+    expect(await adminService.getApprovalOperation(approval.key)).toMatchObject(
+      {
+        state: "rejected",
+        rejectionCode: "USER_NOT_FOUND",
+      },
+    );
+    expect(
+      await adminService.getPasswordResetOperation(reset.key),
+    ).toMatchObject({ state: "rejected", rejectionCode: "USER_NOT_FOUND" });
+  });
+
+  it("keeps account deletion valid when reset and approval finish first", async () => {
+    await reauthenticateAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    const deletion = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+    const resetPassword = "Temporary password before account deletion";
+    const reset = await adminService.createPasswordResetOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      newPassword: resetPassword,
+    });
+    await adminService.setPasswordReset(
+      target.id,
+      resetPassword,
+      target.accountVersion,
+      reset.key,
+    );
+    const updated = await adminService.getUser(target.id);
+    const approval = await adminService.createApprovalOperation({
+      targetId: updated.id,
+      expectedAccountVersion: updated.accountVersion,
+      approved: updated.approved,
+    });
+    await adminService.setApproval(
+      target.id,
+      updated.approved,
+      updated.accountVersion,
+      approval.key,
+    );
+    await adminService.deleteUser(target.id, target.appCount, deletion.key);
+    expect(
+      await adminService.getUserDeleteOperation(deletion.key),
+    ).toMatchObject({ state: "succeeded" });
+  });
+
+  it("rejects a changed app count, but accepts a same-count app composition change", async () => {
+    await reauthenticateAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    const conflicted = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+    await authService.logout();
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
+    const created = await appsService.issueCreateOperation(memberAppInput);
+    await appsService.create(memberAppInput, created.key);
+    await authService.logout();
+    await reauthenticateAdmin();
+    await expect(
+      adminService.deleteUser(target.id, target.appCount, conflicted.key),
+    ).rejects.toMatchObject({ code: "APP_COUNT_CONFLICT", httpStatus: 409 });
+    expect(await adminService.getUser(target.id)).toMatchObject({
+      appCount: target.appCount + 1,
+    });
+    expect(
+      await adminService.getUserDeleteOperation(conflicted.key),
+    ).toMatchObject({ state: "rejected", rejectionCode: "APP_COUNT_CONFLICT" });
+
+    const current = await adminService.getUser(target.id);
+    const sameCount = await adminService.createUserDeleteOperation({
+      targetId: current.id,
+      expectedAppCount: current.appCount,
+    });
+    const ownedApps = [
+      ...getMockSnapshot().apps,
+      ...getMockSnapshot().private_apps,
+    ].filter((app) => app.owner.id === target.id);
+    await authService.logout();
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
+    const replacement = await appsService.issueCreateOperation({
+      ...memberAppInput,
+      name: "같은 수의 구성 교체 앱",
+    });
+    await appsService.create(
+      { ...memberAppInput, name: "같은 수의 구성 교체 앱" },
+      replacement.key,
+    );
+    const removed = ownedApps[0];
+    const removedOperation = await appsService.issueDeleteOperation(
+      removed.id,
+      removed.version,
+    );
+    await appsService.delete(removed.id, removed.version, removedOperation.key);
+    await authService.logout();
+    await reauthenticateAdmin();
+    await adminService.deleteUser(target.id, current.appCount, sameCount.key);
+    expect(
+      await adminService.getUserDeleteOperation(sameCount.key),
+    ).toMatchObject({ state: "succeeded" });
+    await expect(adminService.getUser(target.id)).rejects.toMatchObject({
+      code: "USER_NOT_FOUND",
+    });
+  });
+
+  it("keeps confirmation pending after deletion and resolves it by the same key", async () => {
+    await reauthenticateAdmin();
+    const target = await adminService.getUser(MEMBER_ID);
+    const operation = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.appCount,
+    });
+    setMockScenario("admin_delete_pending_confirmation");
+    await expect(
+      adminService.deleteUser(target.id, target.appCount, operation.key),
+    ).rejects.toMatchObject({
+      code: "DELETION_CONFIRMATION_PENDING",
+      httpStatus: 503,
+      outcome: "unknown",
+    });
+    await expect(adminService.getUser(target.id)).rejects.toMatchObject({
+      code: "USER_NOT_FOUND",
+    });
+    expect(
+      await adminService.getUserDeleteOperation(operation.key),
+    ).toMatchObject({ state: "confirming_deletion" });
+    setMockClock("2026-09-22T00:13:00.000Z");
+    expect(
+      await adminService.getUserDeleteOperation(operation.key),
+    ).toMatchObject({ state: "succeeded" });
   });
 });

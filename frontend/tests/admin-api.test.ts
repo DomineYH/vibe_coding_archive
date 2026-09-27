@@ -63,6 +63,18 @@ const resetOperation = {
   rejection_code: null,
   server_time: "2026-09-22T00:12:00.000Z",
 };
+const userDeleteOperation = {
+  key: "00000000-0000-4000-8000-000000000203",
+  kind: "user_delete",
+  target_id: target.id,
+  issued_at: "2026-09-22T00:12:00.000Z",
+  expires_at: "2026-09-23T00:12:00.000Z",
+  state: "unresolved",
+  db_applied_at: null,
+  finalized_at: null,
+  rejection_code: null,
+  server_time: "2026-09-22T00:12:00.000Z",
+};
 const monitorApp = {
   id: "00000000-0000-4000-8000-000000000091",
   owner: {
@@ -255,6 +267,89 @@ describe("admin API service", () => {
       "csrf-test-token",
     );
     expect(calls).toHaveLength(3);
+  });
+
+  it("issues an app-count-bound account deletion and reads its keyed result", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify(userDeleteOperation), { status: 201 }),
+        )
+        .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              ...userDeleteOperation,
+              state: "succeeded",
+              db_applied_at: "2026-09-22T00:12:03.000Z",
+              finalized_at: "2026-09-22T00:12:04.000Z",
+              server_time: "2026-09-22T00:12:04.000Z",
+            }),
+            { status: 200 },
+          ),
+        ),
+    );
+    const issued = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: target.app_count,
+    });
+    await adminService.deleteUser(target.id, target.app_count, issued.key);
+    expect(await adminService.getUserDeleteOperation(issued.key)).toMatchObject(
+      {
+        state: "succeeded",
+        targetId: target.id,
+      },
+    );
+
+    const calls = vi.mocked(fetch).mock.calls;
+    expect(JSON.parse(String(calls[0][1]?.body))).toEqual({
+      kind: "user_delete",
+      target_id: target.id,
+      expected_app_count: target.app_count,
+    });
+    expect(calls[1][0]).toBe(`/api/v1/admin/users/${target.id}`);
+    expect(JSON.parse(String(calls[1][1]?.body))).toEqual({
+      expected_app_count: target.app_count,
+    });
+    expect(new Headers(calls[1][1]?.headers).get("Idempotency-Key")).toBe(
+      issued.key,
+    );
+    expect(new Headers(calls[1][1]?.headers).get("X-CSRF-Token")).toBe(
+      "csrf-test-token",
+    );
+    expect(calls[2][0]).toBe(`/api/v1/write-operations/${issued.key}`);
+  });
+
+  it("keeps a committed account deletion pending when confirmation returns 503", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "DELETION_CONFIRMATION_PENDING",
+              message: "Deletion confirmation is pending",
+              request_id: null,
+            },
+          }),
+          { status: 503 },
+        ),
+      ),
+    );
+    await expect(
+      adminService.deleteUser(
+        target.id,
+        target.app_count,
+        userDeleteOperation.key,
+      ),
+    ).rejects.toMatchObject({
+      code: "DELETION_CONFIRMATION_PENDING",
+      httpStatus: 503,
+      outcome: "unknown",
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("keeps a lost password-reset response unknown and never retries it", async () => {
