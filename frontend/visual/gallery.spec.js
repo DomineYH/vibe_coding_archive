@@ -151,6 +151,7 @@ async function compareInPage(page, actual, expected, region = null) {
         differentPixels: null,
         maxChannelDelta: null,
         bounds: null,
+        changedPixelSamples: [],
         comparedRegion: region,
       };
       if (!expectedImage) return report;
@@ -197,6 +198,14 @@ async function compareInPage(page, actual, expected, region = null) {
             Math.abs(a[offset + 3] - b[offset + 3]),
           );
           if (delta === 0) continue;
+          if (report.changedPixelSamples.length < 20) {
+            report.changedPixelSamples.push({
+              x,
+              y,
+              expected: Array.from(b.slice(offset, offset + 4)),
+              actual: Array.from(a.slice(offset, offset + 4)),
+            });
+          }
           changed += 1;
           max = Math.max(max, delta);
           left = Math.min(left, x);
@@ -433,6 +442,11 @@ async function captureAndCompare(
     expected,
     comparisonRegion,
   );
+  if (expected && comparison.differentPixels !== 0) {
+    console.error(
+      `Visual mismatch ${state} ${viewport.width}x${viewport.height}: ${JSON.stringify(comparison)}`,
+    );
+  }
   const name = `${state}-${viewport.width}x${viewport.height}.png`;
   mkdirSync(outputRoot, { recursive: true });
   writeFileSync(path.join(outputRoot, name), actual);
