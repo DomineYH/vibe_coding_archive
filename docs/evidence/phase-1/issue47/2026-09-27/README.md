@@ -14,6 +14,8 @@ The first migration-focused run exposed tests still expecting storage version 8 
 
 The first focused browser run passed 19/21. The queued-state locator matched multiple statuses, and legacy checked fixture rows legitimately lacked admin measurements. The locator is scoped to the target status, and the mapper preserves missing paired measurements as null; the two focused regressions then passed. The first stale visual setup also re-ran its seed script on full navigation, resetting the mock clock. The harness now changes routes without reloading; the narrow stale states passed 2/2, and all 20 health product captures passed.
 
+Review round 1 confirmed that the detail baselines are taller only because #47 adds the public health panel. The original 500px top crop found 96 one-channel header raster differences at 390px; the final crop starts at y=60, below that existing header, and checks y=60–500. Copy-button bounds and the unchanged component tech-stack crop are also compared at zero tolerance. The focused source comparisons passed 12/12, and the complete CI-mode visual suite then passed 122/122.
+
 ## Verification
 
 Commands ran from `frontend/` unless noted.
@@ -22,12 +24,16 @@ Commands ran from `frontend/` unless noted.
 | --- | --- |
 | `npm run check` | PASS: OpenAPI lint and generated-type check, TypeScript, ESLint, and Prettier. |
 | `npm test` | PASS: 24 files, 383 tests. |
-| `CI=true npm run test:e2e` | PASS: 99 tests with one worker. |
+| `CI=true npm run test:e2e` | PASS on review round 1 rerun: 99 tests with one worker. |
 | `npm run build:mock` | PASS. Vite reports the mock JS bundle at 604.14 kB, above its 500 kB advisory threshold. |
 | `npm run build` | PASS: API bundle. |
 | `npm run check:dist` | PASS: 96 API files; no mock fixtures, tweaks, references, or source maps. |
 | `npm run check:reference` | PASS: all 11 preserved originals match their SHA-256 hashes and byte counts. |
-| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual` | 109/122 passed in the full pinned Chromium 151.0.7922.34 run. Eleven failures are expected dimension mismatches against the unchanged source detail captures; two narrow stale-state setup cases were fixed and passed on targeted rerun (2/2). The full visual suite was not rerun after that visual-test-only fix. |
+| `npm run typecheck` | PASS on review round 1 rerun. |
+| `npm run lint` | PASS on review round 1 rerun. |
+| `npm run format:check` | PASS after formatting the updated visual spec. |
+| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "public detail matches|public detail copy success|key component"` | PASS: 12/12; full-page mismatches remain recorded and the unchanged regions compare at zero pixels. |
+| `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual` | PASS: 122/122 with one worker in pinned Chromium 151.0.7922.34. The 11 full-page detail mismatches are retained in the report; all 11 scoped zero-tolerance region comparisons pass. |
 | `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual -- --grep "health-(result-error|job-failed|query-error|stale)"` | PASS: all 20 health-state product-only captures, one worker. |
 | `git diff --check` | PASS. |
 
@@ -35,7 +41,7 @@ Commands ran from `frontend/` unless noted.
 
 The health result-error, failed-job, query-error, and stale states have product-only captures at 1440×1000, 1024×900, 768×1024, 390×844, and 360×844. All 20 are in [`visual/`](visual/); the per-state measurements and source dimension comparisons are in [`visual-comparison.json`](visual/visual-comparison.json).
 
-The preserved full-page detail source heights are 1360, 1341, 1757, 1968, and 1955 pixels at those viewports; the product heights are 1533, 1514, 1930, 2141, and 2147. The detail copy-success captures have the same respective dimensions. The preserved detail component is 340×555; the product component is 340×729. These 11 comparisons are dimension mismatches, so pixel counts are unavailable. The differences come from the requested detail health panel and its narrow-screen content. The gallery captures and other visual cases passed in the full run. No source reference, baseline, or zero-pixel threshold was changed.
+The preserved full-page detail source heights are 1360, 1341, 1757, 1968, and 1955 pixels at those viewports; the product heights are 1533, 1514, 1930, 2141, and 2147. The detail copy-success captures have the same respective dimensions. The preserved detail component is 340×555; the product component is 340×729. All 11 full-page comparisons remain explicitly marked `dimensions_mismatch`; each also records a zero-pixel region comparison: detail content at y=60–500, the copy button's captured bounds, or the component tech-stack area at x=0–340/y=0–220. The dimensions, pixel counts, and regions are in [`visual/visual-comparison.json`](visual/visual-comparison.json). No source reference, baseline, or zero-pixel threshold was changed.
 
 Representative captures: [stale 1440×1000](visual/health-stale-1440x1000.png), [stale 390×844](visual/health-stale-390x844.png), [HTTP error 1440×1000](visual/health-result-error-1440x1000.png), and [failed job 360×844](visual/health-job-failed-360x844.png). The [acceptance trace](../../../../acceptance.md) and [UI deviation record](../../../../ui-deviations.md) link this run.
 

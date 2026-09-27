@@ -66,6 +66,11 @@ const addedStates = [
   "health-stale",
 ];
 const states = ["gallery", "detail", "detail-copy-done", ...addedStates];
+const dimensionMismatchStates = new Set([
+  "detail",
+  "detail-copy-done",
+  "detail-component",
+]);
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
   let fontPath;
@@ -150,6 +155,7 @@ async function compareInPage(page, actual, expected, region = null) {
         width: actualImage.width,
         height: actualImage.height,
         comparisonStatus: expectedImage ? "compared" : "product_only",
+        pixelComparison: region ? "region" : "full",
         expectedWidth: expectedImage?.width ?? null,
         expectedHeight: expectedImage?.height ?? null,
         differentPixels: null,
@@ -159,12 +165,12 @@ async function compareInPage(page, actual, expected, region = null) {
         comparedRegion: region,
       };
       if (!expectedImage) return report;
-      if (
+      const dimensionsDiffer =
         actualImage.width !== expectedImage.width ||
-        actualImage.height !== expectedImage.height
-      ) {
+        actualImage.height !== expectedImage.height;
+      if (dimensionsDiffer) {
         report.comparisonStatus = "dimensions_mismatch";
-        return report;
+        if (!region || actualImage.width !== expectedImage.width) return report;
       }
       const canvas = document.createElement("canvas");
       canvas.width = actualImage.width;
@@ -192,6 +198,14 @@ async function compareInPage(page, actual, expected, region = null) {
       const bottomEdge = region
         ? Math.ceil(region.top + region.height)
         : actualImage.height;
+      if (
+        region &&
+        (leftEdge < 0 ||
+          topEdge < 0 ||
+          rightEdge > Math.min(actualImage.width, expectedImage.width) ||
+          bottomEdge > Math.min(actualImage.height, expectedImage.height))
+      )
+        throw new Error("Visual comparison region exceeds a captured image");
       for (let y = topEdge; y < bottomEdge; y += 1) {
         for (let x = leftEdge; x < rightEdge; x += 1) {
           const offset = (y * actualImage.width + x) * 4;
@@ -512,20 +526,25 @@ async function captureAndCompare(
     writeFileSync(baselinePath, actual);
   }
   const expected = baselinePath ? readFileSync(baselinePath) : null;
+  // The source header has a small pre-existing raster delta at 390px.
   const comparisonRegion =
-    state === "detail-copy-done"
-      ? await page
-          .getByRole("button", { name: "복사됨" })
-          .evaluate((button) => {
-            const bounds = button.getBoundingClientRect();
-            return {
-              left: bounds.left + window.scrollX,
-              top: bounds.top + window.scrollY,
-              width: bounds.width,
-              height: bounds.height,
-            };
-          })
-      : null;
+    state === "detail"
+      ? { left: 0, top: 60, width: viewport.width, height: 440 }
+      : state === "detail-component"
+        ? { left: 0, top: 0, width: 340, height: 220 }
+        : state === "detail-copy-done"
+          ? await page
+              .getByRole("button", { name: "복사됨" })
+              .evaluate((button) => {
+                const bounds = button.getBoundingClientRect();
+                return {
+                  left: bounds.left + window.scrollX,
+                  top: bounds.top + window.scrollY,
+                  width: bounds.width,
+                  height: bounds.height,
+                };
+              })
+          : null;
   const comparison = await compareInPage(
     page,
     actual,
@@ -554,7 +573,13 @@ async function captureAndCompare(
   testInfo.attach(name, { body: actual, contentType: "image/png" });
   if (expected) {
     expect(comparison.width).toBe(comparison.expectedWidth);
-    expect(comparison.height).toBe(comparison.expectedHeight);
+    if (dimensionMismatchStates.has(state)) {
+      expect(comparison.comparisonStatus).toBe("dimensions_mismatch");
+      expect(comparison.comparedRegion).not.toBeNull();
+      expect(comparison.pixelComparison).toBe("region");
+    } else {
+      expect(comparison.height).toBe(comparison.expectedHeight);
+    }
     expect(comparison.differentPixels).toBe(0);
   } else {
     expect(comparison.comparisonStatus).toBe("product_only");

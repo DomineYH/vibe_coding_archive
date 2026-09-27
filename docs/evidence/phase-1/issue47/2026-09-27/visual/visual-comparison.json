@@ -14,7 +14,15 @@
       "expectedHeight": 1360,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 0,
+        "top": 60,
+        "width": 1440,
+        "height": 440
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail-copy-done",
@@ -29,7 +37,15 @@
       "expectedHeight": 1360,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 775,
+        "top": 925.5625,
+        "width": 69,
+        "height": 30
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail",
@@ -44,7 +60,15 @@
       "expectedHeight": 1341,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 0,
+        "top": 60,
+        "width": 1024,
+        "height": 440
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail-copy-done",
@@ -59,7 +83,15 @@
       "expectedHeight": 1341,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 539,
+        "top": 906.3125,
+        "width": 69,
+        "height": 30
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail",
@@ -74,7 +106,15 @@
       "expectedHeight": 1757,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 0,
+        "top": 60,
+        "width": 768,
+        "height": 440
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail-copy-done",
@@ -89,7 +129,15 @@
       "expectedHeight": 1757,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 647,
+        "top": 818.3125,
+        "width": 69,
+        "height": 30
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail",
@@ -104,7 +152,15 @@
       "expectedHeight": 1968,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 0,
+        "top": 60,
+        "width": 390,
+        "height": 440
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail-copy-done",
@@ -119,7 +175,15 @@
       "expectedHeight": 1968,
       "deltaHeight": 173,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 281,
+        "top": 915.375,
+        "width": 69,
+        "height": 30
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail",
@@ -134,7 +198,15 @@
       "expectedHeight": 1955,
       "deltaHeight": 192,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 0,
+        "top": 60,
+        "width": 360,
+        "height": 440
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail-copy-done",
@@ -149,7 +221,15 @@
       "expectedHeight": 1955,
       "deltaHeight": 192,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 251,
+        "top": 902.25,
+        "width": 69,
+        "height": 30
+      },
+      "maxChannelDelta": 0
     },
     {
       "state": "detail-component",
@@ -164,7 +244,15 @@
       "expectedHeight": 555,
       "deltaHeight": 174,
       "comparisonStatus": "dimensions_mismatch",
-      "differentPixels": null
+      "differentPixels": 0,
+      "pixelComparison": "region",
+      "comparedRegion": {
+        "left": 0,
+        "top": 0,
+        "width": 340,
+        "height": 220
+      },
+      "maxChannelDelta": 0
     }
   ],
   "productOnlyHealth": [
