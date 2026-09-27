@@ -1,11 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Avatar, Btn } from "../../components/ui";
+import { Avatar, Btn, StatusBadge } from "../../components/ui";
+import { formatCheckedAt } from "../../components/presentation";
+import catalog from "../../../../contracts/catalog.json";
 import { adminService } from "@services/admin";
 import { ServiceError } from "../../services/service-error";
 
 const PAGE_SIZE = 24;
+
+function readAdminTab(search) {
+  if (!search || search === "?") return { tab: "users", invalid: false };
+  const params = new URLSearchParams(search);
+  const keys = [...params.keys()];
+  const value = params.get("tab");
+  return keys.length === 1 &&
+    keys[0] === "tab" &&
+    ["users", "health"].includes(value)
+    ? { tab: value, invalid: false }
+    : { tab: "users", invalid: true };
+}
 
 function dateOnly(value) {
   return value.slice(0, 10);
@@ -564,6 +578,8 @@ function PasswordResetPanel({
 export function AdminView({ scopeKey }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const route = readAdminTab(location.search);
+  const tab = route.tab;
   const [selection, setSelection] = useState(null);
   const [resetSelection, setResetSelection] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -578,8 +594,24 @@ export function AdminView({ scopeKey }) {
   const usersKey = [__DATA_MODE__, "admin", "users", scopeKey];
   const query = useInfiniteQuery({
     queryKey: usersKey,
+    enabled: !route.invalid,
     queryFn: ({ pageParam, signal }) =>
       adminService.listUsers(
+        { limit: PAGE_SIZE, offset: pageParam },
+        { signal },
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined,
+  });
+  const appsKey = [__DATA_MODE__, "admin", "apps", scopeKey];
+  const appsQuery = useInfiniteQuery({
+    queryKey: appsKey,
+    enabled: !route.invalid && tab === "health",
+    queryFn: ({ pageParam, signal }) =>
+      adminService.listApps(
         { limit: PAGE_SIZE, offset: pageParam },
         { signal },
       ),
@@ -594,11 +626,47 @@ export function AdminView({ scopeKey }) {
   const stats = pages[0]?.stats;
   const total = pages[0]?.pagination.total ?? 0;
   const pending = stats?.pendingUsers ?? 0;
+  const appPages = appsQuery.data?.pages ?? [];
+  const appTotal = appPages[0]?.pagination.total ?? 0;
+  const seenAppIds = new Set();
+  const apps = [];
+  let duplicateOnlyPage = false;
+  appPages.forEach((page, index) => {
+    const countBeforePage = apps.length;
+    for (const app of page.items) {
+      if (seenAppIds.has(app.id)) continue;
+      seenAppIds.add(app.id);
+      apps.push(app);
+    }
+    if (
+      index === appPages.length - 1 &&
+      page.items.length > 0 &&
+      apps.length === countBeforePage
+    )
+      duplicateOnlyPage = true;
+  });
   const resetPending = Boolean(
     resetSelection &&
     (resetSelection.operation?.state === "unresolved" ||
       (resetSelection.operationKey && !resetSelection.operation)),
   );
+
+  function changeTab(nextTab) {
+    setSelection(null);
+    setResetSelection(null);
+    setResetError("");
+    navigate(nextTab === "health" ? "/admin?tab=health" : "/admin");
+  }
+
+  function handleTabKeyDown(event) {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    event.preventDefault();
+    const nextTab = tab === "users" ? "health" : "users";
+    event.currentTarget.parentElement
+      ?.querySelector(`[role="tab"][data-admin-tab="${nextTab}"]`)
+      ?.focus();
+    changeTab(nextTab);
+  }
 
   function markExpired(error) {
     if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
@@ -1147,6 +1215,23 @@ export function AdminView({ scopeKey }) {
     }
   }
 
+  if (route.invalid)
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="alert" aria-live="assertive">
+          <p className="font-bold text-neutral-900">
+            관리자 탭 주소를 확인해 주세요.
+          </p>
+          <Btn
+            className="mt-4"
+            onClick={() => navigate("/admin", { replace: true })}
+          >
+            조건 초기화
+          </Btn>
+        </div>
+      </main>
+    );
+
   return (
     <main className="mx-auto w-full max-w-[1016px] px-5 pb-24 pt-12 sm:px-8">
       <div className="flex flex-wrap items-end justify-between gap-5">
@@ -1158,16 +1243,41 @@ export function AdminView({ scopeKey }) {
             사용자 승인과 플랫폼 상태를 관리해요.
           </p>
         </div>
-        <div className="inline-flex rounded-full bg-neutral-200/70 p-1 text-[12px] font-semibold text-neutral-500">
-          <span
-            className="rounded-full bg-white px-4 py-2 text-neutral-900 shadow-sm"
-            aria-current="page"
+        <div
+          role="tablist"
+          aria-label="관리자 메뉴"
+          className="inline-flex rounded-full bg-neutral-200/70 p-1 text-[12px] font-semibold text-neutral-500"
+        >
+          <button
+            type="button"
+            role="tab"
+            id="admin-users-tab"
+            data-admin-tab="users"
+            aria-selected={tab === "users"}
+            aria-current={tab === "users" ? "page" : undefined}
+            aria-controls="admin-users-panel"
+            tabIndex={tab === "users" ? 0 : -1}
+            className={`rounded-full px-4 py-2 ${tab === "users" ? "bg-white text-neutral-900 shadow-sm" : "hover:text-neutral-700"}`}
+            onClick={() => changeTab("users")}
+            onKeyDown={handleTabKeyDown}
           >
             사용자 관리
-          </span>
-          <span className="px-4 py-2" aria-disabled="true">
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="admin-health-tab"
+            data-admin-tab="health"
+            aria-selected={tab === "health"}
+            aria-current={tab === "health" ? "page" : undefined}
+            aria-controls="admin-health-panel"
+            tabIndex={tab === "health" ? 0 : -1}
+            className={`rounded-full px-4 py-2 ${tab === "health" ? "bg-white text-neutral-900 shadow-sm" : "hover:text-neutral-700"}`}
+            onClick={() => changeTab("health")}
+            onKeyDown={handleTabKeyDown}
+          >
             Health Monitor
-          </span>
+          </button>
         </div>
       </div>
 
@@ -1182,8 +1292,12 @@ export function AdminView({ scopeKey }) {
       ) : null}
 
       <section
+        id="admin-users-panel"
+        role="tabpanel"
+        aria-labelledby="admin-users-tab"
+        tabIndex={0}
+        hidden={tab !== "users"}
         className="mt-8 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm"
-        aria-labelledby="admin-users-title"
       >
         <div className="flex items-center justify-between border-b border-neutral-200/70 px-6 py-4">
           <h2
@@ -1257,6 +1371,9 @@ export function AdminView({ scopeKey }) {
                         </p>
                         <p className="mt-0.5 text-[12px] text-neutral-400">
                           가입 신청 {dateOnly(user.createdAt)}
+                        </p>
+                        <p className="mt-0.5 text-[12px] text-neutral-400">
+                          등록 앱 {user.appCount}개
                         </p>
                       </div>
                     </div>
@@ -1361,6 +1478,180 @@ export function AdminView({ scopeKey }) {
           </>
         )}
       </section>
+      {tab === "health" ? (
+        <section
+          id="admin-health-panel"
+          role="tabpanel"
+          aria-labelledby="admin-health-tab"
+          tabIndex={0}
+          className="mt-8 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/70 px-6 py-4">
+            <h2
+              id="admin-health-title"
+              className="text-[14px] font-bold text-neutral-900"
+            >
+              네트워크 활성 상태 모니터링
+            </h2>
+            <Btn
+              size="sm"
+              variant="line"
+              disabled
+              aria-describedby="health-check-note"
+            >
+              전체 재검사
+            </Btn>
+          </div>
+          <p
+            id="health-check-note"
+            role="status"
+            className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
+          >
+            연결 검사는 아직 사용할 수 없어요.
+          </p>
+
+          {appsQuery.isPending ? (
+            <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
+              앱 목록을 불러오고 있어요.
+            </p>
+          ) : appsQuery.isError && apps.length === 0 ? (
+            <div className="px-6 py-8" role="alert">
+              <p className="text-[13px] text-rose-700">
+                앱 목록을 불러오지 못했어요.
+              </p>
+              <Btn
+                className="mt-3"
+                size="sm"
+                variant="line"
+                onClick={() => void appsQuery.refetch()}
+              >
+                다시 시도
+              </Btn>
+            </div>
+          ) : apps.length === 0 ? (
+            <p className="px-6 py-8 text-[13px] text-neutral-500">
+              표시할 앱이 없어요.
+            </p>
+          ) : (
+            <>
+              <div role="list" aria-label="전체 앱 목록">
+                {apps.map((app) => {
+                  const theme = catalog.themes.find(
+                    (item) => item.id === app.themeId,
+                  );
+                  const unhealthy =
+                    app.health.state !== "healthy" &&
+                    app.health.state !== "unchecked";
+                  return (
+                    <div
+                      key={app.id}
+                      role="listitem"
+                      className={`border-b border-neutral-200/70 px-5 py-4 last:border-0 sm:px-6 ${unhealthy ? "bg-red-50/40" : ""}`}
+                    >
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="h-9 w-14 shrink-0 overflow-hidden rounded-lg ring-1 ring-black/[0.06]"
+                          style={
+                            theme
+                              ? {
+                                  background: `linear-gradient(135deg, ${theme.from}, ${theme.to})`,
+                                }
+                              : undefined
+                          }
+                        />
+                        <div className="min-w-0 flex-1">
+                          <button
+                            type="button"
+                            aria-label={`앱 관리: ${app.name}`}
+                            onClick={() =>
+                              navigate(`/apps/${app.id}`, {
+                                state: { fromAdmin: true },
+                              })
+                            }
+                            className="block max-w-full truncate text-left text-[14px] font-bold text-neutral-900 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4C7A96]"
+                          >
+                            {app.name}
+                          </button>
+                          <div className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11.5px] text-neutral-400">
+                            <span className="min-w-0 truncate" title={app.url}>
+                              {app.url}
+                            </span>
+                            <span className="shrink-0">작성자 {app.owner}</span>
+                            <span className="shrink-0">버전 {app.version}</span>
+                            <span className="shrink-0">
+                              {app.isPublic ? "공개" : "비공개"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-[11.5px] text-neutral-500">
+                          <StatusBadge state={app.health.state} />
+                          <span>
+                            확인{" "}
+                            {formatCheckedAt(
+                              app.health.checked_at,
+                              appPages[0]?.serverTime,
+                            )}
+                          </span>
+                        </div>
+                        <Btn
+                          size="sm"
+                          variant="line"
+                          disabled
+                          aria-describedby="health-check-note"
+                        >
+                          즉시 재검사
+                        </Btn>
+                        <Btn
+                          size="sm"
+                          variant="line"
+                          onClick={() =>
+                            navigate(`/apps/${app.id}`, {
+                              state: { fromAdmin: true },
+                            })
+                          }
+                        >
+                          앱 관리
+                        </Btn>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {appsQuery.isFetchNextPageError ? (
+                <div className="px-6 py-4" role="alert">
+                  <p className="text-[13px] text-rose-700">
+                    추가 앱을 불러오지 못했어요. 표시된 목록은 유지됩니다.
+                  </p>
+                  <Btn
+                    className="mt-2"
+                    size="sm"
+                    variant="line"
+                    onClick={() => void appsQuery.fetchNextPage()}
+                  >
+                    추가 앱 다시 불러오기
+                  </Btn>
+                </div>
+              ) : appsQuery.hasNextPage ? (
+                <div className="border-t border-neutral-200/70 px-6 py-4 text-center">
+                  <Btn
+                    size="sm"
+                    variant="line"
+                    onClick={() => void appsQuery.fetchNextPage()}
+                    disabled={appsQuery.isFetchingNextPage}
+                  >
+                    {appsQuery.isFetchingNextPage
+                      ? "불러오는 중…"
+                      : duplicateOnlyPage
+                        ? "계속 불러오기"
+                        : `추가 앱 불러오기 (${apps.length}/${appTotal})`}
+                  </Btn>
+                </div>
+              ) : null}
+            </>
+          )}
+        </section>
+      ) : null}
     </main>
   );
 }

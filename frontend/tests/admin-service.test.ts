@@ -51,6 +51,80 @@ describe("admin service", () => {
     expect(page.items.find((user) => user.id === ADMIN_ID)).toMatchObject({
       role: "admin",
       accountVersion: 1,
+      appCount: 0,
+    });
+  });
+
+  it("lists minimal public and private app summaries in stable pages", async () => {
+    await loginAdmin();
+    const first = await adminService.listApps({ limit: 2 });
+    expect(first.items).toHaveLength(2);
+    expect(first.pagination).toEqual({
+      limit: 2,
+      offset: 0,
+      total: 17,
+      hasMore: true,
+    });
+    expect(first.items[0].createdAt >= first.items[1].createdAt).toBe(true);
+    const second = await adminService.listApps({ limit: 2, offset: 2 });
+    expect(second.pagination).toMatchObject({
+      offset: 2,
+      total: 17,
+      hasMore: true,
+    });
+    expect(
+      new Set([...first.items, ...second.items].map((app) => app.id)).size,
+    ).toBe(4);
+    const all = await adminService.listApps();
+    expect(all.items.map((app) => app.id)).toEqual(
+      [...all.items]
+        .sort(
+          (left, right) =>
+            right.createdAt.localeCompare(left.createdAt) ||
+            right.id.localeCompare(left.id),
+        )
+        .map((app) => app.id),
+    );
+    const privateApp = all.items.find(
+      (app) => app.id === "00000000-0000-4000-8000-000000000091",
+    );
+    expect(all.items).toHaveLength(17);
+    expect(all.pagination).toMatchObject({ limit: 24, total: 17 });
+    expect(privateApp).toMatchObject({
+      name: "과학 수행평가 루브릭 채점기",
+      owner: "교사김코딩",
+      isPublic: false,
+      url: "https://rubric-grader.vercel.app",
+    });
+    expect(privateApp).not.toHaveProperty("prompt");
+    expect(privateApp).not.toHaveProperty("description");
+    expect(privateApp).not.toHaveProperty("owner.loginId");
+    await expect(adminService.listApps({ limit: 101 })).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+    });
+  });
+
+  it("keeps empty app results separate from full-set statistics and requires admin", async () => {
+    await loginAdmin();
+    setMockScenario("admin_apps_empty");
+    const empty = await adminService.listApps();
+    expect(empty.items).toEqual([]);
+    expect(empty.pagination).toMatchObject({ total: 0, hasMore: false });
+    expect((await adminService.listUsers()).stats).toMatchObject({
+      totalApps: 17,
+      healthyApps: 15,
+    });
+
+    setMockScenario("admin_apps_list_failure");
+    await expect(adminService.listApps()).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      httpStatus: 503,
+    });
+    await authService.logout();
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
+    await expect(adminService.listApps()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      httpStatus: 403,
     });
   });
 

@@ -469,25 +469,33 @@ function DetailRoute({
   });
   const app = detail.data;
   const protectedDetail = app?.isPublic !== true;
+  const adminCanManage =
+    auth.user?.role === "admin" &&
+    access.meta?.capabilities.admin_apps_manage.enabled === true;
+  const ownsApp = auth.user?.id === app?.ownerId;
   const canEdit =
     Boolean(app) &&
     auth.status === "ready" &&
     !auth.concealed &&
-    auth.user?.id === app?.ownerId &&
+    (ownsApp || adminCanManage) &&
     auth.user.approved &&
     auth.user.sessionKind === "full" &&
     !auth.user.mustChangePassword &&
-    access.meta?.capabilities.apps_update_own.enabled === true;
+    (ownsApp
+      ? access.meta?.capabilities.apps_update_own.enabled === true
+      : adminCanManage);
   const canDelete =
     Boolean(app) &&
     auth.status === "ready" &&
     !auth.concealed &&
-    auth.user?.role === "user" &&
-    auth.user.id === app?.ownerId &&
+    ((auth.user?.role === "user" &&
+      ownsApp &&
+      access.meta?.capabilities.apps_delete_own.enabled === true) ||
+      adminCanManage) &&
     auth.user.approved &&
     auth.user.sessionKind === "full" &&
-    !auth.user.mustChangePassword &&
-    access.meta?.capabilities.apps_delete_own.enabled === true;
+    !auth.user.mustChangePassword;
+  const fromAdmin = location.state?.fromAdmin === true;
   const currentDeletion =
     deletionState?.id === id && deletionState.actorId === auth.user?.id
       ? deletionState
@@ -528,7 +536,7 @@ function DetailRoute({
       });
       await appsService.delete(id, expectedVersion, operation.key);
       setCurrentDeletion(null);
-      onDeleted(id, actorId);
+      onDeleted(id, actorId, fromAdmin);
     } catch (error) {
       const expired = error?.code === "OPERATION_EXPIRED";
       setCurrentDeletion({
@@ -566,7 +574,7 @@ function DetailRoute({
       );
       if (operation.state === "succeeded") {
         setCurrentDeletion(null);
-        onDeleted(id, existing.actorId);
+        onDeleted(id, existing.actorId, fromAdmin);
       } else if (operation.state === "rejected") {
         setCurrentDeletion({
           ...existing,
@@ -632,15 +640,18 @@ function DetailRoute({
       onRetryDelete={runDelete}
       onCancelDelete={cancelDelete}
       fromGallery={location.state?.fromGallery === true}
+      fromAdmin={fromAdmin}
       onBack={() =>
-        navigate(
-          location.state?.fromEdit === true &&
-            location.state?.fromGallery === true
-            ? -2
-            : location.state?.fromGallery === true
-              ? -1
-              : "/",
-        )
+        fromAdmin
+          ? navigate("/admin?tab=health")
+          : navigate(
+              location.state?.fromEdit === true &&
+                location.state?.fromGallery === true
+                ? -2
+                : location.state?.fromGallery === true
+                  ? -1
+                  : "/",
+            )
       }
     />
   );
@@ -653,6 +664,9 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
   const queryClient = useQueryClient();
   const access = usePublicMetadata();
   const member = auth.user;
+  const adminCanManage =
+    member?.role === "admin" &&
+    access.meta?.capabilities.admin_apps_manage.enabled === true;
   const readyMember =
     auth.status === "ready" &&
     !auth.concealed &&
@@ -665,17 +679,22 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
     enabled: access.canRead && readyMember,
     queryFn: async ({ signal }) => {
       const app = await appsService.get(id, { signal });
-      if (app.ownerId !== member?.id)
+      const canManageOther =
+        member?.role === "admin" &&
+        access.meta?.capabilities.admin_apps_manage.enabled === true;
+      if (app.ownerId !== member?.id && !canManageOther)
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.");
       assertThemeIds(access.meta, [app]);
       return app;
     },
   });
+  const ownsApp = detail.data?.ownerId === member?.id;
   const canEdit =
     readyMember &&
     Boolean(detail.data) &&
-    detail.data?.ownerId === member?.id &&
-    access.meta?.capabilities.apps_update_own.enabled === true;
+    (ownsApp
+      ? access.meta?.capabilities.apps_update_own.enabled === true
+      : adminCanManage);
   const [wasEditable, setWasEditable] = useState(false);
   const ownerId = useRef(null);
   const lastApp = useRef(null);
@@ -779,12 +798,15 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
         )}
       </>
     );
-  if (detail.data.ownerId !== member.id)
+  if (detail.data.ownerId !== member.id && !adminCanManage)
     return message(
       "본인 앱만 수정할 수 있어요",
       "다른 회원의 앱은 수정할 수 없습니다.",
     );
-  if (!access.meta?.capabilities.apps_update_own.enabled)
+  if (
+    detail.data.ownerId === member.id &&
+    !access.meta?.capabilities.apps_update_own.enabled
+  )
     return message(
       "앱 수정 기능을 사용할 수 없어요",
       "잠시 후 다시 확인해 주세요.",
@@ -1102,6 +1124,7 @@ export default function App() {
   );
   const onAppUpdated = useCallback(
     (app) => {
+      const fromAdmin = location.state?.fromAdmin === true;
       queryClient.setQueryData([__DATA_MODE__, "apps", "detail", app.id], app);
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
@@ -1109,19 +1132,24 @@ export default function App() {
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "admin"],
       });
-      navigate(`/apps/${app.id}`, {
-        replace: true,
-        state: {
-          fromGallery: location.state?.fromGallery === true,
-          fromEdit: true,
-        },
-      });
+      navigate(
+        fromAdmin ? "/admin?tab=health" : `/apps/${app.id}`,
+        fromAdmin
+          ? { replace: true }
+          : {
+              replace: true,
+              state: {
+                fromGallery: location.state?.fromGallery === true,
+                fromEdit: true,
+              },
+            },
+      );
       setToast("앱을 수정했어요.");
     },
     [location.state, navigate, queryClient],
   );
   const onAppDeleted = useCallback(
-    (id, actorId) => {
+    (id, actorId, fromAdmin = false) => {
       setDeletion((current) =>
         current?.id === id && current.actorId === actorId ? null : current,
       );
@@ -1135,7 +1163,7 @@ export default function App() {
         queryKey: [__DATA_MODE__, "admin"],
       });
       if (authSnapshot.current.user?.id === actorId) {
-        navigate("/", { replace: true });
+        navigate(fromAdmin ? "/admin?tab=health" : "/", { replace: true });
         setToast("앱을 삭제했어요.");
       }
     },

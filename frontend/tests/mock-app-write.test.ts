@@ -523,6 +523,50 @@ describe("mock app deletion", () => {
     );
   });
 
+  it("lets an admin change visibility and delete another member's app", async () => {
+    await authService.login({ loginId: "admin", password: "admin123" });
+    const appId = "00000000-0000-4000-8000-000000000091";
+    const before = await adminService.listUsers();
+    const ownerBefore = before.items.find(
+      (user) => user.id === "00000000-0000-4000-8000-000000000101",
+    );
+    const app = await appsService.get(appId);
+    const update = await appsService.issueUpdateOperation(
+      appId,
+      { isPublic: true },
+      app.version,
+    );
+    const updated = await appsService.update(
+      appId,
+      { isPublic: true },
+      app.version,
+      update.key,
+    );
+
+    expect(updated.isPublic).toBe(true);
+    expect(
+      (await adminService.listApps()).items.find((item) => item.id === appId),
+    ).toMatchObject({
+      isPublic: true,
+      version: 2,
+    });
+
+    const deletion = await appsService.issueDeleteOperation(
+      appId,
+      updated.version,
+    );
+    await appsService.delete(appId, updated.version, deletion.key);
+    const after = await adminService.listUsers();
+    const ownerAfter = after.items.find(
+      (user) => user.id === "00000000-0000-4000-8000-000000000101",
+    );
+    expect(after.stats.totalApps).toBe(before.stats.totalApps - 1);
+    expect(ownerAfter?.appCount).toBe((ownerBefore?.appCount ?? 0) - 1);
+    expect(await adminService.listApps()).not.toMatchObject({
+      items: expect.arrayContaining([expect.objectContaining({ id: appId })]),
+    });
+  });
+
   it("rejects non-owner, stale-version, and mismatched-key deletes", async () => {
     const appId = "00000000-0000-4000-8000-000000000091";
     await authService.login({ loginId: "과학덕후박샘", password: "1234" });

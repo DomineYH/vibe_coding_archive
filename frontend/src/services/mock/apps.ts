@@ -73,8 +73,8 @@ const capabilities = {
   apps_create: { enabled: true, reasons: [] },
   apps_update_own: { enabled: true, reasons: [] },
   apps_delete_own: { enabled: true, reasons: [] },
-  admin_apps_read: { enabled: false, reasons: ["not_implemented"] },
-  admin_apps_manage: { enabled: false, reasons: ["not_implemented"] },
+  admin_apps_read: { enabled: true, reasons: [] },
+  admin_apps_manage: { enabled: true, reasons: [] },
   admin_reauth: { enabled: false, reasons: ["not_implemented"] },
   admin_password_reset: { enabled: false, reasons: ["not_implemented"] },
   admin_user_delete: { enabled: false, reasons: ["not_implemented"] },
@@ -280,12 +280,19 @@ function assertOperationNotExpired(
   );
 }
 
-function ownedApp(id: string, actorId: string) {
-  const state = getMockSnapshot();
+function manageableApp(
+  id: string,
+  actor: ReturnType<typeof getMockAccounts>[number],
+  state = getMockSnapshot(),
+) {
   const app = [...state.apps, ...state.private_apps].find(
-    (item) => item.id === id && item.owner.id === actorId,
+    (item) => item.id === id,
   );
-  if (!app)
+  if (
+    !app ||
+    (app.owner.id !== actor.id &&
+      (actor.role !== "admin" || !capabilities.admin_apps_manage.enabled))
+  )
     throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
       httpStatus: 404,
       outcome: "rejected",
@@ -575,7 +582,7 @@ export const appsService: AppsService = {
   async issueUpdateOperation(id, value, expectedVersion) {
     const input = normalizeAppPatch(value);
     const { state, account } = currentMember();
-    const app = ownedApp(id, account.id);
+    const app = manageableApp(id, account, state);
     if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1)
       throw new ServiceError("VALIDATION_ERROR", "수정 요청을 확인해 주세요.", {
         outcome: "rejected",
@@ -669,7 +676,7 @@ export const appsService: AppsService = {
           { httpStatus: 409, outcome: "unknown" },
         );
     }
-    const app = ownedApp(id, account.id);
+    const app = manageableApp(id, account, state);
     if (app.version !== expectedVersion) {
       operation = {
         ...operation,
@@ -749,7 +756,7 @@ export const appsService: AppsService = {
 
   async issueDeleteOperation(id, expectedVersion) {
     const { state, account } = currentMember();
-    const app = ownedApp(id, account.id);
+    const app = manageableApp(id, account, state);
     if (!Number.isSafeInteger(expectedVersion) || expectedVersion < 1)
       throw new ServiceError("VALIDATION_ERROR", "삭제 요청을 확인해 주세요.", {
         outcome: "rejected",
@@ -842,7 +849,7 @@ export const appsService: AppsService = {
           { httpStatus: 409, outcome: "unknown" },
         );
     }
-    const app = ownedApp(id, account.id);
+    const app = manageableApp(id, account, state);
     if (app.version !== expectedVersion) {
       operation = {
         ...operation,

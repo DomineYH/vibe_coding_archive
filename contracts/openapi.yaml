@@ -797,6 +797,43 @@ paths:
         "403": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+  /admin/apps:
+    get:
+      operationId: listAdminApps
+      summary: List all public and private apps for the administrator monitor
+      description: >-
+        Returns only the app name, URL, visibility, theme, versions, creation
+        time, author nickname, and connection result summary. Prompts,
+        descriptions, and member contact fields are never included. Items sort
+        by creation time descending and app ID descending.
+      security:
+        - SessionCookie: []
+      parameters:
+        - {
+            name: limit,
+            in: query,
+            schema: { type: integer, minimum: 1, maximum: 100, default: 24 },
+          }
+        - {
+            name: offset,
+            in: query,
+            schema: { type: integer, minimum: 0, default: 0 },
+          }
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: A page of all authorized apps with only monitor fields.
+          headers:
+            Cache-Control: { schema: { type: string, const: no-store } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminAppPage" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users/{id}:
     get:
       operationId: getAdminUser
@@ -1182,6 +1219,7 @@ components:
           role,
           approved,
           account_version,
+          app_count,
           created_at,
           first_approved_at,
           pending_expires_at,
@@ -1199,6 +1237,10 @@ components:
           description: >-
             Monotonic approval/credential version. Expected by approval writes;
             never exposed by public member DTOs.
+        app_count:
+          type: integer
+          minimum: 0
+          description: Current public and private apps owned by this member.
         created_at: { type: string, format: date-time }
         first_approved_at: { type: [string, "null"], format: date-time }
         pending_expires_at: { type: [string, "null"], format: date-time }
@@ -1211,6 +1253,43 @@ components:
         pending_users: { type: integer, minimum: 0 }
         total_apps: { type: integer, minimum: 0 }
         healthy_apps: { type: integer, minimum: 0 }
+    AdminApp:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          id,
+          owner,
+          name,
+          url,
+          is_public,
+          theme_id,
+          version,
+          url_version,
+          created_at,
+          health,
+        ]
+      properties:
+        id: { type: string, format: uuid }
+        owner: { $ref: "#/components/schemas/Owner" }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        url: { type: string, format: uri, maxLength: 2048 }
+        is_public: { type: boolean }
+        theme_id: { type: string, minLength: 1 }
+        version: { type: integer, minimum: 1, maximum: 9007199254740991 }
+        url_version: { type: integer, minimum: 1, maximum: 9007199254740991 }
+        created_at: { type: string, format: date-time }
+        health: { $ref: "#/components/schemas/HealthResult" }
+    AdminAppPage:
+      type: object
+      additionalProperties: false
+      required: [items, pagination, server_time]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/AdminApp" }
+        pagination: { $ref: "#/components/schemas/Pagination" }
+        server_time: { type: string, format: date-time }
     AdminUserPage:
       type: object
       additionalProperties: false

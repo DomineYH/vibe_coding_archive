@@ -1,4 +1,5 @@
 import {
+  mapAdminAppPage,
   mapAdminStats,
   mapAdminUser,
   mapAdminUserPage,
@@ -16,6 +17,34 @@ const adminUser = {
   created_at: "2026-09-22T00:12:00.000Z",
   first_approved_at: null,
   pending_expires_at: "2026-12-21T00:12:00.000Z",
+  app_count: 3,
+};
+
+const adminApp = {
+  id: "00000000-0000-4000-8000-000000000001",
+  owner: {
+    id: "00000000-0000-4000-8000-000000000101",
+    nickname: "교사김코딩",
+  },
+  name: "분수 피자 가게",
+  url: "https://fraction-pizza.vercel.app",
+  is_public: true,
+  theme_id: "sage",
+  version: 2,
+  url_version: 1,
+  created_at: "2026-04-01T15:00:00.000Z",
+  health: {
+    state: "healthy",
+    checked_at: "2026-09-22T00:12:00.000Z",
+    fresh_until: null,
+  },
+};
+const adminPrivateApp = {
+  ...adminApp,
+  id: "00000000-0000-4000-8000-000000000091",
+  name: "과학 수행평가 루브릭 채점기",
+  url: "https://rubric-grader.vercel.app",
+  is_public: false,
 };
 
 describe("admin contract mappers", () => {
@@ -30,6 +59,7 @@ describe("admin contract mappers", () => {
       createdAt: adminUser.created_at,
       firstApprovedAt: null,
       pendingExpiresAt: adminUser.pending_expires_at,
+      appCount: 3,
     });
     expect(() =>
       mapAdminUser({ ...adminUser, email: "private@example.invalid" }),
@@ -69,6 +99,78 @@ describe("admin contract mappers", () => {
       totalApps: 17,
       healthyApps: 15,
     });
+  });
+
+  it("maps the minimal public and private app monitor page", () => {
+    expect(
+      mapAdminAppPage({
+        items: [adminApp, adminPrivateApp],
+        pagination: { limit: 24, offset: 0, total: 25, has_more: true },
+        server_time: "2026-09-22T00:12:00.000Z",
+      }),
+    ).toEqual({
+      items: [
+        {
+          id: adminApp.id,
+          ownerId: adminApp.owner.id,
+          owner: adminApp.owner.nickname,
+          name: adminApp.name,
+          url: adminApp.url,
+          isPublic: true,
+          themeId: "sage",
+          version: 2,
+          urlVersion: 1,
+          createdAt: adminApp.created_at,
+          health: {
+            state: "healthy",
+            checked_at: "2026-09-22T00:12:00.000Z",
+            fresh_until: null,
+          },
+        },
+        {
+          id: adminPrivateApp.id,
+          ownerId: adminPrivateApp.owner.id,
+          owner: adminPrivateApp.owner.nickname,
+          name: adminPrivateApp.name,
+          url: adminPrivateApp.url,
+          isPublic: false,
+          themeId: "sage",
+          version: 2,
+          urlVersion: 1,
+          createdAt: adminPrivateApp.created_at,
+          health: {
+            state: "healthy",
+            checked_at: "2026-09-22T00:12:00.000Z",
+            fresh_until: null,
+          },
+        },
+      ],
+      pagination: { limit: 24, offset: 0, total: 25, hasMore: true },
+      serverTime: "2026-09-22T00:12:00.000Z",
+    });
+    expect(() =>
+      mapAdminAppPage({
+        items: [{ ...adminApp, prompt: "must never be returned" }],
+        pagination: { limit: 24, offset: 0, total: 1, has_more: false },
+        server_time: "2026-09-22T00:12:00.000Z",
+      }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    expect(() =>
+      mapAdminAppPage({
+        items: [
+          { ...adminApp, owner: { ...adminApp.owner, phone: "+1234567" } },
+        ],
+        pagination: { limit: 24, offset: 0, total: 1, has_more: false },
+        server_time: "2026-09-22T00:12:00.000Z",
+      }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    expect(() =>
+      mapAdminAppPage({
+        items: [{ ...adminApp, url: "javascript:alert(1)" }],
+        pagination: { limit: 24, offset: 0, total: 1, has_more: false },
+        server_time: "2026-09-22T00:12:00.000Z",
+      }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 
   it("maps only the minimal approval operation result", () => {

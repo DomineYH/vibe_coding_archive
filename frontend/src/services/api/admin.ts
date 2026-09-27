@@ -1,5 +1,6 @@
 import {
   isDateTime,
+  mapAdminAppPage,
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
@@ -10,12 +11,14 @@ import type { ServiceErrorCode } from "../service-error";
 import { ServiceError } from "../service-error";
 import {
   normalizeAdminUsersQuery,
+  normalizeAdminAppsQuery,
   normalizeResetPassword,
   type AdminService,
 } from "../admin-service";
 
 type ApiEndpoint =
   | "GET /admin/users"
+  | "GET /admin/apps"
   | "GET /admin/users/{id}"
   | "POST /write-operations"
   | "PATCH /admin/users/{id}/approval"
@@ -99,6 +102,7 @@ const CANCEL_ERRORS: ErrorCodesByStatus = {
 
 const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "GET /admin/users": ADMIN_READ_ERRORS,
+  "GET /admin/apps": ADMIN_READ_ERRORS,
   "GET /admin/users/{id}": TARGET_READ_ERRORS,
   "POST /write-operations": ISSUE_ERRORS,
   "PATCH /admin/users/{id}/approval": EXECUTE_ERRORS,
@@ -287,6 +291,17 @@ export const adminService: AdminService = {
     });
     return mapAdminUserPage(
       await request("GET /admin/users", `/admin/users?${params}`, { signal }),
+    );
+  },
+
+  async listApps(query, { signal } = {}) {
+    const normalized = normalizeAdminAppsQuery(query);
+    const params = new URLSearchParams({
+      limit: String(normalized.limit),
+      offset: String(normalized.offset),
+    });
+    return mapAdminAppPage(
+      await request("GET /admin/apps", `/admin/apps?${params}`, { signal }),
     );
   },
 

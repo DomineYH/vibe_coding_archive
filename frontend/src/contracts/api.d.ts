@@ -450,6 +450,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/apps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all public and private apps for the administrator monitor
+         * @description Returns only the app name, URL, visibility, theme, versions, creation time, author nickname, and connection result summary. Prompts, descriptions, and member contact fields are never included. Items sort by creation time descending and app ID descending.
+         */
+        get: operations["listAdminApps"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users/{id}": {
         parameters: {
             query?: never;
@@ -588,6 +608,8 @@ export interface components {
             approved: boolean;
             /** @description Monotonic approval/credential version. Expected by approval writes; never exposed by public member DTOs. */
             account_version: number;
+            /** @description Current public and private apps owned by this member. */
+            app_count: number;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -600,6 +622,27 @@ export interface components {
             pending_users: number;
             total_apps: number;
             healthy_apps: number;
+        };
+        AdminApp: {
+            /** Format: uuid */
+            id: string;
+            owner: components["schemas"]["Owner"];
+            name: string;
+            /** Format: uri */
+            url: string;
+            is_public: boolean;
+            theme_id: string;
+            version: number;
+            url_version: number;
+            /** Format: date-time */
+            created_at: string;
+            health: components["schemas"]["HealthResult"];
+        };
+        AdminAppPage: {
+            items: components["schemas"]["AdminApp"][];
+            pagination: components["schemas"]["Pagination"];
+            /** Format: date-time */
+            server_time: string;
         };
         AdminUserPage: {
             items: components["schemas"]["AdminUser"][];
@@ -2020,6 +2063,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUserPage"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    listAdminApps: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header: {
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of all authorized apps with only monitor fields. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAppPage"];
                 };
             };
             401: components["responses"]["ServiceError"];

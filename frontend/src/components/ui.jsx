@@ -9,6 +9,7 @@ export function Btn({
   className = "",
   type = "button",
   disabled,
+  "aria-describedby": describedBy,
 }) {
   const base =
     "inline-flex select-none items-center justify-center gap-1.5 font-semibold transition-all duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40";
@@ -29,6 +30,7 @@ export function Btn({
     <button
       type={type}
       disabled={disabled}
+      aria-describedby={describedBy}
       onClick={onClick}
       className={[base, sizes[size], variants[variant], className].join(" ")}
     >
