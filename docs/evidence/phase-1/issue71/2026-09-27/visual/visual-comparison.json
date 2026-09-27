@@ -1,0 +1,105 @@
+{
+  "thresholdPixels": 0,
+  "results": [
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-1024x900.png",
+      "screenshot": "gallery-loading-1024x900.png",
+      "width": 1024,
+      "height": 900,
+      "comparisonStatus": "compared",
+      "pixelComparison": "full",
+      "expectedWidth": 1024,
+      "expectedHeight": 900,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-1440x1000.png",
+      "screenshot": "gallery-loading-1440x1000.png",
+      "width": 1440,
+      "height": 1000,
+      "comparisonStatus": "compared",
+      "pixelComparison": "full",
+      "expectedWidth": 1440,
+      "expectedHeight": 1000,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-360x844.png",
+      "screenshot": "gallery-loading-360x844.png",
+      "width": 360,
+      "height": 904,
+      "comparisonStatus": "compared",
+      "pixelComparison": "full",
+      "expectedWidth": 360,
+      "expectedHeight": 904,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-390x844.png",
+      "screenshot": "gallery-loading-390x844.png",
+      "width": 390,
+      "height": 865,
+      "comparisonStatus": "compared",
+      "pixelComparison": "full",
+      "expectedWidth": 390,
+      "expectedHeight": 865,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "gallery-loading",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines/gallery-loading-768x1024.png",
+      "screenshot": "gallery-loading-768x1024.png",
+      "width": 768,
+      "height": 1024,
+      "comparisonStatus": "compared",
+      "pixelComparison": "full",
+      "expectedWidth": 768,
+      "expectedHeight": 1024,
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    }
+  ]
+}
