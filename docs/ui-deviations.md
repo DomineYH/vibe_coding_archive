@@ -247,3 +247,9 @@ The existing Health Monitor now enables its global recheck action. It reports th
 | Individual recheck control         | Keeps each row action disabled and exposes its unavailability as an accessible description.                  | Per-row activation remains outside this whole-scan issue.                                                                                    |
 
 The preserved `21-admin-health.png` references remain unchanged; the implementation adds no source reference or visual baseline. Five final-batch product captures accompany the five existing reference comparisons at all required viewports. Measured heights and comparator outputs are in the [#48 evidence](evidence/phase-1/issue48/2026-09-27/README.md#five-viewport-evidence). Automated keyboard, status, description, and error checks pass locally; human UI-D, screen-reader, physical-device, hosted-CI, and local-handover review remain pending.
+
+## Issue #49 integrated journey
+
+The issue #49 change adds no product UI or visual-baseline changes. Its browser journey reuses the existing signup, approval, app create/edit/detail, health, admin, and reset screens; the state fix allows a registered account to use the already supported private-visibility control. Existing five-viewport evidence for these screens remains linked under issues #35 and #40–#48. No new UI-D difference is approved by this implementation.
+
+The existing human UI-D/source-difference and narrow Health row reviews remain pending. The zero-tolerance gallery-loading rounded-border difference recorded in [#47 evidence](evidence/phase-1/issue47/2026-09-27/README.md) stays open; #49 does not change its threshold or baseline.

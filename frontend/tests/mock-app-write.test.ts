@@ -246,6 +246,46 @@ describe("mock app updates", () => {
     });
   });
 
+  it("lets an approved registered member make their app private", async () => {
+    const registered = await authService.register({
+      loginId: "issue49member",
+      password: "A long fake member password for issue 49",
+      nickname: "Issue 49 member",
+    });
+    await authService.login({ loginId: "admin", password: "admin123" });
+    const target = await adminService.getUser(registered.id);
+    const approval = await adminService.createApprovalOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      approved: true,
+    });
+    await adminService.setApproval(
+      target.id,
+      true,
+      target.accountVersion,
+      approval.key,
+    );
+    await authService.logout();
+    await authService.login({
+      loginId: registered.loginId,
+      password: "A long fake member password for issue 49",
+    });
+
+    const create = await appsService.issueCreateOperation(input);
+    const created = await appsService.create(input, create.key);
+    const patch = { isPublic: false };
+    const update = await appsService.issueUpdateOperation(
+      created.id,
+      patch,
+      created.version,
+    );
+    await appsService.update(created.id, patch, created.version, update.key);
+
+    expect(getMockSnapshot().private_apps).toContainEqual(
+      expect.objectContaining({ id: created.id, is_public: false }),
+    );
+  });
+
   it("invalidates results only when the URL changes beyond its fragment", async () => {
     await loginMember();
     const create = await appsService.issueCreateOperation(input);

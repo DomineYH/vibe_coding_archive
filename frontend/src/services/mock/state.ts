@@ -400,7 +400,11 @@ function validTransition(
   );
 }
 
-function validateApps(apps: unknown[], isPublic: boolean): void {
+function validateApps(
+  apps: unknown[],
+  isPublic: boolean,
+  ownerIds: ReadonlySet<string>,
+): void {
   const appIds = new Set<string>();
   const jobIds = new Set<string>();
   const ownerNames = new Map<string, string>();
@@ -437,11 +441,7 @@ function validateApps(apps: unknown[], isPublic: boolean): void {
     appIds.add(item.id);
     if (jobId !== undefined) jobIds.add(jobId);
     ownerNames.set(item.ownerId, item.owner);
-    if (
-      !isPublic &&
-      !MOCK_ACCOUNTS.some((account) => account.id === item.ownerId)
-    )
-      throw storageError();
+    if (!isPublic && !ownerIds.has(item.ownerId)) throw storageError();
   }
 }
 
@@ -1075,8 +1075,12 @@ function readState(): MockState {
       validState.credential_overrides,
       validState.registered_accounts,
     );
-    validateApps(state.apps, true);
-    validateApps(state.private_apps, false);
+    const appOwnerIds = new Set([
+      ...MOCK_ACCOUNTS.map((account) => account.id),
+      ...validState.registered_accounts.map((account) => account.id),
+    ]);
+    validateApps(state.apps, true, appOwnerIds);
+    validateApps(state.private_apps, false, appOwnerIds);
     validateHealthMeasurements(validState.health_measurements, [
       ...state.apps,
       ...state.private_apps,
