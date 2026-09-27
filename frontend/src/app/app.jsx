@@ -101,7 +101,7 @@ function Header({
       <div className="mx-auto flex h-[57px] w-full max-w-[1280px] items-center gap-2 px-5 sm:px-8">
         <Link
           to="/"
-          className="flex items-center gap-2.5"
+          className="flex shrink-0 items-center gap-2.5 whitespace-nowrap"
           aria-label="EduVibe 아카이브 홈"
         >
           <span className="acc-bg inline-flex h-8 w-8 items-center justify-center rounded-[10px] text-white shadow-sm">
@@ -152,7 +152,7 @@ function Header({
             </Link>
           ) : null}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex min-w-0 items-center gap-2">
           {auth.concealed || auth.status === "checking" ? (
             <span className="text-[12px] text-neutral-500" role="status">
               {auth.concealed
@@ -169,15 +169,16 @@ function Header({
             </Btn>
           ) : auth.user ? (
             <>
-              <span className="inline-flex max-w-[145px] items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:gap-2 sm:text-[13px]">
+              <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:max-w-[145px] sm:gap-2 sm:text-[13px]">
                 <Avatar name={auth.user.nickname} size={28} />
-                <span className="truncate">{auth.user.nickname}</span>
+                <span className="min-w-0 truncate">{auth.user.nickname}</span>
               </span>
               <Btn
                 size="sm"
                 variant="line"
                 onClick={onLogout}
                 disabled={logoutPending}
+                className="shrink-0 whitespace-nowrap"
               >
                 {logoutPending ? "로그아웃 중…" : "로그아웃"}
               </Btn>
