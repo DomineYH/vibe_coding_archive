@@ -17,7 +17,10 @@ export default defineConfig({
     reducedMotion: "reduce",
     colorScheme: "light",
     serviceWorkers: "block",
-    launchOptions: { executablePath: chromiumExecutable() },
+    launchOptions: {
+      executablePath: chromiumExecutable(),
+      args: ["--force-color-profile=srgb"],
+    },
   },
   webServer: {
     command: "npm run dev",
