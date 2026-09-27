@@ -12,12 +12,14 @@ import {
 } from "react-router-dom";
 import {
   useInfiniteQuery,
+  useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import catalog from "../../../contracts/catalog.json";
 import { appsService } from "@services/apps";
 import { authService } from "@services/auth";
+import { healthService } from "@services/health";
 import { normalizeSearch } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { contractError, ServiceError } from "../services/service-error";
@@ -441,6 +443,7 @@ function DetailRoute({
   deletionState,
   setDeletionState,
 }) {
+  const queryClient = useQueryClient();
   const { id = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -484,6 +487,145 @@ function DetailRoute({
     },
   });
   const app = detail.data;
+  const healthReadEnabled =
+    access.meta?.capabilities.health_read.enabled === true;
+  const healthCheckEnabled =
+    access.meta?.capabilities.health_check.enabled === true;
+  const healthKey = [__DATA_MODE__, "health", "app", id, app?.urlVersion ?? 0];
+  const healthQuery = useQuery({
+    queryKey: healthKey,
+    enabled: Boolean(app && healthReadEnabled),
+    queryFn: ({ signal }) => healthService.getAppHealth(id, { signal }),
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+  const healthSnapshot =
+    healthQuery.data?.urlVersion === app?.urlVersion ? healthQuery.data : null;
+  const detailHealth = healthSnapshot?.health ?? app?.health;
+  const activeJobId = ["queued", "running"].includes(
+    detailHealth?.latestJob?.status ?? "",
+  )
+    ? detailHealth.latestJob.id
+    : null;
+  const jobKey = [
+    __DATA_MODE__,
+    "health",
+    "job",
+    activeJobId ?? "",
+    id,
+    app?.urlVersion ?? 0,
+  ];
+  const jobQuery = useQuery({
+    queryKey: jobKey,
+    enabled: Boolean(activeJobId && healthReadEnabled),
+    queryFn: ({ signal }) => healthService.getJob(activeJobId, { signal }),
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: (query) =>
+      activeJobId &&
+      document.visibilityState === "visible" &&
+      query.state.status !== "error" &&
+      ["queued", "running"].includes(
+        query.state.data?.job.status ?? detailHealth?.latestJob?.status ?? "",
+      )
+        ? 2000
+        : false,
+    refetchIntervalInBackground: false,
+  });
+  const refetchJob = jobQuery.refetch;
+  const jobQueryError = jobQuery.isError;
+  const jobSnapshot =
+    jobQuery.data?.urlVersion === app?.urlVersion ? jobQuery.data : null;
+  const currentHealthSnapshot = jobSnapshot ?? healthSnapshot;
+  const displayedHealth =
+    currentHealthSnapshot?.health ?? app?.health ?? detailHealth;
+  const jobIsActive = ["queued", "running"].includes(
+    displayedHealth?.latestJob?.status ?? "",
+  );
+  const healthServerTime = currentHealthSnapshot?.serverTime ?? app?.serverTime;
+  const healthReceivedAt = jobSnapshot
+    ? jobQuery.dataUpdatedAt
+    : healthSnapshot
+      ? healthQuery.dataUpdatedAt
+      : detail.dataUpdatedAt;
+  const checkMutation = useMutation({
+    mutationFn: () => healthService.requestCheck(id),
+    retry: false,
+    onMutate: () =>
+      queryClient.cancelQueries({ queryKey: healthKey, exact: true }),
+    onSuccess: (accepted) => {
+      if (accepted.urlVersion !== app?.urlVersion) return;
+      queryClient.setQueryData(healthKey, accepted);
+    },
+  });
+  const latestResult = displayedHealth?.result;
+  const staleAt = latestResult?.fresh_until
+    ? healthReceivedAt +
+      Date.parse(latestResult.fresh_until) -
+      Date.parse(healthServerTime)
+    : null;
+  const [freshnessNow, setFreshnessNow] = useState(() => Date.now());
+  const staleReadKey = useRef("");
+  const freshnessKey = latestResult?.fresh_until
+    ? `${id}:${app?.urlVersion}:${latestResult.fresh_until}`
+    : "";
+  const refetchHealth = healthQuery.refetch;
+  const refreshStaleHealth = useCallback(() => {
+    if (
+      !healthReadEnabled ||
+      !healthSnapshot ||
+      !freshnessKey ||
+      staleAt === null ||
+      Date.now() < staleAt ||
+      document.visibilityState !== "visible" ||
+      staleReadKey.current === freshnessKey
+    )
+      return;
+    staleReadKey.current = freshnessKey;
+    void refetchHealth();
+  }, [freshnessKey, healthReadEnabled, healthSnapshot, staleAt, refetchHealth]);
+  useEffect(() => {
+    if (staleAt === null) return undefined;
+    const delay = staleAt - Date.now();
+    if (delay <= 0) {
+      setFreshnessNow(Date.now());
+      refreshStaleHealth();
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      setFreshnessNow(Date.now());
+      refreshStaleHealth();
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [staleAt, refreshStaleHealth]);
+  useEffect(() => {
+    let wasHidden = document.visibilityState === "hidden";
+    const onVisibilityChange = () => {
+      const isHidden = document.visibilityState === "hidden";
+      if (wasHidden && !isHidden) {
+        refreshStaleHealth();
+        if (jobIsActive && !jobQueryError) void refetchJob();
+      }
+      wasHidden = isHidden;
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [jobIsActive, jobQueryError, refetchJob, refreshStaleHealth]);
+  const canCheckHealth =
+    healthCheckEnabled &&
+    auth.status === "ready" &&
+    !auth.concealed &&
+    (!auth.user ||
+      (auth.user.sessionKind === "full" && !auth.user.mustChangePassword));
+  const isHealthStale = staleAt !== null && freshnessNow >= staleAt;
+  const checkFeedback = checkMutation.data
+    ? {
+        created: "연결 검사 작업을 접수했어요.",
+        active_reused: "진행 중인 연결 검사를 이어서 확인합니다.",
+        result_reused: "최근 연결 검사 결과를 다시 표시합니다.",
+      }[checkMutation.data.disposition]
+    : "";
   const protectedDetail = app?.isPublic !== true;
   const adminCanManage =
     auth.user?.role === "admin" &&
@@ -657,6 +799,25 @@ function DetailRoute({
       onCancelDelete={cancelDelete}
       fromGallery={location.state?.fromGallery === true}
       fromAdmin={fromAdmin}
+      health={displayedHealth}
+      healthServerTime={healthServerTime}
+      healthStale={isHealthStale}
+      isAdmin={
+        auth.user?.role === "admin" &&
+        auth.user.approved &&
+        auth.user.sessionKind === "full" &&
+        !auth.user.mustChangePassword
+      }
+      canCheckHealth={canCheckHealth}
+      checkingHealth={checkMutation.isPending}
+      checkHealthError={checkMutation.error}
+      checkFeedback={checkFeedback}
+      checkCompleted={Boolean(checkMutation.data)}
+      onCheckHealth={() => checkMutation.mutate()}
+      healthReadError={healthQuery.error}
+      onRetryHealthRead={() => healthQuery.refetch()}
+      jobReadError={jobQueryError ? jobQuery.error : null}
+      onRetryJobRead={refetchJob}
       onBack={() =>
         fromAdmin
           ? navigate("/admin?tab=health")
@@ -1172,6 +1333,17 @@ export default function App() {
       queryClient.removeQueries({
         queryKey: [__DATA_MODE__, "apps", "detail", id],
       });
+      queryClient.removeQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            key[0] === __DATA_MODE__ &&
+            key[1] === "health" &&
+            ((key[2] === "app" && key[3] === id) ||
+              (key[2] === "job" && key[4] === id))
+          );
+        },
+      });
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
       });
@@ -1189,6 +1361,7 @@ export default function App() {
   const isProtectedQuery = useCallback((query) => {
     const key = query.queryKey;
     return (
+      (key[0] === __DATA_MODE__ && key[1] === "health") ||
       (key[0] === __DATA_MODE__ && key[1] === "admin") ||
       (key[0] === __DATA_MODE__ &&
         key[1] === "apps" &&
@@ -1262,6 +1435,12 @@ export default function App() {
 
   const refreshMockState = useCallback(async () => {
     await restoreAuth({ concealed: true });
+    queryClient.removeQueries({
+      predicate: (query) =>
+        __DATA_MODE__ === "mock" &&
+        query.queryKey[0] === __DATA_MODE__ &&
+        query.queryKey[1] === "health",
+    });
     queryClient.removeQueries({
       predicate: (query) =>
         __DATA_MODE__ === "mock" &&

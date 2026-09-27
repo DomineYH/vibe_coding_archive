@@ -1,0 +1,552 @@
+{
+  "thresholdPixels": 0,
+  "sourceComparisons": [
+    {
+      "state": "detail",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "height": 1533,
+      "expectedWidth": 1440,
+      "expectedHeight": 1360,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail-copy-done",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/05-copy-done.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "height": 1533,
+      "expectedWidth": 1440,
+      "expectedHeight": 1360,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/04-detail-public.png",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "width": 1024,
+      "height": 1514,
+      "expectedWidth": 1024,
+      "expectedHeight": 1341,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail-copy-done",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/05-copy-done.png",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "width": 1024,
+      "height": 1514,
+      "expectedWidth": 1024,
+      "expectedHeight": 1341,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/04-detail-public.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "width": 768,
+      "height": 1930,
+      "expectedWidth": 768,
+      "expectedHeight": 1757,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail-copy-done",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/05-copy-done.png",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "width": 768,
+      "height": 1930,
+      "expectedWidth": 768,
+      "expectedHeight": 1757,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/04-detail-public.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "height": 2141,
+      "expectedWidth": 390,
+      "expectedHeight": 1968,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail-copy-done",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/390x844/05-copy-done.png",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "height": 2141,
+      "expectedWidth": 390,
+      "expectedHeight": 1968,
+      "deltaHeight": 173,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/04-detail-public.png",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "width": 360,
+      "height": 2147,
+      "expectedWidth": 360,
+      "expectedHeight": 1955,
+      "deltaHeight": 192,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail-copy-done",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/05-copy-done.png",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "width": 360,
+      "height": 2147,
+      "expectedWidth": 360,
+      "expectedHeight": 1955,
+      "deltaHeight": 192,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    },
+    {
+      "state": "detail-component",
+      "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public-component.png",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 340,
+      "height": 729,
+      "expectedWidth": 340,
+      "expectedHeight": 555,
+      "deltaHeight": 174,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null
+    }
+  ],
+  "productOnlyHealth": [
+    {
+      "state": "health-result-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "health-result-error-1440x1000.png",
+      "width": 1440,
+      "height": 1611,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-result-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "health-result-error-1024x900.png",
+      "width": 1024,
+      "height": 1592,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-result-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "health-result-error-768x1024.png",
+      "width": 768,
+      "height": 1990,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-result-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-result-error-390x844.png",
+      "width": 390,
+      "height": 2201,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-result-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-result-error-360x844.png",
+      "width": 360,
+      "height": 2225,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-job-failed",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "health-job-failed-1440x1000.png",
+      "width": 1440,
+      "height": 1634,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-job-failed",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "health-job-failed-1024x900.png",
+      "width": 1024,
+      "height": 1615,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-job-failed",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "health-job-failed-768x1024.png",
+      "width": 768,
+      "height": 2011,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-job-failed",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-job-failed-390x844.png",
+      "width": 390,
+      "height": 2223,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-job-failed",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-job-failed-360x844.png",
+      "width": 360,
+      "height": 2248,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-query-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "health-query-error-1440x1000.png",
+      "width": 1440,
+      "height": 1703,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-query-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "health-query-error-1024x900.png",
+      "width": 1024,
+      "height": 1684,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-query-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "health-query-error-768x1024.png",
+      "width": 768,
+      "height": 2100,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-query-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-query-error-390x844.png",
+      "width": 390,
+      "height": 2311,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-query-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-query-error-360x844.png",
+      "width": 360,
+      "height": 2335,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-stale",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "health-stale-1440x1000.png",
+      "width": 1440,
+      "height": 1533,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-stale",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "health-stale-1024x900.png",
+      "width": 1024,
+      "height": 1514,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-stale",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "health-stale-768x1024.png",
+      "width": 768,
+      "height": 1930,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-stale",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-stale-390x844.png",
+      "width": 390,
+      "height": 2141,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    },
+    {
+      "state": "health-stale",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "health-stale-360x844.png",
+      "width": 360,
+      "height": 2147,
+      "comparisonStatus": "product_only",
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null,
+      "changedPixelSamples": [],
+      "comparedRegion": null
+    }
+  ]
+}

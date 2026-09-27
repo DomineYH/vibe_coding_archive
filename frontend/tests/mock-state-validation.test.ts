@@ -57,7 +57,7 @@ function authFlowV6Shape(value: unknown): StoredObject {
 
 const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing state version", (state) => delete state.version],
-  ["unsupported state version", (state) => (state.version = 9)],
+  ["unsupported state version", (state) => (state.version = 10)],
   ["invalid mock clock", (state) => (state.mock_now = "not a date")],
   [
     "missing principal session",
@@ -230,7 +230,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 8,
+      version: 9,
       principal_id: null,
       private_apps: [{ id: "00000000-0000-4000-8000-000000000091" }],
       registered_accounts: [],
@@ -256,6 +256,7 @@ describe("persisted mock state validation", () => {
     delete v2.credential_overrides;
     delete v2.principal_session;
     delete v2.deleted_account_ids;
+    delete v2.health_measurements;
     v2.principal_id = "00000000-0000-4000-8000-000000000101";
     localStorage.setItem(
       MOCK_STORAGE_KEY,
@@ -266,7 +267,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 8,
+      version: 9,
       registered_accounts: [],
       principal_id: "00000000-0000-4000-8000-000000000101",
       admin_users: expect.any(Array),
@@ -289,6 +290,7 @@ describe("persisted mock state validation", () => {
     delete previous.credential_overrides;
     delete previous.principal_session;
     delete previous.deleted_account_ids;
+    delete previous.health_measurements;
     localStorage.setItem(
       MOCK_STORAGE_KEY,
       JSON.stringify({ ...previous, version: 3 }),
@@ -298,7 +300,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 8,
+      version: 9,
       observation_generation: 0,
       auth_flow: { revision: "0", last_identity_change_revision: "0" },
       admin_users: expect.any(Array),
@@ -315,6 +317,7 @@ describe("persisted mock state validation", () => {
     delete previous.credential_overrides;
     delete previous.principal_session;
     delete previous.deleted_account_ids;
+    delete previous.health_measurements;
     previous.auth_flow = authFlowV6Shape(previous.auth_flow);
     previous.version = 5;
     previous.admin_users = (previous.admin_users as StoredObject[]).filter(
@@ -329,7 +332,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 8,
+      version: 9,
       mock_now: "2026-09-22T00:12:00.000Z",
       credential_overrides: [],
       principal_session: null,
@@ -354,6 +357,7 @@ describe("persisted mock state validation", () => {
     const previous = { ...current } as Record<string, unknown>;
     previous.auth_flow = authFlowV6Shape(previous.auth_flow);
     delete previous.deleted_account_ids;
+    delete previous.health_measurements;
     previous.version = 6;
     localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(previous));
 
@@ -362,7 +366,7 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 8,
+      version: 9,
       auth_flow: {
         flow_sequence: 0,
         recovery_ready: true,
@@ -381,6 +385,7 @@ describe("persisted mock state validation", () => {
     const previous = { ...current } as Record<string, unknown>;
     previous.version = 7;
     delete previous.deleted_account_ids;
+    delete previous.health_measurements;
     localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(previous));
 
     await appsService.list();
@@ -388,11 +393,27 @@ describe("persisted mock state validation", () => {
     expect(
       JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
     ).toMatchObject({
-      version: 8,
+      version: 9,
       deleted_account_ids: [],
       registered_accounts: [],
       admin_users: current.admin_users,
       apps: current.apps,
     });
+  });
+
+  it("migrates version 8 state with empty health measurements", async () => {
+    resetMockState();
+    const current = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    const previous = { ...current, version: 8 } as Record<string, unknown>;
+    delete previous.health_measurements;
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(previous));
+
+    await appsService.list();
+
+    expect(
+      JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null"),
+    ).toMatchObject({ version: 9, health_measurements: [] });
   });
 });

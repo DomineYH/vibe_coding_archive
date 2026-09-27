@@ -1,0 +1,19 @@
+{
+  "state": "health-query-error",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "health-query-error-360x844.png",
+  "width": 360,
+  "height": 2335,
+  "comparisonStatus": "product_only",
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}
