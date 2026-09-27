@@ -2372,6 +2372,7 @@ export interface operations {
             };
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -2404,6 +2405,7 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

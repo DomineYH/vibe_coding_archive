@@ -878,6 +878,7 @@ paths:
               schema: { $ref: "#/components/schemas/BatchAccepted" }
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
         "429": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
   /admin/health-check-batches/{id}:
@@ -908,6 +909,7 @@ paths:
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users:
     get:

@@ -191,6 +191,7 @@ describe("OpenAPI app detail schema", () => {
       request.responses["202"].content["application/json"].schema.$ref,
     ).toBe("#/components/schemas/BatchAccepted");
     expect(request.responses["429"]).toBeDefined();
+    expect(request.responses["409"]).toBeDefined();
     expect(request.parameters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ $ref: "#/components/parameters/Origin" }),
@@ -213,6 +214,7 @@ describe("OpenAPI app detail schema", () => {
     expect(read.responses["200"].content["application/json"].schema.$ref).toBe(
       "#/components/schemas/HealthBatch",
     );
+    expect(read.responses["409"]).toBeDefined();
     expect(openapi.components.schemas.HealthBatchCounts.required).toEqual([
       "queued",
       "running",
