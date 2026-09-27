@@ -2384,12 +2384,18 @@ export function AdminView({ scopeKey }) {
                             <span className="min-w-0 truncate" title={app.url}>
                               {app.url}
                             </span>
-                            <span>작성자 {app.owner}</span>
-                            <span>버전 {app.version}</span>
-                            <span>{app.isPublic ? "공개" : "비공개"}</span>
+                            <span className="whitespace-nowrap">
+                              작성자 {app.owner}
+                            </span>
+                            <span className="whitespace-nowrap">
+                              버전 {app.version}
+                            </span>
+                            <span className="whitespace-nowrap">
+                              {app.isPublic ? "공개" : "비공개"}
+                            </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-[11.5px] text-neutral-500">
+                        <div className="flex w-full items-center gap-2 text-[11.5px] text-neutral-500 sm:w-auto">
                           <StatusBadge state={app.health.state} />
                           {stale ? (
                             <span className="font-semibold text-amber-800">

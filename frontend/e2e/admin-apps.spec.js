@@ -69,34 +69,37 @@ const narrowViewports = [
   { width: 390, height: 844 },
 ];
 
+async function textLineCount(locator) {
+  return locator.evaluate((element) => {
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    return new Set(
+      Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
+    ).size;
+  });
+}
+
 async function expectHeaderTextOnOneLine(page) {
   const logo = page
     .getByRole("link", { name: "EduVibe 아카이브 홈" })
     .locator("span")
     .filter({ hasText: "EduVibe" });
   const logout = page.getByRole("button", { name: "로그아웃", exact: true });
+  const nickname = page
+    .getByRole("banner")
+    .getByText("아카이브 관리자", { exact: true });
   await expect(logo).toBeVisible();
   await expect(logout).toBeVisible();
-
-  const logoLineCount = await logo.evaluate((element) => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    return new Set(
-      Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
-    ).size;
-  });
-  const logoutLineCount = await logout.evaluate((element) => {
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    return new Set(
-      Array.from(range.getClientRects(), (rect) => Math.round(rect.top)),
-    ).size;
-  });
+  await expect(nickname).toBeVisible();
+  const nicknameSlotWidth = await nickname.evaluate(
+    (element) => element.parentElement.clientWidth,
+  );
   const documentWidth = await page.evaluate(
     () => document.documentElement.scrollWidth,
   );
-  expect(logoLineCount).toBe(1);
-  expect(logoutLineCount).toBe(1);
+  expect(await textLineCount(logo)).toBe(1);
+  expect(await textLineCount(logout)).toBe(1);
+  expect(nicknameSlotWidth).toBeGreaterThan(72);
   expect(documentWidth).toBe(await page.evaluate(() => window.innerWidth));
 }
 
@@ -200,39 +203,58 @@ test("Health Monitor metadata stays clear of status badges at narrow widths", as
   for (const viewport of narrowViewports) {
     await page.setViewportSize(viewport);
     const panel = await openHealthMonitor(page);
-    const row = appRow(panel, "과학 수행평가 루브릭 채점기");
-    const metadata = row
-      .locator("span")
-      .filter({ hasText: /^(작성자|버전|공개|비공개)/ });
-    const badge = row.locator('[aria-label^="연결 결과:"]');
-    await expect(metadata).toHaveCount(3);
-    await expect(badge).toBeVisible();
+    const rows = panel
+      .getByRole("list", { name: "전체 앱 목록" })
+      .getByRole("listitem");
+    const rowCount = await rows.count();
+    expect(rowCount).toBeGreaterThan(0);
 
-    const metadataRects = await metadata.evaluateAll((elements) =>
-      elements.flatMap((element) => {
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        return Array.from(range.getClientRects(), (rect) => ({
-          left: rect.left,
-          right: rect.right,
-          top: rect.top,
-          bottom: rect.bottom,
-        }));
-      }),
-    );
-    const badgeBox = await badge.boundingBox();
-    expect(badgeBox).not.toBeNull();
+    for (let index = 0; index < rowCount; index += 1) {
+      const row = rows.nth(index);
+      const metadata = row
+        .locator("span")
+        .filter({ hasText: /^(작성자|버전|공개|비공개)/ });
+      const badge = row.locator('[aria-label^="연결 결과:"]');
+      await expect(metadata).toHaveCount(3);
+      await expect(badge).toBeVisible();
 
-    for (const rect of metadataRects) {
-      const separatedByTwoPixels =
-        badgeBox.x - rect.right >= 2 ||
-        rect.left - (badgeBox.x + badgeBox.width) >= 2 ||
-        badgeBox.y - rect.bottom >= 2 ||
-        rect.top - (badgeBox.y + badgeBox.height) >= 2;
-      expect(
-        separatedByTwoPixels,
-        `${viewport.width}px metadata must have a visible gap from its status badge`,
-      ).toBe(true);
+      const metadataItems = await metadata.evaluateAll((elements) =>
+        elements.map((element) => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          const rects = Array.from(range.getClientRects(), (rect) => ({
+            left: rect.left,
+            right: rect.right,
+            top: rect.top,
+            bottom: rect.bottom,
+          }));
+          return {
+            text: element.textContent.trim(),
+            lineCount: new Set(rects.map((rect) => Math.round(rect.top))).size,
+            rects,
+          };
+        }),
+      );
+      const badgeBox = await badge.boundingBox();
+      expect(badgeBox).not.toBeNull();
+
+      for (const item of metadataItems) {
+        expect(
+          item.lineCount,
+          `${viewport.width}px ${item.text} must stay on one line`,
+        ).toBe(1);
+        for (const rect of item.rects) {
+          const separatedByTwoPixels =
+            badgeBox.x - rect.right >= 2 ||
+            rect.left - (badgeBox.x + badgeBox.width) >= 2 ||
+            badgeBox.y - rect.bottom >= 2 ||
+            rect.top - (badgeBox.y + badgeBox.height) >= 2;
+          expect(
+            separatedByTwoPixels,
+            `${viewport.width}px ${item.text} must have a visible gap from its status badge`,
+          ).toBe(true);
+        }
+      }
     }
   }
 });

@@ -152,7 +152,7 @@ function Header({
             </Link>
           ) : null}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex min-w-0 items-center gap-2">
           {auth.concealed || auth.status === "checking" ? (
             <span className="text-[12px] text-neutral-500" role="status">
               {auth.concealed
@@ -169,9 +169,9 @@ function Header({
             </Btn>
           ) : auth.user ? (
             <>
-              <span className="inline-flex max-w-[72px] items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:max-w-[145px] sm:gap-2 sm:text-[13px]">
+              <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:max-w-[145px] sm:gap-2 sm:text-[13px]">
                 <Avatar name={auth.user.nickname} size={28} />
-                <span className="truncate">{auth.user.nickname}</span>
+                <span className="min-w-0 truncate">{auth.user.nickname}</span>
               </span>
               <Btn
                 size="sm"

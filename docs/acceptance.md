@@ -287,6 +287,6 @@ The [#49 acceptance record](evidence/phase-1/issue49/2026-09-27/README.md) maps 
 
 ## Issue #70 narrow Health Monitor row and authenticated header
 
-The shared authenticated header and Health Monitor row receive layout-only changes. Browser checks at 360×844 and 390×844 assert one-line logo/logout labels and visible separation between each author/version/visibility text fragment and its status badge. The same header assertions run on Health Monitor, member management, and app detail. App title and URL truncation are unchanged.
+The shared authenticated header and Health Monitor row receive layout-only changes. Browser checks at 360×844 and 390×844 assert one-line logo/logout labels, a flexible nickname slot, one-line author/version/visibility items for every row, and visible separation between each metadata text fragment and its status badge. The same header assertions run on Health Monitor, member management, and app detail. App title and URL truncation are unchanged. The source references omit the nickname and use icon-only logout at mobile widths; #70 keeps the visible one-line logout label and records that difference for human UI-D review.
 
 Five-view Health Monitor captures and five member-management regression captures, with comparison results, are recorded in the [#70 evidence](evidence/phase-1/issue70/2026-09-27/README.md). The preserved references, product baselines, and zero-pixel tolerance were not changed. Human UI-D, screen-reader, physical-device, hosted-CI, and local-handover review remain pending.
