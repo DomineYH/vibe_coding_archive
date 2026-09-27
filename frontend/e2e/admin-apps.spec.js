@@ -237,6 +237,121 @@ test("admin monitor deduplicates an overlapping page and keeps empty/error state
   ).toHaveCount(25);
 });
 
+test("whole scan rediscovers the active batch by ID after reload", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await setScenario(page, "health_batch_query_failure");
+  await loginAsAdmin(page);
+  let panel = await openHealthMonitor(page);
+  const start = panel.getByRole("button", {
+    name: "전체 재검사",
+    exact: true,
+  });
+  await expect(start).toBeEnabled();
+  await start.click();
+  await expect(panel.getByRole("alert")).toContainText(
+    "전체 검사 진행 상태를 불러오지 못했어요",
+  );
+  const firstBatchId = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)).health_batches[0].id,
+    storageKey,
+  );
+  const unchangedBatch = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)).health_batches[0],
+    storageKey,
+  );
+  expect(
+    unchangedBatch.targets.every((target) => target.state === "queued"),
+  ).toBe(true);
+
+  await page.reload();
+  panel = page.getByRole("tabpanel", { name: "Health Monitor" });
+  await expect(panel.getByRole("alert")).toContainText(
+    "전체 검사 진행 상태를 불러오지 못했어요",
+  );
+  const restoredBatches = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)).health_batches,
+    storageKey,
+  );
+  expect(restoredBatches).toMatchObject([{ id: firstBatchId }]);
+  await setScenario(page, "original");
+  await panel
+    .getByRole("button", { name: "진행 다시 조회", exact: true })
+    .click();
+  await expect(
+    panel.getByRole("region", { name: "전체 검사 진행 상황" }),
+  ).toContainText("전체 검사 진행 중");
+  const sameBatch = await page.evaluate(
+    (key) => JSON.parse(localStorage.getItem(key)).health_batches,
+    storageKey,
+  );
+  expect(sameBatch).toMatchObject([{ id: firstBatchId }]);
+});
+
+test("whole scan reports mixed terminal counts and marks stale rows", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await setScenario(page, "health_batch_mixed");
+  await loginAsAdmin(page);
+  let panel = await openHealthMonitor(page);
+  await panel.getByRole("button", { name: "전체 재검사", exact: true }).click();
+  const summary = panel.getByRole("region", {
+    name: "전체 검사 진행 상황",
+  });
+  await expect(summary).toContainText("전체 검사 완료", { timeout: 10000 });
+  await expect(summary).toContainText("실패 1");
+  await expect(summary).toContainText("취소 1");
+  await expect(summary).toContainText("처리 17/17");
+
+  await page.evaluate(async () => {
+    const { setMockClock } = await import("/src/services/mock/state.ts");
+    setMockClock("2026-09-22T00:27:00.000Z");
+  });
+  await page.reload();
+  panel = page.getByRole("tabpanel", { name: "Health Monitor" });
+  await expect(page.getByRole("region", { name: "전체 통계" })).toContainText(
+    "0 / 17",
+  );
+  await expect(
+    panel.getByText("오래된 결과", { exact: true }).first(),
+  ).toBeVisible();
+});
+
+test("empty batches show cooldown time and unavailable health capability", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  await setScenario(page, "health_batch_empty");
+  await loginAsAdmin(page);
+  const panel = await openHealthMonitor(page);
+  await expect(panel.getByRole("list", { name: "전체 앱 목록" })).toHaveCount(
+    0,
+  );
+  await panel.getByRole("button", { name: "전체 재검사", exact: true }).click();
+  const summary = panel.getByRole("region", { name: "전체 검사 진행 상황" });
+  await expect(summary).toContainText("전체 검사 완료");
+  await expect(summary).toContainText("처리 0/0");
+
+  await panel.getByRole("button", { name: "전체 재검사", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText("전체 검사 대기 시간");
+  await setScenario(page, "health_check_unavailable");
+  await panel.getByRole("button", { name: "전체 재검사", exact: true }).click();
+  await expect(panel.getByRole("alert")).toContainText(
+    "현재 전체 연결 검사를 사용할 수 없어요",
+  );
+  await expect(
+    page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key)).health_batches.length,
+      storageKey,
+    ),
+  ).resolves.toBe(1);
+});
+
 test("admin tabs are operable with the keyboard", async ({ page }) => {
   await loginAsAdmin(page);
   await page.goto("/admin");

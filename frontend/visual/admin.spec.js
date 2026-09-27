@@ -348,5 +348,25 @@ for (const viewport of viewports) {
       testInfo,
       "21-admin-health.png",
     );
+
+    await page.evaluate((key) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      localStorage.setItem(
+        key,
+        JSON.stringify({ ...state, scenario: "health_batch_mixed" }),
+      );
+    }, mockStorageKey);
+    await healthPanel
+      .getByRole("button", { name: "전체 재검사", exact: true })
+      .click();
+    const batchSummary = healthPanel.getByRole("region", {
+      name: "전체 검사 진행 상황",
+    });
+    await expect(batchSummary).toContainText("전체 검사 완료", {
+      timeout: 15000,
+    });
+    await expect(batchSummary).toContainText("실패 1");
+    await expect(batchSummary).toContainText("취소 1");
+    await capture(page, "admin-health-batch-final", viewport, testInfo);
   });
 }

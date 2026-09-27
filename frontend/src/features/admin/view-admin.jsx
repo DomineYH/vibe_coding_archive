@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Avatar, Btn, StatusBadge } from "../../components/ui";
 import { formatCheckedAt } from "../../components/presentation";
 import catalog from "../../../../contracts/catalog.json";
 import { adminService } from "@services/admin";
+import { healthService } from "@services/health";
 import { ServiceError } from "../../services/service-error";
 
 const PAGE_SIZE = 24;
@@ -292,6 +297,192 @@ function formatPasswordExpiry(value) {
     timeStyle: "short",
     timeZone: "Asia/Seoul",
   }).format(new Date(value));
+}
+
+function batchRequestMessage(error) {
+  if (!(error instanceof ServiceError))
+    return "전체 검사 요청을 접수하지 못했어요.";
+  if (error.code === "RATE_LIMITED")
+    return error.retryAt
+      ? `전체 검사 대기 시간입니다. ${formatPasswordExpiry(error.retryAt)} (KST) 이후 다시 요청해 주세요.`
+      : error.message;
+  if (error.code === "FEATURE_UNAVAILABLE")
+    return "현재 전체 연결 검사를 사용할 수 없어요.";
+  return error.message;
+}
+
+function HealthBatchControls({ stats, scopeKey }) {
+  const queryClient = useQueryClient();
+  const [acceptedBatchId, setAcceptedBatchId] = useState(null);
+  const [acceptedDisposition, setAcceptedDisposition] = useState(null);
+  const [requestError, setRequestError] = useState(null);
+  const [requestPending, setRequestPending] = useState(false);
+  const [requeryPending, setRequeryPending] = useState(false);
+  const requestPendingRef = useRef(false);
+  const requeryPendingRef = useRef(false);
+  const batchId =
+    stats?.activeHealthBatchId ??
+    acceptedBatchId ??
+    stats?.latestHealthBatchId ??
+    null;
+  const batchKey = [__DATA_MODE__, "admin", "health-batch", batchId ?? ""];
+  const batchQuery = useQuery({
+    queryKey: batchKey,
+    enabled: Boolean(batchId),
+    queryFn: ({ signal }) => healthService.getBatch(batchId, { signal }),
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: (query) =>
+      document.visibilityState === "visible" &&
+      query.state.status !== "error" &&
+      !query.state.data?.isFinished
+        ? 2000
+        : false,
+    refetchIntervalInBackground: false,
+  });
+
+  const refreshDashboard = useCallback(() => {
+    return Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "admin", "users", scopeKey],
+      }),
+      queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "admin", "apps", scopeKey],
+      }),
+    ]);
+  }, [queryClient, scopeKey]);
+
+  useEffect(() => {
+    if (!batchQuery.data?.isFinished) return;
+    void refreshDashboard();
+  }, [batchQuery.data?.id, batchQuery.data?.isFinished, refreshDashboard]);
+
+  async function requestBatch() {
+    if (requestPendingRef.current) return;
+    requestPendingRef.current = true;
+    setRequestPending(true);
+    setRequestError(null);
+    try {
+      const accepted = await healthService.requestBatch();
+      setAcceptedBatchId(accepted.batch.id);
+      setAcceptedDisposition(accepted.disposition);
+      void refreshDashboard();
+    } catch (error) {
+      setRequestError(batchRequestMessage(error));
+    } finally {
+      requestPendingRef.current = false;
+      setRequestPending(false);
+    }
+  }
+
+  async function requeryBatch() {
+    if (!batchId || requeryPendingRef.current) return;
+    requeryPendingRef.current = true;
+    setRequeryPending(true);
+    try {
+      const batch = await healthService.getBatch(batchId);
+      queryClient.setQueryData(batchKey, batch);
+    } catch {
+      // Keep the read error visible and stop automatic polling.
+    } finally {
+      requeryPendingRef.current = false;
+      setRequeryPending(false);
+    }
+  }
+
+  const batch = batchQuery.data;
+  const note = batchQuery.isError
+    ? "전체 검사 진행 조회를 멈췄어요. 검사 작업 결과에는 영향을 주지 않았습니다."
+    : requestPending
+      ? "전체 검사를 접수하고 있어요."
+      : batch?.isFinished
+        ? "최근 전체 검사가 완료됐어요."
+        : batch
+          ? "전체 검사를 진행하고 있어요."
+          : batchId
+            ? "최근 전체 검사 진행 상태를 불러오고 있어요."
+            : "새 전체 검사는 이 버튼을 눌렀을 때 시작합니다.";
+
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/70 px-6 py-4">
+        <h2
+          id="admin-health-title"
+          className="text-[14px] font-bold text-neutral-900"
+        >
+          네트워크 활성 상태 모니터링
+        </h2>
+        <Btn
+          size="sm"
+          variant="line"
+          onClick={() => void requestBatch()}
+          disabled={requestPending}
+          aria-describedby="health-check-note"
+        >
+          {requestPending ? "접수 중…" : "전체 재검사"}
+        </Btn>
+      </div>
+      <p
+        id="health-check-note"
+        role="status"
+        aria-live="polite"
+        className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
+      >
+        {note}
+      </p>
+      <p className="border-b border-neutral-200/70 px-6 py-2 text-[11px] text-neutral-500">
+        개발용 합성 시연이며 외부 사이트에 요청을 보내지 않습니다.
+      </p>
+      {requestError ? (
+        <p
+          role="alert"
+          className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-rose-700"
+        >
+          {requestError}
+        </p>
+      ) : null}
+      {batchQuery.isError ? (
+        <div className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-rose-700">
+          <p role="alert">전체 검사 진행 상태를 불러오지 못했어요.</p>
+          <Btn
+            className="mt-2"
+            size="sm"
+            variant="line"
+            onClick={() => void requeryBatch()}
+            disabled={requeryPending}
+          >
+            {requeryPending ? "조회 중…" : "진행 다시 조회"}
+          </Btn>
+        </div>
+      ) : null}
+      {batch ? (
+        <section
+          aria-label="전체 검사 진행 상황"
+          aria-live="off"
+          className="border-b border-neutral-200/70 bg-neutral-50/70 px-6 py-3 text-[12px] text-neutral-600"
+        >
+          <p className="font-semibold text-neutral-800">
+            {batch.isFinished ? "전체 검사 완료" : "전체 검사 진행 중"}
+            {!batch.isFinished &&
+            acceptedBatchId === batch.id &&
+            acceptedDisposition === "active_reused"
+              ? " · 진행 중인 검사 재사용"
+              : acceptedBatchId !== batch.id
+                ? " · 최근 검사 기록"
+                : ""}
+          </p>
+          <p className="mt-1">
+            처리 {batch.processedCount}/{batch.targetCount} · 결과 확보{" "}
+            {batch.counts.resultObtained} · 실패 {batch.counts.failed} · 취소{" "}
+            {batch.counts.cancelled}
+          </p>
+          <p className="mt-0.5">
+            이전 결과 재사용 {batch.counts.reused}건 (결과 확보에 포함)
+          </p>
+        </section>
+      ) : null}
+    </>
+  );
 }
 
 function PasswordResetPanel({
@@ -819,6 +1010,7 @@ export function AdminView({ scopeKey }) {
   const pages = query.data?.pages ?? [];
   const users = pages.flatMap((page) => page.items);
   const stats = pages[0]?.stats;
+  const statsServerTime = pages[0]?.serverTime;
   const total = pages[0]?.pagination.total ?? 0;
   const pending = stats?.pendingUsers ?? 0;
   const appPages = appsQuery.data?.pages ?? [];
@@ -840,6 +1032,43 @@ export function AdminView({ scopeKey }) {
     )
       duplicateOnlyPage = true;
   });
+
+  useEffect(() => {
+    if (!stats?.nextHealthExpiryAt || !statsServerTime) return undefined;
+    const expiresAt =
+      query.dataUpdatedAt +
+      Date.parse(stats.nextHealthExpiryAt) -
+      Date.parse(statsServerTime);
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      void Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [__DATA_MODE__, "admin", "users", scopeKey],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [__DATA_MODE__, "admin", "apps", scopeKey],
+        }),
+      ]);
+    };
+    const timer = window.setTimeout(
+      refresh,
+      Math.max(0, expiresAt - Date.now()),
+    );
+    const onVisibilityChange = () => {
+      if (Date.now() >= expiresAt) refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [
+    query.dataUpdatedAt,
+    queryClient,
+    scopeKey,
+    stats?.nextHealthExpiryAt,
+    statsServerTime,
+  ]);
   const resetPending = Boolean(
     resetSelection &&
     (resetSelection.operation?.state === "unresolved" ||
@@ -2080,28 +2309,9 @@ export function AdminView({ scopeKey }) {
           tabIndex={0}
           className="mt-8 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-200/70 px-6 py-4">
-            <h2
-              id="admin-health-title"
-              className="text-[14px] font-bold text-neutral-900"
-            >
-              네트워크 활성 상태 모니터링
-            </h2>
-            <Btn
-              size="sm"
-              variant="line"
-              disabled
-              aria-describedby="health-check-note"
-            >
-              전체 재검사
-            </Btn>
-          </div>
-          <p
-            id="health-check-note"
-            role="status"
-            className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
-          >
-            연결 검사는 아직 사용할 수 없어요.
+          <HealthBatchControls stats={stats} scopeKey={scopeKey} />
+          <p id="health-row-check-note" className="sr-only">
+            개별 재검사는 아직 사용할 수 없어요.
           </p>
 
           {appsQuery.isPending ? (
@@ -2133,6 +2343,9 @@ export function AdminView({ scopeKey }) {
                   const theme = catalog.themes.find(
                     (item) => item.id === app.themeId,
                   );
+                  const stale =
+                    app.health.fresh_until !== null &&
+                    app.health.fresh_until <= appPages[0]?.serverTime;
                   const unhealthy =
                     app.health.state !== "healthy" &&
                     app.health.state !== "unchecked";
@@ -2180,6 +2393,11 @@ export function AdminView({ scopeKey }) {
                         </div>
                         <div className="flex items-center gap-2 text-[11.5px] text-neutral-500">
                           <StatusBadge state={app.health.state} />
+                          {stale ? (
+                            <span className="font-semibold text-amber-800">
+                              오래된 결과
+                            </span>
+                          ) : null}
                           <span>
                             확인{" "}
                             {formatCheckedAt(
@@ -2192,7 +2410,7 @@ export function AdminView({ scopeKey }) {
                           size="sm"
                           variant="line"
                           disabled
-                          aria-describedby="health-check-note"
+                          aria-describedby="health-row-check-note"
                         >
                           즉시 재검사
                         </Btn>

@@ -244,6 +244,31 @@ export type AdminStats = {
   pendingUsers: number;
   totalApps: number;
   healthyApps: number;
+  nextHealthExpiryAt: string | null;
+  activeHealthBatchId: string | null;
+  latestHealthBatchId: string | null;
+};
+export type HealthBatchCounts = {
+  queued: number;
+  running: number;
+  resultObtained: number;
+  failed: number;
+  cancelled: number;
+  reused: number;
+};
+export type HealthBatch = {
+  id: string;
+  createdAt: string;
+  finishedAt: string | null;
+  isFinished: boolean;
+  serverTime: string;
+  targetCount: number;
+  processedCount: number;
+  counts: HealthBatchCounts;
+};
+export type BatchAccepted = {
+  disposition: "created" | "active_reused";
+  batch: HealthBatch;
 };
 export type AdminApp = {
   id: string;
@@ -941,6 +966,9 @@ export function mapAdminStats(value: unknown): AdminStats {
       "pending_users",
       "total_apps",
       "healthy_apps",
+      "next_health_expiry_at",
+      "active_health_batch_id",
+      "latest_health_batch_id",
     ])
   )
     throw contractError();
@@ -948,9 +976,25 @@ export function mapAdminStats(value: unknown): AdminStats {
   const pendingUsers = integer(item.pending_users, 0);
   const totalApps = integer(item.total_apps, 0);
   const healthyApps = integer(item.healthy_apps, 0);
-  if (pendingUsers > totalUsers || healthyApps > totalApps)
+  const nextHealthExpiryAt = nullableDateTime(item.next_health_expiry_at);
+  const activeHealthBatchId = nullableString(item.active_health_batch_id);
+  const latestHealthBatchId = nullableString(item.latest_health_batch_id);
+  if (
+    pendingUsers > totalUsers ||
+    healthyApps > totalApps ||
+    (activeHealthBatchId !== null && !UUID.test(activeHealthBatchId)) ||
+    (latestHealthBatchId !== null && !UUID.test(latestHealthBatchId))
+  )
     throw contractError();
-  return { totalUsers, pendingUsers, totalApps, healthyApps };
+  return {
+    totalUsers,
+    pendingUsers,
+    totalApps,
+    healthyApps,
+    nextHealthExpiryAt,
+    activeHealthBatchId,
+    latestHealthBatchId,
+  };
 }
 
 export function mapAdminUserPage(value: unknown): AdminUserPage {
@@ -1631,6 +1675,94 @@ export function mapHealthJobResponse(value: unknown): HealthJobResponse {
     serverTime: dateTime(item.server_time),
     job: mapJob(item.job),
     health: mapHealthSnapshotView(item.health),
+  };
+}
+
+export function mapHealthBatch(value: unknown): HealthBatch {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, [
+      "id",
+      "created_at",
+      "finished_at",
+      "is_finished",
+      "server_time",
+      "target_count",
+      "processed_count",
+      "counts",
+    ]) ||
+    typeof item.is_finished !== "boolean"
+  )
+    throw contractError();
+  const id = nonEmpty(item.id);
+  if (!UUID.test(id)) throw contractError();
+  const createdAt = dateTime(item.created_at);
+  const finishedAt = nullableDateTime(item.finished_at);
+  const serverTime = dateTime(item.server_time);
+  const targetCount = integer(item.target_count, 0);
+  const processedCount = integer(item.processed_count, 0);
+  const rawCounts = record(item.counts);
+  if (
+    !hasExactKeys(rawCounts, [
+      "queued",
+      "running",
+      "result_obtained",
+      "failed",
+      "cancelled",
+      "reused",
+    ])
+  )
+    throw contractError();
+  const counts = {
+    queued: integer(rawCounts.queued, 0),
+    running: integer(rawCounts.running, 0),
+    resultObtained: integer(rawCounts.result_obtained, 0),
+    failed: integer(rawCounts.failed, 0),
+    cancelled: integer(rawCounts.cancelled, 0),
+    reused: integer(rawCounts.reused, 0),
+  };
+  const active = counts.queued + counts.running;
+  if (
+    targetCount !==
+      active + counts.resultObtained + counts.failed + counts.cancelled ||
+    processedCount !==
+      counts.resultObtained + counts.failed + counts.cancelled ||
+    counts.reused > counts.resultObtained ||
+    item.is_finished !== (finishedAt !== null) ||
+    (item.is_finished && active !== 0) ||
+    (!item.is_finished && active === 0) ||
+    (finishedAt !== null && Date.parse(finishedAt) < Date.parse(createdAt))
+  )
+    throw contractError();
+  return {
+    id,
+    createdAt,
+    finishedAt,
+    isFinished: item.is_finished,
+    serverTime,
+    targetCount,
+    processedCount,
+    counts,
+  };
+}
+
+export function mapBatchAccepted(
+  value: unknown,
+  httpStatus?: number,
+): BatchAccepted {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, ["disposition", "batch"]) ||
+    !["created", "active_reused"].includes(string(item.disposition)) ||
+    (httpStatus !== undefined && httpStatus !== 202)
+  )
+    throw contractError();
+  const batch = mapHealthBatch(item.batch);
+  if (item.disposition === "active_reused" && batch.isFinished)
+    throw contractError();
+  return {
+    disposition: item.disposition as BatchAccepted["disposition"],
+    batch,
   };
 }
 

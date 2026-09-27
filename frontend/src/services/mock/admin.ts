@@ -18,7 +18,6 @@ import {
   normalizeResetPassword,
   type AdminService,
 } from "../admin-service";
-import { mockMetaWire } from "./apps";
 import {
   createMockApprovalOperation,
   deleteMockUserAccount,
@@ -337,6 +336,20 @@ export const adminService: AdminService = {
           left.id.localeCompare(right.id),
       );
     const allApps = [...state.apps, ...state.private_apps];
+    const summaryApps = state.scenario === "health_batch_empty" ? [] : allApps;
+    const latestBatch = [...state.health_batches].sort(
+      (left, right) =>
+        right.created_at.localeCompare(left.created_at) ||
+        right.id.localeCompare(left.id),
+    )[0];
+    const nextHealthExpiryAt =
+      summaryApps
+        .map((app) => app.health.result.fresh_until)
+        .filter(
+          (value): value is string =>
+            value !== null && Date.parse(value) > Date.parse(state.mock_now),
+        )
+        .sort()[0] ?? null;
     const page: AdminUserPage = mapAdminUserPage({
       items: users.slice(
         normalized.offset,
@@ -351,12 +364,21 @@ export const adminService: AdminService = {
       stats: {
         total_users: users.length,
         pending_users: users.filter((user) => !user.approved).length,
-        total_apps: allApps.length,
-        healthy_apps: allApps.filter(
-          (app) => app.health.result.state === "healthy",
+        total_apps: summaryApps.length,
+        healthy_apps: summaryApps.filter(
+          (app) =>
+            app.health.result.state === "healthy" &&
+            app.health.result.fresh_until !== null &&
+            Date.parse(app.health.result.fresh_until) >
+              Date.parse(state.mock_now),
         ).length,
+        next_health_expiry_at: nextHealthExpiryAt,
+        active_health_batch_id:
+          state.health_batches.find((batch) => batch.finished_at === null)
+            ?.id ?? null,
+        latest_health_batch_id: latestBatch?.id ?? null,
       },
-      server_time: mockMetaWire.server_time,
+      server_time: state.mock_now,
     });
     return page;
   },
@@ -381,14 +403,13 @@ export const adminService: AdminService = {
         right.created_at.localeCompare(left.created_at) ||
         right.id.localeCompare(left.id),
     );
-    const total = state.scenario === "admin_apps_empty" ? 0 : allApps.length;
-    const apps =
-      state.scenario === "admin_apps_empty"
-        ? []
-        : allApps.slice(
-            normalized.offset,
-            normalized.offset + normalized.limit,
-          );
+    const empty =
+      state.scenario === "admin_apps_empty" ||
+      state.scenario === "health_batch_empty";
+    const total = empty ? 0 : allApps.length;
+    const apps = empty
+      ? []
+      : allApps.slice(normalized.offset, normalized.offset + normalized.limit);
     const pageApps =
       state.scenario === "admin_apps_duplicate_page" &&
       normalized.offset > 0 &&

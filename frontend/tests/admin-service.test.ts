@@ -66,6 +66,9 @@ describe("admin service", () => {
       pendingUsers: 2,
       totalApps: 17,
       healthyApps: 15,
+      nextHealthExpiryAt: "2026-09-22T00:27:00.000Z",
+      activeHealthBatchId: null,
+      latestHealthBatchId: null,
     });
     expect(page.items.find((user) => user.id === ADMIN_ID)).toMatchObject({
       role: "admin",

@@ -80,6 +80,9 @@ describe("admin contract mappers", () => {
           pending_users: 4,
           total_apps: 17,
           healthy_apps: 15,
+          next_health_expiry_at: "2026-09-22T00:27:00.000Z",
+          active_health_batch_id: null,
+          latest_health_batch_id: null,
         },
         server_time: "2026-09-22T00:12:00.000Z",
       }),
@@ -93,13 +96,40 @@ describe("admin contract mappers", () => {
         pending_users: 4,
         total_apps: 17,
         healthy_apps: 15,
+        next_health_expiry_at: "2026-09-22T00:27:00.000Z",
+        active_health_batch_id: null,
+        latest_health_batch_id: null,
       }),
     ).toEqual({
       totalUsers: 25,
       pendingUsers: 4,
       totalApps: 17,
       healthyApps: 15,
+      nextHealthExpiryAt: "2026-09-22T00:27:00.000Z",
+      activeHealthBatchId: null,
+      latestHealthBatchId: null,
     });
+  });
+
+  it("rejects malformed active or latest batch IDs and health expiry times", () => {
+    const base = {
+      total_users: 1,
+      pending_users: 0,
+      total_apps: 1,
+      healthy_apps: 1,
+      next_health_expiry_at: "2026-09-22T00:27:00.000Z",
+      active_health_batch_id: null,
+      latest_health_batch_id: null,
+    };
+    expect(() =>
+      mapAdminStats({ ...base, active_health_batch_id: "batch-1" }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    expect(() =>
+      mapAdminStats({ ...base, latest_health_batch_id: "batch-1" }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    expect(() =>
+      mapAdminStats({ ...base, next_health_expiry_at: "soon" }),
+    ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 
   it("maps the minimal public and private app monitor page", () => {
