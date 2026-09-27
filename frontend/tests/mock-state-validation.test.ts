@@ -105,6 +105,10 @@ const invalidStoredStates: [string, MutateStoredState][] = [
   ["owner is absent", (state) => (firstApp(state).owner = null)],
   ["extra owner field", (state) => (owner(state).extra = true)],
   ["invalid owner id", (state) => (owner(state).id = "owner-1")],
+  [
+    "unknown public app owner",
+    (state) => (owner(state).id = "ffffffff-ffff-4fff-8fff-ffffffffffff"),
+  ],
   ["missing owner nickname", (state) => delete owner(state).nickname],
   ["empty owner nickname", (state) => (owner(state).nickname = "  ")],
   [
