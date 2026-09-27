@@ -64,9 +64,19 @@ async function setScenario(page, scenario) {
   );
 }
 
+async function waitForVisibleAfterClockTurn(page, locator) {
+  await expect
+    .poll(async () => {
+      await page.clock.runFor(1);
+      return locator.isVisible();
+    })
+    .toBe(true);
+}
+
 function userRow(page) {
   return page
-    .getByRole("list", { name: "회원 목록" })
+    .getByRole("tabpanel", { name: "사용자 관리", exact: true })
+    .getByRole("list", { name: "회원 목록", exact: true })
     .getByRole("listitem")
     .filter({ has: page.getByText(nickname, { exact: true }) });
 }
@@ -277,11 +287,23 @@ test("signup through approval, app health, account deletion, and reset works as 
   ).toBeVisible();
   await page.getByRole("link", { name: "관리자", exact: true }).click();
   await expect(page).toHaveURL("/admin");
-  await page.clock.runFor(0);
   await expect(
     page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
+  const usersTab = page.getByRole("tab", {
+    name: "사용자 관리",
+    exact: true,
+  });
+  await expect(usersTab).toHaveAttribute("aria-selected", "true");
+  const usersPanel = page.getByRole("tabpanel", {
+    name: "사용자 관리",
+    exact: true,
+  });
+  await expect(usersPanel).toBeVisible();
+  await waitForVisibleAfterClockTurn(
+    page,
+    usersPanel.getByRole("list", { name: "회원 목록", exact: true }),
+  );
   const statistics = page.getByRole("region", { name: "전체 통계" });
   await expect(statistics).toBeVisible();
   const totals = statistics.getByRole("definition");
@@ -294,10 +316,14 @@ test("signup through approval, app health, account deletion, and reset works as 
   await expect(healthTab).toHaveURL("/admin?tab=health");
   const monitor = healthTab.getByRole("tabpanel", {
     name: "Health Monitor",
+    exact: true,
   });
   await expect(monitor).toBeVisible();
-  const apps = monitor.getByRole("list", { name: "전체 앱 목록" });
-  await expect(apps).toBeVisible();
+  const apps = monitor.getByRole("list", {
+    name: "전체 앱 목록",
+    exact: true,
+  });
+  await waitForVisibleAfterClockTurn(healthTab, apps);
   const initialRows = initialApps;
   await setScenario(healthTab, "health_batch_slow");
   await monitor
@@ -366,10 +392,13 @@ test("signup through approval, app health, account deletion, and reset works as 
     .getByRole("button", { name: "본인 확인", exact: true })
     .click();
   await expect(page).toHaveURL("/admin");
-  await page.clock.runFor(0);
+  await expect(
+    page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
+  ).toBeVisible();
   const deletion = page.getByRole("region", {
     name: /계정 삭제 확인|계정을 삭제할까요/,
   });
+  await waitForVisibleAfterClockTurn(page, deletion);
   await expect(deletion).toContainText(`${nickname} 계정을 삭제할까요?`);
   await expect(deletion).toContainText("등록한 앱 1개도 함께 삭제");
   await deletion
@@ -461,12 +490,14 @@ test("signup through approval, app health, account deletion, and reset works as 
     state: "cancelled",
   });
 
-  await secondTab.goto(`/apps/${appId}`);
-  await expect(
-    secondTab
-      .getByRole("alert")
-      .filter({ hasText: "아카이브 앱을 찾을 수 없어요" }),
-  ).toBeVisible();
+  await secondTab.clock.install({ time: frozenAt });
+  await secondTab.clock.pauseAt(frozenAt);
+  await secondTab.reload();
+  await expect(secondTab).toHaveURL(`/apps/${appId}`);
+  const deletedApp = secondTab
+    .getByRole("alert")
+    .filter({ hasText: "아카이브 앱을 찾을 수 없어요" });
+  await waitForVisibleAfterClockTurn(secondTab, deletedApp);
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await expect(
     healthTab
