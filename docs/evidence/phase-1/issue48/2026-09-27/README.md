@@ -2,6 +2,8 @@
 
 Scope: Phase 1 administrator whole health batch monitoring using the deterministic local mock. The change follows #30 and the API, worker, and evidence decisions linked from #48. No backend, database, worker, real URL probe, or external network request is implemented or claimed.
 
+Implementation source: [`44659915636b4a1a67773206fd6f3e9d1499b957`](https://github.com/DomineYH/vibe_coding_archive/commit/44659915636b4a1a67773206fd6f3e9d1499b957) on branch `impl/issue-48`.
+
 ## Implementation trace
 
 `contracts/openapi.yaml` → generated TypeScript contract → strict batch/stat mappers → API and Promise service → persistent deterministic mock → admin Health Monitor. POST creates or reuses the active batch; summary IDs rediscover active/latest batches after reload; GET reads and advances synthetic work. Batch targets remain fixed, with counts for queued/running/result/failed/cancelled and reused results as a subset of obtained results. The mock preserves prior app results on job failure/cancellation, cancels active targets for URL/app/account changes, excludes newly added apps, models empty batches and the five-minute cooldown, and never calls an external URL.
