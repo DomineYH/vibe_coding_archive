@@ -12,38 +12,6 @@ ROOT = Path(__file__).resolve().parents[3]
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
 
 
-def normalized_schema(schema: object, document: dict) -> object:
-    components = document["components"]["schemas"]
-    if isinstance(schema, list):
-        return [normalized_schema(item, document) for item in schema]
-    if not isinstance(schema, dict):
-        return schema
-    if "$ref" in schema:
-        reference = schema["$ref"]
-        assert reference.startswith("#/components/schemas/")
-        return normalized_schema(components[reference.rsplit("/", 1)[1]], document)
-
-    normalized = {
-        key: normalized_schema(value, document)
-        for key, value in schema.items()
-        if key != "title"
-    }
-    variants = normalized.get("anyOf")
-    if isinstance(variants, list) and all(
-        isinstance(variant, dict)
-        and set(variant) <= {"type", "format"}
-        and "type" in variant
-        for variant in variants
-    ):
-        formats = {variant.get("format") for variant in variants if "format" in variant}
-        if len(formats) <= 1:
-            normalized.pop("anyOf")
-            normalized["type"] = [variant["type"] for variant in variants]
-            if formats:
-                normalized["format"] = formats.pop()
-    return normalized
-
-
 def test_meta_health_and_readiness_use_public_contract_and_file_database(
     tmp_path: Path, make_test_app
 ):
@@ -139,7 +107,7 @@ def test_meta_health_and_readiness_use_public_contract_and_file_database(
 
 
 def test_fastapi_declarations_match_the_single_openapi_source(
-    tmp_path: Path, make_test_app
+    tmp_path: Path, make_test_app, normalize_schema
 ):
     app = make_test_app(tmp_path / "contract.sqlite3")
     source = yaml.safe_load((ROOT / "contracts/openapi.yaml").read_text())
@@ -170,7 +138,7 @@ def test_fastapi_declarations_match_the_single_openapi_source(
     expected_meta = source["components"]["schemas"]["Meta"]
     actual_meta = actual["components"]["schemas"]["MetaResponse"]
     assert set(actual_meta["properties"]) == set(expected_meta["properties"])
-    assert normalized_schema(actual_meta["properties"], actual) == normalized_schema(
+    assert normalize_schema(actual_meta["properties"], actual) == normalize_schema(
         expected_meta["properties"], source
     )
     assert actual_meta["additionalProperties"] is False

@@ -166,16 +166,18 @@ class ErrorEnvelope(StrictModel):
     error: Error
 
 
-def _error(status: int, code: str, message: str) -> JSONResponse:
+def _error(
+    status: int,
+    code: str,
+    message: str,
+    fields: dict[str, str] | None = None,
+) -> JSONResponse:
+    error = {"code": code, "message": message, "request_id": None}
+    if fields is not None:
+        error["fields"] = fields
     return JSONResponse(
         status_code=status,
-        content={
-            "error": {
-                "code": code,
-                "message": message,
-                "request_id": None,
-            }
-        },
+        content={"error": error},
     )
 
 
@@ -185,6 +187,10 @@ def _not_found() -> JSONResponse:
 
 def _server_unavailable() -> JSONResponse:
     return _error(503, "SERVICE_UNAVAILABLE", "자료를 불러올 수 없습니다.")
+
+
+def _invalid_query(fields: dict[str, str]) -> JSONResponse:
+    return _error(400, "VALIDATION_ERROR", "목록 조건이 올바르지 않습니다.", fields)
 
 
 def _utc_datetime(value: str | None) -> datetime | None:
@@ -265,17 +271,29 @@ def list_public_apps(
 ) -> AppPage | JSONResponse:
     parameters = request.query_params.multi_items()
     keys = [key for key, _value in parameters]
-    if len(keys) != len(set(keys)) or any(
-        key not in {"limit", "offset"} for key in keys
-    ):
-        return _error(400, "INVALID_QUERY", "목록 조건이 올바르지 않습니다.")
+    seen: set[str] = set()
+    invalid_keys: set[str] = set()
+    for key in keys:
+        if key in seen or key not in {"limit", "offset"}:
+            invalid_keys.add(key)
+        seen.add(key)
+    if invalid_keys:
+        return _invalid_query(
+            {key: "지원하지 않거나 중복된 입력입니다." for key in invalid_keys}
+        )
     query = dict(parameters)
     try:
         limit = _parse_page_number(query.get("limit"), 24)
+    except ValueError:
+        return _invalid_query({"limit": "1에서 100 사이의 정수여야 합니다."})
+    try:
         offset = _parse_page_number(query.get("offset"), 0)
-        if not 1 <= limit <= 100:
-            raise ValueError
+    except ValueError:
+        return _invalid_query({"offset": "0 이상의 정수여야 합니다."})
+    if not 1 <= limit <= 100:
+        return _invalid_query({"limit": "1에서 100 사이의 정수여야 합니다."})
 
+    try:
         total = session.scalar(
             select(func.count()).select_from(App).where(App.is_public.is_(True))
         )
@@ -313,9 +331,7 @@ def list_public_apps(
                 },
             }
         )
-    except ValueError:
-        return _error(400, "INVALID_QUERY", "목록 조건이 올바르지 않습니다.")
-    except (SQLAlchemyError, ValidationError):
+    except (SQLAlchemyError, ValidationError, ValueError):
         return _server_unavailable()
     return page
 

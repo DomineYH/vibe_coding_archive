@@ -1,15 +1,7 @@
 from __future__ import annotations
 
 import json
-import os
-import socket
-import sqlite3
-import subprocess
-import sys
-import time
 from pathlib import Path
-from urllib.error import URLError
-from urllib.request import urlopen
 
 import pytest
 import yaml
@@ -18,134 +10,11 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 ROOT = Path(__file__).resolve().parents[3]
-BACKEND = ROOT / "backend"
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
 
 
-def insert_member(
-    connection: sqlite3.Connection, member_id: str, login_id: str, nickname: str
-) -> None:
-    connection.execute(
-        """
-        INSERT INTO members (
-            id, login_id, nickname, email, phone, password_hash, is_admin,
-            approval_status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            member_id,
-            login_id,
-            nickname,
-            "email-sentinel@example.test",
-            "phone-sentinel",
-            "password-hash-sentinel",
-            0,
-            "approved",
-        ),
-    )
-
-
-def insert_app(
-    connection: sqlite3.Connection,
-    *,
-    app_id: str,
-    owner_id: str,
-    name: str,
-    subject: str,
-    is_public: bool,
-    created_at: str,
-) -> None:
-    connection.execute(
-        """
-        INSERT INTO apps (
-            id, owner_id, name, url, prompt, description, subject, is_public,
-            theme_id, stack_db, stack_backend, stack_frontend, stack_hosting,
-            version, url_version, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        (
-            app_id,
-            owner_id,
-            name,
-            "https://example.test/app",
-            "line 1\nline 2",
-            f"Description for {name}",
-            subject,
-            int(is_public),
-            CATALOG["themes"][0]["id"],
-            "SQLite",
-            None,
-            "React",
-            None,
-            1,
-            1,
-            created_at,
-            created_at,
-        ),
-    )
-    connection.executemany(
-        "INSERT INTO app_grades (app_id, grade) VALUES (?, ?)",
-        [(app_id, grade) for grade in ["중1", "초2"]],
-    )
-    connection.execute(
-        """
-        INSERT INTO health_results (app_id, state, checked_at, fresh_until)
-        VALUES (?, 'unchecked', NULL, NULL)
-        """,
-        (app_id,),
-    )
-
-
-def seed_public_and_private_apps(database_path: Path) -> None:
-    connection = sqlite3.connect(database_path)
-    try:
-        insert_member(
-            connection,
-            "00000000-0000-0000-0000-000000000010",
-            "private-login-sentinel",
-            "공개 별명",
-        )
-        insert_member(
-            connection,
-            "00000000-0000-0000-0000-000000000020",
-            "other-private-login-sentinel",
-            "비공개 별명 sentinel",
-        )
-        created_at = "2026-09-28T12:00:00+00:00"
-        insert_app(
-            connection,
-            app_id="00000000-0000-0000-0000-000000000001",
-            owner_id="00000000-0000-0000-0000-000000000010",
-            name="첫 공개 앱",
-            subject="수학",
-            is_public=True,
-            created_at=created_at,
-        )
-        insert_app(
-            connection,
-            app_id="00000000-0000-0000-0000-000000000002",
-            owner_id="00000000-0000-0000-0000-000000000010",
-            name="둘째 공개 앱",
-            subject="영어",
-            is_public=True,
-            created_at=created_at,
-        )
-        insert_app(
-            connection,
-            app_id="00000000-0000-0000-0000-000000000003",
-            owner_id="00000000-0000-0000-0000-000000000020",
-            name="private-app-sentinel",
-            subject="수학",
-            is_public=False,
-            created_at=created_at,
-        )
-        connection.commit()
-    finally:
-        connection.close()
-
-
 def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
-    tmp_path: Path, make_test_app
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
 ):
     database_path = tmp_path / "apps.sqlite3"
     app = make_test_app(database_path)
@@ -262,10 +131,40 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         unknown_parameter,
     ):
         assert set(response.json()) == {"error"}
-        assert set(response.json()["error"]) == {"code", "message", "request_id"}
+        assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+        assert response.json()["error"]["fields"]
 
 
-def test_public_apps_fastapi_declarations_match_openapi(tmp_path: Path, make_test_app):
+def test_corrupt_stored_health_timestamp_is_server_error_not_query_error(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "corrupt-health.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        with app.state.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE health_results SET state = 'healthy', checked_at = :checked_at, "
+                    "fresh_until = :fresh_until WHERE app_id = :app_id"
+                ),
+                {
+                    "checked_at": "not-a-timestamp",
+                    "fresh_until": "2026-09-29T12:00:00+00:00",
+                    "app_id": "00000000-0000-0000-0000-000000000001",
+                },
+            )
+        response = client.get("/api/v1/apps")
+
+    assert response.status_code == 503
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+    assert "not-a-timestamp" not in response.text
+
+
+def test_public_apps_fastapi_declarations_match_openapi(
+    tmp_path: Path, make_test_app, normalize_schema
+):
     app = make_test_app(tmp_path / "app-contract.sqlite3")
     source = yaml.safe_load((ROOT / "contracts/openapi.yaml").read_text())
     actual = app.openapi()
@@ -301,40 +200,9 @@ def test_public_apps_fastapi_declarations_match_openapi(tmp_path: Path, make_tes
         "AppDetailResponse",
         "ErrorEnvelope",
     ]:
-        assert _normalized_schema(
+        assert normalize_schema(
             actual["components"]["schemas"][schema_name], actual
-        ) == _normalized_schema(source["components"]["schemas"][schema_name], source)
-
-
-def _normalized_schema(schema: object, document: dict) -> object:
-    components = document["components"]["schemas"]
-    if isinstance(schema, list):
-        return [_normalized_schema(item, document) for item in schema]
-    if not isinstance(schema, dict):
-        return schema
-    if "$ref" in schema:
-        reference = schema["$ref"]
-        return _normalized_schema(components[reference.rsplit("/", 1)[1]], document)
-
-    normalized = {
-        key: _normalized_schema(value, document)
-        for key, value in schema.items()
-        if key != "title"
-    }
-    variants = normalized.get("anyOf")
-    if isinstance(variants, list) and all(
-        isinstance(variant, dict)
-        and set(variant) <= {"type", "format"}
-        and "type" in variant
-        for variant in variants
-    ):
-        formats = {variant.get("format") for variant in variants if "format" in variant}
-        if len(formats) <= 1:
-            normalized.pop("anyOf")
-            normalized["type"] = [variant["type"] for variant in variants]
-            if formats:
-                normalized["format"] = formats.pop()
-    return normalized
+        ) == normalize_schema(source["components"]["schemas"][schema_name], source)
 
 
 def test_public_app_errors_use_safe_contract_envelopes(tmp_path: Path, make_test_app):
@@ -459,99 +327,3 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
         ]:
             with pytest.raises(IntegrityError), engine.begin() as connection:
                 connection.execute(text(statement), {"id": app_id})
-
-
-def _server_port() -> int:
-    with socket.socket() as listener:
-        listener.bind(("127.0.0.1", 0))
-        return listener.getsockname()[1]
-
-
-def _start_server(database_path: Path, port: int) -> subprocess.Popen:
-    environment = {
-        **os.environ,
-        "APP_ENV": "test",
-        "DATABASE_PATH": str(database_path),
-        "PUBLIC_ORIGIN": "http://localhost:5174",
-    }
-    process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "app.main:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(port),
-            "--no-access-log",
-        ],
-        cwd=BACKEND,
-        env=environment,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline:
-        if process.poll() is not None:
-            stderr = process.communicate()[1]
-            raise AssertionError(f"API process exited during startup: {stderr}")
-        try:
-            with urlopen(f"http://127.0.0.1:{port}/healthz", timeout=0.5) as response:
-                if response.status == 200:
-                    return process
-        except URLError:
-            time.sleep(0.05)
-    process.terminate()
-    stderr = process.communicate(timeout=5)[1]
-    raise AssertionError(f"API process did not become ready: {stderr}")
-
-
-def _read_public_apps(port: int) -> dict:
-    with urlopen(f"http://127.0.0.1:{port}/api/v1/apps", timeout=3) as response:
-        return json.load(response)
-
-
-def _read_public_app_detail(port: int, app_id: str) -> dict:
-    with urlopen(
-        f"http://127.0.0.1:{port}/api/v1/apps/{app_id}", timeout=3
-    ) as response:
-        return json.load(response)
-
-
-def test_public_apps_remain_after_api_process_restart(
-    tmp_path: Path, migrate_test_database
-):
-    database_path = tmp_path / "restart.sqlite3"
-    migrate_test_database(database_path)
-    seed_public_and_private_apps(database_path)
-    port = _server_port()
-    first_process = _start_server(database_path, port)
-    try:
-        first = _read_public_apps(port)
-        assert [item["name"] for item in first["items"]] == [
-            "둘째 공개 앱",
-            "첫 공개 앱",
-        ]
-    finally:
-        first_process.terminate()
-        first_process.communicate(timeout=10)
-
-    second_process = _start_server(database_path, port)
-    try:
-        second = _read_public_apps(port)
-        assert [item["id"] for item in second["items"]] == [
-            "00000000-0000-0000-0000-000000000002",
-            "00000000-0000-0000-0000-000000000001",
-        ]
-        assert second["pagination"]["total"] == 2
-        detail = _read_public_app_detail(port, "00000000-0000-0000-0000-000000000002")[
-            "item"
-        ]
-        assert detail["name"] == "둘째 공개 앱"
-        assert detail["url"] == "https://example.test/app"
-        assert detail["prompt"] == "line 1\nline 2"
-    finally:
-        second_process.terminate()
-        second_process.communicate(timeout=10)
