@@ -205,6 +205,47 @@ All commands below ran against source commit `dfbc1b3ac0f0faf6d2f9b0c3c9898ba7d6
 
 Local backend/API CI steps pass on the exact source revision. GitHub has not run the new job because the coordinator has not pushed `dfbc1b3`; DomineYH UI-D/source-difference review, screen-reader/physical-device review, and local handover acceptance also remain pending.
 
-## Acceptance boundary and open items
+## Review round 4 dispositions and final checks on source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68`
 
-Local API, database, contract, frontend, and build checks pass. This does not establish deployed database/monitoring behavior, server-side authorization for future features, or human handover. The cited hosted runs succeeded on the frontend-only workflow; R3 backend/API hosted checks await the coordinator's push of `dfbc1b3`. T03 owns app list/detail; auth, writes, admin, health workers, and related capabilities remain disabled. DomineYH UI-D/source-difference review, screen-reader review, physical-device review, and local acceptance remain pending.
+All R4 source checks below ran against `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68`. No source, workflow, or test code changed after that commit; the later commit adds only this evidence, the captures/comparison record, and the acceptance row.
+
+### Findings and decisions
+
+| Finding | Disposition and evidence |
+| --- | --- |
+| 0 · hosted setup-uv action tag failed | Confirmed. Run [36480308385](https://github.com/DomineYH/vibe_coding_archive/actions/runs/36480308385) completed failure on `a1012a80f4cca2168d1f2f6b4f4e70c18db12e0e`: the frontend job completed successfully through all 15 steps, while the backend job failed at setup with `Unable to resolve action astral-sh/setup-uv@v10, unable to find version v10`. `gh api repos/astral-sh/setup-uv/git/ref/tags/v10.2.0` returned commit `c18668ad3cf93ea998bef934396af7bb5c839dc7`; the workflow pins `astral-sh/setup-uv@v10.2.0`. The new backend/API workflow has not been hosted yet because R4 is not pushed. |
+| 1 · unused `app.state.settings` | Confirmed and removed. Search found no reader of `app.state.settings`; no meaningful runtime behavior depended on the write, so no behavior test was available. Existing backend startup/readiness tests were rerun in the final suite. |
+| 2 · custom API runner vs. Playwright `webServer` | Switched to ordered `webServer` entries with `reuseExistingServer: false`, fixed API/Vite URLs and ports, and the existing Vite strict-port option. The small wrapper now owns only the test environment and unique temporary DB: it preflights ports 8000/5174, creates the per-run path, migrates with `uv run --frozen alembic upgrade head` before Playwright starts, passes `APP_ENV=test` and `DATABASE_PATH` to both servers, and removes the directory after Playwright tears its servers down. A repository-wide/global setup is not used: installed Playwright 1.63.0 starts webServer plugins before global setup, and global-setup teardown runs before plugin teardown, so it cannot both migrate before API start and safely delete the DB after API shutdown. The runner/config pair is 51 lines shorter overall than the previous pair (163+17 lines became 94+35). |
+| 3 · workflow/job names | Confirmed. Workflow name is now `Frontend and backend/API CI`; its job is `backend-api`. The frontend job and existing frontend steps remain present. YAML parsing and scope assertions pass locally. |
+| 4 · repeated viewport/overflow loop | Confirmed. `inspectViewport` performs the viewport resize, expected state/retry/search assertions, overflow check, font/paint settling, and full/component screenshots for all three metadata states. The R2 popup-safe context route remains intact. |
+| 5 · missing API-state captures/comparison | Confirmed. Final API E2E recorded failure, held loading, and unavailable states at 360×844, 390×844, 768×1024, 1024×900, and 1440×1000: 15 full-page and 15 status-card PNGs. [`visual/api-mode/comparisons.json`](visual/api-mode/comparisons.json) compares every full-page capture with the matching mock state: failure → `gallery-failure`, loading → `gallery-loading`, and unavailable → closest `gallery-empty`. Twelve pairs have matching dimensions and exact pixel counts; three record dimension mismatches without padding or pixel-equivalence claims. The unavailable comparison explicitly records the API capability-disabled message vs. mock empty-gallery discovery copy. These are local comparison decisions only; no visual baseline or threshold changed. Human UI-D approval remains pending. |
+
+### Runner probes and first-failure record
+
+| Probe | Observed result |
+| --- | --- |
+| First raw-listener probe, before restoring the port preflight | A Python TCP listener held port 8000 but accepted no connection and returned no HTTP response. Playwright stayed in server readiness rather than producing the fixed-port refusal; the probe was deliberately interrupted with SIGINT after startup remained stuck. It exited 130; no API/Vite listener or temp directory remained. A second raw listener on 5174 let the API start, then stalled Vite readiness; SIGINT unwound the API and temp directory. This exposed that the webServer URL alone does not provide the required immediate occupied-port refusal. |
+| Port-harness setup | The first local socket-harness attempt could not bind 8000 because the prior API run had left a `TIME_WAIT` connection. The probe was rerun with `SO_REUSEADDR` on its test-only listener; it then held each occupied port and exercised the runner preflight successfully. |
+| Occupied-port verification after the minimal preflight | A Python harness held 8000, then 5174, invoking `npm run test:e2e:api` for each. Both exited 1 with `Required API E2E port <port> is already in use.` before temp DB creation; no runner service child was launched. |
+| Forced Vite startup failure | A temporary `npm` executable returned 73 for `npm run dev:api` after the actual API had started. Playwright exited 1, the API listener was gone, and the unique DB directory was removed. The first verifier incorrectly required Uvicorn shutdown-log text; the corrected check verified process/port and DB cleanup directly and passed. |
+| SIGINT forwarding | A harness started the wrapper and sent SIGINT after both fixed ports were ready. It exited 130, Playwright/server processes stopped, ports 8000/5174 had no listener, and the temporary DB directory was removed. POSIX Playwright is launched in its own process group so the wrapper forwards one signal rather than sharing the terminal's group signal. Playwright's built-in teardown is used without `gracefulShutdown`, which is unsupported on Windows. |
+| Unused settings state | `rg -n "app\.state\.settings|state\.settings" backend` found no application reader; removed the write-only assignment. |
+
+### Final checks
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Backend lint, format, and tests | `cd backend && uv run --frozen ruff check . && uv run --frozen ruff format --check . && APP_ENV=test uv run --frozen pytest` | PASS. Ruff passed; 9 files already formatted; 20 tests passed in 82.05s. One upstream Starlette/httpx deprecation warning. |
+| Frontend static checks | `cd frontend && npm run check` | PASS. OpenAPI source/type freshness, TypeScript, ESLint, and Prettier passed. Redocly emitted the two existing non-fatal missing-4xx warnings for the approved health/readiness response sets. |
+| Frontend unit tests | `cd frontend && npm test` | PASS, 28 files / 417 tests in 155.96s. |
+| Real API browser suite | `cd frontend && npm run test:e2e:api` | PASS, 1/1 test in 18.8s (39.5s total command). Actual Uvicorn/FastAPI and isolated migrated SQLite were used; the browser blocks non-loopback requests. It wrote the 30 product captures listed above. |
+| Workflow syntax/scope | `python -c 'from pathlib import Path; import yaml; p=Path(".github/workflows/frontend-ci.yml"); w=yaml.safe_load(p.read_text()); assert w["name"] == "Frontend and backend/API CI"; assert set(w["jobs"]) == {"backend-api", "frontend"}; assert w["jobs"]["backend-api"]["steps"][1]["uses"] == "astral-sh/setup-uv@v10.2.0"; print("PASS YAML parse; workflow/job scope and action pin verified")'` | PASS; parsed `Frontend and backend/API CI`, `backend-api`, and `astral-sh/setup-uv@v10.2.0`. `actionlint` is not installed. |
+| Whitespace / artifact scope | `git diff --check`; inspected status and paths | PASS before source commit; no lockfile, generated type, source reference, or visual baseline changed. |
+
+### Hosted and human gates
+
+The current PR #90 head is still `a1012a80f4cca2168d1f2f6b4f4e70c18db12e0e`; R4 source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68` is local and no R4 hosted run exists. The invalid action tag from run 36480308385 is fixed in the local workflow, but backend/API hosted verification begins only after the coordinator pushes this workflow change. Prior successes on `229511e`, `baa47de`, and `2b2f464` were frontend-only and do not verify the new backend/API job. DomineYH's UI-D/source-difference review, screen-reader and physical-device review, and local handover acceptance remain pending, not PASS. T03 owns app list/detail; auth, writes, admin, health workers, and related capabilities remain disabled.
+
+## Current acceptance boundary
+
+The R4 local backend/frontend/API checks and API-state captures pass on source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68`. They do not establish a hosted run of the new workflow, deployed database/monitoring behavior, server-side authorization for future features, or human handover. The coordinator must push the workflow commit for backend/API hosted checks. Human visual/accessibility/device review remains pending.

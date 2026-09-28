@@ -1,0 +1,321 @@
+{
+  "method": "Compare full-page PNGs at the same viewport and DPR 1. Matching dimensions receive exact RGBA pixel-difference counts. If full-page dimensions differ, record dimensions and omit pixel counts; no padding or baseline change. Status-card captures are linked as supplemental component evidence.",
+  "human_approval": "pending",
+  "records": [
+    {
+      "state": "failure",
+      "viewport": "360x844",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-360x844-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-360x844-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-failure-360x844.png",
+      "actual_dimensions": [
+        360,
+        960
+      ],
+      "target_dimensions": [
+        360,
+        960
+      ],
+      "dimension_match": true,
+      "decision": "API metadata 503 guidance replaces the mock failure copy while preserving the empty-result structure. Keep the API error state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 3769,
+      "max_channel_delta": 171
+    },
+    {
+      "state": "failure",
+      "viewport": "390x844",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-390x844-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-390x844-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-failure-390x844.png",
+      "actual_dimensions": [
+        390,
+        921
+      ],
+      "target_dimensions": [
+        390,
+        921
+      ],
+      "dimension_match": true,
+      "decision": "API metadata 503 guidance replaces the mock failure copy while preserving the empty-result structure. Keep the API error state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 3785,
+      "max_channel_delta": 171
+    },
+    {
+      "state": "failure",
+      "viewport": "768x1024",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-768x1024-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-768x1024-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-failure-768x1024.png",
+      "actual_dimensions": [
+        768,
+        1024
+      ],
+      "target_dimensions": [
+        768,
+        1024
+      ],
+      "dimension_match": true,
+      "decision": "API metadata 503 guidance replaces the mock failure copy while preserving the empty-result structure. Keep the API error state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 3769,
+      "max_channel_delta": 171
+    },
+    {
+      "state": "failure",
+      "viewport": "1024x900",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1024x900-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1024x900-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-failure-1024x900.png",
+      "actual_dimensions": [
+        1024,
+        918
+      ],
+      "target_dimensions": [
+        1024,
+        918
+      ],
+      "dimension_match": true,
+      "decision": "API metadata 503 guidance replaces the mock failure copy while preserving the empty-result structure. Keep the API error state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 3769,
+      "max_channel_delta": 171
+    },
+    {
+      "state": "failure",
+      "viewport": "1440x1000",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1440x1000-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1440x1000-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-failure-1440x1000.png",
+      "actual_dimensions": [
+        1440,
+        1000
+      ],
+      "target_dimensions": [
+        1440,
+        1000
+      ],
+      "dimension_match": true,
+      "decision": "API metadata 503 guidance replaces the mock failure copy while preserving the empty-result structure. Keep the API error state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 3769,
+      "max_channel_delta": 171
+    },
+    {
+      "state": "loading",
+      "viewport": "360x844",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-360x844-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-360x844-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-loading-360x844.png",
+      "actual_dimensions": [
+        360,
+        904
+      ],
+      "target_dimensions": [
+        360,
+        904
+      ],
+      "dimension_match": true,
+      "decision": "The API metadata request is deliberately held pending; the loading status replaces the mock list-loading state while preserving the gallery shell. Keep the API loading state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 20658,
+      "max_channel_delta": 218
+    },
+    {
+      "state": "loading",
+      "viewport": "390x844",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-390x844-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-390x844-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-loading-390x844.png",
+      "actual_dimensions": [
+        390,
+        865
+      ],
+      "target_dimensions": [
+        390,
+        865
+      ],
+      "dimension_match": true,
+      "decision": "The API metadata request is deliberately held pending; the loading status replaces the mock list-loading state while preserving the gallery shell. Keep the API loading state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 21941,
+      "max_channel_delta": 218
+    },
+    {
+      "state": "loading",
+      "viewport": "768x1024",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-768x1024-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-768x1024-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-loading-768x1024.png",
+      "actual_dimensions": [
+        768,
+        1024
+      ],
+      "target_dimensions": [
+        768,
+        1024
+      ],
+      "dimension_match": true,
+      "decision": "The API metadata request is deliberately held pending; the loading status replaces the mock list-loading state while preserving the gallery shell. Keep the API loading state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 39158,
+      "max_channel_delta": 218
+    },
+    {
+      "state": "loading",
+      "viewport": "1024x900",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1024x900-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1024x900-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-loading-1024x900.png",
+      "actual_dimensions": [
+        1024,
+        900
+      ],
+      "target_dimensions": [
+        1024,
+        900
+      ],
+      "dimension_match": true,
+      "decision": "The API metadata request is deliberately held pending; the loading status replaces the mock list-loading state while preserving the gallery shell. Keep the API loading state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 50678,
+      "max_channel_delta": 218
+    },
+    {
+      "state": "loading",
+      "viewport": "1440x1000",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1440x1000-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1440x1000-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-loading-1440x1000.png",
+      "actual_dimensions": [
+        1440,
+        1000
+      ],
+      "target_dimensions": [
+        1440,
+        1000
+      ],
+      "dimension_match": true,
+      "decision": "The API metadata request is deliberately held pending; the loading status replaces the mock list-loading state while preserving the gallery shell. Keep the API loading state; no baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 65479,
+      "max_channel_delta": 218
+    },
+    {
+      "state": "unavailable",
+      "viewport": "360x844",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-360x844-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-360x844-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-empty-360x844.png",
+      "actual_dimensions": [
+        360,
+        960
+      ],
+      "target_dimensions": [
+        360,
+        965
+      ],
+      "dimension_match": false,
+      "decision": "Closest mock comparison is the empty gallery. API capability-disabled guidance replaces empty-gallery discovery copy and keeps app cards absent; this is an intentional phase boundary, not pixel equivalence. No baseline update. Human UI-D review pending.",
+      "comparison_status": "dimension_mismatch; full-page pixel count omitted",
+      "different_pixels": null,
+      "max_channel_delta": null
+    },
+    {
+      "state": "unavailable",
+      "viewport": "390x844",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-390x844-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-390x844-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-empty-390x844.png",
+      "actual_dimensions": [
+        390,
+        921
+      ],
+      "target_dimensions": [
+        390,
+        905
+      ],
+      "dimension_match": false,
+      "decision": "Closest mock comparison is the empty gallery. API capability-disabled guidance replaces empty-gallery discovery copy and keeps app cards absent; this is an intentional phase boundary, not pixel equivalence. No baseline update. Human UI-D review pending.",
+      "comparison_status": "dimension_mismatch; full-page pixel count omitted",
+      "different_pixels": null,
+      "max_channel_delta": null
+    },
+    {
+      "state": "unavailable",
+      "viewport": "768x1024",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-768x1024-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-768x1024-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-empty-768x1024.png",
+      "actual_dimensions": [
+        768,
+        1024
+      ],
+      "target_dimensions": [
+        768,
+        1024
+      ],
+      "dimension_match": true,
+      "decision": "Closest mock comparison is the empty gallery. API capability-disabled guidance replaces empty-gallery discovery copy and keeps app cards absent; this is an intentional phase boundary, not pixel equivalence. No baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 102529,
+      "max_channel_delta": 218
+    },
+    {
+      "state": "unavailable",
+      "viewport": "1024x900",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1024x900-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1024x900-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-empty-1024x900.png",
+      "actual_dimensions": [
+        1024,
+        918
+      ],
+      "target_dimensions": [
+        1024,
+        900
+      ],
+      "dimension_match": false,
+      "decision": "Closest mock comparison is the empty gallery. API capability-disabled guidance replaces empty-gallery discovery copy and keeps app cards absent; this is an intentional phase boundary, not pixel equivalence. No baseline update. Human UI-D review pending.",
+      "comparison_status": "dimension_mismatch; full-page pixel count omitted",
+      "different_pixels": null,
+      "max_channel_delta": null
+    },
+    {
+      "state": "unavailable",
+      "viewport": "1440x1000",
+      "actual": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1440x1000-full.png",
+      "component_capture": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1440x1000-status.png",
+      "comparison_target_kind": "mock-state",
+      "comparison_target": "docs/evidence/phase-2/issue78/2026-09-28/visual/mock-regression/gallery-empty-1440x1000.png",
+      "actual_dimensions": [
+        1440,
+        1000
+      ],
+      "target_dimensions": [
+        1440,
+        1000
+      ],
+      "dimension_match": true,
+      "decision": "Closest mock comparison is the empty gallery. API capability-disabled guidance replaces empty-gallery discovery copy and keeps app cards absent; this is an intentional phase boundary, not pixel equivalence. No baseline update. Human UI-D review pending.",
+      "comparison_status": "pixel_compared",
+      "different_pixels": 158935,
+      "max_channel_delta": 218
+    }
+  ]
+}
