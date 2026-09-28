@@ -53,7 +53,8 @@
     "external_harness_binding": {
       "harness_ids": [
         "claude",
-        "agy"
+        "agy",
+        "pi"
       ],
       "dispatch_rule": "Use the corresponding installed harness through a verified CLI, tool, or configured local adapter. Inspect its actual interface to bind the exact model and effort; do not invent command names, flags, providers, or endpoints.",
       "skill_delivery": "Ensure the external worker can read the resolved SKILL.md and required local assets, or deliver their contents with correct relative-path context.",
@@ -62,25 +63,29 @@
     }
   },
   "models": {
+    "opus": {
+      "harness": "claude",
+      "model": "opus"
+    },
     "astra": {
       "harness": "codex",
       "model": "gpt-6-astra"
     },
     "sol": {
       "harness": "codex",
-      "model": "gpt-5.6-sol"
+      "model": "gpt-6-sol"
     },
     "luna": {
       "harness": "codex",
-      "model": "gpt-5.6-luna"
+      "model": "gpt-6-luna"
     },
-    "glm_review": {
-      "harness": "claude",
-      "model": "glm-5.3[1m]"
+    "glm": {
+      "harness": "pi",
+      "model": "glm-5.3"
     },
-    "glm_coding": {
-      "harness": "claude",
-      "model": "glm-5.3-flash[1m]"
+    "glm_flash": {
+      "harness": "pi",
+      "model": "glm-5.3-flash"
     },
     "gemini": {
       "harness": "agy",
@@ -90,34 +95,34 @@
   "profiles": {
     "planner": {
       "model_ref": "astra",
-      "effort": "high"
+      "effort": "medium"
     },
     "architect": {
       "model_ref": "astra",
-      "effort": "xhigh"
+      "effort": "high"
     },
     "writer_teacher": {
       "model_ref": "astra",
       "effort": "medium"
     },
     "light_reviewer": {
-      "model_ref": "astra",
-      "effort": "low"
+      "model_ref": "glm",
+      "effort": "max"
     },
     "coordinator": {
-      "model_ref": "sol",
+      "model_ref": "opus",
       "effort": "high"
     },
     "tester_utility": {
-      "model_ref": "luna",
+      "model_ref": "glm_flash",
       "effort": "max"
     },
     "reviewer": {
-      "model_ref": "glm_review",
-      "effort": "max"
+      "model_ref": "sol",
+      "effort": "high"
     },
     "implementer": {
-      "model_ref": "glm_coding",
+      "model_ref": "luna",
       "effort": "max"
     },
     "inspector_researcher": {
@@ -326,7 +331,7 @@
           "scope": "Repository conventions, code structure, duplication, and unnecessary abstractions."
         },
         "spec": {
-          "profile": "planner",
+          "profile": "reviewer",
           "read_only": true,
           "scope": "Requirement coverage, incorrect behavior, omissions, and out-of-scope changes."
         }
