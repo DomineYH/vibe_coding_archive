@@ -22,6 +22,7 @@ import { authService } from "@services/auth";
 import { healthService } from "@services/health";
 import { normalizeSearch } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
+import { reconcileMockReset } from "../services/mock/state";
 import { contractError, ServiceError } from "../services/service-error";
 import { AppDetailView } from "../features/detail/view-detail";
 import { GalleryView } from "../features/gallery/view-gallery";
@@ -1742,8 +1743,10 @@ export default function App() {
   }, [location.key, navigationType, restoreAuth]);
   useEffect(() => {
     const onStorage = (event) => {
-      if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1")
+      if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1") {
+        reconcileMockReset(event.newValue);
         void refreshMockState();
+      }
     };
     const onMockReset = () => void refreshMockState();
     const onMockAppDeleted = () => {

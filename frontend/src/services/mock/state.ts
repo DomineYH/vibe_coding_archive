@@ -802,6 +802,19 @@ const initialState = (): MockState => ({
   health_id_sequence: 0,
 });
 
+function isResetSnapshot(state: unknown): state is MockState {
+  if (
+    !state ||
+    typeof state !== "object" ||
+    !Number.isSafeInteger((state as MockState).generation)
+  )
+    return false;
+  return (
+    JSON.stringify({ ...(state as MockState), generation: 0 }) ===
+    JSON.stringify({ ...initialState(), generation: 0 })
+  );
+}
+
 function storage(): Storage {
   try {
     return window.localStorage;
@@ -1766,6 +1779,27 @@ export function resetMockState(): void {
   window.dispatchEvent(new Event(MOCK_RESET_EVENT));
   window.dispatchEvent(new Event(MOCK_WRITE_OPERATIONS_RESET_EVENT));
   window.dispatchEvent(new Event(MOCK_HEALTH_RESET_EVENT));
+}
+
+export function reconcileMockReset(snapshot: string | null): void {
+  if (snapshot === null) return;
+  let reset: unknown;
+  try {
+    reset = JSON.parse(snapshot);
+  } catch {
+    return;
+  }
+  if (!isResetSnapshot(reset)) return;
+
+  let current: MockState;
+  try {
+    current = readState();
+  } catch {
+    resetMockState();
+    return;
+  }
+  if (current.generation > reset.generation || isResetSnapshot(current)) return;
+  resetMockState();
 }
 
 export function setMockScenario(scenario: MockScenario): void {

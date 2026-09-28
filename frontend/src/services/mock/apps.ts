@@ -552,6 +552,7 @@ export const appsService: AppsService = {
     if (state.scenario === "app_create_delayed") {
       const flow = state.auth_flow;
       await new Promise((resolve) => setTimeout(resolve, createDelayMs));
+      assertCurrentGeneration(state.generation);
       const current = currentMember();
       if (
         current.account.id !== account.id ||
