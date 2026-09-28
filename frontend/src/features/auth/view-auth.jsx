@@ -428,6 +428,18 @@ export function AuthView({
     );
   }
 
+  if (authStatus === "unavailable")
+    return (
+      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="인증 기능은 아직 준비 중이에요"
+            desc="API 모드에서는 로그인과 회원가입을 사용할 수 없어요."
+          />
+        </div>
+      </main>
+    );
+
   if (mode === "reauth" && !(authStatus === "ready" && !authUser))
     return (
       <ReauthenticationCard

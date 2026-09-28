@@ -56,6 +56,10 @@ export function GalleryView({
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   const invalidQuery =
     error instanceof ServiceError && error.code === "VALIDATION_ERROR";
+  const fieldErrors =
+    invalidQuery && !searchTooLong && !loading ? (error.fields ?? {}) : {};
+  const queryError = fieldErrors.q;
+  const gradeError = fieldErrors.grade;
 
   useLayoutEffect(() => {
     if (lastRouteSearch.current === initialSearch) return;
@@ -201,6 +205,10 @@ export function GalleryView({
             <select
               id="grade-filter"
               value={grade}
+              aria-invalid={gradeError ? true : undefined}
+              aria-describedby={
+                gradeError ? "gallery-grade-filter-error" : undefined
+              }
               onChange={(event) =>
                 onQueryChange(
                   { grade: event.target.value || undefined },
@@ -234,9 +242,14 @@ export function GalleryView({
                   if (!event.currentTarget.value)
                     onQueryChange({ q: undefined }, { replace: true });
                 }}
-                aria-invalid={searchTooLong || undefined}
+                aria-invalid={searchTooLong || queryError ? true : undefined}
                 aria-describedby={
-                  searchTooLong ? "gallery-search-error" : undefined
+                  [
+                    searchTooLong && "gallery-search-error",
+                    queryError && "gallery-search-validation-error",
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || undefined
                 }
                 placeholder="앱·작성자 검색"
                 className="h-8 w-36 rounded-full border border-neutral-200 bg-white pl-8 pr-3 text-[12.5px] outline-none transition-all focus:w-48 focus:border-[#4C7A96]/40 sm:w-44"
@@ -275,20 +288,37 @@ export function GalleryView({
             }
             desc={error.message || "잠시 후 다시 시도해 주세요."}
           >
-            <div className="flex flex-wrap justify-center gap-2">
-              {invalidQuery ? (
-                <Btn onClick={handleResetQuery}>조건 초기화</Btn>
-              ) : (
-                <Btn onClick={handleRetry}>다시 시도</Btn>
-              )}
-              {!invalidQuery && __DATA_MODE__ === "mock" && resetRoute ? (
-                <Link
-                  className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
-                  to="/__dev/mock-reset"
+            <div className="flex flex-col items-center gap-3">
+              {Object.entries(fieldErrors).map(([field, message]) => (
+                <p
+                  key={field}
+                  id={
+                    field === "q"
+                      ? "gallery-search-validation-error"
+                      : field === "grade"
+                        ? "gallery-grade-filter-error"
+                        : undefined
+                  }
+                  className="text-[13px] text-red-700"
                 >
-                  mock 저장 초기화
-                </Link>
-              ) : null}
+                  {message}
+                </p>
+              ))}
+              <div className="flex flex-wrap justify-center gap-2">
+                {invalidQuery ? (
+                  <Btn onClick={handleResetQuery}>조건 초기화</Btn>
+                ) : (
+                  <Btn onClick={handleRetry}>다시 시도</Btn>
+                )}
+                {!invalidQuery && __DATA_MODE__ === "mock" && resetRoute ? (
+                  <Link
+                    className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+                    to="/__dev/mock-reset"
+                  >
+                    mock 저장 초기화
+                  </Link>
+                ) : null}
+              </div>
             </div>
           </EmptyState>
         </div>

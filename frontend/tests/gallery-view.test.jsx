@@ -305,4 +305,132 @@ describe("public gallery states", () => {
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(retry).toHaveBeenCalledTimes(1);
   });
+
+  it("links public list query errors to the search field", () => {
+    const resetQuery = vi.fn();
+    const error = new ServiceError(
+      "VALIDATION_ERROR",
+      "검색 조건을 확인해 주세요.",
+      { fields: { q: "검색어를 확인해 주세요." } },
+    );
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={undefined}
+          page={undefined}
+          onQueryChange={() => {}}
+          initialFilters={{ q: "분수" }}
+          error={error}
+          loading={false}
+          retry={() => {}}
+          resetQuery={resetQuery}
+        />
+      </MemoryRouter>,
+    );
+
+    const searchInput = screen.getByRole("textbox", {
+      name: "앱·작성자 검색",
+    });
+    expect(searchInput).toHaveValue("분수");
+    expect(searchInput).toHaveAttribute("aria-invalid", "true");
+    const errorDescription = document.getElementById(
+      searchInput.getAttribute("aria-describedby"),
+    );
+    expect(errorDescription).toBeVisible();
+    expect(errorDescription).toHaveTextContent("검색어를 확인해 주세요.");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "검색 조건을 확인할 수 없어요",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "검색 조건을 확인해 주세요.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "조건 초기화" }));
+    expect(resetQuery).toHaveBeenCalledOnce();
+  });
+
+  it("shows all public list field errors and links the grade error", async () => {
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    const error = new ServiceError(
+      "VALIDATION_ERROR",
+      "검색 조건을 확인해 주세요.",
+      {
+        fields: {
+          q: "검색어 오류",
+          subject: "과목 오류",
+          grade: "학년 오류",
+          limit: "페이지 크기 오류",
+          offset: "페이지 위치 오류",
+        },
+      },
+    );
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={meta}
+          page={page}
+          onQueryChange={() => {}}
+          error={error}
+          loading={false}
+          retry={() => {}}
+          resetQuery={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+    for (const message of Object.values(error.fields)) {
+      expect(screen.getByText(message)).toBeVisible();
+    }
+    const search = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+    expect(search).toHaveAttribute(
+      "aria-describedby",
+      "gallery-search-validation-error",
+    );
+    const grade = screen.getByRole("combobox", { name: "학년 필터" });
+    expect(grade).toHaveAttribute("aria-invalid", "true");
+    expect(grade).toHaveAttribute(
+      "aria-describedby",
+      "gallery-grade-filter-error",
+    );
+    expect(
+      screen.getByRole("group", { name: "과목 필터" }),
+    ).not.toHaveAttribute("aria-describedby");
+    for (const field of ["subject", "limit", "offset"]) {
+      expect(screen.getByText(error.fields[field])).not.toHaveAttribute("id");
+    }
+  });
+
+  it("does not describe a server query error after the over-limit state takes over", () => {
+    const error = new ServiceError(
+      "VALIDATION_ERROR",
+      "검색 조건을 확인해 주세요.",
+      { fields: { q: "검색어를 확인해 주세요." } },
+    );
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={undefined}
+          page={undefined}
+          onQueryChange={() => {}}
+          initialFilters={{ q: "분수" }}
+          error={error}
+          loading={false}
+          retry={() => {}}
+          resetQuery={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+    const searchInput = screen.getByRole("textbox", {
+      name: "앱·작성자 검색",
+    });
+    fireEvent.change(searchInput, { target: { value: "ß".repeat(51) } });
+
+    const describedBy = searchInput.getAttribute("aria-describedby").split(" ");
+    expect(describedBy).toEqual(["gallery-search-error"]);
+    expect(describedBy.every((id) => document.getElementById(id))).toBe(true);
+    expect(
+      screen.queryByText("검색어를 확인해 주세요.", { exact: true }),
+    ).not.toBeInTheDocument();
+  });
 });

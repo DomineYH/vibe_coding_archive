@@ -1,0 +1,20 @@
+{
+  "state": "gallery-next-page-error",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-next-page-error-390x844.png",
+  "screenshot": "gallery-next-page-error-390x844.png",
+  "width": 390,
+  "height": 8995,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 390,
+  "expectedHeight": 8995,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/api/apps";
+import { authService } from "../src/services/api/auth";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 const requests = {
   "GET /meta": () => appsService.getMeta(),
@@ -12,6 +16,7 @@ const requests = {
 const allowedErrors = [
   { endpoint: "GET /meta", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /meta", status: 503, code: "SERVICE_UNAVAILABLE" },
+  { endpoint: "GET /apps", status: 400, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /apps", status: 503, code: "SERVICE_UNAVAILABLE" },
   { endpoint: "GET /apps/{id}", status: 404, code: "NOT_FOUND" },
@@ -34,7 +39,6 @@ const allowedErrors = [
 const invalidErrors = [
   { endpoint: "GET /apps/{id}", status: 503, code: "NOT_FOUND" },
   { endpoint: "GET /meta", status: 404, code: "NOT_FOUND" },
-  { endpoint: "GET /apps", status: 400, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps", status: 422, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps", status: 429, code: "RATE_LIMITED" },
   { endpoint: "GET /apps", status: 503, code: "RATE_LIMITED" },
@@ -99,6 +103,70 @@ describe("API service errors", () => {
         message: "아카이브 앱을 찾을 수 없어요.",
       });
     }
+  });
+
+  it("keeps public reads independent from auth and CSRF, including failures", async () => {
+    const getCurrentAuthState = vi.spyOn(authService, "getCurrentAuthState");
+    const getCsrf = vi.spyOn(authService, "getCsrf");
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: "SERVICE_UNAVAILABLE",
+              message: "Public service error",
+              request_id: "req-31",
+            },
+          }),
+          { status: 503 },
+        ),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    for (const request of Object.values(requests))
+      await expect(request()).rejects.toMatchObject({
+        code: "SERVICE_UNAVAILABLE",
+        httpStatus: 503,
+      });
+
+    expect(getCurrentAuthState).not.toHaveBeenCalled();
+    expect(getCsrf).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    for (const [, request] of vi.mocked(fetch).mock.calls) {
+      expect((request?.headers as Headers).has("X-EduVibe-Flow-Id")).toBe(
+        false,
+      );
+      expect((request?.headers as Headers).has("X-CSRF-Token")).toBe(false);
+    }
+  });
+
+  it("passes read cancellation to fetch and preserves aborts", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValue(new DOMException("Aborted", "AbortError"));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      appsService.list({}, { signal: controller.signal }),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBe(controller.signal);
+  });
+
+  it("preserves canonical public list input errors as validation errors", async () => {
+    stubErrorResponse(400, "VALIDATION_ERROR", {
+      fields: { q: "검색어는 정규화 후 100자 이하여야 해요." },
+    });
+
+    await expect(appsService.list()).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 400,
+      fields: { q: "검색어는 정규화 후 100자 이하여야 해요." },
+    });
   });
 
   it.each(allowedErrors)(
