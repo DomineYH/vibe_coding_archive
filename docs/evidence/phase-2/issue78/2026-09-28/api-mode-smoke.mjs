@@ -21,6 +21,15 @@ const browser = await chromium.launch({
   args: ["--force-color-profile=srgb"],
 });
 
+async function waitForRenderedPage(page) {
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+  });
+}
+
 try {
   for (const viewport of viewports) {
     const context = await browser.newContext({
@@ -73,13 +82,7 @@ try {
       ]),
       [null, null, "preserve"],
     );
-    await page.evaluate(() => document.fonts.ready);
-    await page.evaluate(
-      () =>
-        new Promise((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        ),
-    );
+    await waitForRenderedPage(page);
     await page.screenshot({
       path: `${evidenceDir}/api-mode-gallery-failure-${viewport.width}x${viewport.height}.png`,
       fullPage: true,
@@ -94,13 +97,7 @@ try {
       .filter({ hasText: "인증 기능은 아직 준비 중이에요" })
       .waitFor();
     assert.equal(await page.getByRole("textbox").count(), 0);
-    await page.evaluate(() => document.fonts.ready);
-    await page.evaluate(
-      () =>
-        new Promise((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        ),
-    );
+    await waitForRenderedPage(page);
     await page.screenshot({
       path: `${evidenceDir}/api-mode-auth-unavailable-${viewport.width}x${viewport.height}.png`,
       fullPage: true,
@@ -112,13 +109,7 @@ try {
       .getByRole("status")
       .filter({ hasText: "관리자 기능은 아직 준비 중이에요" })
       .waitFor();
-    await page.evaluate(() => document.fonts.ready);
-    await page.evaluate(
-      () =>
-        new Promise((resolve) =>
-          requestAnimationFrame(() => requestAnimationFrame(resolve)),
-        ),
-    );
+    await waitForRenderedPage(page);
     await page.screenshot({
       path: `${evidenceDir}/api-mode-admin-unavailable-${viewport.width}x${viewport.height}.png`,
       fullPage: true,

@@ -306,7 +306,7 @@ describe("public gallery states", () => {
     expect(retry).toHaveBeenCalledTimes(1);
   });
 
-  it("shows public list validation errors with the entered query and reset action", () => {
+  it("links public list query errors to the search field", () => {
     const resetQuery = vi.fn();
     const error = new ServiceError(
       "VALIDATION_ERROR",
@@ -328,9 +328,16 @@ describe("public gallery states", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("textbox", { name: "앱·작성자 검색" })).toHaveValue(
-      "분수",
+    const searchInput = screen.getByRole("textbox", {
+      name: "앱·작성자 검색",
+    });
+    expect(searchInput).toHaveValue("분수");
+    expect(searchInput).toHaveAttribute("aria-invalid", "true");
+    const errorDescription = document.getElementById(
+      searchInput.getAttribute("aria-describedby"),
     );
+    expect(errorDescription).toBeVisible();
+    expect(errorDescription).toHaveTextContent("검색어를 확인해 주세요.");
     expect(screen.getByRole("alert")).toHaveTextContent(
       "검색 조건을 확인할 수 없어요",
     );
