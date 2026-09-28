@@ -279,6 +279,7 @@ These commands were run on the exact source tree committed as `933a1ed78b190b1b5
 | Backend formatting | `cd backend && uv run --frozen ruff format --check .` | PASS, 9 files already formatted. |
 | Backend tests | `cd backend && APP_ENV=test uv run --frozen pytest` | PASS, 34 tests in 26.50s; one upstream Starlette/httpx deprecation warning. |
 | Diff whitespace | `git diff --check` before the source commit | PASS. |
+| Acceptance-row duplicate scan | `python -c 'from collections import Counter; from pathlib import Path; lines=Path("docs/acceptance.md").read_text().splitlines(); start=next(i for i,line in enumerate(lines) if line.startswith("## Issue #79 real metadata")); rows=[line for line in lines[start:] if line.startswith("| #79 ")]; duplicates=[line for line,n in Counter(rows).items() if n>1]; assert not duplicates and sum(line.startswith("| #79 R3 · review findings 1–5 |") for line in rows)==1; print(f"PASS, {len(rows)} issue rows, 0 duplicates")'` | PASS, 13 #79 rows scanned, no exact duplicate rows; exactly one R3 row remains. |
 
 ### Hosted runs observed
 
