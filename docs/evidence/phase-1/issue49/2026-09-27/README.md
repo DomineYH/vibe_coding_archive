@@ -61,22 +61,22 @@ Commands ran from `frontend/` unless noted. Runtime: Ubuntu 24.04.3 on WSL2, Nod
 | `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell CI=true npm run test:visual` | **PASS**: 122 tests, one worker, 6.9 minutes. No tolerance or baseline changed.                                                                                                                                 |
 | `git diff --check`                                                                                                                                                             | **PASS**.                                                                                                                                                                                                       |
 
-## Human handover checklist — all items pending
+## Human handover checklist — DomineYH decisions 2026-09-27
 
-- [ ] DomineYH reviews this run record and the linked #30/#29 evidence, then records the local handover decision and timestamp here.
-- [ ] DomineYH reviews and explicitly accepts or rejects each applicable source/product visual difference; screenshots and automated results alone do not approve UI-D changes.
-- [ ] Review the narrow Health Monitor row for source fidelity, readability, and accessibility. Keep the original design and accessibility judgments separate.
-- [ ] Review keyboard/focus, labels, accessible names, errors, and protected-region behavior with the required assistive technology and applicable devices.
-- [ ] Review and accept or reject the preserved fresh-replay pixel differences and the known #47 rounded search-border difference; the 26×5 capture itself is complete.
-- [ ] Treat hosted CI, later real API/backend/worker/security checks, Phase 2–7 work, final-stage approval, and public-use approval as separate follow-up gates.
+- [x] DomineYH reviewed this run record and the linked #30/#29 evidence. **Local handover decision: conditionally accepted (2026-09-27).** #49 closes; #30 stayed open until follow-ups [#70](https://github.com/DomineYH/vibe_coding_archive/issues/70) and [#71](https://github.com/DomineYH/vibe_coding_archive/issues/71) closed (both closed 2026-09-27, #72/#73), then #30 closed.
+- [x] Source/product visual differences reviewed. The 10 fresh source-replay differences are **accepted**: all are antialiasing pixels on the left edge of rounded pill buttons (login button, subject chip) in a source-vs-source replay, with no product change. Tolerance and baselines unchanged.
+- [x] Narrow Health Monitor row **rejected** → [#70](https://github.com/DomineYH/vibe_coding_archive/issues/70), fixed in #72. At 360/390 the row's author text touches the status badge, and the authenticated header wraps the logo ("아카이 / 브") and logout label ("로그아 / 웃"); neither appears in the source. Title/URL truncation matches the source and is accepted.
+- [ ] Screen-reader and physical-device review **not performed**; deferred to the pre-release gate (#17). Automated keyboard/focus/label assertions remain the only local accessibility evidence.
+- [x] #47 rounded search-border difference (10 px, `maxChannelDelta 1`, CI-only) **visually accepted**; the CI flake was resolved in [#71](https://github.com/DomineYH/vibe_coding_archive/issues/71) via #73. The 26×5 capture itself is complete.
+- [x] Hosted CI, later real API/backend/worker/security checks, Phase 2–7 work, final-stage approval, and public-use approval remain separate follow-up gates.
 
 ### Known visual item
 
-The #47 evidence records intermittent CI-only gallery-loading screenshots with 10 pixels differing by one channel value (`maxChannelDelta 1`) along the rounded border of the search input at 768×1024 and 1024×900. The current local five-viewport gallery-loading run passed, but that does not resolve the prior CI failures; the issue remains a zero-tolerance open item. The fresh source replay also records 10 distinct pixel-difference files; all are linked under `source-replay/` and remain unapproved. Do not change comparison thresholds or baselines to make any difference pass. The narrow Health row and all UI-D/source-difference decisions remain pending human review.
+The #47 evidence records intermittent CI-only gallery-loading screenshots with 10 pixels differing by one channel value (`maxChannelDelta 1`) along the rounded border of the search input at 768×1024 and 1024×900. The current local five-viewport gallery-loading run passed, but that does not resolve the prior CI failures; the issue remains a zero-tolerance open item. The fresh source replay also records 10 distinct pixel-difference files; all are linked under `source-replay/` and were accepted by DomineYH on 2026-09-27. Do not change comparison thresholds or baselines to make any difference pass. The narrow Health row was rejected and fixed in #70 (#72); the CI flake was resolved in #71 (#73).
 
 ## Unverified / not claimed
 
 - This is a deterministic browser-local mock. No real DNS, TLS, HTTP probe, queue worker, backend, database transaction, production authentication, or server-side concurrency is exercised.
-- A local CI-style pass does not establish a hosted CI result or DomineYH's local handover acceptance.
-- Human visual approval, screen-reader/device review, and all later-phase/production work are not marked accepted. Fresh source capture is complete; its exact-pixel differences remain unapproved.
+- A local CI-style pass does not establish a hosted CI result. DomineYH's conditional local handover acceptance is recorded in the checklist above.
+- Screen-reader/device review and all later-phase/production work are not accepted. Fresh source capture is complete; its exact-pixel differences were accepted on 2026-09-27.
 - No push, pull request, merge, deployment, or release approval is included.
