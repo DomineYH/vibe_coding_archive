@@ -2,7 +2,7 @@
 
 ## Scope and revision
 
-Issue [#79](https://github.com/DomineYH/vibe_coding_archive/issues/79), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), connects the existing API-mode screen to real catalog metadata and distinguishes process liveness from migrated database readiness. The initial implementation checks below ran on `4e212cab6d699965e5fc19d0f48b93020474e4d6`. Review round 1 adds source commits `729facb` and `d168943`; its final checks and per-finding dispositions are recorded below against `d16894372a5c2be21e575075c80f89503a6a3a65`. This evidence/acceptance update is documentation-only; no application source changed after `d168943`.
+Issue [#79](https://github.com/DomineYH/vibe_coding_archive/issues/79), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), connects the existing API-mode screen to real catalog metadata and distinguishes process liveness from migrated database readiness. The initial implementation checks below ran on `4e212cab6d699965e5fc19d0f48b93020474e4d6`. Review round 1 adds source commits `729facb` and `d168943`; its final checks and per-finding dispositions are recorded below against `d16894372a5c2be21e575075c80f89503a6a3a65`. Review round 2 adds source commit `7fbeec29c102fc744a6b2445762222f251c1ab1c`; its final checks and per-finding dispositions are recorded below against that exact revision. This evidence/acceptance update is documentation-only; no application source changed after `7fbeec29c102fc744a6b2445762222f251c1ab1c`.
 
 The API returns catalog values from `contracts/catalog.json`, UTC server time, nullable support fields, and disabled capabilities for all unimplemented operations. SQLite startup requires an explicit Alembic migration at the current head. `/healthz` returns only `{"status":"ok"}`; `/readyz` returns only `{"status":"ready"}` or `{"status":"not_ready"}`. No app-list/detail, authentication, write, admin, health-check, or worker behavior was added.
 
@@ -102,6 +102,51 @@ These commands were run against source commit `d16894372a5c2be21e575075c80f89503
 | Process cleanup | `ss -ltnp` for ports 8000/5174 and process search for API E2E services | No API/Vite listener or runner service process remained after the final API E2E. |
 
 The first R1 `npm run check` failed only because Prettier flagged the edited API E2E spec; `npx prettier --write e2e-api/meta.spec.js` fixed it, and the final check above passed. The first R1 Ruff check flagged a test-bootstrap string join, and the format check flagged two settings lines; the bootstrap was simplified and Ruff formatted the settings file before the final passing backend run. The pinned visual executable was already provisioned; no baseline, generated type, or frontend lockfile changed in R1.
+
+## Review round 2 dispositions and final checks on source commit `7fbeec29c102fc744a6b2445762222f251c1ab1c`
+
+### Independent review findings
+
+| Finding | Disposition and evidence |
+| --- | --- |
+| 1 · duplicate process signal handlers | Confirmed. `frontend/scripts/test-api-e2e.mjs` now registers one `handleInterrupt` function for SIGINT and SIGTERM; both still mark interruption and stop owned child processes. |
+| 2 · theme metadata not canonical | Confirmed. #77 §2 says “공개 catalog의 값·순서도 단일 원본을 사용한다”; #79 AC requires catalog values/order and rejects broken metadata. `mapMeta` validates the full canonical theme ID order through the existing `catalogValues` helper and checks each mapped theme field against `contracts/catalog.json`. The mock metadata already uses the full catalog, and the mapper fixture now does too. Red/green evidence is below. |
+| 3 · production DB under temporary storage | Confirmed. #15 §7 says “운영은 외부 영속 영역의 명시적 절대경로.” `Settings` resolves `tempfile.gettempdir()` once and rejects production paths beneath that root; a `/tmp/production.sqlite3` regression test fails before the change and passes after it. Existing tests for valid production settings now use a path outside that temporary root. |
+| 4 · failure/loading viewport coverage | Confirmed. The API E2E now checks metadata failure and a deterministically held pending-load state at all five fixed viewports. It retains the prior five-viewport unavailable/retry/search checks after metadata resolves. The R1 context-wide loopback-only route remains unchanged, so popup and other browser requests outside loopback stay blocked. |
+
+The runner continues to use only the isolated migrated database and metadata endpoint for T02. No product app rows were added: #77 assigns real app list/detail to T03, while #29 requires a fixture for scenarios that need business data.
+
+### Red/green and first-failure trail
+
+| Slice | Command | Observed result |
+| --- | --- | --- |
+| Canonical themes, red | `cd frontend && npm test -- tests/mappers.test.ts -t 'requires themes to match the canonical catalog values and order'` | FAIL before the mapper change: the missing/reordered/invented-theme contract did not throw (`expected function to throw`). |
+| Canonical themes, green | `cd frontend && npm test -- tests/mappers.test.ts` | PASS, 21/21 tests; mock metadata still maps the complete canonical list. |
+| Production temporary DB, red | `cd backend && uv run --frozen pytest tests/test_settings.py::test_production_rejects_temporary_database_path -q` | FAIL before the settings change: `/tmp/production.sqlite3` was accepted (`DID NOT RAISE ConfigurationError`). |
+| First settings rerun after implementation | `cd backend && uv run --frozen pytest tests/test_settings.py -q` | FAIL, 16 passed / 2 failed: two pre-existing production-origin tests selected `tmp_path.parent` paths still beneath `tempfile.gettempdir()`, so the new production path refusal correctly fired before the HTTPS assertions. Their test-only valid production DB paths were moved outside that resolved temp root. |
+| Settings green | `cd backend && uv run --frozen pytest tests/test_settings.py -q` | PASS, 18 tests. The new temporary-path refusal and existing external persistent-path acceptance both pass. |
+| First Ruff format check | `cd backend && uv run --frozen ruff format --check .` | FAIL only because Ruff wanted the new `DATABASE_PATH` test expression wrapped. `cd backend && uv run --frozen ruff format tests/test_settings.py` made that formatting-only correction; final format check below passes. |
+| First complete mock browser run | `cd frontend && CI=true npm run test:e2e` | FAIL, 105/106 in 4.5m: one `page.goto('/auth?mode=login')` hit the 30s test timeout in `e2e/admin-apps.spec.js:106`; the other 105 tests passed. No R2 source issue was found. |
+| Isolated retry | `cd frontend && CI=true npm run test:e2e -- e2e/admin-apps.spec.js:106` | PASS, 1/1 in 24.8s (test 11.4s). |
+| Complete mock browser rerun | `cd frontend && CI=true npm run test:e2e` | PASS, 106/106 in 4.2m, including the previously timed-out first case. No source changes were needed. |
+
+### Final commands and results
+
+All commands below ran against source commit `7fbeec29c102fc744a6b2445762222f251c1ab1c`; no application source changed afterward.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Backend lint | `cd backend && uv run --frozen ruff check .` | PASS, exit 0. |
+| Backend formatting | `cd backend && uv run --frozen ruff format --check .` | PASS, exit 0; 9 files already formatted. |
+| Backend tests | `cd backend && APP_ENV=test uv run --frozen pytest -q` | PASS, 20 tests in 37.14s; one existing Starlette/httpx deprecation warning. |
+| Frontend static checks | `cd frontend && npm run check` | PASS, exit 0; OpenAPI lint, generated-type freshness, TypeScript, ESLint, and Prettier pass. Redocly retains the two existing non-fatal 4xx warnings for the exact health/readiness contracts. |
+| Frontend unit tests | `cd frontend && npm test` | PASS, 28 files / 417 tests in 140.98s. |
+| Real API browser suite | `cd frontend && npm run test:e2e:api` | PASS, 1/1 in 3.9s. The API runner owned the test API/Vite processes and temporary file database; the browser's context route blocked non-loopback traffic. Post-run inspection found no matching runner processes or `eduvibe-api-e2e-*` directories. |
+| Mock browser suite | `cd frontend && CI=true npm run test:e2e` | Final rerun PASS, 106/106 in 4.2m. The earlier 105/106 timeout and isolated retry are recorded above. |
+| API build | `cd frontend && npm run build` | PASS, exit 0; Vite emitted its existing >500 kB chunk warning. |
+| API bundle contents | `cd frontend && npm run check:dist` | PASS, exit 0; 96 files, with no mock fixtures, Tweaks, references, or source maps. |
+
+The R2 mapper change is covered by the full frontend unit suite and mock browser suite. No visual suite was run in R2; no visual baseline, generated type, lockfile, or reference asset changed. Hosted CI, DomineYH UI-D/source-difference review, screen-reader/physical-device review, and local handover acceptance remain pending.
 
 ## Acceptance boundary and open items
 
