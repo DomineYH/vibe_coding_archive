@@ -55,7 +55,25 @@ Runtime: Node 22.23.2, npm 12.0.2, Chrome for Testing 151.0.7922.34, locale `ko-
 
 ## R3 field validation and helper
 
-The gallery now renders every `ServiceError.fields` message. `q` and the single grade select link to their visible messages; the subject filter is a multi-button group, so its message stays visible in the error area without attaching it to one button. `limit`, `offset`, and other returned keys are shown without control links. The focused regression covers q, subject, grade, limit, and offset. The API smoke screenshot wait/capture repetition is consolidated in one helper; its net source diff removes 11 lines. Final R3 command outputs and the exact tested commit are recorded in `report-78-fix3.md`.
+The gallery now renders every `ServiceError.fields` message. `q` and the single grade select link to their visible messages; the subject filter is a multi-button group, so its message stays visible in the error area without attaching it to one button. `limit`, `offset`, and other returned keys are shown without control links. The focused regression covers q, subject, grade, limit, and offset. The API smoke screenshot wait/capture repetition is consolidated in one helper; its net source diff removes 11 lines.
+
+The focused regression was written before the view change and initially failed because the subject and other non-q field messages were not rendered. The final regression passes, including the q and grade description links and visible unlinked subject/pagination messages. Repeated smoke screenshots changed byte-for-byte during reruns, so generated captures were restored because the auth/admin states had not changed; no comparison targets or baselines changed.
+
+## R3 final verification on source commit 49a6d99
+
+The following commands ran against source commit `49a6d99a6abc24853fef8c636d78b7004b5b57a1` on `feat/issue-78-public-read-boundary`. No source changes followed this commit.
+
+- `npx vitest run tests/gallery-view.test.jsx -t 'links public list query errors to the search field|shows all public list field errors and links the grade error|does not describe a server query error after the over-limit state takes over'`: PASS, 3 passed / 10 skipped.
+- `npm run check`: PASS (OpenAPI lint/contract, TypeScript, ESLint, Prettier).
+- `npm test`: PASS, 28 files / 413 tests in 143.56 seconds.
+- `CI=true npm run test:e2e`: PASS, 106/106 in 4.5 minutes. Invalid-query cases emitted expected Vite malformed-URI notices; their assertions passed.
+- `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue78-chrome-151/chrome-headless-shell-linux64/chrome-headless-shell VISUAL_BASELINE_CAPTURE=0 CI=true npm run test:visual`: PASS, 122/122 in 6.8 minutes. Baseline capture was disabled; no visual baseline changed.
+- `npm run build && npm run check:dist`: PASS, 1,646 modules built; API dist contains 96 files and excludes mock fixtures, Tweaks, references, and source maps. Existing chunk-size warning: 503.12 kB.
+- `npm run check:reference`: PASS, 11 original files and preserved copies match SHA-256 and byte counts.
+- `npm run dev:api`, then `FONTCONFIG_FILE="$PWD/visual/fontconfig.conf" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue78-chrome-151/chrome-headless-shell-linux64/chrome-headless-shell node ../docs/evidence/phase-2/issue78/2026-09-28/api-mode-smoke.mjs`: the first immediate attempt got `ERR_CONNECTION_REFUSED` while Vite was starting; after Vite reported ready, rerun PASS with five viewports, 20 product captures, and five query-validation captures. It cleared only the two EduVibe demo storage keys, preserved an unrelated key, and observed no auth/me/CSRF calls or headers. Responses were controlled; no backend or database was running. Vite logged the unavailable local backend proxy connection at shutdown.
+- `git diff --check`: PASS before commit; post-commit worktree was clean.
+
+Hosted CI is not claimed as PASS: PR #89 runs 36436155651 and 36436170661 remain pending coordinator confirmation. Human UI-D/source-difference review, screen-reader/physical-device review, and DomineYH local handover acceptance remain pending.
 
 ## Commands and results
 
