@@ -105,6 +105,7 @@ async function run() {
     if (migration.status !== 0)
       throw new Error("The isolated API E2E database migration failed.");
 
+    // T02 serves metadata only; T03 owns app rows and their fixtures.
     const api = start(
       "uv",
       [

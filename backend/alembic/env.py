@@ -3,7 +3,6 @@ from app.database import make_migration_engine
 from app.settings import Settings
 
 settings = Settings.from_environment()
-settings = Settings.from_environment()
 
 
 def run_migrations_offline() -> None:

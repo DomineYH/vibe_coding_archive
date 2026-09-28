@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import tempfile
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Literal
@@ -71,6 +72,17 @@ class Settings(BaseModel):
                 raise ConfigurationError(
                     "Test and production databases must be outside the repository."
                 )
+        if app_env == "test":
+            try:
+                temporary_path = path.relative_to(Path(tempfile.gettempdir()).resolve())
+            except ValueError:
+                raise ConfigurationError(
+                    "Test databases must be inside a dedicated temporary directory."
+                ) from None
+            if len(temporary_path.parts) < 2:
+                raise ConfigurationError(
+                    "Test databases must be inside a dedicated temporary directory."
+                )
 
         origin = raw_public_origin
         try:
@@ -93,14 +105,17 @@ class Settings(BaseModel):
             or "#" in origin
             or parsed.netloc.endswith(":")
             or port == 0
+            or not hostname.rstrip(".")
         ):
             raise ConfigurationError("PUBLIC_ORIGIN must be one exact HTTP origin.")
         if app_env == "production":
+            normalized_hostname = hostname.rstrip(".").casefold()
             try:
-                loopback = ipaddress.ip_address(parsed.hostname).is_loopback
+                loopback = ipaddress.ip_address(normalized_hostname).is_loopback
             except ValueError:
-                loopback = parsed.hostname == "localhost" or parsed.hostname.endswith(
-                    ".localhost"
+                loopback = (
+                    normalized_hostname == "localhost"
+                    or normalized_hostname.endswith(".localhost")
                 )
             if parsed.scheme != "https" or loopback:
                 raise ConfigurationError(

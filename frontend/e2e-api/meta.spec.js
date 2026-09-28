@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createRequire } from "node:module";
 
 const catalog = createRequire(import.meta.url)("../../contracts/catalog.json");
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 const viewports = [
   { width: 360, height: 844 },
@@ -13,6 +14,7 @@ const viewports = [
 
 test("API metadata failure retries through the real server without enabling unavailable reads", async ({
   page,
+  context,
 }) => {
   const requests = [];
   const externalRequests = [];
@@ -21,12 +23,12 @@ test("API metadata failure retries through the real server without enabling unav
   page.on("request", (request) => {
     const url = new URL(request.url());
     requests.push(url.pathname);
-    if (!["localhost", "127.0.0.1", "::1"].includes(url.hostname))
+    if (!LOOPBACK_HOSTS.has(url.hostname))
       externalRequests.push(url.hostname);
   });
-  await page.route("**/*", (route) => {
+  await context.route("**/*", (route) => {
     const url = new URL(route.request().url());
-    return ["localhost", "127.0.0.1", "::1"].includes(url.hostname)
+    return LOOPBACK_HOSTS.has(url.hostname)
       ? route.continue()
       : route.abort("blockedbyclient");
   });

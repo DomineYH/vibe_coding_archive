@@ -4,6 +4,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,48 @@ from app.settings import ConfigurationError, Settings
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
+
+
+def _test_environment(database_path: Path) -> dict[str, str]:
+    return {
+        **os.environ,
+        "APP_ENV": "test",
+        "DATABASE_PATH": str(database_path),
+        "PUBLIC_ORIGIN": "http://localhost:5174",
+    }
+
+
+def _run_application(database_path: Path, *, bootstrap: str | None = None):
+    command = (
+        [sys.executable, "-c", bootstrap]
+        if bootstrap is not None
+        else [
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "app.main:app",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "0",
+        ]
+    )
+    return subprocess.run(
+        command,
+        cwd=BACKEND,
+        env=_test_environment(database_path),
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+
+
+def _assert_safe_startup_rejection(result, temporary_path: Path):
+    output = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "Application configuration or database revision is invalid." in output
+    assert str(temporary_path) not in output
 
 
 def test_app_env_is_required_from_process_environment(tmp_path: Path):
@@ -64,6 +107,27 @@ def test_test_environment_does_not_fall_back_to_development_dotenv(
         )
 
 
+@pytest.mark.parametrize(
+    "database_path",
+    [
+        Path(tempfile.gettempdir()) / "shared.sqlite3",
+        Path(tempfile.gettempdir()).parent / "persistent.sqlite3",
+    ],
+)
+def test_test_environment_requires_a_dedicated_temporary_database(
+    tmp_path: Path, database_path: Path
+):
+    with pytest.raises(ConfigurationError, match="temporary directory"):
+        Settings.from_environment(
+            {
+                "APP_ENV": "test",
+                "DATABASE_PATH": str(database_path),
+                "PUBLIC_ORIGIN": "http://localhost:5174",
+            },
+            repo_root=tmp_path,
+        )
+
+
 def test_production_rejects_development_origin_and_repository_database(
     tmp_path: Path,
 ):
@@ -99,6 +163,18 @@ def test_production_rejects_development_origin_and_repository_database(
     assert settings.database_path == outside.resolve()
 
 
+def test_production_rejects_loopback_origin_with_trailing_dns_dot(tmp_path: Path):
+    with pytest.raises(ConfigurationError, match="HTTPS"):
+        Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "DATABASE_PATH": str(tmp_path.parent / "operations.sqlite3"),
+                "PUBLIC_ORIGIN": "https://localhost.",
+            },
+            repo_root=tmp_path,
+        )
+
+
 @pytest.mark.parametrize(
     "origin",
     [
@@ -130,34 +206,8 @@ def test_unmigrated_database_refuses_process_start_without_leaking_path(
     database_path = tmp_path / "unmigrated.sqlite3"
     with sqlite3.connect(database_path):
         pass
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "app.main:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            "0",
-        ],
-        cwd=BACKEND,
-        env={
-            **os.environ,
-            "APP_ENV": "test",
-            "DATABASE_PATH": str(database_path),
-            "PUBLIC_ORIGIN": "http://localhost:5174",
-        },
-        capture_output=True,
-        text=True,
-        timeout=20,
-        check=False,
-    )
-
-    output = result.stdout + result.stderr
-    assert result.returncode != 0
-    assert "Application configuration or database revision is invalid." in output
-    assert str(tmp_path) not in output
+    result = _run_application(database_path)
+    _assert_safe_startup_rejection(result, tmp_path)
     with sqlite3.connect(database_path) as connection:
         assert (
             connection.execute(
@@ -165,3 +215,52 @@ def test_unmigrated_database_refuses_process_start_without_leaking_path(
             ).fetchall()
             == []
         )
+
+
+def test_persistent_database_path_refuses_test_process_start_safely(
+    tmp_path: Path,
+):
+    database_path = Path(tempfile.gettempdir()).parent / "persistent.sqlite3"
+    result = _run_application(database_path)
+    _assert_safe_startup_rejection(result, tmp_path)
+
+
+def test_unknown_database_revision_refuses_process_start_safely(tmp_path: Path):
+    database_path = tmp_path / "unknown-revision.sqlite3"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"
+        )
+        connection.execute(
+            "INSERT INTO alembic_version (version_num) VALUES (?)",
+            ("revision-not-in-this-build",),
+        )
+
+    result = _run_application(database_path)
+    _assert_safe_startup_rejection(result, tmp_path)
+
+
+def test_database_revision_mismatch_refuses_process_start_safely(
+    tmp_path: Path,
+):
+    database_path = tmp_path / "mismatched-revision.sqlite3"
+    environment = _test_environment(database_path)
+    migration = subprocess.run(
+        ["uv", "run", "--frozen", "alembic", "upgrade", "head"],
+        cwd=BACKEND,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    assert migration.returncode == 0, migration.stdout + migration.stderr
+
+    bootstrap = """\
+import app.database
+app.database.current_head = lambda: 'another-expected-revision'
+import uvicorn
+uvicorn.run('app.main:app', host='127.0.0.1', port=0)
+"""
+    result = _run_application(database_path, bootstrap=bootstrap)
+    _assert_safe_startup_rejection(result, tmp_path)

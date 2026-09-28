@@ -140,6 +140,7 @@ dependencies = [
     { name = "pwdlib", extra = ["argon2"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "python-dotenv" },
     { name = "sqlalchemy" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -160,6 +161,7 @@ requires-dist = [
     { name = "pwdlib", extras = ["argon2"], specifier = "==0.3.1" },
     { name = "pydantic", specifier = "==2.13.5" },
     { name = "pydantic-settings", specifier = "==2.15.0" },
+    { name = "python-dotenv", specifier = "==1.2.3" },
     { name = "sqlalchemy", specifier = "==2.0.54" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.53.0" },
 ]
