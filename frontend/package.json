@@ -26,6 +26,7 @@
     "test": "VITE_DATA_MODE=mock vitest run",
     "test:watch": "VITE_DATA_MODE=mock vitest",
     "test:e2e": "playwright test",
+    "test:e2e:api": "node scripts/test-api-e2e.mjs",
     "test:visual": "playwright test --config=playwright.visual.config.js"
   },
   "dependencies": {
