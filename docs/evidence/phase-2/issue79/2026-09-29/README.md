@@ -242,10 +242,53 @@ All R4 source checks below ran against `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68
 | Workflow syntax/scope | `python -c 'from pathlib import Path; import yaml; p=Path(".github/workflows/frontend-ci.yml"); w=yaml.safe_load(p.read_text()); assert w["name"] == "Frontend and backend/API CI"; assert set(w["jobs"]) == {"backend-api", "frontend"}; assert w["jobs"]["backend-api"]["steps"][1]["uses"] == "astral-sh/setup-uv@v10.2.0"; print("PASS YAML parse; workflow/job scope and action pin verified")'` | PASS; parsed `Frontend and backend/API CI`, `backend-api`, and `astral-sh/setup-uv@v10.2.0`. `actionlint` is not installed. |
 | Whitespace / artifact scope | `git diff --check`; inspected status and paths | PASS before source commit; no lockfile, generated type, source reference, or visual baseline changed. |
 
-### Hosted and human gates
+### Hosted and human gates at the R4 evidence cutoff
 
-The current PR #90 head is still `a1012a80f4cca2168d1f2f6b4f4e70c18db12e0e`; R4 source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68` is local and no R4 hosted run exists. The invalid action tag from run 36480308385 is fixed in the local workflow, but backend/API hosted verification begins only after the coordinator pushes this workflow change. Prior successes on `229511e`, `baa47de`, and `2b2f464` were frontend-only and do not verify the new backend/API job. DomineYH's UI-D/source-difference review, screen-reader and physical-device review, and local handover acceptance remain pending, not PASS. T03 owns app list/detail; auth, writes, admin, health workers, and related capabilities remain disabled.
+At the R4 evidence cutoff, PR #90 head was `a1012a80f4cca2168d1f2f6b4f4e70c18db12e0e`; source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68` was local and no hosted R4 run existed. The invalid action tag from run 36480308385 was fixed locally; hosted verification awaited a coordinator push. Prior successes on `229511e`, `baa47de`, and `2b2f464` were frontend-only and did not verify the backend/API job. Later hosted outcomes are recorded in the R5 section below. DomineYH's UI-D/source-difference review, screen-reader and physical-device review, and local handover acceptance remained pending, not PASS. T03 owns app list/detail; auth, writes, admin, health workers, and related capabilities remain disabled.
 
-## Current acceptance boundary
+## R4 acceptance boundary at the R4 evidence cutoff
 
-The R4 local backend/frontend/API checks and API-state captures pass on source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68`. They do not establish a hosted run of the new workflow, deployed database/monitoring behavior, server-side authorization for future features, or human handover. The coordinator must push the workflow commit for backend/API hosted checks. Human visual/accessibility/device review remains pending.
+At that cutoff, the R4 local backend/frontend/API checks and API-state captures passed on source commit `d2dd08915e9dd6c120f7b6c1f70a82e7455b1f68`. They did not establish hosted workflow results, deployed database/monitoring behavior, server-side authorization for future features, or human handover. Human visual/accessibility/device review remained pending.
+
+## Review round 5 dispositions and final checks on source commit `933a1ed78b190b1b5325e56bb899c26c537ae79d`
+
+### Findings
+
+| Finding | Disposition and evidence |
+| --- | --- |
+| 1 · malformed production origin was accepted | Confirmed. The production case `https://bad host` failed first with `DID NOT RAISE ConfigurationError`. `Settings.from_environment` now rejects raw whitespace/control characters before `urlsplit`, malformed DNS/IDN labels, invalid numeric IPv4, malformed or non-IPv6 brackets, credentials, query/fragment, and any path (including `/`). It accepts only HTTP(S) `scheme://host[:port]` origins with DNS/IDN, IPv4, or bracketed IPv6 hosts and preserves optional valid ports. Existing production HTTPS and normalized non-loopback checks are unchanged; callers still receive generic `ConfigurationError` messages. No DNS/network lookup or dependency was added. |
+| 2 · duplicated R3 acceptance row | Confirmed. Removed exactly one of the two byte-identical `#79 R3 · review findings 1–5` rows. A scan of #79 acceptance rows found no remaining exact duplicate rows. |
+
+### Red/green and first-failure trail
+
+| Check | Command / setup | Observed result |
+| --- | --- | --- |
+| Production whitespace regression, before implementation | `cd backend && APP_ENV=test uv run --frozen pytest tests/test_settings.py::test_production_rejects_origin_with_whitespace_in_host -q` | Expected red: failed with `DID NOT RAISE ConfigurationError` for production `https://bad host`. |
+| Exact-origin root path regression | `cd backend && APP_ENV=test uv run --frozen pytest 'tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://archive.example.org/]' -q` while temporarily allowing `parsed.path` | Expected red: failed with `DID NOT RAISE ConfigurationError`; restoring path rejection made it pass. |
+| First valid-host matrix attempt | `cd backend && APP_ENV=test uv run --frozen pytest tests/test_settings.py -q` | Six valid-origin cases initially failed because their temporary DB path was inside the supplied `repo_root`. The test fixture was corrected to use `tmp_path.parent`; no product code change was needed for this failure. |
+| Origin invalid/valid matrix | `cd backend && APP_ENV=test uv run --frozen pytest tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved -q` | PASS, 19 cases. Invalid DNS labels/IDN, bracket syntax, raw whitespace, root slash, malformed ports, query, and fragment reject; valid DNS, IPv4/port, bracketed IPv6/port, Unicode and punycode IDN origins preserve their input. |
+| Ruff first attempt/fix | `cd backend && uv run --frozen ruff check .` | First attempt flagged FURB188; changed the trailing-dot normalization to `str.removesuffix`, then reran successfully. |
+
+### Final local commands on the exact source commit
+
+These commands were run on the exact source tree committed as `933a1ed78b190b1b5325e56bb899c26c537ae79d`; no source changes followed.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Backend lint | `cd backend && uv run --frozen ruff check .` | PASS, `All checks passed!` |
+| Backend formatting | `cd backend && uv run --frozen ruff format --check .` | PASS, 9 files already formatted. |
+| Backend tests | `cd backend && APP_ENV=test uv run --frozen pytest` | PASS, 34 tests in 26.50s; one upstream Starlette/httpx deprecation warning. |
+| Diff whitespace | `git diff --check` before the source commit | PASS. |
+
+### Hosted runs observed
+
+Both runs below were refreshed with `gh run view` during R5. They validate the hosted R4 source `56d3c256ef6cf278176fb68ed698141bd8cdd8f1`, not R5 source `933a1ed`; hosted R5 checks await the coordinator's push. Each run completed successfully with both `backend-api` and `frontend` jobs.
+
+| Run ID | Source SHA | Workflow | Jobs / result |
+| --- | --- | --- | --- |
+| [36485103493](https://github.com/DomineYH/vibe_coding_archive/actions/runs/36485103493) | `56d3c256ef6cf278176fb68ed698141bd8cdd8f1` | `frontend` | `backend-api` success; `frontend` success. |
+| [36485107672](https://github.com/DomineYH/vibe_coding_archive/actions/runs/36485107672) | `56d3c256ef6cf278176fb68ed698141bd8cdd8f1` | `frontend` | `backend-api` success; `frontend` success. |
+
+## Current acceptance boundary after R5
+
+The production `PUBLIC_ORIGIN` validation, preserved valid-origin matrix, backend Ruff/format, and full backend pytest pass locally on source commit `933a1ed78b190b1b5325e56bb899c26c537ae79d`. Hosted R5 checks do not yet exist because this local branch was not pushed; the listed successful hosted runs are on R4 commit `56d3c25`. Human UI-D/source-difference, screen-reader/physical-device, and local handover acceptance remain pending. T03 still owns app list/detail; auth, writes, admin, and health workers remain disabled.
