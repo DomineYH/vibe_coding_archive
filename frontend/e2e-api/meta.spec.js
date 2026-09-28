@@ -23,8 +23,7 @@ test("API metadata failure retries through the real server without enabling unav
   page.on("request", (request) => {
     const url = new URL(request.url());
     requests.push(url.pathname);
-    if (!LOOPBACK_HOSTS.has(url.hostname))
-      externalRequests.push(url.hostname);
+    if (!LOOPBACK_HOSTS.has(url.hostname)) externalRequests.push(url.hostname);
   });
   await context.route("**/*", (route) => {
     const url = new URL(route.request().url());
