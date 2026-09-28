@@ -255,8 +255,7 @@ async function captureAndCompare(
 ) {
   await page.setViewportSize(viewport);
   const captureTime = new Date("2026-09-22T00:12:00.000Z");
-  if (state === "gallery-loading") await page.clock.pauseAt(captureTime);
-  else await page.clock.install({ time: captureTime });
+  await page.clock.install({ time: captureTime });
   const scenarios = {
     gallery: { scenario: "visual_fixture", apps: originalApps },
     "gallery-component": { scenario: "visual_fixture", apps: originalApps },
@@ -421,11 +420,20 @@ async function captureAndCompare(
     await expect(
       page.getByRole("heading", { name: "분수 피자 가게" }),
     ).toBeVisible();
-  else if (state === "gallery-loading")
+  else if (state === "gallery-loading") {
     await expect(page.getByRole("status")).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
-  else if (state === "gallery-empty")
+    await page.evaluate(async () => {
+      await new Promise(requestAnimationFrame);
+      await new Promise(requestAnimationFrame);
+    });
+    const pauseTime = await page.evaluate(() => Date.now() + 10);
+    await page.clock.pauseAt(new Date(pauseTime));
+    await expect(page.getByRole("status")).toContainText(
+      "공개 아카이브를 불러오는 중이에요",
+    );
+  } else if (state === "gallery-empty")
     await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
   else if (state === "gallery-failure") {
     await expect(page.getByRole("alert")).toContainText(
@@ -527,6 +535,10 @@ async function captureAndCompare(
         animations: "disabled",
         caret: "hide",
       });
+  if (state === "gallery-loading")
+    await expect(page.getByRole("status")).toContainText(
+      "공개 아카이브를 불러오는 중이에요",
+    );
   if (
     process.env.VISUAL_BASELINE_CAPTURE === "1" &&
     addedStates.includes(state) &&
