@@ -347,4 +347,38 @@ describe("public gallery states", () => {
     fireEvent.click(screen.getByRole("button", { name: "조건 초기화" }));
     expect(resetQuery).toHaveBeenCalledOnce();
   });
+
+  it("does not describe a server query error after the over-limit state takes over", () => {
+    const error = new ServiceError(
+      "VALIDATION_ERROR",
+      "검색 조건을 확인해 주세요.",
+      { fields: { q: "검색어를 확인해 주세요." } },
+    );
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={undefined}
+          page={undefined}
+          onQueryChange={() => {}}
+          initialFilters={{ q: "분수" }}
+          error={error}
+          loading={false}
+          retry={() => {}}
+          resetQuery={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+    const searchInput = screen.getByRole("textbox", {
+      name: "앱·작성자 검색",
+    });
+    fireEvent.change(searchInput, { target: { value: "ß".repeat(51) } });
+
+    const describedBy = searchInput.getAttribute("aria-describedby").split(" ");
+    expect(describedBy).toEqual(["gallery-search-error"]);
+    expect(describedBy.every((id) => document.getElementById(id))).toBe(true);
+    expect(
+      screen.queryByText("검색어를 확인해 주세요.", { exact: true }),
+    ).not.toBeInTheDocument();
+  });
 });

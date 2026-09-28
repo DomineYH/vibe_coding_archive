@@ -56,7 +56,8 @@ export function GalleryView({
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   const invalidQuery =
     error instanceof ServiceError && error.code === "VALIDATION_ERROR";
-  const queryError = invalidQuery ? error.fields?.q : null;
+  const queryError =
+    invalidQuery && !searchTooLong && !loading ? error.fields?.q : null;
 
   useLayoutEffect(() => {
     if (lastRouteSearch.current === initialSearch) return;

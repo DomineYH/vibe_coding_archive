@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const require = createRequire(`${process.cwd()}/package.json`);
@@ -15,6 +16,44 @@ const viewports = [
   { width: 390, height: 844 },
   { width: 360, height: 844 },
 ];
+const capabilityKeys = [
+  "apps_read",
+  "auth_register",
+  "auth_login",
+  "auth_logout",
+  "auth_password_change",
+  "admin_users_read",
+  "admin_approval",
+  "admin_summary",
+  "apps_create",
+  "apps_update_own",
+  "apps_delete_own",
+  "admin_apps_read",
+  "admin_apps_manage",
+  "admin_reauth",
+  "admin_password_reset",
+  "admin_user_delete",
+  "health_read",
+  "health_check",
+  "health_batch",
+  "email_collection",
+  "phone_collection",
+];
+const catalog = JSON.parse(readFileSync("../contracts/catalog.json", "utf8"));
+const validationMeta = {
+  ...catalog,
+  server_time: "2026-09-29T00:00:00Z",
+  capabilities: Object.fromEntries(
+    capabilityKeys.map((key) => [
+      key,
+      key === "apps_read"
+        ? { enabled: true, reasons: [] }
+        : { enabled: false, reasons: ["not_implemented"] },
+    ]),
+  ),
+  support: { email: null, service_url: null, announcement_url: null },
+  initial_pending_days: 90,
+};
 const browser = await chromium.launch({
   headless: true,
   executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
@@ -89,6 +128,40 @@ try {
       animations: "disabled",
     });
 
+    const hiddenAuthPage = await context.newPage();
+    await hiddenAuthPage.addInitScript(() => {
+      let visibilityState = "hidden";
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => visibilityState,
+      });
+      window.__setIssue78Visibility = (nextState) => {
+        visibilityState = nextState;
+        document.dispatchEvent(new Event("visibilitychange"));
+      };
+    });
+    await hiddenAuthPage.goto(`${origin}/auth?mode=login`, {
+      waitUntil: "domcontentloaded",
+    });
+    await hiddenAuthPage
+      .locator("main")
+      .getByRole("status")
+      .filter({ hasText: "인증 기능은 아직 준비 중이에요" })
+      .waitFor();
+    assert.match(
+      await hiddenAuthPage.locator("header").innerText(),
+      /인증 기능 준비 중/,
+    );
+    await hiddenAuthPage.evaluate(() =>
+      window.__setIssue78Visibility("visible"),
+    );
+    await hiddenAuthPage
+      .locator("main")
+      .getByRole("status")
+      .filter({ hasText: "인증 기능은 아직 준비 중이에요" })
+      .waitFor();
+    await hiddenAuthPage.close();
+
     await page.goto(`${origin}/auth?mode=login`, {
       waitUntil: "domcontentloaded",
     });
@@ -116,6 +189,79 @@ try {
       animations: "disabled",
     });
 
+    const validationPage = await context.newPage();
+    await validationPage.route("**/api/v1/meta", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(validationMeta),
+      }),
+    );
+    let queryValidationRequests = 0;
+    await validationPage.route("**/api/v1/apps**", (route) => {
+      queryValidationRequests += 1;
+      return route.fulfill({
+        status: 400,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "검색 조건을 확인해 주세요.",
+            fields: { q: "검색어를 확인해 주세요." },
+            request_id: "issue78-query-validation",
+          },
+        }),
+      });
+    });
+    await validationPage.goto(`${origin}/?q=${encodeURIComponent("분수")}`, {
+      waitUntil: "domcontentloaded",
+    });
+    const search = validationPage.getByRole("textbox", {
+      name: "앱·작성자 검색",
+    });
+    const reset = validationPage.getByRole("button", { name: "조건 초기화" });
+    await validationPage.locator("#gallery-search-validation-error").waitFor();
+    assert.ok(queryValidationRequests > 0);
+    assert.equal(await search.inputValue(), "분수");
+    assert.equal(await search.getAttribute("aria-invalid"), "true");
+    assert.equal(
+      await search.getAttribute("aria-describedby"),
+      "gallery-search-validation-error",
+    );
+    const searchBox = await search.boundingBox();
+    const errorBox = await validationPage
+      .locator("#gallery-search-validation-error")
+      .boundingBox();
+    assert.ok(searchBox && errorBox);
+    assert.ok(errorBox.y >= searchBox.y + searchBox.height);
+    await waitForRenderedPage(validationPage);
+    await validationPage.screenshot({
+      path: `${evidenceDir}/api-mode-gallery-query-error-${viewport.width}x${viewport.height}.png`,
+      fullPage: true,
+      animations: "disabled",
+    });
+    await search.focus();
+    assert.equal(
+      await search.evaluate((element) => element === document.activeElement),
+      true,
+    );
+    await validationPage.keyboard.press("Tab");
+    assert.equal(
+      await reset.evaluate((element) => element === document.activeElement),
+      true,
+    );
+    await validationPage.keyboard.press("Enter");
+    await validationPage.waitForFunction(
+      () =>
+        !new URL(location.href).searchParams.has("q") &&
+        document.querySelector("#gallery-search")?.value === "",
+    );
+    assert.equal(
+      await validationPage.locator("#gallery-search").inputValue(),
+      "",
+    );
+    await validationPage.close();
+
     const metaRequests = requests.filter((request) =>
       request.url().endsWith("/api/v1/meta"),
     );
@@ -142,7 +288,8 @@ try {
       {
         result: "PASS",
         viewportCount: viewports.length,
-        productOnlyCaptures: viewports.length * 3,
+        productOnlyCaptures: viewports.length * 4,
+        queryValidationCaptures: viewports.length,
         storage: "only the two EduVibe demo keys were cleared",
         publicReadError: "visible, with no mock fixture cards",
         authentication: "no auth/me/CSRF calls or headers; routes unavailable",

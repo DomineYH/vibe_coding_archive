@@ -1187,7 +1187,13 @@ function AuthRoute({
       mode={mode}
       authUser={authUser}
       routeError={route.invalid}
-      authStatus={auth.concealed ? "checking" : auth.status}
+      authStatus={
+        auth.status === "unavailable"
+          ? "unavailable"
+          : auth.concealed
+            ? "checking"
+            : auth.status
+      }
       authError={auth.error}
       onRetry={onRetry}
       onLogin={(input) => onLogin(input, route.returnTo)}
