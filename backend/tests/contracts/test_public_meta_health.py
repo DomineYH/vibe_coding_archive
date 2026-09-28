@@ -1,21 +1,14 @@
 from __future__ import annotations
 
 import json
-import os
 import sqlite3
-import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 
 import yaml
 from fastapi.testclient import TestClient
 
-from app.main import create_app
-from app.settings import Settings
-
 ROOT = Path(__file__).resolve().parents[3]
-BACKEND = ROOT / "backend"
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
 
 
@@ -51,30 +44,11 @@ def normalized_schema(schema: object, document: dict) -> object:
     return normalized
 
 
-def migrated_test_app(database_path: Path):
-    env = {
-        **os.environ,
-        "APP_ENV": "test",
-        "DATABASE_PATH": str(database_path),
-        "PUBLIC_ORIGIN": "http://localhost:5174",
-    }
-    subprocess.run(
-        [sys.executable, "-m", "alembic", "upgrade", "head"],
-        cwd=BACKEND,
-        env=env,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    settings = Settings.from_environment(env, repo_root=ROOT)
-    return create_app(settings)
-
-
 def test_meta_health_and_readiness_use_public_contract_and_file_database(
-    tmp_path: Path,
+    tmp_path: Path, make_test_app
 ):
     database_path = tmp_path / "phase2.sqlite3"
-    app = migrated_test_app(database_path)
+    app = make_test_app(database_path)
 
     with TestClient(app) as client:
         health = client.get("/healthz")
@@ -164,8 +138,10 @@ def test_meta_health_and_readiness_use_public_contract_and_file_database(
         assert still_alive.json() == {"status": "ok"}
 
 
-def test_fastapi_declarations_match_the_single_openapi_source(tmp_path: Path):
-    app = migrated_test_app(tmp_path / "contract.sqlite3")
+def test_fastapi_declarations_match_the_single_openapi_source(
+    tmp_path: Path, make_test_app
+):
+    app = make_test_app(tmp_path / "contract.sqlite3")
     source = yaml.safe_load((ROOT / "contracts/openapi.yaml").read_text())
     actual = app.openapi()
 

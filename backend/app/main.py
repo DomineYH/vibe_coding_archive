@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import json
 import sys
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Request
@@ -14,16 +12,17 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 
+from app.catalog import CATALOG
 from app.database import (
     current_head,
     current_revision,
+    get_session,
     make_engine,
     make_session_factory,
 )
+from app.public_apps import router as public_apps_router
 from app.settings import ConfigurationError, Settings
 
-ROOT = Path(__file__).resolve().parents[2]
-CATALOG = json.loads((ROOT / "contracts" / "catalog.json").read_text())
 NOT_IMPLEMENTED = ["not_implemented"]
 COLLECTION_DISABLED = ["collection_disabled"]
 Subject = Literal[*CATALOG["subjects"]]
@@ -174,6 +173,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "initial_pending_days": 90,
         }
 
+    api.include_router(public_apps_router)
     app.include_router(api)
 
     @app.get("/healthz", response_model=LivenessResponse)
@@ -187,7 +187,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     def readyz(
         request: Request,
-        session: Annotated[Session, Depends(_get_session)],
+        session: Annotated[Session, Depends(get_session)],
     ) -> ReadyResponse | JSONResponse:
         try:
             revision = session.execute(
@@ -203,12 +203,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return ReadyResponse(status="ready")
 
     return app
-
-
-def _get_session(request: Request):
-    factory = request.app.state.session_factory
-    with factory() as session:
-        yield session
 
 
 app = create_app()
