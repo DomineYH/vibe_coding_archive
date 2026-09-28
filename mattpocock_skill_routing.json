@@ -53,7 +53,8 @@
     "external_harness_binding": {
       "harness_ids": [
         "claude",
-        "agy"
+        "agy",
+        "pi"
       ],
       "dispatch_rule": "Use the corresponding installed harness through a verified CLI, tool, or configured local adapter. Inspect its actual interface to bind the exact model and effort; do not invent command names, flags, providers, or endpoints.",
       "skill_delivery": "Ensure the external worker can read the resolved SKILL.md and required local assets, or deliver their contents with correct relative-path context.",
