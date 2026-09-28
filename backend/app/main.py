@@ -147,7 +147,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "Application configuration or database revision is invalid."
             ) from None
 
-        app.state.settings = resolved
         app.state.engine = engine
         app.state.expected_head = head
         app.state.session_factory = make_session_factory(engine)

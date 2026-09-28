@@ -14,4 +14,22 @@ export default defineConfig({
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
   },
+  webServer: [
+    {
+      command:
+        "uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000",
+      cwd: "../backend",
+      url: "http://127.0.0.1:8000/healthz",
+      reuseExistingServer: false,
+      timeout: 120000,
+    },
+    {
+      command: "npm run dev:api",
+      cwd: ".",
+      url: "http://localhost:5174/",
+      reuseExistingServer: false,
+      timeout: 120000,
+      env: { ...process.env, VITE_DATA_MODE: "api" },
+    },
+  ],
 });
