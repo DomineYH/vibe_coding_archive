@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Request
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field
+from pydantic import AnyUrl, BaseModel, ConfigDict, Field, WithJsonSchema
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -26,6 +26,9 @@ ROOT = Path(__file__).resolve().parents[2]
 CATALOG = json.loads((ROOT / "contracts" / "catalog.json").read_text())
 NOT_IMPLEMENTED = ["not_implemented"]
 COLLECTION_DISABLED = ["collection_disabled"]
+Subject = Literal[*CATALOG["subjects"]]
+Grade = Literal[*CATALOG["grades"]]
+Uri = Annotated[AnyUrl, WithJsonSchema({"type": "string", "format": "uri"})]
 
 
 class StrictModel(BaseModel):
@@ -79,13 +82,13 @@ class Capabilities(StrictModel):
 
 class Support(StrictModel):
     email: str | None
-    service_url: AnyUrl | None
-    announcement_url: AnyUrl | None
+    service_url: Uri | None
+    announcement_url: Uri | None
 
 
 class MetaResponse(StrictModel):
-    subjects: list[str]
-    grades: list[str]
+    subjects: list[Subject]
+    grades: list[Grade]
     themes: list[Theme]
     server_time: datetime
     capabilities: Capabilities

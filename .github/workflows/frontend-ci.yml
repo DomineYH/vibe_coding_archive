@@ -5,6 +5,40 @@ on:
   push:
 
 jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.11.28"
+          python-version: "3.12.3"
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: uv sync --locked
+      - name: Backend lint
+        working-directory: backend
+        run: uv run --frozen ruff check .
+      - name: Backend format check
+        working-directory: backend
+        run: uv run --frozen ruff format --check .
+      - name: Backend tests
+        working-directory: backend
+        run: APP_ENV=test uv run --frozen pytest
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+      - name: Pin npm
+        run: npm install --global npm@12.0.2
+      - name: Install locked frontend dependencies for API E2E
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright Chromium for API E2E
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: API end-to-end tests
+        working-directory: frontend
+        run: npm run test:e2e:api
   frontend:
     runs-on: ubuntu-24.04
     steps:

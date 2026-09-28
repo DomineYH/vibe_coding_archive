@@ -50,11 +50,11 @@ def _run_application(database_path: Path, *, bootstrap: str | None = None):
     )
 
 
-def _assert_safe_startup_rejection(result, temporary_path: Path):
+def _assert_safe_startup_rejection(result, database_path: Path):
     output = result.stdout + result.stderr
     assert result.returncode != 0
     assert "Application configuration or database revision is invalid." in output
-    assert str(temporary_path) not in output
+    assert str(database_path) not in output
 
 
 def test_app_env_is_required_from_process_environment(tmp_path: Path):
@@ -223,7 +223,7 @@ def test_unmigrated_database_refuses_process_start_without_leaking_path(
     with sqlite3.connect(database_path):
         pass
     result = _run_application(database_path)
-    _assert_safe_startup_rejection(result, tmp_path)
+    _assert_safe_startup_rejection(result, database_path)
     with sqlite3.connect(database_path) as connection:
         assert (
             connection.execute(
@@ -238,7 +238,7 @@ def test_persistent_database_path_refuses_test_process_start_safely(
 ):
     database_path = Path(tempfile.gettempdir()).parent / "persistent.sqlite3"
     result = _run_application(database_path)
-    _assert_safe_startup_rejection(result, tmp_path)
+    _assert_safe_startup_rejection(result, database_path)
 
 
 def test_unknown_database_revision_refuses_process_start_safely(tmp_path: Path):
@@ -253,7 +253,7 @@ def test_unknown_database_revision_refuses_process_start_safely(tmp_path: Path):
         )
 
     result = _run_application(database_path)
-    _assert_safe_startup_rejection(result, tmp_path)
+    _assert_safe_startup_rejection(result, database_path)
 
 
 def test_database_revision_mismatch_refuses_process_start_safely(
@@ -279,4 +279,4 @@ import uvicorn
 uvicorn.run('app.main:app', host='127.0.0.1', port=0)
 """
     result = _run_application(database_path, bootstrap=bootstrap)
-    _assert_safe_startup_rejection(result, tmp_path)
+    _assert_safe_startup_rejection(result, database_path)
