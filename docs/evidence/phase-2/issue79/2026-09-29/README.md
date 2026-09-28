@@ -2,7 +2,7 @@
 
 ## Scope and revision
 
-Issue [#79](https://github.com/DomineYH/vibe_coding_archive/issues/79), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), connects the existing API-mode screen to real catalog metadata and distinguishes process liveness from migrated database readiness. The initial implementation checks below ran on `4e212cab6d699965e5fc19d0f48b93020474e4d6`. Review round 1 adds source commits `729facb` and `d168943`; its final checks and per-finding dispositions are recorded below against `d16894372a5c2be21e575075c80f89503a6a3a65`. Review round 2 adds source commit `7fbeec29c102fc744a6b2445762222f251c1ab1c`; its final checks and per-finding dispositions are recorded below against that exact revision. This evidence/acceptance update is documentation-only; no application source changed after `7fbeec29c102fc744a6b2445762222f251c1ab1c`.
+Issue [#79](https://github.com/DomineYH/vibe_coding_archive/issues/79), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), connects the existing API-mode screen to real catalog metadata and distinguishes process liveness from migrated database readiness. The initial implementation checks below ran on `4e212cab6d699965e5fc19d0f48b93020474e4d6`. Review round 1 adds source commits `729facb` and `d168943`; its final checks and per-finding dispositions are recorded below against `d16894372a5c2be21e575075c80f89503a6a3a65`. Review round 2 adds source commit `7fbeec29c102fc744a6b2445762222f251c1ab1c`; its final checks and per-finding dispositions are recorded below against that exact revision. Review round 3 adds source commit `dfbc1b3ac0f0faf6d2f9b0c3c9898ba7d60fc9f8`; its final checks and dispositions are recorded below against that revision. This evidence/acceptance update is documentation-only; no application source changed after `dfbc1b3ac0f0faf6d2f9b0c3c9898ba7d60fc9f8`.
 
 The API returns catalog values from `contracts/catalog.json`, UTC server time, nullable support fields, and disabled capabilities for all unimplemented operations. SQLite startup requires an explicit Alembic migration at the current head. `/healthz` returns only `{"status":"ok"}`; `/readyz` returns only `{"status":"ready"}` or `{"status":"not_ready"}`. No app-list/detail, authentication, write, admin, health-check, or worker behavior was added.
 
@@ -11,9 +11,9 @@ The API returns catalog values from `contracts/catalog.json`, UTC server time, n
 | Requirement | Evidence | Result |
 | --- | --- | --- |
 | Explicit environment configuration and isolated DB | `backend/tests/test_settings.py`; `APP_ENV=test uv run --frozen pytest -q` | APP_ENV is required from the process. Test/production require explicit absolute DB path and origin; test/production paths inside the repository and non-HTTPS production origins are rejected. Development dotenv fallback is limited to development. |
-| Explicit migration and safe startup refusal | `backend/tests/test_settings.py`, `backend/tests/test_public_meta_health.py` | An unmigrated DB does not auto-create product tables or start the API; process exits nonzero with generic stderr that omits the database path. Current-head startup and unknown-revision readiness behavior pass. |
-| SQLite connection behavior | `backend/tests/test_public_meta_health.py` | Temporary file SQLite is in WAL mode; two independent connections each report `foreign_keys=1`; API readiness uses a request-scoped SQLAlchemy session. |
-| Liveness/readiness, OpenAPI and FastAPI declarations | `backend/tests/test_public_meta_health.py`; `contracts/openapi.yaml`; `frontend/tests/openapi-contract.test.js` | Actual HTTP responses and generated FastAPI declarations match the single edited OpenAPI source and exact response bodies/statuses. Liveness remains 200 while readiness becomes 503 for an unknown revision. |
+| Explicit migration and safe startup refusal | `backend/tests/test_settings.py`, `backend/tests/contracts/test_public_meta_health.py` | An unmigrated DB does not auto-create product tables or start the API; process exits nonzero with generic stderr that omits the database path. Current-head startup and unknown-revision readiness behavior pass. |
+| SQLite connection behavior | `backend/tests/contracts/test_public_meta_health.py` | Temporary file SQLite is in WAL mode; two independent connections each report `foreign_keys=1`; API readiness uses a request-scoped SQLAlchemy session. |
+| Liveness/readiness, OpenAPI and FastAPI declarations | `backend/tests/contracts/test_public_meta_health.py`; `contracts/openapi.yaml`; `frontend/tests/openapi-contract.test.js` | Actual HTTP responses and generated FastAPI declarations match the single edited OpenAPI source and exact response bodies/statuses. Liveness remains 200 while readiness becomes 503 for an unknown revision. |
 | Real metadata-to-screen path | `frontend/e2e-api/meta.spec.js`; `frontend/src/services/api/apps.ts`; `frontend/src/contracts/mappers.ts` | A real API-mode browser request returns canonical catalog values and `apps_read: false`; the existing screen shows unavailable guidance and does not request apps/auth/CSRF routes. Malformed keys, capability contradictions and invalid support URIs are rejected by the mapper. |
 | Explicit retry and external-request isolation | `frontend/e2e-api/meta.spec.js` | The test holds metadata at 503 until keyboard activation of “다시 시도”, then lets the request reach the actual API. A fetch to `outside.invalid` is intercepted and aborted. |
 | API runner owns its resources | `frontend/scripts/test-api-e2e.mjs` | Runner sets `APP_ENV=test`, migrates a per-run temp file DB, owns API `127.0.0.1:8000` and Vite `localhost:5174`, refuses occupied ports, and cleans processes/DB on completion. Final post-run inspection found no listeners, service processes, or `eduvibe-api-e2e-*` directory. |
@@ -146,8 +146,65 @@ All commands below ran against source commit `7fbeec29c102fc744a6b2445762222f251
 | API build | `cd frontend && npm run build` | PASS, exit 0; Vite emitted its existing >500 kB chunk warning. |
 | API bundle contents | `cd frontend && npm run check:dist` | PASS, exit 0; 96 files, with no mock fixtures, Tweaks, references, or source maps. |
 
-The R2 mapper change is covered by the full frontend unit suite and mock browser suite. No visual suite was run in R2; no visual baseline, generated type, lockfile, or reference asset changed. Hosted CI, DomineYH UI-D/source-difference review, screen-reader/physical-device review, and local handover acceptance remain pending.
+The R2 mapper change is covered by the full frontend unit suite and mock browser suite. No visual suite was run in R2; no visual baseline, generated type, lockfile, or reference asset changed. At the R2 evidence cutoff, hosted checks and DomineYH UI-D/source-difference, screen-reader/physical-device, and local handover reviews were pending; later frontend-only hosted outcomes are listed in the R3 section.
+
+## Review round 3 dispositions and final checks on source commit `dfbc1b3ac0f0faf6d2f9b0c3c9898ba7d60fc9f8`
+
+### Independent review findings
+
+Findings 1–4 are the requested implementation/test/CI changes. Finding 5 is the coordinator's hosted-status evidence correction.
+
+| Finding | Disposition and evidence |
+| --- | --- |
+| 1 · safe-startup assertion uses the wrong path | Confirmed. `_assert_safe_startup_rejection` now receives the exact `database_path` and asserts that path is absent from process output. All callers pass their actual DB path, including the test DB path outside pytest's `tmp_path`. The focused persistent-path subprocess test passes. |
+| 2 · FastAPI metadata schema did not enforce catalog enums | Confirmed. #77 §2 says “공개 catalog의 값·순서도 단일 원본을 사용한다.” `MetaResponse.subjects` and `grades` now use `Literal` aliases expanded from `CATALOG`; values are not repeated. The contract test recursively dereferences each document's schema refs, drops generated titles, normalizes equivalent nullable `anyOf` schemas, and compares the full Meta property schemas. `Uri` keeps Pydantic `AnyUrl` runtime validation while its JSON Schema matches the canonical URI declaration. |
+| 3 · public contract tests were outside `tests/contracts` | Confirmed. #77 §5 places API contract checks under `backend/tests/contracts`. `backend/tests/test_public_meta_health.py` was git-moved to `backend/tests/contracts/test_public_meta_health.py` without duplication; the full backend suite still collects both contract tests. |
+| 4 · hosted CI omitted backend and real API checks | Confirmed. #77 §5 requires backend locked setup, Ruff, format, and pytest from Phase 2 plus frontend `npm run test:e2e:api`; `#15` pins Python `3.12.3` and uv `0.11.28`. `.github/workflows/frontend-ci.yml` now has a separate backend job with those pins and steps. The prior frontend job and its steps remain unchanged. No lockfile was changed. |
+| 5 · hosted-status evidence was stale | Confirmed and corrected. All six cited runs were refreshed with `gh run view`; each is completed success on workflow `frontend`, including both runs at the current PR head `2b2f464`. Those runs do not include the unpushed R3 backend/API job, which awaits the coordinator's push. The evidence and acceptance text now state both facts. |
+
+### Red/green and first-failure trail
+
+| Slice | Command | Observed result |
+| --- | --- | --- |
+| Full metadata declaration comparison, red | `cd backend && APP_ENV=test uv run --frozen pytest tests/test_public_meta_health.py::test_fastapi_declarations_match_the_single_openapi_source -q` | FAIL before implementation: subject/grade array items were declared as unconstrained strings while the canonical contract references catalog enum schemas. Direct property comparison also exposed Pydantic-generated titles and nullable schema representation differences. |
+| Full metadata declaration comparison, green | `cd backend && APP_ENV=test uv run --frozen pytest tests/contracts/test_public_meta_health.py::test_fastapi_declarations_match_the_single_openapi_source -q` | PASS, 1 test after catalog-backed literals and recursive schema normalization. |
+| Out-of-tree DB process assertion | `cd backend && APP_ENV=test uv run --frozen pytest tests/test_settings.py::test_persistent_database_path_refuses_test_process_start_safely -q` | PASS, 1 test; the helper now checks the exact persistent database path in process output. |
+
+### Hosted run status observed before this evidence update
+
+The listed GitHub Actions runs all belong to workflow `frontend`; they do not include the R3 backend/API job. The current PR head remains `2b2f464c489715dd726d52a53a37a63989a463d6`, so the workflow change at `dfbc1b3` has not yet been pushed and its backend/API hosted checks have not run.
+
+| Run ID | Event | SHA | Workflow | Observed status |
+| --- | --- | --- | --- | --- |
+| 36466907789 | push | `229511e3b5c2adc76baca9a27b7fed9319d950b1` | `frontend` | completed · success |
+| 36466917554 | pull_request | `229511e3b5c2adc76baca9a27b7fed9319d950b1` | `frontend` | completed · success |
+| 36471384319 | push | `baa47dedccd4687cc5c4f5277a1e68ecc856fe1b` | `frontend` | completed · success |
+| 36471391290 | pull_request | `baa47dedccd4687cc5c4f5277a1e68ecc856fe1b` | `frontend` | completed · success |
+| 36476521653 | pull_request | `2b2f464c489715dd726d52a53a37a63989a463d6` | `frontend` | completed · success |
+| 36476516129 | push | `2b2f464c489715dd726d52a53a37a63989a463d6` | `frontend` | completed · success |
+
+The first four runs were refreshed with `gh run view` immediately before documenting them. The two `2b2f464` checks were also refreshed immediately before this update; both are completed successes, not pending. Backend lint/tests and API E2E hosted coverage begin only after the coordinator pushes the workflow commit and are pending then.
+
+### Final commands and results
+
+All commands below ran against source commit `dfbc1b3ac0f0faf6d2f9b0c3c9898ba7d60fc9f8`; no application source changed afterward.
+
+| Check | Command | Result |
+| --- | --- | --- |
+| Locked backend setup | `cd backend && uv sync --locked` | PASS, exit 0; 42 packages resolved, 40 checked. `uv.lock` remained unchanged. |
+| Backend lint | `cd backend && uv run --frozen ruff check .` | PASS, exit 0. |
+| Backend formatting | `cd backend && uv run --frozen ruff format --check .` | PASS, exit 0; 9 files already formatted. |
+| Contract tests alone | `cd backend && APP_ENV=test uv run --frozen pytest tests/contracts` | PASS, exit 0; 2 tests. One upstream Starlette/httpx deprecation warning. |
+| Full backend suite | `cd backend && APP_ENV=test uv run --frozen pytest` | PASS, exit 0; 20 tests in 27.95s. One upstream Starlette/httpx deprecation warning. |
+| Frontend static checks | `cd frontend && npm run check` | PASS, exit 0; OpenAPI lint/check, TypeScript, ESLint, and Prettier passed. Redocly emitted its two existing non-fatal missing-4xx warnings for the approved health/readiness response sets. |
+| Frontend unit tests | `cd frontend && npm test` | PASS, exit 0; 28 files / 417 tests in 158.73s. |
+| Real API browser suite | `cd frontend && npm run test:e2e:api` | PASS, exit 0; 1/1 test in 19.2s, using the actual API process and isolated migrated file database. |
+| Workflow YAML syntax | `python -c 'import yaml; yaml.safe_load(open(".github/workflows/frontend-ci.yml")); print("workflow YAML parsed")'` | PASS; PyYAML parsed the workflow. `actionlint` is not installed in this environment. |
+| Whitespace check | `git diff --check` | PASS before the source commit. |
+| Mock E2E and visual suites | Not run | R3 changed no shared production frontend code; these suites were not requested in the R3 check list. No visual baseline, generated type, npm lockfile, or Python lockfile changed. |
+
+Local backend/API CI steps pass on the exact source revision. GitHub has not run the new job because the coordinator has not pushed `dfbc1b3`; DomineYH UI-D/source-difference review, screen-reader/physical-device review, and local handover acceptance also remain pending.
 
 ## Acceptance boundary and open items
 
-Local API, database, contract, frontend, and build checks pass. This does not establish hosted CI, deployed database/monitoring behavior, server-side authorization for future features, or human handover. T03 owns app list/detail; auth, writes, admin, health workers, and related capabilities remain disabled. DomineYH UI-D/source-difference review, screen-reader review, physical-device review, and local acceptance remain pending. Hosted CI remains pending the coordinator's PR workflow.
+Local API, database, contract, frontend, and build checks pass. This does not establish deployed database/monitoring behavior, server-side authorization for future features, or human handover. The cited hosted runs succeeded on the frontend-only workflow; R3 backend/API hosted checks await the coordinator's push of `dfbc1b3`. T03 owns app list/detail; auth, writes, admin, health workers, and related capabilities remain disabled. DomineYH UI-D/source-difference review, screen-reader review, physical-device review, and local acceptance remain pending.
