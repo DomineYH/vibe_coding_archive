@@ -60,12 +60,17 @@ const browser = await chromium.launch({
   args: ["--force-color-profile=srgb"],
 });
 
-async function waitForRenderedPage(page) {
+async function captureScreenshot(page, name, viewport) {
   await page.evaluate(async () => {
     await document.fonts.ready;
     await new Promise((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(resolve)),
     );
+  });
+  await page.screenshot({
+    path: `${evidenceDir}/${name}-${viewport.width}x${viewport.height}.png`,
+    fullPage: true,
+    animations: "disabled",
   });
 }
 
@@ -121,12 +126,7 @@ try {
       ]),
       [null, null, "preserve"],
     );
-    await waitForRenderedPage(page);
-    await page.screenshot({
-      path: `${evidenceDir}/api-mode-gallery-failure-${viewport.width}x${viewport.height}.png`,
-      fullPage: true,
-      animations: "disabled",
-    });
+    await captureScreenshot(page, "api-mode-gallery-failure", viewport);
 
     const hiddenAuthPage = await context.newPage();
     await hiddenAuthPage.addInitScript(() => {
@@ -170,24 +170,14 @@ try {
       .filter({ hasText: "인증 기능은 아직 준비 중이에요" })
       .waitFor();
     assert.equal(await page.getByRole("textbox").count(), 0);
-    await waitForRenderedPage(page);
-    await page.screenshot({
-      path: `${evidenceDir}/api-mode-auth-unavailable-${viewport.width}x${viewport.height}.png`,
-      fullPage: true,
-      animations: "disabled",
-    });
+    await captureScreenshot(page, "api-mode-auth-unavailable", viewport);
 
     await page.goto(`${origin}/admin`, { waitUntil: "domcontentloaded" });
     await page
       .getByRole("status")
       .filter({ hasText: "관리자 기능은 아직 준비 중이에요" })
       .waitFor();
-    await waitForRenderedPage(page);
-    await page.screenshot({
-      path: `${evidenceDir}/api-mode-admin-unavailable-${viewport.width}x${viewport.height}.png`,
-      fullPage: true,
-      animations: "disabled",
-    });
+    await captureScreenshot(page, "api-mode-admin-unavailable", viewport);
 
     const validationPage = await context.newPage();
     await validationPage.route("**/api/v1/meta", (route) =>
@@ -234,12 +224,11 @@ try {
       .boundingBox();
     assert.ok(searchBox && errorBox);
     assert.ok(errorBox.y >= searchBox.y + searchBox.height);
-    await waitForRenderedPage(validationPage);
-    await validationPage.screenshot({
-      path: `${evidenceDir}/api-mode-gallery-query-error-${viewport.width}x${viewport.height}.png`,
-      fullPage: true,
-      animations: "disabled",
-    });
+    await captureScreenshot(
+      validationPage,
+      "api-mode-gallery-query-error",
+      viewport,
+    );
     await search.focus();
     assert.equal(
       await search.evaluate((element) => element === document.activeElement),

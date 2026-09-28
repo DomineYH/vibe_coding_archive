@@ -56,8 +56,10 @@ export function GalleryView({
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   const invalidQuery =
     error instanceof ServiceError && error.code === "VALIDATION_ERROR";
-  const queryError =
-    invalidQuery && !searchTooLong && !loading ? error.fields?.q : null;
+  const fieldErrors =
+    invalidQuery && !searchTooLong && !loading ? (error.fields ?? {}) : {};
+  const queryError = fieldErrors.q;
+  const gradeError = fieldErrors.grade;
 
   useLayoutEffect(() => {
     if (lastRouteSearch.current === initialSearch) return;
@@ -203,6 +205,10 @@ export function GalleryView({
             <select
               id="grade-filter"
               value={grade}
+              aria-invalid={gradeError ? true : undefined}
+              aria-describedby={
+                gradeError ? "gallery-grade-filter-error" : undefined
+              }
               onChange={(event) =>
                 onQueryChange(
                   { grade: event.target.value || undefined },
@@ -283,14 +289,21 @@ export function GalleryView({
             desc={error.message || "잠시 후 다시 시도해 주세요."}
           >
             <div className="flex flex-col items-center gap-3">
-              {queryError ? (
+              {Object.entries(fieldErrors).map(([field, message]) => (
                 <p
-                  id="gallery-search-validation-error"
+                  key={field}
+                  id={
+                    field === "q"
+                      ? "gallery-search-validation-error"
+                      : field === "grade"
+                        ? "gallery-grade-filter-error"
+                        : undefined
+                  }
                   className="text-[13px] text-red-700"
                 >
-                  {queryError}
+                  {message}
                 </p>
-              ) : null}
+              ))}
               <div className="flex flex-wrap justify-center gap-2">
                 {invalidQuery ? (
                   <Btn onClick={handleResetQuery}>조건 초기화</Btn>
