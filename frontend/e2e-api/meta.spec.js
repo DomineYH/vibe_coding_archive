@@ -20,6 +20,10 @@ test("API metadata failure retries through the real server without enabling unav
   const externalRequests = [];
   let metaCalls = 0;
   let allowRealMeta = false;
+  let releaseRealMeta = () => {};
+  const realMetaGate = new Promise((resolve) => {
+    releaseRealMeta = resolve;
+  });
   page.on("request", (request) => {
     const url = new URL(request.url());
     requests.push(url.pathname);
@@ -47,6 +51,7 @@ test("API metadata failure retries through the real server without enabling unav
       });
       return;
     }
+    await realMetaGate;
     await route.continue();
   });
 
@@ -66,18 +71,43 @@ test("API metadata failure retries through the real server without enabling unav
   const failedMetaCalls = metaCalls;
   const retry = page.getByRole("button", { name: "다시 시도", exact: true });
   await expect(retry).toHaveAccessibleName("다시 시도");
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await expect(failure).toContainText("공개 아카이브를 불러오지 못했어요");
+    await expect(retry).toBeVisible();
+    await expect(
+      page.getByRole("textbox", { name: "앱·작성자 검색" }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(viewport.width);
+  }
+
   await retry.focus();
   const realMetaPromise = page.waitForResponse(
     (response) =>
       response.url().endsWith("/api/v1/meta") && response.status() === 200,
   );
   allowRealMeta = true;
-  await page.keyboard.press("Enter");
   const loading = page
     .locator('[data-screen-label="갤러리"]')
     .getByRole("status");
-  await expect(loading).toContainText("공개 아카이브를 불러오는 중이에요");
-  await expect(page.locator('[data-screen-label="갤러리"]')).toBeFocused();
+  try {
+    await page.keyboard.press("Enter");
+    await expect(loading).toContainText("공개 아카이브를 불러오는 중이에요");
+    await expect(page.locator('[data-screen-label="갤러리"]')).toBeFocused();
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await expect(loading).toContainText("공개 아카이브를 불러오는 중이에요");
+      expect(
+        await page.evaluate(() => document.documentElement.scrollWidth),
+      ).toBeLessThanOrEqual(viewport.width);
+    }
+  } finally {
+    releaseRealMeta();
+  }
+
   const response = await realMetaPromise;
   const metadata = await response.json();
 

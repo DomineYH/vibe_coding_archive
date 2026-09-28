@@ -67,6 +67,11 @@ function stop(child) {
   });
 }
 
+function handleInterrupt() {
+  interrupted = true;
+  void Promise.all([...children].map(stop));
+}
+
 async function waitFor(url, child, label) {
   const deadline = Date.now() + 30000;
   while (Date.now() < deadline) {
@@ -147,14 +152,8 @@ async function run() {
   }
 }
 
-process.on("SIGINT", () => {
-  interrupted = true;
-  void Promise.all([...children].map(stop));
-});
-process.on("SIGTERM", () => {
-  interrupted = true;
-  void Promise.all([...children].map(stop));
-});
+process.on("SIGINT", handleInterrupt);
+process.on("SIGTERM", handleInterrupt);
 
 try {
   await run();

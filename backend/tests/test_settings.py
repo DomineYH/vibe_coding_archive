@@ -131,7 +131,7 @@ def test_test_environment_requires_a_dedicated_temporary_database(
 def test_production_rejects_development_origin_and_repository_database(
     tmp_path: Path,
 ):
-    outside = tmp_path.parent / "operations.sqlite3"
+    outside = Path(tempfile.gettempdir()).parent / "operations.sqlite3"
     with pytest.raises(ConfigurationError, match="outside the repository"):
         Settings.from_environment(
             {
@@ -163,12 +163,28 @@ def test_production_rejects_development_origin_and_repository_database(
     assert settings.database_path == outside.resolve()
 
 
+def test_production_rejects_temporary_database_path(tmp_path: Path):
+    with pytest.raises(ConfigurationError, match="temporary directory"):
+        Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "DATABASE_PATH": str(
+                    Path(tempfile.gettempdir()) / "production.sqlite3"
+                ),
+                "PUBLIC_ORIGIN": "https://archive.example.org",
+            },
+            repo_root=tmp_path,
+        )
+
+
 def test_production_rejects_loopback_origin_with_trailing_dns_dot(tmp_path: Path):
     with pytest.raises(ConfigurationError, match="HTTPS"):
         Settings.from_environment(
             {
                 "APP_ENV": "production",
-                "DATABASE_PATH": str(tmp_path.parent / "operations.sqlite3"),
+                "DATABASE_PATH": str(
+                    Path(tempfile.gettempdir()).parent / "operations.sqlite3"
+                ),
                 "PUBLIC_ORIGIN": "https://localhost.",
             },
             repo_root=tmp_path,

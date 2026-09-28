@@ -72,9 +72,10 @@ class Settings(BaseModel):
                 raise ConfigurationError(
                     "Test and production databases must be outside the repository."
                 )
+        temporary_root = Path(tempfile.gettempdir()).resolve()
         if app_env == "test":
             try:
-                temporary_path = path.relative_to(Path(tempfile.gettempdir()).resolve())
+                temporary_path = path.relative_to(temporary_root)
             except ValueError:
                 raise ConfigurationError(
                     "Test databases must be inside a dedicated temporary directory."
@@ -82,6 +83,15 @@ class Settings(BaseModel):
             if len(temporary_path.parts) < 2:
                 raise ConfigurationError(
                     "Test databases must be inside a dedicated temporary directory."
+                )
+        elif app_env == "production":
+            try:
+                path.relative_to(temporary_root)
+            except ValueError:
+                pass
+            else:
+                raise ConfigurationError(
+                    "Production databases must be outside the temporary directory."
                 )
 
         origin = raw_public_origin

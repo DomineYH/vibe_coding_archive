@@ -359,6 +359,7 @@ const HEALTH_STATES = [
 ] as const;
 const SUBJECTS = catalog.subjects as Subject[];
 const GRADES = catalog.grades as Grade[];
+const THEMES = catalog.themes as Theme[];
 
 function record(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -1470,6 +1471,25 @@ export function mapMeta(value: unknown): Meta {
     throw contractError();
   const themes = item.themes;
   if (!Array.isArray(themes)) throw contractError();
+  const mappedThemes = themes.map(mapTheme);
+  catalogValues(
+    mappedThemes.map((theme) => theme.id),
+    THEMES.map((theme) => theme.id),
+    true,
+  );
+  if (
+    mappedThemes.some((theme, index) => {
+      const canonical = THEMES[index]!;
+      return (
+        theme.name !== canonical.name ||
+        theme.pantone !== canonical.pantone ||
+        theme.from !== canonical.from ||
+        theme.to !== canonical.to ||
+        theme.ink !== canonical.ink
+      );
+    })
+  )
+    throw contractError();
   const rawCapabilities = record(item.capabilities);
   if (!hasExactKeys(rawCapabilities, CAPABILITY_KEYS)) throw contractError();
   const capabilities = Object.fromEntries(
@@ -1482,7 +1502,7 @@ export function mapMeta(value: unknown): Meta {
   return {
     subjects: catalogValues(item.subjects, SUBJECTS, true),
     grades: catalogValues(item.grades, GRADES, true),
-    themes: themes.map(mapTheme),
+    themes: mappedThemes,
     serverTime: dateTime(item.server_time),
     capabilities,
     support: {

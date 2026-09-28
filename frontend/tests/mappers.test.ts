@@ -16,16 +16,7 @@ const capability = { enabled: false, reasons: ["not_implemented"] };
 const meta = {
   subjects: catalog.subjects,
   grades: catalog.grades,
-  themes: [
-    {
-      id: "sage",
-      name: "Sage",
-      pantone: "15-6414",
-      from: "#A2B187",
-      to: "#D0D8B8",
-      ink: "dark",
-    },
-  ],
+  themes: catalog.themes,
   server_time: "2026-09-22T00:12:00.000Z",
   capabilities: Object.fromEntries(
     [
@@ -384,7 +375,7 @@ describe("response mappers", () => {
   });
 
   it("maps the catalog and snake-case app fields into display data", () => {
-    expect(mapMeta(meta).themes[0].id).toBe("sage");
+    expect(mapMeta(meta).themes).toEqual(catalog.themes);
     expect(mapAppPage(page).items[0]).toMatchObject({
       id: card.id,
       ownerId: card.owner.id,
@@ -456,6 +447,23 @@ describe("response mappers", () => {
     expect(() => mapMeta({ ...meta, grades: ["중4"] })).toThrowError(
       expect.objectContaining({ code: "CONTRACT_ERROR" }),
     );
+  });
+
+  it("requires themes to match the canonical catalog values and order", () => {
+    const themesWithInventedValue = catalog.themes.map((theme, index) =>
+      index === 0 ? { ...theme, name: "Invented" } : theme,
+    );
+
+    for (const themes of [
+      catalog.themes.slice(1),
+      [...catalog.themes].reverse(),
+      themesWithInventedValue,
+      [...catalog.themes, { ...catalog.themes[0], id: "invented" }],
+    ]) {
+      expect(() => mapMeta({ ...meta, themes })).toThrowError(
+        expect.objectContaining({ code: "CONTRACT_ERROR" }),
+      );
+    }
   });
 
   it("rejects missing fields and unsupported health values instead of supplying normal defaults", () => {
