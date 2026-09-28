@@ -154,7 +154,11 @@ function Header({
           ) : null}
         </nav>
         <div className="ml-auto flex min-w-0 items-center gap-2">
-          {auth.concealed || auth.status === "checking" ? (
+          {auth.status === "unavailable" ? (
+            <span className="text-[12px] text-neutral-500" role="status">
+              인증 기능 준비 중
+            </span>
+          ) : auth.concealed || auth.status === "checking" ? (
             <span className="text-[12px] text-neutral-500" role="status">
               {auth.concealed
                 ? "화면이 잠시 가려졌습니다"
@@ -918,6 +922,11 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
     </main>
   );
 
+  if (auth.status === "unavailable")
+    return message(
+      "앱 수정 기능은 아직 준비 중이에요",
+      "API 모드에서는 인증과 앱 쓰기를 사용할 수 없어요.",
+    );
   if (auth.concealed || auth.status === "checking")
     return (
       <>
@@ -1022,6 +1031,17 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
       <SubmitView key={scopeKey} meta={access.meta} onCreated={onCreated} />
     </div>
   ) : null;
+  if (auth.status === "unavailable")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="앱 등록 기능은 아직 준비 중이에요"
+            desc="API 모드에서는 인증과 앱 쓰기를 사용할 수 없어요."
+          />
+        </div>
+      </main>
+    );
   if (auth.concealed || auth.status === "checking")
     return (
       <>
@@ -1191,6 +1211,17 @@ function AuthRoute({
 }
 
 function AdminRoute({ auth, onRetry }) {
+  if (auth.status === "unavailable")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="status" aria-live="polite">
+          <EmptyState
+            title="관리자 기능은 아직 준비 중이에요"
+            desc="API 모드에서는 인증과 관리자 기능을 사용할 수 없어요."
+          />
+        </div>
+      </main>
+    );
   if (auth.concealed)
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
@@ -1277,7 +1308,7 @@ export default function App() {
     observationGeneration: 0,
   });
   const [auth, setAuth] = useState({
-    status: "checking",
+    status: __DATA_MODE__ === "mock" ? "checking" : "unavailable",
     user: null,
     flow: null,
     observationGeneration: 0,
@@ -1382,6 +1413,7 @@ export default function App() {
 
   const restoreAuth = useCallback(
     async ({ concealed = false } = {}) => {
+      if (__DATA_MODE__ !== "mock") return null;
       const request = ++authRequest.current;
       authController.current?.abort();
       const controller = new AbortController();
@@ -1467,6 +1499,7 @@ export default function App() {
   }, [queryClient, restoreAuth]);
 
   const beginAuthTransition = useCallback(async () => {
+    if (__DATA_MODE__ !== "mock") return;
     ++authRequest.current;
     authController.current?.abort();
     const observationId = ++authObservation.current;
@@ -1717,7 +1750,7 @@ export default function App() {
   }, [restoreAuth]);
 
   useEffect(() => {
-    void restoreAuth();
+    if (__DATA_MODE__ === "mock") void restoreAuth();
   }, [restoreAuth]);
   useEffect(() => {
     const previous = previousLocation.current;

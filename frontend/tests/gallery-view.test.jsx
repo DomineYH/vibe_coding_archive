@@ -305,4 +305,39 @@ describe("public gallery states", () => {
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(retry).toHaveBeenCalledTimes(1);
   });
+
+  it("shows public list validation errors with the entered query and reset action", () => {
+    const resetQuery = vi.fn();
+    const error = new ServiceError(
+      "VALIDATION_ERROR",
+      "검색 조건을 확인해 주세요.",
+      { fields: { q: "검색어를 확인해 주세요." } },
+    );
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={undefined}
+          page={undefined}
+          onQueryChange={() => {}}
+          initialFilters={{ q: "분수" }}
+          error={error}
+          loading={false}
+          retry={() => {}}
+          resetQuery={resetQuery}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("textbox", { name: "앱·작성자 검색" })).toHaveValue(
+      "분수",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "검색 조건을 확인할 수 없어요",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "검색 조건을 확인해 주세요.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "조건 초기화" }));
+    expect(resetQuery).toHaveBeenCalledOnce();
+  });
 });

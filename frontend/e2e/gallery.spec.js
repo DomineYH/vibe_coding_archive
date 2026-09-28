@@ -245,10 +245,18 @@ test("rejects invalid gallery query values and offers an explicit reset", async 
     `?q=${foldedOverflow}`,
   ]) {
     await page.goto(`/${query}`);
-    await expect(page.getByRole("alert")).toContainText(
-      "검색 조건을 확인할 수 없어요",
-    );
-    await page.getByRole("button", { name: "조건 초기화" }).click();
+    const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+    const alert = page.getByRole("alert");
+    const reset = page.getByRole("button", { name: "조건 초기화" });
+    await expect(alert).toContainText("검색 조건을 확인할 수 없어요");
+    await expect(search).toHaveAccessibleName("앱·작성자 검색");
+    await expect(reset).toHaveAccessibleName("조건 초기화");
+    const searchBox = await search.boundingBox();
+    const alertBox = await alert.boundingBox();
+    expect(alertBox.y).toBeGreaterThan(searchBox.y + searchBox.height);
+    await tabTo(page, reset);
+    await expect(reset).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("a.card-r")).toHaveCount(16);
   }
