@@ -19,6 +19,30 @@ class ConfigurationError(ValueError):
     pass
 
 
+def _is_valid_dns_hostname(hostname: str) -> bool:
+    try:
+        ascii_hostname = hostname.encode("idna").decode("ascii")
+        ascii_hostname.encode("ascii").decode("idna")
+    except UnicodeError:
+        return False
+    ascii_hostname = ascii_hostname.removesuffix(".")
+    if not ascii_hostname or len(ascii_hostname) > 253:
+        return False
+    labels = ascii_hostname.split(".")
+    if len(labels) == 4 and all(label.isdecimal() for label in labels):
+        try:
+            ipaddress.IPv4Address(ascii_hostname)
+        except ValueError:
+            return False
+    return all(
+        0 < len(label) <= 63
+        and label[0].isalnum()
+        and label[-1].isalnum()
+        and all(character.isalnum() or character == "-" for character in label)
+        for label in labels
+    )
+
+
 class Settings(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -95,6 +119,11 @@ class Settings(BaseModel):
                 )
 
         origin = raw_public_origin
+        if any(
+            character.isspace() or ord(character) < 0x20 or ord(character) == 0x7F
+            for character in origin
+        ):
+            raise ConfigurationError("PUBLIC_ORIGIN must be one exact HTTP origin.")
         try:
             parsed = urlsplit(origin)
             port = parsed.port
@@ -103,19 +132,41 @@ class Settings(BaseModel):
             raise ConfigurationError(
                 "PUBLIC_ORIGIN must be one exact HTTP origin."
             ) from None
+        if parsed.netloc.startswith("["):
+            bracket = parsed.netloc.find("]")
+            suffix = parsed.netloc[bracket + 1 :] if bracket >= 0 else ""
+            try:
+                bracketed_ipv6 = (
+                    bracket > 1
+                    and parsed.netloc.count("[") == 1
+                    and parsed.netloc.count("]") == 1
+                    and (not suffix or suffix.startswith(":"))
+                    and bool(hostname)
+                    and "%" not in hostname
+                    and ipaddress.IPv6Address(hostname)
+                )
+            except ValueError:
+                bracketed_ipv6 = False
+            valid_host = bool(bracketed_ipv6)
+        else:
+            valid_host = (
+                bool(hostname)
+                and "[" not in parsed.netloc
+                and "]" not in parsed.netloc
+                and _is_valid_dns_hostname(hostname)
+            )
         if (
             parsed.scheme not in {"http", "https"}
-            or not hostname
+            or not valid_host
             or parsed.username is not None
             or parsed.password is not None
-            or parsed.path not in {"", "/"}
+            or parsed.path
             or parsed.query
             or parsed.fragment
             or "?" in origin
             or "#" in origin
             or parsed.netloc.endswith(":")
             or port == 0
-            or not hostname.rstrip(".")
         ):
             raise ConfigurationError("PUBLIC_ORIGIN must be one exact HTTP origin.")
         if app_env == "production":

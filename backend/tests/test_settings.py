@@ -163,6 +163,19 @@ def test_production_rejects_development_origin_and_repository_database(
     assert settings.database_path == outside.resolve()
 
 
+def test_production_rejects_origin_with_whitespace_in_host(tmp_path: Path):
+    database_path = Path(tempfile.gettempdir()).parent / "operations.sqlite3"
+    with pytest.raises(ConfigurationError, match="exact HTTP origin"):
+        Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "DATABASE_PATH": str(database_path),
+                "PUBLIC_ORIGIN": "https://bad host",
+            },
+            repo_root=tmp_path,
+        )
+
+
 def test_production_rejects_temporary_database_path(tmp_path: Path):
     with pytest.raises(ConfigurationError, match="temporary directory"):
         Settings.from_environment(
@@ -198,6 +211,13 @@ def test_production_rejects_loopback_origin_with_trailing_dns_dot(tmp_path: Path
         "http://localhost:99999",
         "http://localhost:not-a-port",
         "https://[malformed-ipv6",
+        "https://[archive.example.org]",
+        "https://-archive.example.org",
+        "https://archive..example.org",
+        "https://bad_host.example",
+        "https://xn--a.example",
+        "https://archive.example.org/",
+        " https://archive.example.org",
         "https://archive.example.org?",
         "https://archive.example.org#",
     ],
@@ -214,6 +234,30 @@ def test_invalid_public_origin_is_reported_as_configuration_error(
             },
             repo_root=tmp_path,
         )
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://archive.example.org",
+        "https://archive.example.org.",
+        "http://192.0.2.1:8080",
+        "https://[2001:db8::1]:8443",
+        "https://bücher.example",
+        "https://xn--bcher-kva.example",
+    ],
+)
+def test_valid_dns_ip_and_idn_origins_are_preserved(tmp_path: Path, origin: str):
+    settings = Settings.from_environment(
+        {
+            "APP_ENV": "test",
+            "DATABASE_PATH": str(tmp_path.parent / "origin.sqlite3"),
+            "PUBLIC_ORIGIN": origin,
+        },
+        repo_root=tmp_path,
+    )
+
+    assert settings.public_origin == origin
 
 
 def test_unmigrated_database_refuses_process_start_without_leaking_path(
