@@ -552,6 +552,8 @@ test("explicit reset discards an in-flight app registration response", async ({
   const name = "T19 초기화 후 복원 금지 앱";
   await fillAppForm(form, name);
   await setScenario(page, "app_create_delayed");
+  const pauseTime = await page.evaluate(() => Date.now() + 50);
+  await page.clock.pauseAt(pauseTime);
   await form
     .getByRole("button", { name: "아카이브에 등록", exact: true })
     .click();
@@ -564,11 +566,13 @@ test("explicit reset discards an in-flight app registration response", async ({
   await expect(
     resetTab.getByRole("heading", { name: "mock 저장 관리", exact: true }),
   ).toBeVisible();
-  await resetTab
+  const cdpSession = await context.newCDPSession(page);
+  await cdpSession.send("Emulation.setCPUThrottlingRate", { rate: 8 });
+  const resetClick = resetTab
     .getByRole("button", { name: "기본 fixture로 명시적 초기화", exact: true })
     .click();
+  await Promise.all([resetClick, page.clock.fastForward(600)]);
   await expect(resetTab).toHaveURL("/");
-  await page.clock.fastForward(600);
   await expect
     .poll(() =>
       page.evaluate((key) => {
@@ -589,5 +593,6 @@ test("explicit reset discards an in-flight app registration response", async ({
       createdApp: false,
       healthBatches: 0,
     });
+  await cdpSession.detach();
   await resetTab.close();
 });
