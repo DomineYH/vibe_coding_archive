@@ -21,6 +21,43 @@ const validateAppDetail = new Ajv({ allErrors: true }).compile({
 });
 
 describe("OpenAPI app detail schema", () => {
+  it("defines public liveness and readiness outside the API version", () => {
+    for (const [path, operation, statuses] of [
+      ["/healthz", openapi.paths["/healthz"].get, ["200"]],
+      ["/readyz", openapi.paths["/readyz"].get, ["200", "503"]],
+    ]) {
+      expect(operation.operationId).toBeDefined();
+      expect(operation.security).toEqual([]);
+      expect(operation.servers).toEqual([{ url: "/" }]);
+      expect(Object.keys(operation.responses).sort()).toEqual(statuses);
+      expect(path.startsWith("/api/v1")).toBe(false);
+    }
+    expect(
+      openapi.paths["/healthz"].get.responses["200"].content["application/json"]
+        .schema.$ref,
+    ).toBe("#/components/schemas/LivenessResponse");
+    expect(
+      openapi.paths["/readyz"].get.responses["200"].content["application/json"]
+        .schema.$ref,
+    ).toBe("#/components/schemas/ReadyResponse");
+    expect(
+      openapi.paths["/readyz"].get.responses["503"].content["application/json"]
+        .schema.$ref,
+    ).toBe("#/components/schemas/NotReadyResponse");
+    for (const [name, status] of [
+      ["LivenessResponse", "ok"],
+      ["ReadyResponse", "ready"],
+      ["NotReadyResponse", "not_ready"],
+    ]) {
+      expect(openapi.components.schemas[name]).toMatchObject({
+        type: "object",
+        additionalProperties: false,
+        required: ["status"],
+        properties: { status: { type: "string", enum: [status] } },
+      });
+    }
+  });
+
   it("defines normal authentication flow observation metadata", () => {
     const operation = openapi.paths["/auth/flow-state"].get;
     const response = operation.responses["200"];

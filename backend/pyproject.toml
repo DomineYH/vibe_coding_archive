@@ -1,0 +1,28 @@
+[project]
+name = "eduvibe-archive-backend"
+version = "0.1.0"
+requires-python = "==3.12.3"
+dependencies = [
+    "alembic==1.20.0",
+    "fastapi==0.141.1",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+    "pwdlib[argon2]==0.3.1",
+    "python-dotenv==1.2.3",
+    "sqlalchemy==2.0.54",
+    "uvicorn[standard]==0.53.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx==0.28.1",
+    "pytest==9.1.1",
+    "pytest-asyncio==1.4.0",
+    "pyyaml==6.0.3",
+    "ruff==0.16.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"

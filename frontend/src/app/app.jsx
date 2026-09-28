@@ -226,6 +226,7 @@ function usePublicMetadata() {
   const query = useQuery({
     queryKey: [__DATA_MODE__, "meta"],
     queryFn: ({ signal }) => appsService.getMeta({ signal }),
+    retry: false,
   });
   const canRead = query.data?.capabilities.apps_read.enabled === true;
   const unavailable =
@@ -238,7 +239,7 @@ function usePublicMetadata() {
   return {
     meta: query.data,
     canRead,
-    loading: query.isPending,
+    loading: query.isPending || query.isFetching,
     error: query.error ?? unavailable,
     retry(refetch) {
       void (query.isError || !canRead ? query.refetch() : refetch());

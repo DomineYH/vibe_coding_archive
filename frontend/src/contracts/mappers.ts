@@ -359,6 +359,7 @@ const HEALTH_STATES = [
 ] as const;
 const SUBJECTS = catalog.subjects as Subject[];
 const GRADES = catalog.grades as Grade[];
+const THEMES = catalog.themes as Theme[];
 
 function record(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value))
@@ -453,6 +454,18 @@ function catalogValue<T extends string>(
 
 function nullableString(value: unknown): string | null {
   return value === null ? null : string(value);
+}
+
+function nullableUri(value: unknown): string | null {
+  const result = nullableString(value);
+  if (result === null) return null;
+  if (/\s|%(?![0-9a-f]{2})/i.test(result)) throw contractError();
+  try {
+    new URL(result);
+  } catch {
+    throw contractError();
+  }
+  return result;
 }
 
 export function mapSelf(value: unknown): AuthUser {
@@ -1380,6 +1393,8 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
 
 function mapTheme(value: unknown): Theme {
   const item = record(value);
+  if (!hasExactKeys(item, ["id", "name", "pantone", "from", "to", "ink"]))
+    throw contractError();
   const ink = item.ink;
   if (ink !== "dark" && ink !== "light") throw contractError();
   const from = string(item.from);
@@ -1398,13 +1413,21 @@ function mapTheme(value: unknown): Theme {
 
 function mapCapability(value: unknown): WireCapability {
   const item = record(value);
-  if (typeof item.enabled !== "boolean" || !Array.isArray(item.reasons))
+  if (
+    !hasExactKeys(item, ["enabled", "reasons"]) ||
+    typeof item.enabled !== "boolean" ||
+    !Array.isArray(item.reasons)
+  )
     throw contractError();
   const reasons = item.reasons.map((reason) => {
     if (!REASONS.includes(reason as WireReason)) throw contractError();
     return reason as WireReason;
   });
-  if (item.enabled && reasons.length !== 0) throw contractError();
+  if (
+    (item.enabled && reasons.length !== 0) ||
+    (!item.enabled && !reasons.length)
+  )
+    throw contractError();
   return { enabled: item.enabled, reasons };
 }
 
@@ -1434,24 +1457,58 @@ const CAPABILITY_KEYS: (keyof Wire["Capabilities"])[] = [
 
 export function mapMeta(value: unknown): Meta {
   const item = record(value) as unknown as Partial<WireMeta>;
+  if (
+    !hasExactKeys(item, [
+      "subjects",
+      "grades",
+      "themes",
+      "server_time",
+      "capabilities",
+      "support",
+      "initial_pending_days",
+    ])
+  )
+    throw contractError();
   const themes = item.themes;
   if (!Array.isArray(themes)) throw contractError();
+  const mappedThemes = themes.map(mapTheme);
+  catalogValues(
+    mappedThemes.map((theme) => theme.id),
+    THEMES.map((theme) => theme.id),
+    true,
+  );
+  if (
+    mappedThemes.some((theme, index) => {
+      const canonical = THEMES[index]!;
+      return (
+        theme.name !== canonical.name ||
+        theme.pantone !== canonical.pantone ||
+        theme.from !== canonical.from ||
+        theme.to !== canonical.to ||
+        theme.ink !== canonical.ink
+      );
+    })
+  )
+    throw contractError();
   const rawCapabilities = record(item.capabilities);
+  if (!hasExactKeys(rawCapabilities, CAPABILITY_KEYS)) throw contractError();
   const capabilities = Object.fromEntries(
     CAPABILITY_KEYS.map((key) => [key, mapCapability(rawCapabilities[key])]),
   ) as Wire["Capabilities"];
   const support = record(item.support);
+  if (!hasExactKeys(support, ["email", "service_url", "announcement_url"]))
+    throw contractError();
   const initialPendingDays = integer(item.initial_pending_days, 1);
   return {
     subjects: catalogValues(item.subjects, SUBJECTS, true),
     grades: catalogValues(item.grades, GRADES, true),
-    themes: themes.map(mapTheme),
+    themes: mappedThemes,
     serverTime: dateTime(item.server_time),
     capabilities,
     support: {
       email: nullableString(support.email),
-      service_url: nullableString(support.service_url),
-      announcement_url: nullableString(support.announcement_url),
+      service_url: nullableUri(support.service_url),
+      announcement_url: nullableUri(support.announcement_url),
     },
     initialPendingDays,
   };

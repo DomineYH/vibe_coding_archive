@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check API process liveness
+         * @description Returns process liveness without database details.
+         */
+        get: operations["getLiveness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Check database and migration readiness
+         * @description Returns only whether the database matches the current migration head.
+         */
+        get: operations["getReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/flows": {
         parameters: {
             query?: never;
@@ -1146,6 +1186,18 @@ export interface components {
             support: components["schemas"]["Support"];
             initial_pending_days: number;
         };
+        LivenessResponse: {
+            /** @enum {string} */
+            status: "ok";
+        };
+        ReadyResponse: {
+            /** @enum {string} */
+            status: "ready";
+        };
+        NotReadyResponse: {
+            /** @enum {string} */
+            status: "not_ready";
+        };
         Theme: {
             id: string;
             name: string;
@@ -1406,6 +1458,55 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getLiveness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The API process is alive. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LivenessResponse"];
+                };
+            };
+        };
+    };
+    getReadiness: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The database is ready. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadyResponse"];
+                };
+            };
+            /** @description The database is not ready. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotReadyResponse"];
+                };
+            };
+        };
+    };
     createAuthFlow: {
         parameters: {
             query?: never;

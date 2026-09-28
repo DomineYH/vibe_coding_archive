@@ -6,6 +6,42 @@ info:
 servers:
   - url: /api/v1
 paths:
+  /healthz:
+    get:
+      operationId: getLiveness
+      summary: Check API process liveness
+      description: Returns process liveness without database details.
+      servers:
+        - url: /
+      security: []
+      responses:
+        "200":
+          description: The API process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivenessResponse"
+  /readyz:
+    get:
+      operationId: getReadiness
+      summary: Check database and migration readiness
+      description: Returns only whether the database matches the current migration head.
+      servers:
+        - url: /
+      security: []
+      responses:
+        "200":
+          description: The database is ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadyResponse"
+        "503":
+          description: The database is not ready.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotReadyResponse"
   /auth/flows:
     post:
       operationId: createAuthFlow
@@ -2214,6 +2250,24 @@ components:
         capabilities: { $ref: "#/components/schemas/Capabilities" }
         support: { $ref: "#/components/schemas/Support" }
         initial_pending_days: { type: integer, minimum: 1 }
+    LivenessResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, enum: [ok] }
+    ReadyResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, enum: [ready] }
+    NotReadyResponse:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { type: string, enum: [not_ready] }
     Theme:
       type: object
       additionalProperties: false
