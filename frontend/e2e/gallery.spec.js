@@ -233,7 +233,6 @@ test("same-path filter history preserves the gallery position", async ({
 test("rejects invalid gallery query values and offers an explicit reset", async ({
   page,
 }) => {
-  const foldedOverflow = encodeURIComponent("ß".repeat(51));
   for (const query of [
     "?unknown=value",
     "?q=first&q=first",
@@ -242,7 +241,6 @@ test("rejects invalid gallery query values and offers an explicit reset", async 
     "?q=%C0%AF",
     "?q=%E0%A4%A",
     "?subject=%EC%A0%84%EC%B2%B4",
-    `?q=${foldedOverflow}`,
   ]) {
     await page.goto(`/${query}`);
     const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
@@ -260,6 +258,16 @@ test("rejects invalid gallery query values and offers an explicit reset", async 
     await expect(page).toHaveURL(/\/$/);
     await expect(page.locator("a.card-r")).toHaveCount(16);
   }
+
+  const foldedOverflow = encodeURIComponent("ß".repeat(51));
+  await page.goto(`/?q=${foldedOverflow}`);
+  const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+  await expect(search).toHaveValue("ß".repeat(51));
+  await expect(page.getByRole("alert")).toContainText("검색어가 너무 길어요");
+  await expect(page.locator("a.card-r")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "조건 초기화" })).toHaveCount(
+    0,
+  );
 });
 
 test("canonicalizes empty filters and preserves valid zero-result conditions", async ({
