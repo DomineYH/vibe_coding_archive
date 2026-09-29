@@ -855,6 +855,9 @@ export const appsService: AppsService = {
 
   async list(query, { signal } = {}) {
     const normalized = normalizeQueryForService(query);
+    // ponytail: Browser and Python Unicode versions can differ at the 100-point
+    // UX precheck; the server owns matching and limits. Revisit the hint when
+    // the client exposes the server's Unicode version.
     const params = new URLSearchParams();
     if (normalized.q) params.set("q", normalized.q);
     if (normalized.subject) params.set("subject", normalized.subject);

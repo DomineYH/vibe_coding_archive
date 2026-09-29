@@ -38,12 +38,12 @@ describe("shared query validation", () => {
     );
   });
 
-  it("normalizes search with trim, NFC, and full case folding before counting code points", () => {
+  it("normalizes search with trim and NFC but leaves folding and limits to the server", () => {
     expect(normalizeQuery({ q: "  Cafe\u0301  STRAẞE  " }).q).toBe(
-      "café  strasse",
+      "Café  STRAẞE",
     );
-    expect(normalizeQuery({ q: "Ꭰꭰẞıςﬃ" }).q).toBe("ᎠᎠssıσffi");
-    expect(() => normalizeQuery({ q: "ß".repeat(51) })).toThrow(RangeError);
+    expect(normalizeQuery({ q: "Ꟍ" }).q).toBe("Ꟍ");
+    expect(normalizeQuery({ q: "ß".repeat(51) }).q).toBe("ß".repeat(51));
   });
 
   it.each([

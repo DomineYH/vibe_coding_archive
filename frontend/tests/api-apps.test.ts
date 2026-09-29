@@ -158,6 +158,21 @@ describe("API service errors", () => {
     expect(vi.mocked(fetch).mock.calls[0][1]?.signal).toBe(controller.signal);
   });
 
+  it("sends trimmed search text to the server without client-side folding", async () => {
+    stubErrorResponse(503, "SERVICE_UNAVAILABLE");
+
+    await expect(appsService.list({ q: "  Ꟍ  " })).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+    });
+
+    const requestUrl = new URL(
+      String(vi.mocked(fetch).mock.calls[0][0]),
+      "http://localhost",
+    );
+    expect(requestUrl.pathname).toBe("/api/v1/apps");
+    expect(requestUrl.searchParams.get("q")).toBe("Ꟍ");
+  });
+
   it("preserves canonical public list input errors as validation errors", async () => {
     stubErrorResponse(400, "VALIDATION_ERROR", {
       fields: { q: "검색어는 정규화 후 100자 이하여야 해요." },

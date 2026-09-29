@@ -202,7 +202,7 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
                 ),
                 {
                     "name": "Straße %_ App",
-                    "description": "Cafe\u0301 lesson",
+                    "description": "Cafe\u0301 lesson Ꟍ",
                     "prompt": "Prompt-only sentinel",
                     "id": "00000000-0000-0000-0000-000000000001",
                 },
@@ -234,6 +234,7 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
 
         assert list_ids(q="STRASSE") == ["00000000-0000-0000-0000-000000000001"]
         assert list_ids(q="Café") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="Ꟍ") == ["00000000-0000-0000-0000-000000000001"]
         assert list_ids(q="casefold owner") == [
             "00000000-0000-0000-0000-000000000002",
             "00000000-0000-0000-0000-000000000001",
@@ -525,10 +526,17 @@ def test_public_apps_fastapi_declarations_match_openapi(
     )
 
 
-def test_public_app_errors_use_safe_contract_envelopes(tmp_path: Path, make_test_app):
+def test_public_app_errors_use_safe_contract_envelopes(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
     app = make_test_app(tmp_path / "errors.sqlite3")
+    seed_public_and_private_apps(tmp_path / "errors.sqlite3")
     with TestClient(app) as client:
         with app.state.engine.begin() as connection:
+            connection.execute(
+                text("UPDATE apps SET name = 'public-error-sentinel' WHERE id = :id"),
+                {"id": "00000000-0000-0000-0000-000000000001"},
+            )
             connection.execute(text("DROP TABLE apps"))
         list_error = client.get("/api/v1/apps")
         detail_error = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
@@ -536,8 +544,21 @@ def test_public_app_errors_use_safe_contract_envelopes(tmp_path: Path, make_test
     assert list_error.status_code == detail_error.status_code == 503
     assert set(list_error.json()) == set(detail_error.json()) == {"error"}
     assert set(list_error.json()["error"]) == {"code", "message", "request_id"}
-    assert "sqlite" not in list_error.text.lower()
-    assert str(tmp_path) not in list_error.text
+    for response in (list_error, detail_error):
+        assert "sqlite" not in response.text.lower()
+        assert str(tmp_path) not in response.text
+        assert all(
+            sentinel not in response.text and sentinel not in str(response.headers)
+            for sentinel in (
+                "public-error-sentinel",
+                "private-app-sentinel",
+                "private-login-sentinel",
+                "email-sentinel@example.test",
+                "phone-sentinel",
+                "password-hash-sentinel",
+                "비공개 별명 sentinel",
+            )
+        )
 
 
 def test_file_database_constraints_reject_invalid_app_and_health_rows(
