@@ -1,0 +1,31 @@
+{
+  "environment": "test-owned temporary checkout; development API",
+  "public_count": 1,
+  "public_id": "00000000-0000-4000-8000-000000000084",
+  "rendered_name": "Existing app edit",
+  "rendered_prompt": "Existing prompt",
+  "private_status": 404,
+  "keyboard_open_and_return": true,
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "width": 1024,
+      "height": 900
+    },
+    {
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "width": 390,
+      "height": 844
+    },
+    {
+      "width": 360,
+      "height": 844
+    }
+  ]
+}
