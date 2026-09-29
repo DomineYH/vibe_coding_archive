@@ -7,7 +7,7 @@ function seoulDateParts(value, options) {
 }
 
 export function formatCheckedAt(checkedAt, serverTime) {
-  if (!checkedAt) return "검사 기록 없음";
+  if (!checkedAt) return "검사 이력 없음";
   const options = {
     year: "numeric",
     month: "2-digit",
