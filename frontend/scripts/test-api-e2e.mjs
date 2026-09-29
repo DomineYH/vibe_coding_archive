@@ -65,9 +65,9 @@ async function run() {
         "--frozen",
         "python",
         "-c",
-        "import os; from pathlib import Path; from conftest import populate_public_and_private_apps; populate_public_and_private_apps(Path(os.environ['DATABASE_PATH']), 27, valid_uuids=True)",
+        "import os; from pathlib import Path; from tests.support import populate_public_and_private_apps; populate_public_and_private_apps(Path(os.environ['DATABASE_PATH']), 27, valid_uuids=True)",
       ],
-      { cwd: path.join(backend, "tests"), env, stdio: "inherit" },
+      { cwd: backend, env, stdio: "inherit" },
     );
     if (fixtures.error) throw fixtures.error;
     if (fixtures.status !== 0)

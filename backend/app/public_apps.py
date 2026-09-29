@@ -445,6 +445,7 @@ def list_public_apps(
     summary="Read an archive app available to the current member",
     response_model=AppDetailResponse,
     responses={
+        400: {"model": ErrorEnvelope},
         401: {"model": ErrorEnvelope},
         403: {"model": ErrorEnvelope},
         404: {"model": ErrorEnvelope},
@@ -452,9 +453,17 @@ def list_public_apps(
     },
 )
 def get_public_app(
+    request: Request,
     id: Annotated[str, ApiPath(json_schema_extra={"format": "uuid"})],
     session: Annotated[Session, Depends(get_session)],
 ) -> AppDetailResponse | JSONResponse:
+    if _parse_raw_query(request) != []:
+        return _error(
+            400,
+            "VALIDATION_ERROR",
+            "상세 조회는 쿼리를 지원하지 않습니다.",
+            {"query": "상세 조회는 쿼리를 지원하지 않습니다."},
+        )
     try:
         app_id = str(UUID(id))
     except ValueError:

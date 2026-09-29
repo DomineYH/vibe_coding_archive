@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { blockExternalRequests, loopbackHosts } from "./helpers.js";
 
 const viewports = [
   { width: 1440, height: 1000 },
@@ -14,8 +15,6 @@ const captureDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../docs/evidence/phase-2/issue81/2026-09-29/visual/api-mode",
 );
-const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
-
 async function capture(page, state, viewport) {
   await page.setViewportSize(viewport);
   expect(
@@ -49,12 +48,7 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
     requests.push(url.pathname);
     if (!loopbackHosts.has(url.hostname)) externalRequests.push(url.hostname);
   });
-  await context.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    return loopbackHosts.has(url.hostname)
-      ? route.continue()
-      : route.abort("blockedbyclient");
-  });
+  await blockExternalRequests(context);
 
   await page.goto("/");
   await expect(page.locator("a.card-r")).toHaveCount(24);
@@ -86,8 +80,6 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
     .toBe("추가 공개 앱");
   await expect(page.locator("a.card-r")).toHaveCount(24);
   await expect(page.getByRole("button", { name: "더 불러오기" })).toBeVisible();
-  await capture(page, "filtered", viewports[0]);
-
   const secondPage = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return (
@@ -159,12 +151,7 @@ test("an API list failure stays visible until explicit retry reaches the server"
   page.on("request", (request) =>
     requests.push(new URL(request.url()).pathname),
   );
-  await context.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    return loopbackHosts.has(url.hostname)
-      ? route.continue()
-      : route.abort("blockedbyclient");
-  });
+  await blockExternalRequests(context);
   await page.route("**/api/v1/apps**", async (route) => {
     if (new URL(route.request().url()).pathname !== "/api/v1/apps") {
       await route.continue();

@@ -2262,6 +2262,7 @@ export interface operations {
                     "application/json": components["schemas"]["AppDetailResponse"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];

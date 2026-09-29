@@ -31,6 +31,18 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000002")
         private_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000003")
         missing_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
+        forged_identity_detail = client.get(
+            "/api/v1/apps/00000000-0000-0000-0000-000000000003",
+            headers={
+                "Authorization": "Bearer forged-owner-token",
+                "Cookie": "__Host-eduvibe_session_00000000-0000-4000-8000-000000000020_1=forged",
+                "X-EduVibe-Flow-Id": "00000000-0000-4000-8000-000000000020",
+                "X-EduVibe-Auth-Revision": "999",
+                "X-EduVibe-Session-Generation": "999",
+                "X-User-Id": "00000000-0000-0000-0000-000000000020",
+                "X-Member-Id": "00000000-0000-0000-0000-000000000020",
+            },
+        )
         private_search = client.get("/api/v1/apps?q=private-app-sentinel")
         too_large = client.get("/api/v1/apps?limit=101")
         repeated_limit = client.get("/api/v1/apps?limit=1&limit=2")
@@ -132,6 +144,8 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     assert body["item"]["health"] == card["health"]
     assert private_detail.status_code == missing_detail.status_code == 404
     assert private_detail.json() == missing_detail.json()
+    assert forged_identity_detail.status_code == missing_detail.status_code == 404
+    assert forged_identity_detail.json() == missing_detail.json()
     assert (
         too_large.status_code
         == repeated_limit.status_code
@@ -152,6 +166,24 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     assert private_search.status_code == 200
     assert private_search.json()["items"] == []
     assert private_search.json()["pagination"]["total"] == 0
+
+
+@pytest.mark.parametrize("query", ["q=ignored", "tracking=1", "q=%", "q=one&q=two"])
+def test_public_detail_rejects_any_query(
+    query: str, tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "detail-query.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v1/apps/00000000-0000-0000-0000-000000000001?{query}"
+        )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert response.json()["error"]["fields"]
 
 
 def test_public_list_search_filters_and_facets_follow_catalog_contract(
@@ -211,6 +243,7 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
         assert list_ids(q="prompt-only") == []
         assert list_ids(q="private-login-sentinel") == []
         assert list_ids(q="private-app-sentinel") == []
+        assert list_ids(subject="기타") == []
 
         filtered_response = client.get(
             "/api/v1/apps",
@@ -222,6 +255,11 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
             "00000000-0000-0000-0000-000000000001"
         ]
         assert filtered["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+        private_subject = client.get("/api/v1/apps?subject=기타").json()
+        assert private_subject["items"] == []
+        assert private_subject["pagination"]["total"] == 0
+        assert private_subject["facets"]["subjects_in_use"] == ["수학", "영어"]
 
         empty = client.get(
             "/api/v1/apps", params={"subject": "수학", "grade": "중1"}
@@ -427,6 +465,7 @@ def test_public_apps_fastapi_declarations_match_openapi(
         parameter["name"]: parameter
         for parameter in source["paths"]["/apps/{id}"]["get"]["parameters"]
     }
+    assert actual_detail_parameters.keys() == expected_detail_parameters.keys()
     assert (
         actual_detail_parameters["id"]["name"]
         == expected_detail_parameters["id"]["name"]
@@ -442,6 +481,18 @@ def test_public_apps_fastapi_declarations_match_openapi(
     assert (
         actual_detail_parameters["id"]["schema"]["format"]
         == expected_detail_parameters["id"]["schema"]["format"]
+    )
+    actual_detail_error = actual["paths"]["/api/v1/apps/{id}"]["get"]["responses"][
+        "400"
+    ]["content"]["application/json"]["schema"]
+    expected_detail_error = source["components"]["responses"]["ServiceError"][
+        "content"
+    ]["application/json"]["schema"]
+    assert source["paths"]["/apps/{id}"]["get"]["responses"]["400"]["$ref"] == (
+        "#/components/responses/ServiceError"
+    )
+    assert normalize_schema(actual_detail_error, actual) == normalize_schema(
+        expected_detail_error, source
     )
 
 

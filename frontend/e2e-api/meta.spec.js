@@ -3,9 +3,9 @@ import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { blockExternalRequests, loopbackHosts } from "./helpers.js";
 
 const catalog = createRequire(import.meta.url)("../../contracts/catalog.json");
-const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 const viewports = [
   { width: 360, height: 844 },
@@ -78,14 +78,9 @@ test("API metadata failure retries through the real server before public reads",
   page.on("request", (request) => {
     const url = new URL(request.url());
     requests.push(url.pathname);
-    if (!LOOPBACK_HOSTS.has(url.hostname)) externalRequests.push(url.hostname);
+    if (!loopbackHosts.has(url.hostname)) externalRequests.push(url.hostname);
   });
-  await context.route("**/*", (route) => {
-    const url = new URL(route.request().url());
-    return LOOPBACK_HOSTS.has(url.hostname)
-      ? route.continue()
-      : route.abort("blockedbyclient");
-  });
+  await blockExternalRequests(context);
   await page.route("**/api/v1/meta", async (route) => {
     metaCalls += 1;
     if (!allowRealMeta) {
