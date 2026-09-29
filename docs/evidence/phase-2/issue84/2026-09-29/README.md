@@ -29,7 +29,7 @@ The only opt-in is for this test harness to invoke the browser evidence runner; 
 | Requirement | Test/evidence and result |
 | --- | --- |
 | #84 AC1 · #15 explicit command, environment/path/symlink and migration head | [CLI](../../../../../backend/app/cli.py) refuses non-development, non-designated, missing, escaped, unknown, stale and multiple-current revisions. Tests verify refusal leaves the test DB unchanged and API startup does not auto-seed or migrate. PASS locally. |
-| #84 AC2 · fixed-ID, missing-only, preserve, rollback | The seed integration test verifies only missing rows are restored; existing credentials, approval and public edits survive; repeat adds 0/0. The collision test verifies whole-call rollback after a conflicting login ID. PASS locally. |
+| #84 AC2 · fixed-ID, missing-only, preserve, rollback | The seed integration test verifies only missing rows are restored; an existing member’s trimmed/case-fold-equivalent login ID, edited nickname/hash/approval, and the public app edits survive; repeat adds 0/0. Collision tests verify generic rejection before prompting/writes for both login-key and fixed-ID conflicts, plus whole-call rollback on insert collision. PASS locally. |
 | #84 AC3 · real-TTY shared password | The seed test runs the CLI with a pty, enters a synthetic password through hidden input/confirmation, verifies no echo, separately salted hashes and no prompt when no member is missing; short/mismatched values leave no rows. PASS locally. |
 | #84 AC4 · no admin, unchecked app and no external work | DB/API checks prove both users are ordinary, new app health is `unchecked` with no job or timestamps, the browser displays `미검사`, and browser API traffic contains no health/auth/admin/write request. PASS locally. |
 | #84 AC5 · test-owned working copy, no bypass or real target | All CLI, DB, API and UI actions happen inside the pytest-created temporary copy. Noninteractive, wrong environment/path, symlink escape, missing DB and incompatible revision cases are refused. PASS locally. |
@@ -52,6 +52,8 @@ The only opt-in is for this test harness to invoke the browser evidence runner; 
 | A first browser traffic assertion classified Vite `/src/...health...` module requests as health API calls. | Restricted the assertion to `/api/v1/` requests and GET methods. The UI scenario passed with no health/auth/admin/write requests. |
 | First `npm run check` found browser globals undefined by the Node ESLint configuration in the new Playwright script. | Declared the two browser globals for ESLint; focused ESLint and the full `npm run check` pass. |
 | First `npm run test:e2e:api` run finished 22/23: the existing `apps.spec.js` screenshot case exceeded its 30-second timeout by less than a second while setting the next viewport. | The unchanged full API E2E rerun passed 23/23. It rewrote tracked #81/#82 API-mode capture outputs during execution; those exact pre-existing capture directories were restored afterward. |
+| The two new PTY regressions failed against the prior CLI: both cases prompted twice and returned the short-password validation error instead of rejecting conflicting member identity. | Preflight normalized login keys and fixed member IDs before requesting the password. Both tests now pass 2/2 with the generic conflict message, zero prompts, and no seed-member/app writes. |
+| The first Ruff format check found only layout in the new PTY assertions. | Formatted only `tests/test_dev_seed.py`; Ruff format check now passes for all 21 backend files. |
 
 ## Final local verification
 
@@ -62,8 +64,8 @@ Commands are run in their named directory. Full API E2E uses its separate test f
 | Locked backend environment | `uv sync --locked` (`backend/`) | PASS; resolved 42 packages, checked 40; lock unchanged. |
 | Backend lint | `uv run --frozen ruff check .` (`backend/`) | PASS; all checks passed. |
 | Backend format | `uv run --frozen ruff format --check .` (`backend/`) | PASS; 21 files formatted. |
-| Backend tests | `APP_ENV=test uv run --frozen pytest -q` (`backend/`) | PASS; 72 passed in 263.69s; one existing Starlette/httpx deprecation warning. |
-| Seed CLI + UI integration | Reproduction command above (`backend/`) | PASS; final rerun 1/1 in 96.86s with current API-field and browser-request assertions; 10 screenshots at five widths. |
+| Backend tests | `APP_ENV=test uv run --frozen pytest -q` (`backend/`) | PASS; 74 passed in 285.77s; one existing Starlette/httpx deprecation warning. |
+| Seed CLI + UI integration | Reproduction command above (`backend/`) | PASS; final rerun 1/1 in 78.41s with normalized-identity, edited nickname/hash/approval, API restart and browser assertions; 10 screenshots at five widths. |
 | Acceptance record regression | `npm test -- tests/acceptance-record.test.js` (`frontend/`) | PASS; 10/10. |
 | Frontend static checks | `npm run check` (`frontend/`) | PASS; ESLint, formatting, OpenAPI checks, and typecheck completed. OpenAPI lint retains two existing `/healthz` and `/readyz` missing-4xx notices. |
 | Frontend unit tests | `npm test` (`frontend/`) | PASS; 423 tests across 28 files. |

@@ -201,6 +201,7 @@ def _verify_seeded_ui(base_url: str) -> None:
 def _assert_seed_api_read(
     base_url: str,
     *,
+    nickname="시연 교사",
     name="분수 탐험 교실",
     prompt="초등학교 4학년을 위한 분수 탐험 활동을 만들어 주세요.",
 ) -> tuple[dict, dict]:
@@ -210,7 +211,7 @@ def _assert_seed_api_read(
     assert len(page["items"]) == 1
     card = page["items"][0]
     assert card["id"] == PUBLIC_APP_ID
-    assert card["owner"]["nickname"] == "시연 교사"
+    assert card["owner"]["nickname"] == nickname
     assert card["name"] == name
     assert card["health"] == {
         "result": {"state": "unchecked", "checked_at": None, "fresh_until": None},
@@ -302,16 +303,27 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     assert first_detail == second_detail
 
     with sqlite3.connect(database_path) as connection:
-        connection.execute("PRAGMA foreign_keys = ON")
-        connection.execute(
-            "UPDATE members SET password_hash = 'existing-hash', "
-            "approval_status = 'revoked' WHERE id = ?",
-            (MEMBER_IDS[0],),
-        )
         connection.execute(
             "UPDATE apps SET name = 'Existing app edit', prompt = 'Existing prompt' "
             "WHERE id = ?",
             (PUBLIC_APP_ID,),
+        )
+        connection.commit()
+
+    if os.environ.get("ISSUE84_VERIFY_SEEDED_UI") == "1":
+        ui_server, ui_base_url = _start_development_api(backend)
+        try:
+            _verify_seeded_ui(ui_base_url)
+        finally:
+            _stop_development_api(ui_server)
+
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            "UPDATE members SET login_id = '  SEED-MEMBER-ONE  ', "
+            "nickname = 'Edited member nickname', password_hash = 'existing-hash', "
+            "approval_status = 'revoked' WHERE id = ?",
+            (MEMBER_IDS[0],),
         )
         connection.execute("DELETE FROM apps WHERE id = ?", (PRIVATE_APP_ID,))
         connection.commit()
@@ -322,9 +334,15 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     assert "Seeded 0 members and 1 apps." in output
     with sqlite3.connect(database_path) as connection:
         assert connection.execute(
-            "SELECT password_hash, approval_status FROM members WHERE id = ?",
+            "SELECT login_id, nickname, password_hash, approval_status "
+            "FROM members WHERE id = ?",
             (MEMBER_IDS[0],),
-        ).fetchone() == ("existing-hash", "revoked")
+        ).fetchone() == (
+            "  SEED-MEMBER-ONE  ",
+            "Edited member nickname",
+            "existing-hash",
+            "revoked",
+        )
         assert connection.execute(
             "SELECT name, prompt FROM apps WHERE id = ?", (PUBLIC_APP_ID,)
         ).fetchone() == ("Existing app edit", "Existing prompt")
@@ -340,6 +358,7 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     try:
         edited_page, edited_detail = _assert_seed_api_read(
             third_base_url,
+            nickname="Edited member nickname",
             name="Existing app edit",
             prompt="Existing prompt",
         )
@@ -349,6 +368,7 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     try:
         restarted_page, restarted_detail = _assert_seed_api_read(
             fourth_base_url,
+            nickname="Edited member nickname",
             name="Existing app edit",
             prompt="Existing prompt",
         )
@@ -357,13 +377,6 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     assert edited_page["items"] == restarted_page["items"]
     assert edited_page["pagination"] == restarted_page["pagination"]
     assert edited_detail == restarted_detail
-
-    if os.environ.get("ISSUE84_VERIFY_SEEDED_UI") == "1":
-        ui_server, ui_base_url = _start_development_api(backend)
-        try:
-            _verify_seeded_ui(ui_base_url)
-        finally:
-            _stop_development_api(ui_server)
 
     assert database_path.is_relative_to(repo)
 
@@ -516,5 +529,60 @@ def test_seed_cli_login_collision_rolls_back_every_new_row(tmp_path: Path):
     with sqlite3.connect(database_path) as connection:
         assert connection.execute("SELECT id FROM members ORDER BY id").fetchall() == [
             ("00000000-0000-0000-0000-000000000099",)
+        ]
+        assert connection.execute("SELECT COUNT(*) FROM apps").fetchone()[0] == 0
+
+
+def test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes(
+    tmp_path: Path,
+):
+    _repo, backend = _copy_backend(tmp_path)
+    database_path = _migrate(backend)
+    blocker_id = "00000000-0000-0000-0000-000000000099"
+    blocker_login = "  SEED-MEMBER-ONE  "
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "INSERT INTO members "
+            "(id, login_id, nickname, is_admin, approval_status) "
+            "VALUES (?, ?, 'Existing member', 0, 'approved')",
+            (blocker_id, blocker_login),
+        )
+        connection.commit()
+
+    status, output = _run_cli(backend)
+
+    assert status != 0
+    assert "Conflicting seed data; no changes were saved." in output
+    assert all(prompt.decode() not in output for prompt in PROMPTS)
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("SELECT id, login_id FROM members").fetchall() == [
+            (blocker_id, blocker_login)
+        ]
+        assert connection.execute("SELECT COUNT(*) FROM apps").fetchone()[0] == 0
+
+
+def test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes(
+    tmp_path: Path,
+):
+    _repo, backend = _copy_backend(tmp_path)
+    database_path = _migrate(backend)
+    blocker_login = "another-member"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "INSERT INTO members "
+            "(id, login_id, nickname, is_admin, approval_status) "
+            "VALUES (?, ?, 'Existing member', 0, 'approved')",
+            (MEMBER_IDS[0], blocker_login),
+        )
+        connection.commit()
+
+    status, output = _run_cli(backend)
+
+    assert status != 0
+    assert "Conflicting seed data; no changes were saved." in output
+    assert all(prompt.decode() not in output for prompt in PROMPTS)
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("SELECT id, login_id FROM members").fetchall() == [
+            (MEMBER_IDS[0], blocker_login)
         ]
         assert connection.execute("SELECT COUNT(*) FROM apps").fetchone()[0] == 0

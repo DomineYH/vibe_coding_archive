@@ -106,6 +106,10 @@ def _shared_password() -> str:
     return password
 
 
+def _normalized_login_id(value: str) -> str:
+    return normalize("NFC", value.strip()).casefold()
+
+
 def seed() -> None:
     settings = _development_database()
     engine = make_engine(settings.database_path)
@@ -114,13 +118,29 @@ def seed() -> None:
     try:
         with Session(engine) as session:
             try:
-                existing_members = set(
-                    session.scalars(
-                        select(Member.id).where(
-                            Member.id.in_([member["id"] for member in MEMBERS])
-                        )
-                    )
-                )
+                seed_login_ids = {
+                    member["id"]: _normalized_login_id(member["login_id"])
+                    for member in MEMBERS
+                }
+                seed_id_by_login = {
+                    login_id: member_id
+                    for member_id, login_id in seed_login_ids.items()
+                }
+                existing_member_rows = session.execute(
+                    select(Member.id, Member.login_id)
+                ).all()
+                existing_members = set()
+                for member_id, login_id in existing_member_rows:
+                    normalized_login_id = _normalized_login_id(login_id)
+                    if (
+                        member_id in seed_login_ids
+                        and normalized_login_id != seed_login_ids[member_id]
+                    ) or (
+                        normalized_login_id in seed_id_by_login
+                        and seed_id_by_login[normalized_login_id] != member_id
+                    ):
+                        raise SeedError("Conflicting seed data; no changes were saved.")
+                    existing_members.add(member_id)
                 missing_members = [
                     member for member in MEMBERS if member["id"] not in existing_members
                 ]
