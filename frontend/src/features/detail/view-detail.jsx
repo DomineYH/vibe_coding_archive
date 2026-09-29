@@ -249,6 +249,8 @@ function StateView({
   }
   if (!error) return null;
   const notFound = error instanceof ServiceError && error.code === "NOT_FOUND";
+  const invalidCondition =
+    error instanceof ServiceError && error.code === "VALIDATION_ERROR";
   const authRequired =
     error instanceof ServiceError && error.code === "AUTH_REQUIRED";
   const forbidden =
@@ -264,18 +266,22 @@ function StateView({
     <div role="alert" aria-live="assertive">
       <EmptyState
         title={
-          notFound
-            ? "아카이브 앱을 찾을 수 없어요"
-            : forbidden
-              ? "이 화면을 볼 권한이 없어요"
-              : authRequired
-                ? "로그인이 필요해요"
-                : "상세 정보를 불러오지 못했어요"
+          invalidCondition
+            ? "검색 조건을 확인할 수 없어요"
+            : notFound
+              ? "아카이브 앱을 찾을 수 없어요"
+              : forbidden
+                ? "이 화면을 볼 권한이 없어요"
+                : authRequired
+                  ? "로그인이 필요해요"
+                  : "상세 정보를 불러오지 못했어요"
         }
         desc={error.message || "잠시 후 다시 시도해 주세요."}
       >
         <div className="flex flex-wrap justify-center gap-2">
-          {notFound ? (
+          {invalidCondition ? (
+            <Btn onClick={retry}>조건 초기화</Btn>
+          ) : notFound ? (
             <Link
               to="/"
               className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
@@ -614,7 +620,7 @@ export function AppDetailView({
             <h2 className="mb-3 text-[15px] font-bold text-neutral-900">
               상세 설명 · 활용 매뉴얼
             </h2>
-            <p className="break-keep whitespace-pre-line text-[14px] leading-[1.8] text-neutral-600">
+            <p className="break-keep whitespace-pre-wrap text-[14px] leading-[1.8] text-neutral-600">
               {app.description}
             </p>
           </section>

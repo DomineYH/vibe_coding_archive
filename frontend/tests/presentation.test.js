@@ -11,4 +11,10 @@ describe("formatDate", () => {
       formatCheckedAt("2026-04-01T15:00:00.000Z", "2026-04-01T16:00:00.000Z"),
     ).toBe("오늘 00:00");
   });
+
+  it("labels a null check timestamp as missing history", () => {
+    expect(formatCheckedAt(null, "2026-04-01T16:00:00.000Z")).toBe(
+      "검사 이력 없음",
+    );
+  });
 });

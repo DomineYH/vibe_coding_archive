@@ -485,6 +485,18 @@ function DetailRoute({
   const location = useLocation();
   const navigate = useNavigate();
   const access = usePublicMetadata();
+  const invalidId = !isUuid(id);
+  const invalidQuery = location.search !== "";
+  const routeError = invalidId
+    ? new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
+        outcome: "rejected",
+        httpStatus: 404,
+      })
+    : invalidQuery
+      ? new ServiceError("VALIDATION_ERROR", "검색 조건을 확인할 수 없어요.", {
+          outcome: "rejected",
+        })
+      : null;
   const observationId = useRef(auth.observationId);
   const currentActorId = useRef(auth.user?.id ?? null);
   currentActorId.current = auth.user?.id ?? null;
@@ -493,6 +505,7 @@ function DetailRoute({
   const detail = useQuery({
     queryKey: [__DATA_MODE__, "apps", "detail", id],
     enabled:
+      !routeError &&
       access.canRead &&
       (__DATA_MODE__ !== "mock" ||
         (auth.status !== "checking" && !auth.concealed)),
@@ -824,9 +837,17 @@ function DetailRoute({
       }
       authError={authError ? auth.error : null}
       concealed={__DATA_MODE__ === "mock" && protectedDetail && auth.concealed}
-      loading={access.loading || (!authError && detail.isPending)}
-      error={access.error ?? detail.error}
-      retry={authError ? onRetryAuth : () => access.retry(detail.refetch)}
+      loading={
+        !routeError && (access.loading || (!authError && detail.isPending))
+      }
+      error={routeError ?? access.error ?? detail.error}
+      retry={
+        invalidQuery && !invalidId
+          ? () => navigate(location.pathname, { replace: true })
+          : authError
+            ? onRetryAuth
+            : () => access.retry(detail.refetch)
+      }
       canEdit={canEdit}
       canDelete={canDelete}
       deleteState={currentDeletion}

@@ -103,6 +103,22 @@ describe("public detail pending state", () => {
 });
 
 describe("prompt copying", () => {
+  it("announces a confirmed Clipboard API copy", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    renderDetail();
+
+    await user.click(screen.getByRole("button", { name: "복사하기" }));
+
+    expect(writeText).toHaveBeenCalledWith(app.prompt);
+    expect(screen.getByRole("button", { name: "복사됨" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("복사됨");
+  });
+
   it("falls back when Clipboard API rejects and announces only a confirmed copy", async () => {
     const writeText = vi.fn().mockRejectedValue(new Error("permission denied"));
     const execCommand = vi.fn(() => true);

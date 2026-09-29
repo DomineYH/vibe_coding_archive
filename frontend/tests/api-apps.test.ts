@@ -106,6 +106,28 @@ describe("API service errors", () => {
     }
   });
 
+  it("keeps detail transport and successful-response contract errors distinct", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+
+    await expect(appsService.get("offline")).rejects.toMatchObject({
+      code: "NETWORK_ERROR",
+      httpStatus: undefined,
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ item: { id: "incomplete" } }), {
+          status: 200,
+        }),
+      ),
+    );
+
+    await expect(appsService.get("malformed")).rejects.toMatchObject({
+      code: "CONTRACT_ERROR",
+    });
+  });
+
   it("keeps public reads independent from auth and CSRF, including failures", async () => {
     const getCurrentAuthState = vi.spyOn(authService, "getCurrentAuthState");
     const getCsrf = vi.spyOn(authService, "getCsrf");

@@ -31,6 +31,7 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000002")
         private_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000003")
         missing_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
+        invalid_id_detail = client.get("/api/v1/apps/not-a-uuid")
         forged_identity_detail = client.get(
             "/api/v1/apps/00000000-0000-0000-0000-000000000003",
             headers={
@@ -142,8 +143,14 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     assert body["item"]["url"] == "https://example.test/app"
     assert body["item"]["grades"] == ["초2", "중1"]
     assert body["item"]["health"] == card["health"]
+    assert "private-login-sentinel" not in detail.text
+    assert "email-sentinel" not in detail.text
+    assert "phone-sentinel" not in detail.text
+    assert "password-hash-sentinel" not in detail.text
     assert private_detail.status_code == missing_detail.status_code == 404
     assert private_detail.json() == missing_detail.json()
+    assert invalid_id_detail.status_code == missing_detail.status_code == 404
+    assert invalid_id_detail.json() == missing_detail.json()
     assert forged_identity_detail.status_code == missing_detail.status_code == 404
     assert forged_identity_detail.json() == missing_detail.json()
     assert (

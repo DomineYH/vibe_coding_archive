@@ -173,3 +173,70 @@ def populate_public_and_private_apps(
         connection.commit()
     finally:
         connection.close()
+
+
+def prepare_issue83_detail_fixture(database_path: Path) -> None:
+    name = ("긴 공개 수업 도구 " * 7).rstrip()
+    nickname = "공개 별명 " + ("초등 수학 탐구 연구자 " * 7).rstrip()
+    url = (
+        "https://example.test/"
+        + "classroom-resource/" * 12
+        + "?lesson=fractions&mode=teacher#chapter-2"
+    )
+    prompt = "\n".join(
+        [
+            "프롬프트 첫 줄  ",
+            "  둘째 줄",
+            "",
+            "<script>window.issue83Injected=true</script>",
+            *(
+                f"긴 프롬프트 경계 줄 {index:02d} - " + "활용 안내 " * 18
+                for index in range(40)
+            ),
+            "마지막 프롬프트 줄\t",
+        ]
+    )
+    description = "\n".join(
+        [
+            "첫째 줄  앞 공백",
+            "",
+            "둘째 줄\t들여쓰기",
+            '<img src=x onerror="window.issue83Injected=true">',
+            *(f"긴 설명 경계 줄 {index:02d} - 활용 안내 " * 4 for index in range(24)),
+            "마지막 줄  ",
+        ]
+    )
+    with sqlite3.connect(database_path) as connection:
+        connection.execute(
+            "UPDATE members SET nickname = ? WHERE id = ?",
+            (nickname, "00000000-0000-4000-8000-000000000010"),
+        )
+        connection.execute(
+            "UPDATE apps SET created_at = ? WHERE id = ?",
+            (
+                "2026-09-29T12:33:00.000000Z",
+                "00000000-0000-4000-8000-000000000002",
+            ),
+        )
+        connection.execute(
+            """
+            UPDATE apps SET
+                name = ?, url = ?, prompt = ?, description = ?, stack_db = ?,
+                stack_backend = ?, stack_frontend = ?, stack_hosting = ?,
+                created_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (
+                name,
+                url,
+                prompt,
+                description,
+                "PostgreSQL · Neon",
+                "FastAPI · SQLAlchemy",
+                "React · Vite",
+                "Cloudflare Pages",
+                "2026-09-29T12:34:00.000000Z",
+                "2026-09-28T12:00:00.000000Z",
+                "00000000-0000-4000-8000-000000000001",
+            ),
+        )
