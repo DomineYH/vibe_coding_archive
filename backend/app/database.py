@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from pathlib import Path
 
 from alembic.config import Config
@@ -7,6 +8,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.engine import URL, Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
+from starlette.requests import Request
 
 
 def make_engine(path: Path, *, poolclass=None) -> Engine:
@@ -29,6 +31,12 @@ def make_engine(path: Path, *, poolclass=None) -> Engine:
 
 def make_session_factory(engine: Engine) -> sessionmaker[Session]:
     return sessionmaker(bind=engine, expire_on_commit=False)
+
+
+def get_session(request: Request) -> Iterator[Session]:
+    factory = request.app.state.session_factory
+    with factory() as session:
+        yield session
 
 
 def current_revision(engine: Engine) -> str | None:

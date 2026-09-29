@@ -1,0 +1,518 @@
+{
+  "method": "Compare full-page PNGs and supplemental status-card PNGs at matching viewport and DPR 1. Exact RGBA pixel differences are counted; differing dimensions are recorded without padding. Targets are the accepted #79 API-mode captures.",
+  "source_commit": "1063bff59c793f5e812477cd80ec2a1059ec39d1",
+  "human_approval": "pending",
+  "baseline_update": false,
+  "records": [
+    {
+      "state": "failure",
+      "viewport": "360x844",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-360x844-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-360x844-full.png",
+      "actual_dimensions": [
+        360,
+        960
+      ],
+      "target_dimensions": [
+        360,
+        960
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-360x844-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-360x844-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          320,
+          294
+        ],
+        "target_dimensions": [
+          320,
+          294
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "failure",
+      "viewport": "390x844",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-390x844-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-390x844-full.png",
+      "actual_dimensions": [
+        390,
+        921
+      ],
+      "target_dimensions": [
+        390,
+        921
+      ],
+      "dimension_match": true,
+      "different_pixels": 16,
+      "max_channel_delta": 18,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-390x844-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-390x844-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          350,
+          294
+        ],
+        "target_dimensions": [
+          350,
+          294
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "failure",
+      "viewport": "768x1024",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-768x1024-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-768x1024-full.png",
+      "actual_dimensions": [
+        768,
+        1024
+      ],
+      "target_dimensions": [
+        768,
+        1024
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-768x1024-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-768x1024-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          704,
+          295
+        ],
+        "target_dimensions": [
+          704,
+          295
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "failure",
+      "viewport": "1024x900",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-1024x900-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1024x900-full.png",
+      "actual_dimensions": [
+        1024,
+        918
+      ],
+      "target_dimensions": [
+        1024,
+        918
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-1024x900-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1024x900-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          960,
+          295
+        ],
+        "target_dimensions": [
+          960,
+          295
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "failure",
+      "viewport": "1440x1000",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-1440x1000-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1440x1000-full.png",
+      "actual_dimensions": [
+        1440,
+        1000
+      ],
+      "target_dimensions": [
+        1440,
+        1000
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/failure-1440x1000-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/failure-1440x1000-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          1216,
+          295
+        ],
+        "target_dimensions": [
+          1216,
+          295
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "loading",
+      "viewport": "360x844",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-360x844-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-360x844-full.png",
+      "actual_dimensions": [
+        360,
+        904
+      ],
+      "target_dimensions": [
+        360,
+        904
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-360x844-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-360x844-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          320,
+          238
+        ],
+        "target_dimensions": [
+          320,
+          238
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "loading",
+      "viewport": "390x844",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-390x844-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-390x844-full.png",
+      "actual_dimensions": [
+        390,
+        865
+      ],
+      "target_dimensions": [
+        390,
+        865
+      ],
+      "dimension_match": true,
+      "different_pixels": 16,
+      "max_channel_delta": 18,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-390x844-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-390x844-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          350,
+          238
+        ],
+        "target_dimensions": [
+          350,
+          238
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "loading",
+      "viewport": "768x1024",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-768x1024-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-768x1024-full.png",
+      "actual_dimensions": [
+        768,
+        1024
+      ],
+      "target_dimensions": [
+        768,
+        1024
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-768x1024-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-768x1024-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          704,
+          239
+        ],
+        "target_dimensions": [
+          704,
+          239
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "loading",
+      "viewport": "1024x900",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-1024x900-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1024x900-full.png",
+      "actual_dimensions": [
+        1024,
+        900
+      ],
+      "target_dimensions": [
+        1024,
+        900
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-1024x900-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1024x900-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          960,
+          239
+        ],
+        "target_dimensions": [
+          960,
+          239
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "loading",
+      "viewport": "1440x1000",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-1440x1000-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1440x1000-full.png",
+      "actual_dimensions": [
+        1440,
+        1000
+      ],
+      "target_dimensions": [
+        1440,
+        1000
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/loading-1440x1000-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/loading-1440x1000-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          1216,
+          239
+        ],
+        "target_dimensions": [
+          1216,
+          239
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "unavailable",
+      "viewport": "360x844",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-360x844-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-360x844-full.png",
+      "actual_dimensions": [
+        360,
+        960
+      ],
+      "target_dimensions": [
+        360,
+        960
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-360x844-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-360x844-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          320,
+          294
+        ],
+        "target_dimensions": [
+          320,
+          294
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "unavailable",
+      "viewport": "390x844",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-390x844-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-390x844-full.png",
+      "actual_dimensions": [
+        390,
+        921
+      ],
+      "target_dimensions": [
+        390,
+        921
+      ],
+      "dimension_match": true,
+      "different_pixels": 16,
+      "max_channel_delta": 18,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-390x844-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-390x844-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          350,
+          294
+        ],
+        "target_dimensions": [
+          350,
+          294
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "unavailable",
+      "viewport": "768x1024",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-768x1024-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-768x1024-full.png",
+      "actual_dimensions": [
+        768,
+        1024
+      ],
+      "target_dimensions": [
+        768,
+        1024
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-768x1024-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-768x1024-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          704,
+          295
+        ],
+        "target_dimensions": [
+          704,
+          295
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "unavailable",
+      "viewport": "1024x900",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-1024x900-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1024x900-full.png",
+      "actual_dimensions": [
+        1024,
+        918
+      ],
+      "target_dimensions": [
+        1024,
+        918
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-1024x900-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1024x900-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          960,
+          295
+        ],
+        "target_dimensions": [
+          960,
+          295
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    },
+    {
+      "state": "unavailable",
+      "viewport": "1440x1000",
+      "actual": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-1440x1000-full.png",
+      "comparison_target_kind": "prior-api-mode-capture",
+      "comparison_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1440x1000-full.png",
+      "actual_dimensions": [
+        1440,
+        1000
+      ],
+      "target_dimensions": [
+        1440,
+        1000
+      ],
+      "dimension_match": true,
+      "different_pixels": 0,
+      "max_channel_delta": 0,
+      "component_capture": "docs/evidence/phase-2/issue80/2026-09-29/visual/api-mode/unavailable-1440x1000-status.png",
+      "component_target": "docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode/unavailable-1440x1000-status.png",
+      "component_comparison": {
+        "actual_dimensions": [
+          1216,
+          295
+        ],
+        "target_dimensions": [
+          1216,
+          295
+        ],
+        "dimension_match": true,
+        "different_pixels": 0,
+        "max_channel_delta": 0
+      },
+      "decision": "Issue #80 adds no UI behavior. Keep and record observed pixel differences without changing visual baselines; human UI-D review remains pending."
+    }
+  ]
+}
