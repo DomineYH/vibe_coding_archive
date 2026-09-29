@@ -16,7 +16,7 @@ const viewports = [
 ];
 const captureDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../docs/evidence/phase-2/issue79/2026-09-29/visual/api-mode",
+  "../../docs/evidence/phase-2/issue81/2026-09-29/visual/api-mode",
 );
 
 async function inspectViewport(page, viewport, state, testInfo) {
@@ -63,7 +63,7 @@ async function inspectViewport(page, viewport, state, testInfo) {
   });
 }
 
-test("API metadata failure retries through the real server without enabling unavailable reads", async ({
+test("API metadata failure retries through the real server before public reads", async ({
   page,
   context,
 }) => {
@@ -152,21 +152,16 @@ test("API metadata failure retries through the real server without enabling unav
   expect(metadata.grades).toEqual(catalog.grades);
   expect(metadata.themes).toEqual(catalog.themes);
   expect(metadata.capabilities.apps_read).toEqual({
-    enabled: false,
-    reasons: ["not_implemented"],
+    enabled: true,
+    reasons: [],
   });
-  await expect(page.getByRole("alert")).toContainText(
-    "공개 아카이브를 현재 사용할 수 없어요.",
-  );
+  await expect(page.locator("a.card-r")).toHaveCount(24);
   await expect(
     page.getByRole("textbox", { name: "앱·작성자 검색" }),
   ).toBeVisible();
   expect(metaCalls).toBe(failedMetaCalls + 1);
   expect(requests).toContain("/api/v1/meta");
-  expect(requests).not.toContain("/api/v1/apps");
+  expect(requests).toContain("/api/v1/apps");
   expect(requests.some((path) => path.startsWith("/api/v1/auth/"))).toBe(false);
   expect(requests.some((path) => path.includes("csrf"))).toBe(false);
-
-  for (const viewport of viewports)
-    await inspectViewport(page, viewport, "unavailable", test.info());
 });

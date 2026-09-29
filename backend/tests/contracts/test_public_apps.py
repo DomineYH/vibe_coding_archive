@@ -30,7 +30,7 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000002")
         private_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000003")
         missing_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
-        unsupported_search = client.get("/api/v1/apps?q=private-app-sentinel")
+        private_search = client.get("/api/v1/apps?q=private-app-sentinel")
         too_large = client.get("/api/v1/apps?limit=101")
         repeated_limit = client.get("/api/v1/apps?limit=1&limit=2")
         unknown_parameter = client.get("/api/v1/apps?tracking=1")
@@ -130,15 +130,13 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     assert private_detail.status_code == missing_detail.status_code == 404
     assert private_detail.json() == missing_detail.json()
     assert (
-        unsupported_search.status_code
-        == too_large.status_code
+        too_large.status_code
         == repeated_limit.status_code
         == unknown_parameter.status_code
         == non_integer_limit.status_code
         == 400
     )
     for response in (
-        unsupported_search,
         too_large,
         repeated_limit,
         unknown_parameter,
@@ -147,6 +145,145 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         assert set(response.json()) == {"error"}
         assert response.json()["error"]["code"] == "VALIDATION_ERROR"
         assert response.json()["error"]["fields"]
+
+    assert private_search.status_code == 200
+    assert private_search.json()["items"] == []
+    assert private_search.json()["pagination"]["total"] == 0
+
+
+def test_public_list_search_filters_and_facets_follow_catalog_contract(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "search.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        with app.state.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE apps SET name = :name, description = :description, "
+                    "prompt = :prompt WHERE id = :id"
+                ),
+                {
+                    "name": "Straße %_ App",
+                    "description": "Cafe\u0301 lesson",
+                    "prompt": "Prompt-only sentinel",
+                    "id": "00000000-0000-0000-0000-000000000001",
+                },
+            )
+            connection.execute(
+                text(
+                    "UPDATE apps SET name = 'Cross', description = 'FieldOnly' "
+                    "WHERE id = '00000000-0000-0000-0000-000000000002'"
+                )
+            )
+            connection.execute(
+                text("UPDATE members SET nickname = 'CaseFold Owner' WHERE id = :id"),
+                {"id": "00000000-0000-0000-0000-000000000010"},
+            )
+            connection.execute(text("DELETE FROM app_grades"))
+            connection.execute(
+                text("INSERT INTO app_grades (app_id, grade) VALUES (:id, :grade)"),
+                [
+                    {"id": "00000000-0000-0000-0000-000000000001", "grade": "초2"},
+                    {"id": "00000000-0000-0000-0000-000000000002", "grade": "중1"},
+                    {"id": "00000000-0000-0000-0000-000000000003", "grade": "고1"},
+                ],
+            )
+
+        def list_ids(**params: str) -> list[str]:
+            response = client.get("/api/v1/apps", params=params)
+            assert response.status_code == 200
+            return [item["id"] for item in response.json()["items"]]
+
+        assert list_ids(q="STRASSE") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="Café") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="casefold owner") == [
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+        assert list_ids(q="%_") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="crossfield") == []
+        assert list_ids(q="prompt-only") == []
+        assert list_ids(q="private-login-sentinel") == []
+        assert list_ids(q="private-app-sentinel") == []
+
+        filtered_response = client.get(
+            "/api/v1/apps",
+            params={"q": "STRASSE", "subject": "수학", "grade": "초2", "limit": 1},
+        )
+        assert filtered_response.status_code == 200
+        filtered = filtered_response.json()
+        assert [item["id"] for item in filtered["items"]] == [
+            "00000000-0000-0000-0000-000000000001"
+        ]
+        assert filtered["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+        empty = client.get(
+            "/api/v1/apps", params={"subject": "수학", "grade": "중1"}
+        ).json()
+        assert empty["items"] == []
+        assert empty["pagination"]["total"] == 0
+        assert empty["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+        second_page = client.get(
+            "/api/v1/apps",
+            params={"q": "", "subject": "", "grade": "", "limit": 1, "offset": 1},
+        ).json()
+        assert [item["id"] for item in second_page["items"]] == [
+            "00000000-0000-0000-0000-000000000001"
+        ]
+        assert second_page["pagination"]["total"] == 2
+        assert second_page["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "q=word&q=word",
+        "tracking=1",
+        "q=%",
+        "q=%FF",
+        "q=%C3%28",
+        "subject=physics",
+        "subject=전체",
+        "grade=대학",
+        "limit=1.5",
+        "limit=101",
+        "limit=1e2",
+        "offset=-1",
+        "offset=１",
+    ],
+)
+def test_public_list_rejects_invalid_raw_query_values(
+    query: str, tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "invalid-query.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get(f"/api/v1/apps?{query}")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert response.json()["error"]["fields"]
+
+
+def test_public_list_rejects_search_over_post_casefold_limit(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "long-query.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/apps", params={"q": "ß" * 51})
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert "q" in response.json()["error"]["fields"]
 
 
 def test_corrupt_stored_health_timestamp_is_server_error_not_query_error(
@@ -263,17 +400,17 @@ def test_public_apps_fastapi_declarations_match_openapi(
         parameter["name"]: parameter
         for parameter in source["paths"]["/apps"]["get"]["parameters"]
     }
-    for name in ("limit", "offset"):
+    assert actual_list_parameters.keys() == expected_list_parameters.keys()
+    for name in ("q", "subject", "grade", "limit", "offset"):
         assert (
             actual_list_parameters[name]["in"] == expected_list_parameters[name]["in"]
         )
         assert actual_list_parameters[name].get(
             "required", False
         ) == expected_list_parameters[name].get("required", False)
-        for key in ("type", "minimum", "maximum", "default"):
-            assert actual_list_parameters[name]["schema"].get(
-                key
-            ) == expected_list_parameters[name]["schema"].get(key)
+        assert normalize_schema(
+            actual_list_parameters[name]["schema"], actual
+        ) == normalize_schema(expected_list_parameters[name]["schema"], source)
 
     actual_detail_parameters = {
         parameter["name"]: parameter
