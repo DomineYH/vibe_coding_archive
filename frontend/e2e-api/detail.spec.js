@@ -54,6 +54,17 @@ const expectedPrompt = [
 
 async function capture(page, state, viewport) {
   await prepareViewportCapture(page, viewport);
+  if (state.startsWith("detail")) {
+    const overflowsViewport = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth >
+        document.documentElement.clientWidth,
+    );
+    expect(
+      overflowsViewport,
+      `${state} text overflows at ${viewport.width}px`,
+    ).toBe(false);
+  }
   await mkdir(captureDirectory, { recursive: true });
   await page.screenshot({
     path: path.join(
@@ -133,6 +144,19 @@ test("reads the real long detail, rejects query input, and reloads without priva
   expect(await prompt.textContent()).toBe(item.prompt);
   expect(await prompt.textContent()).toBe(expectedPrompt);
   expect(await description.textContent()).toBe(expectedDescription);
+  expect(
+    await description.evaluate(
+      (element) => getComputedStyle(element).whiteSpace,
+    ),
+  ).toBe("pre-wrap");
+  expect(
+    await prompt.evaluate((element) => getComputedStyle(element).whiteSpace),
+  ).toBe("pre-wrap");
+  const renderedDescription = await description.evaluate(
+    (element) => element.innerText,
+  );
+  expect(renderedDescription).toContain("첫째 줄  앞 공백");
+  expect(renderedDescription).toContain("둘째 줄\t들여쓰기");
   const stack = page
     .locator("main aside section")
     .filter({ has: page.getByRole("heading", { name: "기술 스택" }) });

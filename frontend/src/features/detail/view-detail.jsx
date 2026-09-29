@@ -620,7 +620,7 @@ export function AppDetailView({
             <h2 className="mb-3 text-[15px] font-bold text-neutral-900">
               상세 설명 · 활용 매뉴얼
             </h2>
-            <p className="break-keep whitespace-pre-line text-[14px] leading-[1.8] text-neutral-600">
+            <p className="break-keep whitespace-pre-wrap text-[14px] leading-[1.8] text-neutral-600">
               {app.description}
             </p>
           </section>
