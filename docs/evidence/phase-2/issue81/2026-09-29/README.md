@@ -71,3 +71,5 @@ These final frontend suites ran against source commit [`d406d53b89b5ac3620abffae
 | Mock-mode browser tests | `CI=true npm run test:e2e` | PASS; 106/106 tests. |
 
 The detail view already displays non-404 read errors in an accessible alert with a retry action, so no UI change was needed. The API browser run rewrote six existing captures with small byte differences; they were restored because this service/test-helper change does not alter rendered UI. No capture, visual baseline, source reference, or lockfile changed. Hosted CI and DomineYH's UI-D/accessibility/device review remain pending.
+
+An extra, non-required `npx prettier --check ../docs/evidence/phase-2/issue81/2026-09-29/README.md ../docs/acceptance.md` run from `frontend/` returned exit 1. Both documents at source commit `d406d53`, before these evidence updates, also failed their individual Prettier checks. Their existing Markdown table style was preserved instead of reformatting unrelated rows; the required `npm run check` passed.
