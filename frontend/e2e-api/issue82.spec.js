@@ -353,6 +353,19 @@ test("uses the committed search during IME filter changes and debounces composit
   );
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(search).toHaveValue("추가 공개 앱 27");
+
+  const clearResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === "/api/v1/apps" &&
+      !url.searchParams.has("q") &&
+      url.searchParams.get("subject") === "수학"
+    );
+  });
+  await search.fill("");
+  expect((await clearResponse).status()).toBe(200);
+  await expect(search).toHaveValue("");
+  await expect(page).toHaveURL(/subject=%EC%88%98%ED%95%99/);
 });
 
 test("hides old cards while a new API filter is loading", async ({
@@ -539,6 +552,9 @@ test("stops and offers retry when a next page claims more data without progress"
 
   await page.getByRole("button", { name: "다시 시도" }).click();
   await expect(page.locator("a.card-r")).toHaveCount(27);
+  await expect(page.getByRole("button", { name: "더 불러오기" })).toHaveCount(
+    0,
+  );
   expect(nextPageRequests).toBe(2);
   expect(nextPageOffsets).toEqual(["24", "24"]);
 });
