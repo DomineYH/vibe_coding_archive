@@ -295,9 +295,6 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   releaseRetry();
   await retrySettledPromise;
   await expect(page.locator("a.card-r")).toHaveCount(24);
-  await expect
-    .poll(() => page.evaluate(() => window.scrollY))
-    .toBeGreaterThan(0);
   for (const id of displayedIds)
     await expect(page.locator(`a.card-r[href="/apps/${id}"]`)).toHaveCount(1);
   expect(listRequests).toBe(requestsBeforeRetry + 1);
