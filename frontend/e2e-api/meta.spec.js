@@ -3,24 +3,21 @@ import { createRequire } from "node:module";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blockExternalRequests, loopbackHosts } from "./helpers.js";
+import {
+  blockExternalRequests,
+  loopbackHosts,
+  prepareViewportCapture,
+  viewports,
+} from "./helpers.js";
 
 const catalog = createRequire(import.meta.url)("../../contracts/catalog.json");
-
-const viewports = [
-  { width: 360, height: 844 },
-  { width: 390, height: 844 },
-  { width: 768, height: 1024 },
-  { width: 1024, height: 900 },
-  { width: 1440, height: 1000 },
-];
 const captureDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../docs/evidence/phase-2/issue81/2026-09-29/visual/api-mode",
 );
 
 async function inspectViewport(page, viewport, state, testInfo) {
-  await page.setViewportSize(viewport);
+  await prepareViewportCapture(page, viewport);
   const status =
     state === "loading"
       ? page.locator('[data-screen-label="갤러리"]').getByRole("status")
@@ -28,7 +25,6 @@ async function inspectViewport(page, viewport, state, testInfo) {
   const expectedText = {
     failure: "공개 아카이브를 불러오지 못했어요",
     loading: "공개 아카이브를 불러오는 중이에요",
-    unavailable: "공개 아카이브를 현재 사용할 수 없어요.",
   }[state];
   await expect(status).toContainText(expectedText);
   if (state !== "loading")
@@ -36,16 +32,6 @@ async function inspectViewport(page, viewport, state, testInfo) {
   await expect(
     page.getByRole("textbox", { name: "앱·작성자 검색" }),
   ).toBeVisible();
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(viewport.width);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve)),
-    );
-  });
-
   const name = `${state}-${viewport.width}x${viewport.height}`;
   await mkdir(captureDirectory, { recursive: true });
   await page.screenshot({

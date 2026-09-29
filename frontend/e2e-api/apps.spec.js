@@ -2,30 +2,18 @@ import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blockExternalRequests, loopbackHosts } from "./helpers.js";
-
-const viewports = [
-  { width: 1440, height: 1000 },
-  { width: 1024, height: 900 },
-  { width: 768, height: 1024 },
-  { width: 390, height: 844 },
-  { width: 360, height: 844 },
-];
+import {
+  blockExternalRequests,
+  loopbackHosts,
+  prepareViewportCapture,
+  viewports,
+} from "./helpers.js";
 const captureDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../docs/evidence/phase-2/issue81/2026-09-29/visual/api-mode",
 );
 async function capture(page, state, viewport) {
-  await page.setViewportSize(viewport);
-  expect(
-    await page.evaluate(() => document.documentElement.scrollWidth),
-  ).toBeLessThanOrEqual(viewport.width);
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve)),
-    );
-  });
+  await prepareViewportCapture(page, viewport);
   await mkdir(captureDirectory, { recursive: true });
   await page.screenshot({
     path: path.join(

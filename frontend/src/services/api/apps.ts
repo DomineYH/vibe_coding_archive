@@ -41,6 +41,7 @@ const API_ERROR_TRIPLES = [
   { endpoint: "GET /apps", status: 400, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /apps", status: 503, code: "SERVICE_UNAVAILABLE" },
+  { endpoint: "GET /apps/{id}", status: 400, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps/{id}", status: 404, code: "NOT_FOUND" },
   { endpoint: "GET /apps/{id}", status: 401, code: "AUTH_REQUIRED" },
   { endpoint: "GET /apps/{id}", status: 403, code: "FORBIDDEN" },
