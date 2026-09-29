@@ -9,7 +9,7 @@ import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppCard, Btn, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
-import { normalizeSearch } from "../../services/apps-service";
+import { isSearchTooLong } from "../../services/apps-service";
 
 export function GalleryView({
   meta,
@@ -50,8 +50,7 @@ export function GalleryView({
       loadMoreLocked.current = false;
     });
   }, [loadMore]);
-  const foldedSearch = normalizeSearch(search) ?? "";
-  const searchTooLong = !composing && Array.from(foldedSearch).length > 100;
+  const searchTooLong = !composing && isSearchTooLong(search);
   const visibleSubjects = subjectsInUse.includes(subject)
     ? subjectsInUse
     : subject

@@ -20,7 +20,7 @@ import catalog from "../../../contracts/catalog.json";
 import { appsService } from "@services/apps";
 import { authService } from "@services/auth";
 import { healthService } from "@services/health";
-import { normalizeSearch } from "../services/apps-service";
+import { isSearchTooLong } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { reconcileMockReset } from "../services/mock/state";
 import { contractError, ServiceError } from "../services/service-error";
@@ -55,8 +55,7 @@ function readGalleryFilters(search) {
     seen.add(key);
     if (key === "q") {
       const normalized = value.trim().normalize("NFC");
-      const folded = normalizeSearch(value);
-      if (folded && Array.from(folded).length > 100) values.q = value;
+      if (isSearchTooLong(value)) values.q = value;
       else if (normalized) values.q = normalized;
     } else if (value) {
       values[key] = value;
@@ -305,8 +304,7 @@ function GalleryRoute({ auth }) {
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
   const filters = query.filters;
-  const overLimitSearch =
-    Array.from(normalizeSearch(filters.q ?? "") ?? "").length > 100;
+  const overLimitSearch = isSearchTooLong(filters.q ?? "");
   const access = usePublicMetadata();
   const onQueryChange = useCallback(
     (patch, { replace = true } = {}) => {

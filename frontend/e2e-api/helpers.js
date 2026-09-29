@@ -31,3 +31,12 @@ export function blockExternalRequests(context) {
       : route.abort("blockedbyclient");
   });
 }
+
+export function disableAutomaticPagination(page) {
+  return page.addInitScript(() => {
+    window.IntersectionObserver = class {
+      observe() {}
+      disconnect() {}
+    };
+  });
+}
