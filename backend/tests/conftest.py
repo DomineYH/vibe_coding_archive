@@ -70,7 +70,7 @@ def seed_public_and_private_apps():
                     ),
                 ],
             )
-            created_at = "2026-09-28T12:00:00+00:00"
+            created_at = "2026-09-28T12:00:00.000000Z"
             for app_id, owner_id, name, subject, is_public in [
                 (
                     "00000000-0000-0000-0000-000000000001",

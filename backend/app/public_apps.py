@@ -5,7 +5,8 @@ from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi import Path as ApiPath
 from pydantic import (
     AnyUrl,
     BaseModel,
@@ -13,7 +14,6 @@ from pydantic import (
     Field,
     ValidationError,
     WithJsonSchema,
-    field_validator,
 )
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
@@ -27,22 +27,6 @@ from app.models import App
 Subject = Literal[*CATALOG["subjects"]]
 Grade = Literal[*CATALOG["grades"]]
 Uri = Annotated[str, WithJsonSchema({"type": "string", "format": "uri"})]
-Facets = Annotated[
-    dict[str, list[Subject]],
-    WithJsonSchema(
-        {
-            "type": "object",
-            "additionalProperties": False,
-            "required": ["subjects_in_use"],
-            "properties": {
-                "subjects_in_use": {
-                    "type": "array",
-                    "items": {"type": "string", "enum": CATALOG["subjects"]},
-                }
-            },
-        }
-    ),
-]
 router = APIRouter()
 
 
@@ -119,20 +103,15 @@ class Pagination(StrictModel):
     has_more: bool
 
 
+class Facets(StrictModel):
+    subjects_in_use: list[Subject]
+
+
 class AppPage(StrictModel):
     items: list[AppCard]
     pagination: Pagination
     server_time: datetime
     facets: Facets
-
-    @field_validator("facets")
-    @classmethod
-    def only_subjects_in_use(
-        cls, facets: dict[str, list[Subject]]
-    ) -> dict[str, list[Subject]]:
-        if set(facets) != {"subjects_in_use"}:
-            raise ValueError("Invalid public app facets.")
-        return facets
 
 
 class AppDetail(AppCard):
@@ -268,6 +247,22 @@ def _parse_page_number(value: str | None, default: int) -> int:
 def list_public_apps(
     request: Request,
     session: Annotated[Session, Depends(get_session)],
+    limit: Annotated[
+        str | int,
+        Query(
+            description="Page size; defaults to 24 and cannot exceed 100.",
+        ),
+        WithJsonSchema(
+            {"type": "integer", "minimum": 1, "maximum": 100, "default": 24}
+        ),
+    ] = 24,
+    offset: Annotated[
+        str | int,
+        Query(
+            description="Zero-based offset. A valid offset past the result count returns an empty page.",
+        ),
+        WithJsonSchema({"type": "integer", "minimum": 0, "default": 0}),
+    ] = 0,
 ) -> AppPage | JSONResponse:
     parameters = request.query_params.multi_items()
     keys = [key for key, _value in parameters]
@@ -294,21 +289,28 @@ def list_public_apps(
         return _invalid_query({"limit": "1에서 100 사이의 정수여야 합니다."})
 
     try:
-        total = session.scalar(
-            select(func.count()).select_from(App).where(App.is_public.is_(True))
-        )
-        apps = session.scalars(
-            select(App)
-            .options(
-                selectinload(App.owner),
-                selectinload(App.grades),
-                selectinload(App.health_result),
+        total = (
+            session.scalar(
+                select(func.count()).select_from(App).where(App.is_public.is_(True))
             )
-            .where(App.is_public.is_(True))
-            .order_by(App.created_at.desc(), App.id.desc())
-            .limit(limit)
-            .offset(offset)
-        ).all()
+            or 0
+        )
+        apps = (
+            session.scalars(
+                select(App)
+                .options(
+                    selectinload(App.owner),
+                    selectinload(App.grades),
+                    selectinload(App.health_result),
+                )
+                .where(App.is_public.is_(True))
+                .order_by(App.created_at.desc(), App.id.desc())
+                .limit(limit)
+                .offset(offset)
+            ).all()
+            if offset < total
+            else []
+        )
         subjects = session.scalars(
             select(App.subject).where(App.is_public.is_(True)).distinct()
         ).all()
@@ -318,8 +320,8 @@ def list_public_apps(
                 "pagination": {
                     "limit": limit,
                     "offset": offset,
-                    "total": total or 0,
-                    "has_more": offset + len(apps) < (total or 0),
+                    "total": total,
+                    "has_more": offset + len(apps) < total,
                 },
                 "server_time": datetime.now(UTC),
                 "facets": {
@@ -349,7 +351,7 @@ def list_public_apps(
     },
 )
 def get_public_app(
-    id: str,
+    id: Annotated[str, ApiPath(json_schema_extra={"format": "uuid"})],
     session: Annotated[Session, Depends(get_session)],
 ) -> AppDetailResponse | JSONResponse:
     try:

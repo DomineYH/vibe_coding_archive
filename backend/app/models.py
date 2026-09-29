@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 from sqlalchemy import (
     Boolean,
     CheckConstraint,
@@ -9,12 +11,30 @@ from sqlalchemy import (
     Text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy.types import TypeDecorator
 
 from app.catalog import CATALOG
 
 
 class Base(DeclarativeBase):
     pass
+
+
+class UtcTimestampString(TypeDecorator[str]):
+    impl = String(40)
+    cache_ok = True
+
+    def process_bind_param(self, value: str | datetime | None, _dialect) -> str | None:
+        if value is None:
+            return None
+        parsed = value if isinstance(value, datetime) else datetime.fromisoformat(value)
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError("Timestamps must include a UTC offset.")
+        return (
+            parsed.astimezone(UTC)
+            .isoformat(timespec="microseconds")
+            .replace("+00:00", "Z")
+        )
 
 
 class Member(Base):
@@ -80,8 +100,8 @@ class App(Base):
     stack_hosting: Mapped[str | None] = mapped_column(String(80))
     version: Mapped[int] = mapped_column(nullable=False)
     url_version: Mapped[int] = mapped_column(nullable=False)
-    created_at: Mapped[str] = mapped_column(String(40), nullable=False)
-    updated_at: Mapped[str] = mapped_column(String(40), nullable=False)
+    created_at: Mapped[str] = mapped_column(UtcTimestampString(), nullable=False)
+    updated_at: Mapped[str] = mapped_column(UtcTimestampString(), nullable=False)
 
     owner: Mapped[Member] = relationship(back_populates="apps")
     grades: Mapped[list[AppGrade]] = relationship(
