@@ -25,6 +25,7 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     with TestClient(app) as client:
         first_page = client.get("/api/v1/apps?limit=1&offset=0")
         second_page = client.get("/api/v1/apps?limit=1&offset=1")
+        maximum_page = client.get("/api/v1/apps?limit=100")
         past_end = client.get("/api/v1/apps?limit=1&offset=10")
         oversized_offset = client.get("/api/v1/apps?offset=9223372036854775808")
         detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000002")
@@ -37,6 +38,8 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         non_integer_limit = client.get("/api/v1/apps?limit=twenty-four")
 
     assert first_page.status_code == second_page.status_code == 200
+    assert maximum_page.status_code == 200
+    assert maximum_page.json()["pagination"]["limit"] == 100
     page = first_page.json()
     assert set(page) == {"items", "pagination", "server_time", "facets"}
     assert page["pagination"] == {
@@ -249,6 +252,7 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
         "subject=physics",
         "subject=전체",
         "grade=대학",
+        "limit=0",
         "limit=1.5",
         "limit=101",
         "limit=1e2",
@@ -279,8 +283,11 @@ def test_public_list_rejects_search_over_post_casefold_limit(
     seed_public_and_private_apps(database_path)
 
     with TestClient(app) as client:
+        at_limit = client.get("/api/v1/apps", params={"q": "ß" * 50})
         response = client.get("/api/v1/apps", params={"q": "ß" * 51})
 
+    assert at_limit.status_code == 200
+    assert at_limit.json()["pagination"]["total"] == 0
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "VALIDATION_ERROR"
     assert "q" in response.json()["error"]["fields"]
