@@ -3,6 +3,7 @@ import {
   blockExternalRequests,
   deferred,
   disableAutomaticPagination,
+  fulfillServiceUnavailable,
 } from "./helpers.js";
 import { captureGalleryState } from "./gallery-helpers.js";
 
@@ -27,17 +28,7 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
     listRequestQueries.push(url.searchParams);
     if (failRefetchUntilRetry) {
       failedRefetches += 1;
-      return route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: {
-            code: "SERVICE_UNAVAILABLE",
-            message: "Public service error",
-            request_id: "issue82-refetch",
-          },
-        }),
-      });
+      return fulfillServiceUnavailable(route, "issue82-refetch");
     }
     if (holdRetry) {
       holdRetry = false;

@@ -18,6 +18,7 @@ test("uses the committed search during IME filter changes and debounces composit
     .poll(() => new URL(page.url()).searchParams.get("q"))
     .toBe("추가 공개 앱");
 
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
   const listRequests = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
@@ -35,11 +36,13 @@ test("uses the committed search during IME filter changes and debounces composit
   });
   await page.getByRole("button", { name: "수학", exact: true }).click();
   await mathResponse;
+  await page.clock.resume();
+  await captureGalleryState(page, "ime-composition-filter");
   expect(
     listRequests.some((params) => params.get("q") === "추가 공개 앱 27"),
   ).toBe(false);
-  await captureGalleryState(page, "ime-composition-filter");
 
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
   await search.dispatchEvent("compositionend", {
     data: "추가 공개 앱 27",
   });
@@ -57,6 +60,7 @@ test("uses the committed search during IME filter changes and debounces composit
   });
   await page.clock.runFor(1);
   await committedResponse;
+  await page.clock.runFor(0);
   await expect(page).toHaveURL(
     /q=%EC%B6%94%EA%B0%80\+%EA%B3%B5%EA%B0%9C\+%EC%95%B1\+27/,
   );
@@ -80,6 +84,7 @@ test("uses the committed search during IME filter changes and debounces composit
   });
   await grades.selectOption("초1");
   await committedGradeResponse;
+  await page.clock.runFor(0);
   expect(
     listRequests
       .slice(gradeChangeRequestStart)
@@ -106,6 +111,7 @@ test("uses the committed search during IME filter changes and debounces composit
   });
   await page.clock.runFor(1);
   await committedGradeCompositionResponse;
+  await page.clock.runFor(0);
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(search).toHaveValue("추가 공개 앱 26");
   await expect(grades).toHaveValue("초1");

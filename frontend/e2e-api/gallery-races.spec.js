@@ -3,6 +3,7 @@ import {
   blockExternalRequests,
   deferred,
   disableAutomaticPagination,
+  fulfillServiceUnavailable,
 } from "./helpers.js";
 
 test("does not let a late search response replace the newest query", async ({
@@ -77,17 +78,7 @@ test("ignores a late retry response after changing the active search", async ({
       return route.continue();
     nextCalls += 1;
     if (nextCalls === 1)
-      return route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: {
-            code: "SERVICE_UNAVAILABLE",
-            message: "Public service error",
-            request_id: "issue82-stale-retry",
-          },
-        }),
-      });
+      return fulfillServiceUnavailable(route, "issue82-stale-retry");
     const response = await route.fetch();
     retryRequest.resolve();
     await retryGate.promise;

@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   blockExternalRequests,
   disableAutomaticPagination,
+  fulfillServiceUnavailable,
 } from "./helpers.js";
 import { captureGalleryState } from "./gallery-helpers.js";
 
@@ -27,17 +28,7 @@ test("retains the current cards after next-page failure and stops on duplicate-o
     nextPageRequests += 1;
     if (mode === "failure") {
       mode = "duplicate";
-      return route.fulfill({
-        status: 503,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: {
-            code: "SERVICE_UNAVAILABLE",
-            message: "Public service error",
-            request_id: "issue82-next-page",
-          },
-        }),
-      });
+      return fulfillServiceUnavailable(route, "issue82-next-page");
     }
     const response = await route.fetch();
     const body = await response.json();

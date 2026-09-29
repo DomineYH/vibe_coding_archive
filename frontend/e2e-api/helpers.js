@@ -18,6 +18,20 @@ export function deferred() {
   return { promise, resolve };
 }
 
+export function fulfillServiceUnavailable(route, requestId) {
+  return route.fulfill({
+    status: 503,
+    contentType: "application/json",
+    body: JSON.stringify({
+      error: {
+        code: "SERVICE_UNAVAILABLE",
+        message: "Public service error",
+        request_id: requestId,
+      },
+    }),
+  });
+}
+
 export async function prepareViewportCapture(page, viewport) {
   await page.setViewportSize(viewport);
   expect(
