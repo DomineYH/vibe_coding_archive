@@ -25,18 +25,33 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     with TestClient(app) as client:
         first_page = client.get("/api/v1/apps?limit=1&offset=0")
         second_page = client.get("/api/v1/apps?limit=1&offset=1")
+        maximum_page = client.get("/api/v1/apps?limit=100")
         past_end = client.get("/api/v1/apps?limit=1&offset=10")
         oversized_offset = client.get("/api/v1/apps?offset=9223372036854775808")
         detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000002")
         private_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000003")
         missing_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
-        unsupported_search = client.get("/api/v1/apps?q=private-app-sentinel")
+        forged_identity_detail = client.get(
+            "/api/v1/apps/00000000-0000-0000-0000-000000000003",
+            headers={
+                "Authorization": "Bearer forged-owner-token",
+                "Cookie": "__Host-eduvibe_session_00000000-0000-4000-8000-000000000020_1=forged",
+                "X-EduVibe-Flow-Id": "00000000-0000-4000-8000-000000000020",
+                "X-EduVibe-Auth-Revision": "999",
+                "X-EduVibe-Session-Generation": "999",
+                "X-User-Id": "00000000-0000-0000-0000-000000000020",
+                "X-Member-Id": "00000000-0000-0000-0000-000000000020",
+            },
+        )
+        private_search = client.get("/api/v1/apps?q=private-app-sentinel")
         too_large = client.get("/api/v1/apps?limit=101")
         repeated_limit = client.get("/api/v1/apps?limit=1&limit=2")
         unknown_parameter = client.get("/api/v1/apps?tracking=1")
         non_integer_limit = client.get("/api/v1/apps?limit=twenty-four")
 
     assert first_page.status_code == second_page.status_code == 200
+    assert maximum_page.status_code == 200
+    assert maximum_page.json()["pagination"]["limit"] == 100
     page = first_page.json()
     assert set(page) == {"items", "pagination", "server_time", "facets"}
     assert page["pagination"] == {
@@ -129,16 +144,16 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     assert body["item"]["health"] == card["health"]
     assert private_detail.status_code == missing_detail.status_code == 404
     assert private_detail.json() == missing_detail.json()
+    assert forged_identity_detail.status_code == missing_detail.status_code == 404
+    assert forged_identity_detail.json() == missing_detail.json()
     assert (
-        unsupported_search.status_code
-        == too_large.status_code
+        too_large.status_code
         == repeated_limit.status_code
         == unknown_parameter.status_code
         == non_integer_limit.status_code
         == 400
     )
     for response in (
-        unsupported_search,
         too_large,
         repeated_limit,
         unknown_parameter,
@@ -147,6 +162,203 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         assert set(response.json()) == {"error"}
         assert response.json()["error"]["code"] == "VALIDATION_ERROR"
         assert response.json()["error"]["fields"]
+
+    assert private_search.status_code == 200
+    assert private_search.json()["items"] == []
+    assert private_search.json()["pagination"]["total"] == 0
+
+
+@pytest.mark.parametrize("query", ["q=ignored", "tracking=1", "q=%", "q=one&q=two"])
+def test_public_detail_rejects_any_query(
+    query: str, tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "detail-query.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get(
+            f"/api/v1/apps/00000000-0000-0000-0000-000000000001?{query}"
+        )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert response.json()["error"]["fields"]
+
+
+def test_public_list_search_filters_and_facets_follow_catalog_contract(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "search.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        with app.state.engine.begin() as connection:
+            connection.execute(
+                text(
+                    "UPDATE apps SET name = :name, description = :description, "
+                    "prompt = :prompt WHERE id = :id"
+                ),
+                {
+                    "name": "Straße %_ App",
+                    "description": "Cafe\u0301 lesson Ꟍ",
+                    "prompt": "Prompt-only sentinel",
+                    "id": "00000000-0000-0000-0000-000000000001",
+                },
+            )
+            connection.execute(
+                text(
+                    "UPDATE apps SET name = 'Cross', description = 'FieldOnly' "
+                    "WHERE id = '00000000-0000-0000-0000-000000000002'"
+                )
+            )
+            connection.execute(
+                text("UPDATE members SET nickname = 'CaseFold Owner' WHERE id = :id"),
+                {"id": "00000000-0000-0000-0000-000000000010"},
+            )
+            connection.execute(text("DELETE FROM app_grades"))
+            connection.execute(
+                text("INSERT INTO app_grades (app_id, grade) VALUES (:id, :grade)"),
+                [
+                    {"id": "00000000-0000-0000-0000-000000000001", "grade": "초2"},
+                    {"id": "00000000-0000-0000-0000-000000000002", "grade": "중1"},
+                    {"id": "00000000-0000-0000-0000-000000000003", "grade": "고1"},
+                ],
+            )
+
+        def list_ids(**params: str) -> list[str]:
+            response = client.get("/api/v1/apps", params=params)
+            assert response.status_code == 200
+            return [item["id"] for item in response.json()["items"]]
+
+        assert list_ids(q="STRASSE") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="Café") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="Ꟍ") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="casefold owner") == [
+            "00000000-0000-0000-0000-000000000002",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+        assert list_ids(q="%_") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="crossfield") == []
+        assert list_ids(q="prompt-only") == []
+        assert list_ids(q="private-login-sentinel") == []
+        assert list_ids(q="private-app-sentinel") == []
+        assert list_ids(subject="기타") == []
+
+        filtered_response = client.get(
+            "/api/v1/apps",
+            params={"q": "STRASSE", "subject": "수학", "grade": "초2", "limit": 1},
+        )
+        assert filtered_response.status_code == 200
+        filtered = filtered_response.json()
+        assert [item["id"] for item in filtered["items"]] == [
+            "00000000-0000-0000-0000-000000000001"
+        ]
+        assert filtered["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+        private_subject = client.get("/api/v1/apps?subject=기타").json()
+        assert private_subject["items"] == []
+        assert private_subject["pagination"]["total"] == 0
+        assert private_subject["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+        empty = client.get(
+            "/api/v1/apps", params={"subject": "수학", "grade": "중1"}
+        ).json()
+        assert empty["items"] == []
+        assert empty["pagination"]["total"] == 0
+        assert empty["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+        second_page = client.get(
+            "/api/v1/apps",
+            params={"q": "", "subject": "", "grade": "", "limit": 1, "offset": 1},
+        ).json()
+        assert [item["id"] for item in second_page["items"]] == [
+            "00000000-0000-0000-0000-000000000001"
+        ]
+        assert second_page["pagination"]["total"] == 2
+        assert second_page["facets"]["subjects_in_use"] == ["수학", "영어"]
+
+
+@pytest.mark.parametrize("query", ["q", "subject", "grade"])
+def test_public_list_treats_bare_filter_keys_as_empty_values(
+    query: str, tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "bare-filter.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get(f"/api/v1/apps?{query}")
+
+    assert response.status_code == 200
+    assert response.json()["pagination"]["total"] == 2
+
+
+@pytest.mark.parametrize(("query", "field"), [("limit", "limit"), ("offset", "offset")])
+def test_public_list_rejects_bare_pagination_keys(
+    query: str, field: str, tmp_path: Path, make_test_app
+):
+    app = make_test_app(tmp_path / "bare-pagination.sqlite3")
+
+    with TestClient(app) as client:
+        response = client.get(f"/api/v1/apps?{query}")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert field in response.json()["error"]["fields"]
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "q=word&q=word",
+        "tracking=1",
+        "q=%",
+        "q=%FF",
+        "q=%C3%28",
+        "subject=physics",
+        "subject=전체",
+        "grade=대학",
+        "limit=0",
+        "limit=1.5",
+        "limit=101",
+        "limit=1e2",
+        "offset=-1",
+        "offset=１",
+    ],
+)
+def test_public_list_rejects_invalid_raw_query_values(
+    query: str, tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "invalid-query.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get(f"/api/v1/apps?{query}")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert response.json()["error"]["fields"]
+
+
+def test_public_list_rejects_search_over_post_casefold_limit(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "long-query.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        at_limit = client.get("/api/v1/apps", params={"q": "ß" * 50})
+        response = client.get("/api/v1/apps", params={"q": "ß" * 51})
+
+    assert at_limit.status_code == 200
+    assert at_limit.json()["pagination"]["total"] == 0
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert "q" in response.json()["error"]["fields"]
 
 
 def test_corrupt_stored_health_timestamp_is_server_error_not_query_error(
@@ -263,17 +475,17 @@ def test_public_apps_fastapi_declarations_match_openapi(
         parameter["name"]: parameter
         for parameter in source["paths"]["/apps"]["get"]["parameters"]
     }
-    for name in ("limit", "offset"):
+    assert actual_list_parameters.keys() == expected_list_parameters.keys()
+    for name in ("q", "subject", "grade", "limit", "offset"):
         assert (
             actual_list_parameters[name]["in"] == expected_list_parameters[name]["in"]
         )
         assert actual_list_parameters[name].get(
             "required", False
         ) == expected_list_parameters[name].get("required", False)
-        for key in ("type", "minimum", "maximum", "default"):
-            assert actual_list_parameters[name]["schema"].get(
-                key
-            ) == expected_list_parameters[name]["schema"].get(key)
+        assert normalize_schema(
+            actual_list_parameters[name]["schema"], actual
+        ) == normalize_schema(expected_list_parameters[name]["schema"], source)
 
     actual_detail_parameters = {
         parameter["name"]: parameter
@@ -283,6 +495,7 @@ def test_public_apps_fastapi_declarations_match_openapi(
         parameter["name"]: parameter
         for parameter in source["paths"]["/apps/{id}"]["get"]["parameters"]
     }
+    assert actual_detail_parameters.keys() == expected_detail_parameters.keys()
     assert (
         actual_detail_parameters["id"]["name"]
         == expected_detail_parameters["id"]["name"]
@@ -299,12 +512,31 @@ def test_public_apps_fastapi_declarations_match_openapi(
         actual_detail_parameters["id"]["schema"]["format"]
         == expected_detail_parameters["id"]["schema"]["format"]
     )
+    actual_detail_error = actual["paths"]["/api/v1/apps/{id}"]["get"]["responses"][
+        "400"
+    ]["content"]["application/json"]["schema"]
+    expected_detail_error = source["components"]["responses"]["ServiceError"][
+        "content"
+    ]["application/json"]["schema"]
+    assert source["paths"]["/apps/{id}"]["get"]["responses"]["400"]["$ref"] == (
+        "#/components/responses/ServiceError"
+    )
+    assert normalize_schema(actual_detail_error, actual) == normalize_schema(
+        expected_detail_error, source
+    )
 
 
-def test_public_app_errors_use_safe_contract_envelopes(tmp_path: Path, make_test_app):
+def test_public_app_errors_use_safe_contract_envelopes(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
     app = make_test_app(tmp_path / "errors.sqlite3")
+    seed_public_and_private_apps(tmp_path / "errors.sqlite3")
     with TestClient(app) as client:
         with app.state.engine.begin() as connection:
+            connection.execute(
+                text("UPDATE apps SET name = 'public-error-sentinel' WHERE id = :id"),
+                {"id": "00000000-0000-0000-0000-000000000001"},
+            )
             connection.execute(text("DROP TABLE apps"))
         list_error = client.get("/api/v1/apps")
         detail_error = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
@@ -312,8 +544,21 @@ def test_public_app_errors_use_safe_contract_envelopes(tmp_path: Path, make_test
     assert list_error.status_code == detail_error.status_code == 503
     assert set(list_error.json()) == set(detail_error.json()) == {"error"}
     assert set(list_error.json()["error"]) == {"code", "message", "request_id"}
-    assert "sqlite" not in list_error.text.lower()
-    assert str(tmp_path) not in list_error.text
+    for response in (list_error, detail_error):
+        assert "sqlite" not in response.text.lower()
+        assert str(tmp_path) not in response.text
+        assert all(
+            sentinel not in response.text and sentinel not in str(response.headers)
+            for sentinel in (
+                "public-error-sentinel",
+                "private-app-sentinel",
+                "private-login-sentinel",
+                "email-sentinel@example.test",
+                "phone-sentinel",
+                "password-hash-sentinel",
+                "비공개 별명 sentinel",
+            )
+        )
 
 
 def test_file_database_constraints_reject_invalid_app_and_health_rows(

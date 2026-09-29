@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 from typing import Annotated, Literal
+from unicodedata import normalize
+from urllib.parse import parse_qsl
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -15,19 +17,46 @@ from pydantic import (
     ValidationError,
     WithJsonSchema,
 )
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, load_only, selectinload
 from starlette.responses import JSONResponse
 
 from app.catalog import CATALOG
 from app.database import get_session
-from app.models import App
+from app.models import App, AppGrade, Member
+from app.models import HealthResult as HealthResultRow
 
 Subject = Literal[*CATALOG["subjects"]]
 Grade = Literal[*CATALOG["grades"]]
 Uri = Annotated[str, WithJsonSchema({"type": "string", "format": "uri"})]
+SubjectFilter = Annotated[
+    str | None,
+    Query(description="Empty omits the filter; otherwise use one catalog value."),
+    WithJsonSchema(
+        {
+            "anyOf": [
+                {"type": "string", "enum": [""]},
+                {"type": "string", "enum": CATALOG["subjects"]},
+            ]
+        }
+    ),
+]
+GradeFilter = Annotated[
+    str | None,
+    Query(description="Empty omits the filter; otherwise use one catalog value."),
+    WithJsonSchema(
+        {
+            "anyOf": [
+                {"type": "string", "enum": [""]},
+                {"type": "string", "enum": CATALOG["grades"]},
+            ]
+        }
+    ),
+]
 router = APIRouter()
+QUERY_KEYS = {"q", "subject", "grade", "limit", "offset"}
+SEARCH_TRIM = " \t\n\r\v\f\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
 
 
 class StrictModel(BaseModel):
@@ -234,6 +263,30 @@ def _parse_page_number(value: str | None, default: int) -> int:
     return int(value)
 
 
+def _parse_raw_query(request: Request) -> list[tuple[str, str]] | None:
+    try:
+        query = request.scope["query_string"].decode("utf-8")
+        if re.search(r"%(?![0-9a-f]{2})", query, flags=re.IGNORECASE):
+            return None
+        query = "&".join(
+            f"{part}=" if part and "=" not in part else part
+            for part in query.split("&")
+        )
+        return parse_qsl(
+            query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            encoding="utf-8",
+            errors="strict",
+        )
+    except (UnicodeDecodeError, ValueError):
+        return None
+
+
+def _fold_search_value(value: str) -> str:
+    return normalize("NFC", value).casefold()
+
+
 @router.get(
     "/apps",
     operation_id="listPublicApps",
@@ -263,13 +316,22 @@ def list_public_apps(
         ),
         WithJsonSchema({"type": "integer", "minimum": 0, "default": 0}),
     ] = 0,
+    q: Annotated[
+        str | None,
+        Query(description="Search app names, author nicknames, and descriptions."),
+        WithJsonSchema({"type": "string"}),
+    ] = None,
+    subject: SubjectFilter = None,
+    grade: GradeFilter = None,
 ) -> AppPage | JSONResponse:
-    parameters = request.query_params.multi_items()
+    parameters = _parse_raw_query(request)
+    if parameters is None:
+        return _invalid_query({"query": "쿼리 형식이 올바르지 않습니다."})
     keys = [key for key, _value in parameters]
     seen: set[str] = set()
     invalid_keys: set[str] = set()
     for key in keys:
-        if key in seen or key not in {"limit", "offset"}:
+        if key in seen or key not in QUERY_KEYS:
             invalid_keys.add(key)
         seen.add(key)
     if invalid_keys:
@@ -277,6 +339,19 @@ def list_public_apps(
             {key: "지원하지 않거나 중복된 입력입니다." for key in invalid_keys}
         )
     query = dict(parameters)
+    folded_query = _fold_search_value(query.get("q", "").strip(SEARCH_TRIM))
+    if len(folded_query) > 100:
+        return _invalid_query({"q": "정규화 후 100자 이하여야 합니다."})
+    folded_query = folded_query or None
+    subject_filter = query.get("subject") or None
+    grade_filter = query.get("grade") or None
+    invalid_filters = {}
+    if subject_filter and subject_filter not in CATALOG["subjects"]:
+        invalid_filters["subject"] = "지원하지 않는 과목입니다."
+    if grade_filter and grade_filter not in CATALOG["grades"]:
+        invalid_filters["grade"] = "지원하지 않는 학년입니다."
+    if invalid_filters:
+        return _invalid_query(invalid_filters)
     try:
         limit = _parse_page_number(query.get("limit"), 24)
     except ValueError:
@@ -289,26 +364,56 @@ def list_public_apps(
         return _invalid_query({"limit": "1에서 100 사이의 정수여야 합니다."})
 
     try:
-        total = (
-            session.scalar(
-                select(func.count()).select_from(App).where(App.is_public.is_(True))
-            )
-            or 0
+        candidates = (
+            select(App.id, App.name, Member.nickname, App.description)
+            .join(App.owner)
+            .where(App.is_public.is_(True))
+            .order_by(App.created_at.desc(), App.id.desc())
         )
+        if subject_filter:
+            candidates = candidates.where(App.subject == subject_filter)
+        if grade_filter:
+            candidates = candidates.where(
+                App.grades.any(AppGrade.grade == grade_filter)
+            )
+        # ponytail: Python Unicode casefold scans public search fields; add a SQLite Unicode index if catalogue size makes this costly.
+        matching_ids = [
+            app_id
+            for app_id, name, nickname, description in session.execute(candidates).all()
+            if folded_query is None
+            or any(
+                folded_query in _fold_search_value(value)
+                for value in (name, nickname, description)
+            )
+        ]
+        total = len(matching_ids)
+        page_ids = matching_ids[offset : offset + limit]
         apps = (
             session.scalars(
                 select(App)
                 .options(
-                    selectinload(App.owner),
-                    selectinload(App.grades),
-                    selectinload(App.health_result),
+                    load_only(
+                        App.id,
+                        App.name,
+                        App.subject,
+                        App.is_public,
+                        App.theme_id,
+                        App.version,
+                        App.url_version,
+                    ),
+                    selectinload(App.owner).load_only(Member.id, Member.nickname),
+                    selectinload(App.grades).load_only(AppGrade.app_id, AppGrade.grade),
+                    selectinload(App.health_result).load_only(
+                        HealthResultRow.app_id,
+                        HealthResultRow.state,
+                        HealthResultRow.checked_at,
+                        HealthResultRow.fresh_until,
+                    ),
                 )
-                .where(App.is_public.is_(True))
+                .where(App.id.in_(page_ids), App.is_public.is_(True))
                 .order_by(App.created_at.desc(), App.id.desc())
-                .limit(limit)
-                .offset(offset)
             ).all()
-            if offset < total
+            if page_ids
             else []
         )
         subjects = session.scalars(
@@ -321,7 +426,7 @@ def list_public_apps(
                     "limit": limit,
                     "offset": offset,
                     "total": total,
-                    "has_more": offset + len(apps) < total,
+                    "has_more": offset + len(page_ids) < total,
                 },
                 "server_time": datetime.now(UTC),
                 "facets": {
@@ -344,6 +449,7 @@ def list_public_apps(
     summary="Read an archive app available to the current member",
     response_model=AppDetailResponse,
     responses={
+        400: {"model": ErrorEnvelope},
         401: {"model": ErrorEnvelope},
         403: {"model": ErrorEnvelope},
         404: {"model": ErrorEnvelope},
@@ -351,9 +457,17 @@ def list_public_apps(
     },
 )
 def get_public_app(
+    request: Request,
     id: Annotated[str, ApiPath(json_schema_extra={"format": "uuid"})],
     session: Annotated[Session, Depends(get_session)],
 ) -> AppDetailResponse | JSONResponse:
+    if _parse_raw_query(request) != []:
+        return _error(
+            400,
+            "VALIDATION_ERROR",
+            "상세 조회는 쿼리를 지원하지 않습니다.",
+            {"query": "상세 조회는 쿼리를 지원하지 않습니다."},
+        )
     try:
         app_id = str(UUID(id))
     except ValueError:

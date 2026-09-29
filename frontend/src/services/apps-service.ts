@@ -512,13 +512,14 @@ export function normalizeQuery(query: ListAppsQuery = {}) {
     (query.grade !== undefined && typeof query.grade !== "string")
   )
     throw new RangeError("invalid list query value");
-  const q = query.q === undefined ? undefined : normalizeSearch(query.q);
+  const q =
+    query.q === undefined
+      ? undefined
+      : query.q.trim().normalize("NFC") || undefined;
   const subject = query.subject || undefined;
   const grade = query.grade || undefined;
   const limit = query.limit === undefined ? 24 : query.limit;
   const offset = query.offset === undefined ? 0 : query.offset;
-  if (q && Array.from(q).length > 100)
-    throw new RangeError("q must contain at most 100 characters");
   if ((subject && !subjects.has(subject)) || (grade && !grades.has(grade)))
     throw new RangeError("unsupported list filter");
   if (!Number.isInteger(limit) || limit < 1 || limit > 100)

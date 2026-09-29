@@ -111,9 +111,13 @@ def _capabilities() -> dict[str, dict[str, object]]:
     keys = Capabilities.model_fields
     return {
         key: {
-            "enabled": False,
+            "enabled": key == "apps_read",
             "reasons": (
-                COLLECTION_DISABLED if key.endswith("_collection") else NOT_IMPLEMENTED
+                []
+                if key == "apps_read"
+                else COLLECTION_DISABLED
+                if key.endswith("_collection")
+                else NOT_IMPLEMENTED
             ),
         }
         for key in keys

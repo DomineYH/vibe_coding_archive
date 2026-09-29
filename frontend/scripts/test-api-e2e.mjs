@@ -58,12 +58,26 @@ async function run() {
     if (migration.error) throw migration.error;
     if (migration.status !== 0)
       throw new Error("The isolated API E2E database migration failed.");
+    const fixtures = spawnSync(
+      "uv",
+      [
+        "run",
+        "--frozen",
+        "python",
+        "-c",
+        "import os; from pathlib import Path; from tests.support import populate_public_and_private_apps; populate_public_and_private_apps(Path(os.environ['DATABASE_PATH']), 27, valid_uuids=True)",
+      ],
+      { cwd: backend, env, stdio: "inherit" },
+    );
+    if (fixtures.error) throw fixtures.error;
+    if (fixtures.status !== 0)
+      throw new Error("The isolated API E2E fixtures could not be created.");
     if (receivedSignal) {
       process.exitCode = signalExitCode();
       return;
     }
 
-    // T02 tests metadata only; T03 owns app rows and their fixtures.
+    // E2E uses isolated synthetic rows; it never calls the development seed.
     playwright = spawn(
       path.join(frontend, "node_modules", ".bin", "playwright"),
       ["test", "--config=playwright.api.config.js"],

@@ -72,16 +72,21 @@ def test_meta_health_and_readiness_use_public_contract_and_file_database(
             "phone_collection",
         }
         assert meta["capabilities"]["apps_read"] == {
-            "enabled": False,
-            "reasons": ["not_implemented"],
+            "enabled": True,
+            "reasons": [],
         }
         for key, capability in meta["capabilities"].items():
-            assert capability["enabled"] is False
-            assert capability["reasons"] == [
-                "collection_disabled"
-                if key.endswith("_collection")
-                else "not_implemented"
-            ]
+            assert capability["enabled"] is (key == "apps_read")
+            expected_reasons = (
+                []
+                if key == "apps_read"
+                else [
+                    "collection_disabled"
+                    if key.endswith("_collection")
+                    else "not_implemented"
+                ]
+            )
+            assert capability["reasons"] == expected_reasons
 
         connection = sqlite3.connect(database_path)
         try:
