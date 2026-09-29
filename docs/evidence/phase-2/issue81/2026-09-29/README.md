@@ -2,7 +2,7 @@
 
 ## Scope and revisions
 
-Issue [#81](https://github.com/DomineYH/vibe_coding_archive/issues/81), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), completes the public list query contract and activates the existing `apps_read` capability. The implementation is commit [`e09fecc`](https://github.com/DomineYH/vibe_coding_archive/commit/e09fecc), followed by test-boundary commit [`ad6b4ea`](https://github.com/DomineYH/vibe_coding_archive/commit/ad6b4ea) and fix-round-one commit [`ba734d1`](https://github.com/DomineYH/vibe_coding_archive/commit/ba734d1). Fix round one rejects query input on public detail with a 400 `VALIDATION_ERROR`, updates its OpenAPI response and generated TypeScript, strengthens privacy fixtures, and extracts shared API E2E utilities.
+Issue [#81](https://github.com/DomineYH/vibe_coding_archive/issues/81), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), completes the public list query contract and activates the existing `apps_read` capability. The implementation is commit [`e09fecc`](https://github.com/DomineYH/vibe_coding_archive/commit/e09fecc), followed by test-boundary commit [`ad6b4ea`](https://github.com/DomineYH/vibe_coding_archive/commit/ad6b4ea), fix-round-one commit [`ba734d1`](https://github.com/DomineYH/vibe_coding_archive/commit/ba734d1), and fix-round-two source commit [`d406d53`](https://github.com/DomineYH/vibe_coding_archive/commit/d406d53b89b5ac3620abffaed5f85f44dfed4443). Fix round one rejects query input on public detail with a 400 `VALIDATION_ERROR`, updates its OpenAPI response and generated TypeScript, strengthens privacy fixtures, and extracts shared API E2E utilities. Fix round two allows the detail validation error through the shared service and shares viewport preparation between API E2E specs.
 
 Search trims ECMAScript whitespace, applies NFC and Unicode casefold, enforces 100 folded code points, and performs literal substring matching independently on public app name, owner nickname, and description. Subject and grade filters combine with search using AND. The route strictly parses raw query bytes, rejects repeated and unknown keys, invalid percent/UTF-8, invalid filters and numeric values, and does not clamp limits. Ordering remains `created_at DESC, id DESC`; totals and pages use the filtered set, while subject facets use the complete public set in catalog order.
 
@@ -57,3 +57,17 @@ All final checks below ran against source commit [`ba734d1271823b32722b336b9be21
 | API-mode browser tests | `cd frontend && npm run test:e2e:api` | PASS; 3/3 tests against real HTTP and temporary file SQLite, including the shared fixture seeder and loopback request guard. |
 
 The new detail-query regression was first run against the pre-fix route and failed all four cases with HTTP 200. The OpenAPI detail `400` response was added and `npm run openapi:generate` explicitly regenerated the single corresponding `getApp` response type. Hosted CI and human handover/UI-D approval remain pending.
+
+## Fix round two final verification
+
+These final frontend suites ran against source commit [`d406d53b89b5ac3620abffaed5f85f44dfed4443`](https://github.com/DomineYH/vibe_coding_archive/commit/d406d53b89b5ac3620abffaed5f85f44dfed4443), before this documentation-only update.
+
+| Scope | Command (run from `frontend/`) | Observed result |
+| --- | --- | --- |
+| Red-first regression | `npm test -- tests/api-apps.test.ts` before the service fix | EXPECTED FAILURE; 35 passed, 1 failed because `GET /apps/{id}` 400 `VALIDATION_ERROR` was mapped to `CONTRACT_ERROR`. |
+| Frontend static checks | `npm run check` | PASS; OpenAPI lint/check, TypeScript, ESLint, and Prettier. Redocly reported the existing `/healthz` and `/readyz` 4xx-response warnings. |
+| Frontend unit tests | `npm test` | PASS; 418/418 tests across 28 files. |
+| API-mode browser tests | `npm run test:e2e:api` | PASS; 3/3 real API and temporary SQLite browser tests. |
+| Mock-mode browser tests | `CI=true npm run test:e2e` | PASS; 106/106 tests. |
+
+The detail view already displays non-404 read errors in an accessible alert with a retry action, so no UI change was needed. The API browser run rewrote six existing captures with small byte differences; they were restored because this service/test-helper change does not alter rendered UI. No capture, visual baseline, source reference, or lockfile changed. Hosted CI and DomineYH's UI-D/accessibility/device review remain pending.
