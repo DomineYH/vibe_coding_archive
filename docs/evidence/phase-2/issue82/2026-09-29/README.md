@@ -76,3 +76,24 @@ Commands below are recorded against the source/test revision on which they ran. 
 - DomineYH UI-D, screen-reader, physical-device, and local handover acceptance remain pending. Browser checks do not claim human acceptance.
 - Write workflows, authentication recovery, app deletion/edit behavior, clipboard recovery, and cross-client database races remain with their owning issues.
 - No lockfile, generated type, source reference, or visual baseline was updated. The evidence contains synthetic test data only.
+
+## Review follow-up 1b
+
+Source and API-spec refactor commit: `1911d2f518cc79840826eb5d8c84514691d32243`. The following commands ran against the tree represented by that commit, with no later source or test edits. The existing empty-state UI and every visual reference/baseline remain untouched; the active-condition copy/reset decision from review finding 1 is still pending.
+
+- Added an actual API/temporary SQLite gallery case: `q=둘째 공개 앱` renders the English fixture; adding the valid Math subject filter receives a successful zero-item list response. The query and selected subject remain visible, and the grade selector retains the fixed catalog values.
+- Extended the IME browser-clock case to cover both subject and grade changes during composition. Each filter request uses the last committed query; the composed query is absent at 299 ms and is sent at 300 ms.
+- Added an explicit gate around a real offset-24 response, changed the active search while it was held, released it, and verified the displayed first-page IDs still belong to the new query.
+- Centralized the folded-query length limit and the API test's automatic-pagination observer stub. Split the former 697-line issue-number spec into query, IME, refetch, paging, and race specs, with one gallery capture helper. The five new spec files retain all 10 prior cases and add the two coverage cases above.
+
+| Command (`frontend/`)                                  | Final result on `1911d2f`                                                                                                                                     |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                                        | PASS; OpenAPI parity, TypeScript, ESLint, and Prettier. Redocly still reports its two existing `/healthz` and `/readyz` missing-4xx warnings.                 |
+| `npm test`                                             | PASS; 28 files, 420 tests.                                                                                                                                    |
+| `npm run test:e2e:api`                                 | PASS; 15/15 tests against FastAPI and temporary file SQLite. This includes the committed-query subject/grade IME boundaries and the gated late ordinary page. |
+| `CI=true npm run test:e2e`                             | PASS; 106/106 mock browser tests.                                                                                                                             |
+| `npm run test:visual` with `VISUAL_BASELINE_CAPTURE=0` | Not run; rendered UI behavior did not change, and finding 1's zero-result UI remains untouched.                                                               |
+
+A first `npm run check` attempt caught an unused local after query-length centralization; it was removed. The next check caught formatting in four split specs; Prettier fixed those files. A post-grade API E2E run once failed at the pre-existing subject-composition 299 ms assertion; the final 15/15 run passed both 299 ms boundaries without changing the clock assertions. API E2E regenerated unrelated #81 images and several existing #82 screenshots; those generated image changes were restored. The final worktree contains no screenshot or unrelated-asset changes.
+
+Hosted PR #94 checks observed for the prior source commit `d192abd6f8caf17abdd95efc21a1259d5fab6306` are PASS: backend-api and frontend in runs `36528459306` and `36528467119`. Hosted checks for `1911d2f` and coordinator confirmation remain pending. DomineYH visual/accessibility and local handover acceptance remain pending. Finding 1 still needs a decision on the active-condition zero-state change; no baseline was changed.
