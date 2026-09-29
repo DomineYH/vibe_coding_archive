@@ -2,7 +2,7 @@
 
 ## Scope and revision
 
-Issue [#80](https://github.com/DomineYH/vibe_coding_archive/issues/80), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), adds the file-SQLite schema and the basic public app list/detail HTTP boundary. The initial implementation results below refer to source commit `1063bff59c793f5e812477cd80ec2a1059ec39d1`; fix-round-1 results are recorded against `73c7f27d2d90eea033d66c2df589d78a755b71cc` on branch `feat/issue-80-public-app-db-list-detail`.
+Issue [#80](https://github.com/DomineYH/vibe_coding_archive/issues/80), under [Phase 2 spec #77](https://github.com/DomineYH/vibe_coding_archive/issues/77), adds the file-SQLite schema and the basic public app list/detail HTTP boundary. The initial implementation results below refer to source commit `1063bff59c793f5e812477cd80ec2a1059ec39d1`; fix-round-1 results are recorded against `73c7f27d2d90eea033d66c2df589d78a755b71cc`; fix-round-2 source is `b94560b6ed5cecee71003984e1e992bca5d00f7d` on branch `feat/issue-80-public-app-db-list-detail`.
 
 The migration adds distinct member ID/login/nickname fields, owned apps, app grades, and health summaries with real foreign-key, uniqueness, check, and duplicate-grade constraints. Public GET handlers use explicit card/detail DTOs, only read rows whose public flag is true, use one generic 404 for private/missing IDs, and return stored UTC health/timestamps without creating jobs. `apps_read` remains disabled. Authentication, writes, admin access, search, filtering, full facets/raw-query behavior, and health checks remain disabled or owned by later tickets; no result below claims those features.
 
@@ -52,7 +52,7 @@ The CI's pinned visual Chromium download and apt font setup were not repeated be
 1. **Query and stored-data errors:** confirmed. #77 §3 distinguishes validation/input errors from service failures; the OpenAPI `GET /apps` response declares a 400 `ErrorEnvelope`, and `frontend/src/services/api/apps.ts` allows `GET /apps` 400 `VALIDATION_ERROR` with optional `fields`. The route now parses and validates query values before database access, returns those field errors for invalid input, and maps stored timestamp conversion failures to generic 503 `SERVICE_UNAVAILABLE`. The regression corrupts a stored health timestamp and checks status, code, and redaction.
 2. **Schema normalizer duplication:** confirmed. Both contract suites now use the single `normalize_schema` fixture in `backend/tests/contracts/conftest.py`.
 3. **Test ownership/layout:** confirmed. Process startup, HTTP reads, and restart persistence coverage moved to `backend/tests/test_public_app_restart.py`; database migration and synthetic public/private seeding fixtures live in `backend/tests/conftest.py`. `test_public_apps.py` now contains only public-app contracts and database constraints.
-4. **AC10 hosted status:** corrected. On prior source `5d72a88`, hosted `backend-api` runs `36498908887` and `36498915706` passed; the frontend run was pending. These results do not cover R1 source `73c7f27`, whose hosted run remains pending coordinator confirmation. AC10 therefore records local checks as passed and hosted CI as pending, rather than marking the whole acceptance row PASS.
+4. **AC10 hosted status:** corrected. Coordinator observation confirms both hosted jobs passed on prior source `5d72a88`; backend-api runs `36498908887` and `36498915706` are recorded as passes. These results do not cover R1 source `73c7f27`, whose hosted run remains pending coordinator confirmation. AC10 therefore records local checks as passed and hosted CI as pending, rather than marking the whole acceptance row PASS.
 
 The regression test first failed as expected: the corrupt stored timestamp returned 400 instead of 503, and the query-error assertion observed `INVALID_QUERY` instead of `VALIDATION_ERROR`. An initial test setup attempt accessed the app engine before entering `TestClient`; moving the corruption inside the client context fixed the harness. The focused public-app, metadata, and restart tests then passed 8/8.
 
@@ -67,12 +67,36 @@ Commands ran from `backend/` unless otherwise noted.
 | Full backend suite | `APP_ENV=test uv run --frozen pytest` | PASS; 40/40 tests in 53.43s. Existing Starlette/httpx deprecation warning only. |
 | Focused contracts and restart | `APP_ENV=test uv run --frozen pytest tests/contracts/test_public_apps.py tests/contracts/test_public_meta_health.py tests/test_public_app_restart.py -q` | PASS; 8/8 tests. |
 | Frontend checks | Not run | No frontend or generated contract files changed in R1; no lockfile, API type, OpenAPI source, reference, or visual baseline changed. |
-| Hosted CI | Coordinator observation for prior source `5d72a88` | `backend-api` runs `36498908887` and `36498915706` passed; frontend pending. Hosted CI for source `73c7f27` remains pending coordinator confirmation. |
+| Hosted CI | Coordinator observation for prior source `5d72a88` | Both backend-api and frontend jobs passed; backend-api runs `36498908887` and `36498915706` are recorded as passes. Hosted CI for source `73c7f27` remains pending coordinator confirmation. |
 
 The R1 source commit is `73c7f27d2d90eea033d66c2df589d78a755b71cc`. The evidence and acceptance-ledger update is committed separately; it does not change the source tested above.
+
+## Fix round 2 dispositions and final checks on source commit `b94560b6ed5cecee71003984e1e992bca5d00f7d`
+
+1. **Mixed UTC timestamp ordering — fixed through the mapped write type, without a migration.** The original SQL order is lexical, so mixed valid UTC spellings can sort by representation rather than instant. `UtcTimestampString.process_bind_param` parses aware datetimes and ISO strings, normalizes them to UTC, and stores fixed-width microseconds with `Z`; both `App.created_at` and `App.updated_at` use it. The issue #80 app surface has no product insert/update route, and the application/migration search found no raw-SQL app writer. A migration would rewrite rows that this feature cannot yet create. Test fixture seed SQL intentionally bypasses SQLAlchemy, so its timestamp is already canonical. The regression updates rows using SQLAlchemy `update(App)` with `2026-09-28T12:00:00Z` and `2026-09-28T12:00:00.100000+00:00`, then verifies both normalized stored values and descending chronological list order. Any future raw-SQL writer must preserve this storage invariant.
+2. **Oversized offset — fixed.** Once `total` is known, `offset >= total` skips the SQLite page query. The public HTTP contract sends `offset=9223372036854775808` and verifies a 200 empty page with the requested offset and correct totals; the former behavior raised SQLite's signed-integer `OverflowError`.
+3. **FastAPI operation parameters — fixed.** The list operation declares `limit` and `offset` with integer schemas, bounds, defaults, and descriptions while their runtime values remain compatible with the existing raw-query parser; malformed, repeated, out-of-range, and unknown input still returns the documented 400 `VALIDATION_ERROR` for the frontend allow-list. Detail `id` remains a string at runtime so invalid IDs keep their 404 behavior, while its operation schema declares `format: uuid`. Contract tests compare operation parameter location, requiredness, type, bounds, defaults, and path format to `contracts/openapi.yaml`.
+4. **Facets DTO duplication — simplified.** A strict `Facets` model with only `subjects_in_use: list[Subject]` replaces the handwritten JSON schema and custom validator. The normalized response-schema comparison still matches the single OpenAPI source.
+
+The first red run on unchanged source `e42ec92` failed all three added regression seams: the oversized offset raised SQLite `OverflowError`, the mixed-spelling list sorted lexically, and FastAPI's list operation had no declared `parameters`. The final focused public-app contract file passed 6/6. The full final-source backend suite and both Ruff checks are recorded below. The API response body shape and OpenAPI source/generated frontend types did not change; frontend checks and `npm run test:e2e:api` were not rerun. No lockfile, generated file, visual reference, or baseline changed.
+
+### Final local checks
+
+Commands ran from `backend/` unless noted.
+
+| Scope | Command | Observed result |
+| --- | --- | --- |
+| Backend lint | `uv run --frozen ruff check .` | PASS; all checks passed. |
+| Backend formatting | `uv run --frozen ruff format --check .` | PASS; 17 files already formatted. |
+| Focused public-app contracts | `APP_ENV=test uv run --frozen pytest tests/contracts/test_public_apps.py -q` | PASS; 6/6 tests. Existing Starlette/httpx deprecation warning only. |
+| Full backend suite | `APP_ENV=test uv run --frozen pytest` | PASS; 41/41 tests in 67.33s. Existing Starlette/httpx deprecation warning only. |
+| Frontend checks / API E2E | Not run | No frontend or generated contract files changed, and no API response body shape changed. |
+| Hosted CI | Coordinator observation only; no hosted interaction by this task | Both jobs passed on prior source `5d72a88`; backend-api runs `36498908887` and `36498915706` are recorded as passes. On `e42ec92`, backend-api passed while frontend was running at the observation point. Hosted status for final source `b94560b` is pending coordinator confirmation. |
+
+The source commit is `b94560b6ed5cecee71003984e1e992bca5d00f7d`. Historical hosted results belong only to their listed SHAs. Hosted CI for this R2 source, human UI-D/accessibility/device review, and local handover acceptance remain pending.
 
 ## Acceptance and remaining gates
 
 Local backend/API/DB behavior and current frontend regression checks pass. Search/filter semantics, full facets, actual user-facing list/detail activation, auth, writes, administrator access, and health jobs are not claimed; `apps_read` remains false pending T04. The product screen was not switched to the new routes.
 
-Hosted CI observed for prior source `5d72a88` has two passing backend-api runs (`36498908887`, `36498915706`) and a pending frontend run. Hosted CI for R1 source `73c7f27` remains pending coordinator confirmation. DomineYH's visual, accessibility/device, and local handover acceptance remain pending. The capture comparison records the small 390×844 differences for that review and does not mark them accepted.
+Coordinator observation confirms both hosted jobs passed on prior source `5d72a88`; backend-api runs `36498908887` and `36498915706` are recorded as passes. Hosted CI for R1 source `73c7f27` and R2 source `b94560b` remains pending coordinator confirmation. DomineYH's visual, accessibility/device, and local handover acceptance remain pending. The capture comparison records the small 390×844 differences for that review and does not mark them accepted.
