@@ -86,3 +86,26 @@ The red-first command `APP_ENV=test uv run --frozen pytest tests/contracts/test_
 | API-mode browser tests | `npm run test:e2e:api` (`frontend/`) | PASS; 3/3 tests against the real API and temporary SQLite database. |
 
 The API browser run rewrote four unrelated API-mode PNGs; those exact files were restored afterward. No captures, comparison records, visual baselines, source references, or lockfiles remain changed.
+
+## Fix round four verification
+
+The implementation is commit [`332c781981232cb132600484258c49f3a76ea094`](https://github.com/DomineYH/vibe_coding_archive/commit/332c781981232cb132600484258c49f3a76ea094), followed by formatting-only source commit [`9a8386e25f72c5e06db8266bed51d78dc2db33db`](https://github.com/DomineYH/vibe_coding_archive/commit/9a8386e25f72c5e06db8266bed51d78dc2db33db). The required full-suite results below ran against source commit `9a8386e25f72c5e06db8266bed51d78dc2db33db`.
+
+The mismatch is confirmed: pinned Python 3.12.3 uses Unicode 15.0.0 and leaves U+A7CC (`Ꟍ`) unchanged under `casefold()`, while the frontend JavaScript runtime used Unicode 17.0 and folded it to U+A7CD (`ꟍ`). Before the fix, `appsService.list({ q: "  Ꟍ  " })` sent `ꟍ`; its new real-client-path regression failed with expected `Ꟍ`, received `ꟍ`. The client now sends trimmed NFC text without case folding; the backend is authoritative for matching and the 100-code-point limit. Client folding remains a UI length hint, and the deterministic mock folds both its query and fields to retain local behavior.
+
+The backend contract now searches for `Ꟍ` in a stored public description. The error contract test seeds its public/private rows, adds a public sentinel, triggers the storage failure, and checks list and detail error bodies and headers for all seeded sentinels.
+
+| Scope | Command (working directory) | Observed result |
+| --- | --- | --- |
+| Red API client regression | `npm test -- --run tests/api-apps.test.ts -t 'sends trimmed search text to the server without client-side folding'` (`frontend/`, pre-fix implementation) | EXPECTED FAILURE; actual query parameter was `ꟍ`, expected `Ꟍ`. |
+| Backend contract regressions | `uv run --frozen pytest tests/contracts/test_public_apps.py -k 'search_filters_and_facets or errors_use_safe_contract_envelopes' -q` (`backend/`) | PASS; 2/2 tests, both before and after the client fix. The raw server query matches and seeded sentinels remain absent on errors. |
+| Focused frontend regression set | `npm test -- --run tests/apps-service.test.ts tests/api-apps.test.ts tests/mock-apps.test.ts` (`frontend/`) | PASS; 84/84 tests across 3 files. |
+| Backend lint | `uv run --frozen ruff check .` (`backend/`) | PASS; all checks passed. |
+| Backend formatting | `uv run --frozen ruff format --check .` (`backend/`) | PASS; 19 files already formatted. |
+| Backend suite | `APP_ENV=test uv run --frozen pytest` (`backend/`) | PASS; 66/66 tests in 269.35s. Existing Starlette `httpx` deprecation warning only. |
+| Frontend static checks | `npm run check` (`frontend/`) | PASS on final source commit; OpenAPI lint/check, TypeScript, ESLint, and Prettier. Redocly reports the existing `/healthz` and `/readyz` 4xx-response warnings. A first run on `332c781` caught formatting in the mock parity branch; Prettier was applied and all final suites rerun on `9a8386e`. |
+| Frontend unit tests | `npm test` (`frontend/`) | PASS; 419/419 tests across 28 files. |
+| API-mode browser tests | `npm run test:e2e:api` (`frontend/`) | PASS; 3/3 real HTTP and temporary file-SQLite browser tests. |
+| Mock-mode browser tests | `CI=true npm run test:e2e` (`frontend/`) | PASS; 106/106 tests. |
+
+The API browser run rewrote six unrelated captures; the files were restored and the worktree had no remaining image, baseline, source-reference, or lockfile changes. Hosted CI and DomineYH's UI-D/accessibility/device review and local handover remain pending.
