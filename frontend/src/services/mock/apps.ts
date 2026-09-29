@@ -371,11 +371,9 @@ export const appsService: AppsService = {
     const normalized = normalizeQueryForService(query);
     const foldedQuery = normalized.q ? caseFold(normalized.q) : undefined;
     if (foldedQuery && Array.from(foldedQuery).length > 100)
-      throw new ServiceError(
-        "VALIDATION_ERROR",
-        "검색 조건을 확인해 주세요.",
-        { outcome: "rejected" },
-      );
+      throw new ServiceError("VALIDATION_ERROR", "검색 조건을 확인해 주세요.", {
+        outcome: "rejected",
+      });
     const state = await beginRead(signal);
     if (
       state.scenario === "list_failure" ||
