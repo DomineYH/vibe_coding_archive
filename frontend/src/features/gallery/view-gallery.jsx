@@ -52,6 +52,11 @@ export function GalleryView({
   }, [loadMore]);
   const foldedSearch = normalizeSearch(search) ?? "";
   const searchTooLong = !composing && Array.from(foldedSearch).length > 100;
+  const visibleSubjects = subjectsInUse.includes(subject)
+    ? subjectsInUse
+    : subject
+      ? [...subjectsInUse, subject]
+      : subjectsInUse;
   const resetRoute =
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   const invalidQuery =
@@ -178,7 +183,7 @@ export function GalleryView({
             className="flex flex-wrap items-center gap-1.5"
             aria-label="과목 필터"
           >
-            {["", ...subjectsInUse].map((value) => {
+            {["", ...visibleSubjects].map((value) => {
               const label = value || "전체";
               return (
                 <button

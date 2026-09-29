@@ -56,9 +56,8 @@ function readGalleryFilters(search) {
     if (key === "q") {
       const normalized = value.trim().normalize("NFC");
       const folded = normalizeSearch(value);
-      if (folded && Array.from(folded).length > 100)
-        return { filters: {}, invalid: true };
-      if (normalized) values.q = normalized;
+      if (folded && Array.from(folded).length > 100) values.q = value;
+      else if (normalized) values.q = normalized;
     } else if (value) {
       values[key] = value;
     }
@@ -306,6 +305,8 @@ function GalleryRoute({ auth }) {
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
   const filters = query.filters;
+  const overLimitSearch =
+    Array.from(normalizeSearch(filters.q ?? "") ?? "").length > 100;
   const access = usePublicMetadata();
   const onQueryChange = useCallback(
     (patch, { replace = true } = {}) => {
@@ -362,7 +363,7 @@ function GalleryRoute({ auth }) {
         : undefined;
     },
     retry: false,
-    enabled: access.canRead && !query.invalid,
+    enabled: access.canRead && !query.invalid && !overLimitSearch,
     queryFn: async ({ pageParam, signal }) => {
       const page = await appsService.list(
         { ...filters, limit: 24, offset: pageParam },
@@ -430,7 +431,9 @@ function GalleryRoute({ auth }) {
       loading={
         !query.invalid &&
         (access.loading ||
-          (access.canRead && (list.isPending || list.isRefetching)))
+          (access.canRead &&
+            !overLimitSearch &&
+            (list.isPending || list.isRefetching)))
       }
       retry={() => access.retry(() => list.refetch())}
       resetQuery={resetQuery}
