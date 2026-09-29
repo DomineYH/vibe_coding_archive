@@ -245,12 +245,16 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   await expect(search).toHaveValue("추가 공개 앱");
   await expect(subject).toHaveAttribute("aria-pressed", "true");
   await expect(grade).toHaveValue("초1");
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
   const displayedIds = await page
     .locator("a.card-r")
     .evaluateAll((cards) =>
       cards.map((card) => card.getAttribute("href").slice("/apps/".length)),
     );
-  await page.locator("a.card-r").first().click();
+  await page.locator(`a.card-r[href="/apps/${displayedIds.at(-1)}"]`).click();
   await expect(page.getByRole("button", { name: "갤러리로" })).toBeVisible();
   const requestsBeforeReturn = listRequests;
   failRefetchUntilRetry = true;
@@ -271,6 +275,9 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
     "공개 아카이브를 불러오지 못했어요",
   );
   await expect(page.locator("a.card-r")).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
   for (const id of displayedIds)
     await expect(page.locator(`a.card-r[href="/apps/${id}"]`)).toHaveCount(0);
   await capture(page, "refetch-error");
@@ -288,6 +295,9 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   releaseRetry();
   await retrySettledPromise;
   await expect(page.locator("a.card-r")).toHaveCount(24);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(0);
   for (const id of displayedIds)
     await expect(page.locator(`a.card-r[href="/apps/${id}"]`)).toHaveCount(1);
   expect(listRequests).toBe(requestsBeforeRetry + 1);
