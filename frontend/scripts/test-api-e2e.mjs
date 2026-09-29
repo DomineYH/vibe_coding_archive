@@ -65,7 +65,7 @@ async function run() {
         "--frozen",
         "python",
         "-c",
-        "import os; from pathlib import Path; from tests.support import populate_public_and_private_apps; populate_public_and_private_apps(Path(os.environ['DATABASE_PATH']), 27, valid_uuids=True)",
+        "import os; from pathlib import Path; from tests.support import populate_public_and_private_apps; populate_public_and_private_apps(Path(os.environ['DATABASE_PATH']), 27, valid_uuids=True, include_search_edge_cases=True)",
       ],
       { cwd: backend, env, stdio: "inherit" },
     );

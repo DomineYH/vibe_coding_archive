@@ -9,7 +9,11 @@ CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
 
 
 def populate_public_and_private_apps(
-    database_path: Path, public_count: int = 2, *, valid_uuids: bool = False
+    database_path: Path,
+    public_count: int = 2,
+    *,
+    valid_uuids: bool = False,
+    include_search_edge_cases: bool = False,
 ) -> None:
     uuid_prefix = (
         "00000000-0000-4000-8000-" if valid_uuids else "00000000-0000-0000-0000-"
@@ -20,6 +24,41 @@ def populate_public_and_private_apps(
 
     connection = sqlite3.connect(database_path)
     try:
+        members = [
+            (
+                fixture_uuid(10),
+                "private-login-sentinel",
+                "공개 별명",
+                "email-sentinel@example.test",
+                "phone-sentinel",
+                "password-hash-sentinel",
+                0,
+                "approved",
+            ),
+            (
+                fixture_uuid(20),
+                "other-private-login-sentinel",
+                "비공개 별명 sentinel",
+                "email-sentinel@example.test",
+                "phone-sentinel",
+                "password-hash-sentinel",
+                0,
+                "approved",
+            ),
+        ]
+        if include_search_edge_cases:
+            members.append(
+                (
+                    fixture_uuid(30),
+                    "search-edge-login",
+                    "검색 경계 별명",
+                    "search-edge@example.test",
+                    "search-edge-phone",
+                    "search-edge-password-hash",
+                    0,
+                    "approved",
+                )
+            )
         connection.executemany(
             """
             INSERT INTO members (
@@ -27,28 +66,7 @@ def populate_public_and_private_apps(
                 approval_status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            [
-                (
-                    fixture_uuid(10),
-                    "private-login-sentinel",
-                    "공개 별명",
-                    "email-sentinel@example.test",
-                    "phone-sentinel",
-                    "password-hash-sentinel",
-                    0,
-                    "approved",
-                ),
-                (
-                    fixture_uuid(20),
-                    "other-private-login-sentinel",
-                    "비공개 별명 sentinel",
-                    "email-sentinel@example.test",
-                    "phone-sentinel",
-                    "password-hash-sentinel",
-                    0,
-                    "approved",
-                ),
-            ],
+            members,
         )
         created_at = "2026-09-28T12:00:00.000000Z"
         apps = [
@@ -80,6 +98,25 @@ def populate_public_and_private_apps(
             )
             for index in range(3, public_count + 1)
         )
+        edge_app_ids = set()
+        if include_search_edge_cases:
+            edge_apps = [
+                (900000000001, "Casefold Straße fixture"),
+                (900000000002, "Literal percent % fixture"),
+                (900000000003, "Literal underscore _ fixture"),
+            ]
+            edge_app_ids = {fixture_uuid(app_id) for app_id, _ in edge_apps}
+            apps.extend(
+                (
+                    fixture_uuid(app_id),
+                    fixture_uuid(30),
+                    name,
+                    "영어",
+                    True,
+                    ["초2"],
+                )
+                for app_id, name in edge_apps
+            )
         apps.append(
             (
                 fixture_uuid(public_count + 1),
@@ -91,6 +128,9 @@ def populate_public_and_private_apps(
             )
         )
         for app_id, owner_id, name, subject, is_public, grades in apps:
+            app_created_at = (
+                "2026-09-27T12:00:00.000000Z" if app_id in edge_app_ids else created_at
+            )
             connection.execute(
                 """
                 INSERT INTO apps (
@@ -115,8 +155,8 @@ def populate_public_and_private_apps(
                     None,
                     1,
                     1,
-                    created_at,
-                    created_at,
+                    app_created_at,
+                    app_created_at,
                 ),
             )
             connection.executemany(

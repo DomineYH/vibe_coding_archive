@@ -121,7 +121,7 @@ test("stops and offers retry when a next page claims more data without progress"
   await captureGalleryState(page, "no-progress-page-error");
 
   await page.getByRole("button", { name: "다시 시도" }).click();
-  await expect(page.locator("a.card-r")).toHaveCount(27);
+  await expect(page.locator("a.card-r")).toHaveCount(30);
   await expect(page.getByRole("button", { name: "더 불러오기" })).toHaveCount(
     0,
   );

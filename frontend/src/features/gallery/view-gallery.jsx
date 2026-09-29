@@ -19,6 +19,7 @@ export function GalleryView({
   onQueryChange,
   initialFilters = {},
   detailLinkState,
+  onDetailClick,
   error,
   loading,
   retry,
@@ -337,6 +338,7 @@ export function GalleryView({
                   app={app}
                   theme={theme}
                   detailLinkState={detailLinkState}
+                  onDetailClick={onDetailClick}
                 />
               ) : null;
             })}

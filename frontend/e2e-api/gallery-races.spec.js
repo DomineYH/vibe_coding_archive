@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   blockExternalRequests,
+  deferred,
   disableAutomaticPagination,
 } from "./helpers.js";
 
@@ -8,20 +9,17 @@ test("does not let a late search response replace the newest query", async ({
   page,
   context,
 }) => {
-  let releaseOld;
-  let oldStarted;
-  let oldSettled;
-  const oldGate = new Promise((resolve) => (releaseOld = resolve));
-  const oldRequestStarted = new Promise((resolve) => (oldStarted = resolve));
-  const oldRequestSettled = new Promise((resolve) => (oldSettled = resolve));
+  const oldGate = deferred();
+  const oldRequestStarted = deferred();
+  const oldRequestSettled = deferred();
   const isOldSearch = (request) =>
     new URL(request.url()).searchParams.get("q") === "추가 공개 앱";
   await blockExternalRequests(context);
   page.on("requestfinished", (request) => {
-    if (isOldSearch(request)) oldSettled();
+    if (isOldSearch(request)) oldRequestSettled.resolve();
   });
   page.on("requestfailed", (request) => {
-    if (isOldSearch(request)) oldSettled();
+    if (isOldSearch(request)) oldRequestSettled.resolve();
   });
   await page.route("**/api/v1/apps**", async (route) => {
     const url = new URL(route.request().url());
@@ -30,8 +28,8 @@ test("does not let a late search response replace the newest query", async ({
       url.searchParams.get("q") === "추가 공개 앱"
     ) {
       const response = await route.fetch();
-      oldStarted();
-      await oldGate;
+      oldRequestStarted.resolve();
+      await oldGate.promise;
       try {
         await route.fulfill({ response });
       } catch {
@@ -46,14 +44,14 @@ test("does not let a late search response replace the newest query", async ({
   await expect(page.locator("a.card-r")).toHaveCount(24);
   const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
   await search.fill("추가 공개 앱");
-  await oldRequestStarted;
+  await oldRequestStarted.promise;
   await search.fill("추가 공개 앱 27");
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(
     page.getByRole("link", { name: /추가 공개 앱 27/ }),
   ).toBeVisible();
-  releaseOld();
-  await oldRequestSettled;
+  oldGate.resolve();
+  await oldRequestSettled.promise;
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(
     page.getByRole("link", { name: /추가 공개 앱 27/ }),
@@ -65,14 +63,9 @@ test("ignores a late retry response after changing the active search", async ({
   context,
 }) => {
   let nextCalls = 0;
-  let releaseRetry;
-  let retryStarted;
-  let retryHandled;
-  const retryGate = new Promise((resolve) => (releaseRetry = resolve));
-  const retryRequest = new Promise((resolve) => (retryStarted = resolve));
-  const retryRequestHandled = new Promise(
-    (resolve) => (retryHandled = resolve),
-  );
+  const retryGate = deferred();
+  const retryRequest = deferred();
+  const retryRequestHandled = deferred();
   await blockExternalRequests(context);
   await disableAutomaticPagination(page);
   await page.route("**/api/v1/apps**", async (route) => {
@@ -96,14 +89,14 @@ test("ignores a late retry response after changing the active search", async ({
         }),
       });
     const response = await route.fetch();
-    retryStarted();
-    await retryGate;
+    retryRequest.resolve();
+    await retryGate.promise;
     try {
       await route.fulfill({ response });
     } catch {
       // The current search may cancel the held request before it is released.
     } finally {
-      retryHandled();
+      retryRequestHandled.resolve();
     }
   });
 
@@ -116,13 +109,13 @@ test("ignores a late retry response after changing the active search", async ({
   );
   await expect(page.locator("a.card-r")).toHaveCount(24);
   await page.getByRole("button", { name: "다시 시도" }).click();
-  await retryRequest;
+  await retryRequest.promise;
 
   const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
   await search.fill("추가 공개 앱 27");
   await expect(page.locator("a.card-r")).toHaveCount(1);
-  releaseRetry();
-  await retryRequestHandled;
+  retryGate.resolve();
+  await retryRequestHandled.promise;
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(
     page.getByRole("link", { name: /추가 공개 앱 27/ }),
@@ -133,12 +126,9 @@ test("ignores a late ordinary next page after changing the active search", async
   page,
   context,
 }) => {
-  let releasePage;
-  let signalPageStarted;
-  let signalPageSettled;
-  const pageGate = new Promise((resolve) => (releasePage = resolve));
-  const pageStarted = new Promise((resolve) => (signalPageStarted = resolve));
-  const pageSettled = new Promise((resolve) => (signalPageSettled = resolve));
+  const pageGate = deferred();
+  const pageStarted = deferred();
+  const pageSettled = deferred();
   await blockExternalRequests(context);
   await disableAutomaticPagination(page);
   await page.route("**/api/v1/apps**", async (route) => {
@@ -150,21 +140,21 @@ test("ignores a late ordinary next page after changing the active search", async
     )
       return route.continue();
     const response = await route.fetch();
-    signalPageStarted();
+    pageStarted.resolve();
     try {
-      await pageGate;
+      await pageGate.promise;
       await route.fulfill({ response });
     } catch {
       // The changed search can cancel the held page before it is released.
     } finally {
-      signalPageSettled();
+      pageSettled.resolve();
     }
   });
 
   await page.goto("/");
   await expect(page.locator("a.card-r")).toHaveCount(24);
   await page.getByRole("button", { name: "더 불러오기" }).click();
-  await pageStarted;
+  await pageStarted.promise;
 
   const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
   await search.fill("추가 공개 앱 27");
@@ -173,8 +163,8 @@ test("ignores a late ordinary next page after changing the active search", async
     page.getByRole("link", { name: /추가 공개 앱 27/ }),
   ).toBeVisible();
 
-  releasePage();
-  await pageSettled;
+  pageGate.resolve();
+  await pageSettled.promise;
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(
     page.getByRole("link", { name: /추가 공개 앱 27/ }),

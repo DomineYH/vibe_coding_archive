@@ -10,6 +10,14 @@ export const viewports = [
   { width: 360, height: 844 },
 ];
 
+export function deferred() {
+  let resolve;
+  const promise = new Promise((complete) => {
+    resolve = complete;
+  });
+  return { promise, resolve };
+}
+
 export async function prepareViewportCapture(page, viewport) {
   await page.setViewportSize(viewport);
   expect(

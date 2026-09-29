@@ -43,7 +43,7 @@ test("uses the committed search during IME filter changes and debounces composit
   await search.dispatchEvent("compositionend", {
     data: "추가 공개 앱 27",
   });
-  await page.clock.fastForward(299);
+  await page.clock.runFor(299);
   expect(
     listRequests.some((params) => params.get("q") === "추가 공개 앱 27"),
   ).toBe(false);
@@ -55,7 +55,7 @@ test("uses the committed search during IME filter changes and debounces composit
       url.searchParams.get("subject") === "수학"
     );
   });
-  await page.clock.fastForward(1);
+  await page.clock.runFor(1);
   await committedResponse;
   await expect(page).toHaveURL(
     /q=%EC%B6%94%EA%B0%80\+%EA%B3%B5%EA%B0%9C\+%EC%95%B1\+27/,
@@ -89,7 +89,7 @@ test("uses the committed search during IME filter changes and debounces composit
   await search.dispatchEvent("compositionend", {
     data: "추가 공개 앱 26",
   });
-  await page.clock.fastForward(299);
+  await page.clock.runFor(299);
   expect(
     listRequests
       .slice(gradeChangeRequestStart)
@@ -104,7 +104,7 @@ test("uses the committed search during IME filter changes and debounces composit
       url.searchParams.get("grade") === "초1"
     );
   });
-  await page.clock.fastForward(1);
+  await page.clock.runFor(1);
   await committedGradeCompositionResponse;
   await expect(page.locator("a.card-r")).toHaveCount(1);
   await expect(search).toHaveValue("추가 공개 앱 26");

@@ -202,3 +202,22 @@ test("keeps a selected valid subject and fixed grades when API results disappear
     "고3",
   ]);
 });
+
+test("renders positive casefold and literal-symbol search matches", async ({
+  page,
+  context,
+}) => {
+  await blockExternalRequests(context);
+  await page.goto("/");
+
+  const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+  for (const [query, id] of [
+    ["STRASSE", "00000000-0000-4000-8000-900000000001"],
+    ["%", "00000000-0000-4000-8000-900000000002"],
+    ["_", "00000000-0000-4000-8000-900000000003"],
+  ]) {
+    await search.fill(query);
+    await expect(page.locator(`a.card-r[href="/apps/${id}"]`)).toHaveCount(1);
+    await expect(page.locator("a.card-r")).toHaveCount(1);
+  }
+});

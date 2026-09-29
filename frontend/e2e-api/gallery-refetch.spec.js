@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   blockExternalRequests,
+  deferred,
   disableAutomaticPagination,
 } from "./helpers.js";
 import { captureGalleryState } from "./gallery-helpers.js";
@@ -14,12 +15,9 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   let failRefetchUntilRetry = false;
   let failedRefetches = 0;
   let holdRetry = false;
-  let releaseRetry;
-  let retryStarted;
-  const retryGate = new Promise((resolve) => (releaseRetry = resolve));
-  const retryRequest = new Promise((resolve) => (retryStarted = resolve));
-  let settleRetry;
-  const retrySettledPromise = new Promise((resolve) => (settleRetry = resolve));
+  const retryGate = deferred();
+  const retryRequest = deferred();
+  const retrySettled = deferred();
   await blockExternalRequests(context);
   await disableAutomaticPagination(page);
   await page.route("**/api/v1/apps**", async (route) => {
@@ -44,12 +42,12 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
     if (holdRetry) {
       holdRetry = false;
       const response = await route.fetch();
-      retryStarted();
-      await retryGate;
+      retryRequest.resolve();
+      await retryGate.promise;
       try {
         await route.fulfill({ response });
       } finally {
-        settleRetry();
+        retrySettled.resolve();
       }
       return;
     }
@@ -70,6 +68,7 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   await expect
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(0);
+  const positionBeforeDetail = await page.evaluate(() => window.scrollY);
   const displayedIds = await page
     .locator("a.card-r")
     .evaluateAll((cards) =>
@@ -109,32 +108,28 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   holdRetry = true;
   await retry.focus();
   await page.keyboard.press("Enter");
-  await retryRequest;
+  await retryRequest.promise;
   expect(listRequests).toBe(requestsBeforeRetry + 1);
   await expect(page.getByRole("main")).toBeFocused();
   await captureGalleryState(page, "refetch-retry-loading");
-  releaseRetry();
-  await retrySettledPromise;
+  retryGate.resolve();
+  await retrySettled.promise;
   await expect(page.locator("a.card-r")).toHaveCount(24);
   for (const id of displayedIds)
     await expect(page.locator(`a.card-r[href="/apps/${id}"]`)).toHaveCount(1);
   expect(listRequests).toBe(requestsBeforeRetry + 1);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBe(positionBeforeDetail);
 });
 
 test("hides old cards while a new API filter is loading", async ({
   page,
   context,
 }) => {
-  let releaseResponse;
-  let signalRequestStarted;
-  let signalRequestSettled;
-  const responseGate = new Promise((resolve) => (releaseResponse = resolve));
-  const requestStarted = new Promise(
-    (resolve) => (signalRequestStarted = resolve),
-  );
-  const requestSettled = new Promise(
-    (resolve) => (signalRequestSettled = resolve),
-  );
+  const responseGate = deferred();
+  const requestStarted = deferred();
+  const requestSettled = deferred();
   await blockExternalRequests(context);
   await page.route("**/api/v1/apps**", async (route) => {
     const url = new URL(route.request().url());
@@ -144,12 +139,12 @@ test("hides old cards while a new API filter is loading", async ({
     )
       return route.continue();
     const response = await route.fetch();
-    signalRequestStarted();
+    requestStarted.resolve();
     try {
-      await responseGate;
+      await responseGate.promise;
       await route.fulfill({ response });
     } finally {
-      signalRequestSettled();
+      requestSettled.resolve();
     }
   });
 
@@ -159,7 +154,7 @@ test("hides old cards while a new API filter is loading", async ({
   const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
   await expect(search).toHaveAccessibleName("앱·작성자 검색");
   await search.fill("추가 공개 앱 27");
-  await requestStarted;
+  await requestStarted.promise;
 
   await expect(cards).toHaveCount(0);
   await expect(
@@ -170,8 +165,8 @@ test("hides old cards while a new API filter is loading", async ({
   await expect(search).toBeVisible();
   await captureGalleryState(page, "new-filter-loading");
 
-  releaseResponse();
-  await requestSettled;
+  responseGate.resolve();
+  await requestSettled.promise;
   await expect(
     page.getByRole("link", { name: /추가 공개 앱 27/ }),
   ).toBeVisible();
