@@ -141,11 +141,12 @@ export function DeviceScreen({ app, theme, className = "", big = false }) {
   );
 }
 
-export function AppCard({ app, theme, detailLinkState }) {
+export function AppCard({ app, theme, detailLinkState, onDetailClick }) {
   return (
     <Link
       to={`/apps/${app.id}`}
       state={detailLinkState}
+      onClick={onDetailClick}
       aria-label={`${app.name}, ${app.owner}, ${app.subject} 상세 보기`}
       className="card-r group block w-full overflow-hidden border border-neutral-200/80 bg-white text-left shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all duration-300 hover:-translate-y-1 hover:border-neutral-300 hover:shadow-[0_14px_32px_-12px_rgba(15,76,129,0.22)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4C7A96]"
     >

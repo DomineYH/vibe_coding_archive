@@ -75,6 +75,36 @@ describe("public gallery states", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
+  it("keeps a selected subject visible when it disappears from public facets", async () => {
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    render(
+      <MemoryRouter>
+        <GalleryView
+          meta={meta}
+          page={{
+            ...page,
+            items: [],
+            facets: { subjectsInUse: ["영어"] },
+          }}
+          initialFilters={{ subject: "수학" }}
+          onQueryChange={() => {}}
+          loading={false}
+          retry={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("button", { name: "수학" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(
+      screen.getByRole("combobox", { name: "학년 필터" }).options,
+    ).toHaveLength(meta.grades.length + 1);
+    expect(screen.getByText("조건에 맞는 앱이 없어요")).toBeInTheDocument();
+  });
+
   it("moves retry focus to the stable gallery region while loading", async () => {
     const user = userEvent.setup();
     const retry = vi.fn();

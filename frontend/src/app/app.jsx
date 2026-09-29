@@ -20,7 +20,7 @@ import catalog from "../../../contracts/catalog.json";
 import { appsService } from "@services/apps";
 import { authService } from "@services/auth";
 import { healthService } from "@services/health";
-import { normalizeSearch } from "../services/apps-service";
+import { isSearchTooLong } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { reconcileMockReset } from "../services/mock/state";
 import { contractError, ServiceError } from "../services/service-error";
@@ -55,10 +55,8 @@ function readGalleryFilters(search) {
     seen.add(key);
     if (key === "q") {
       const normalized = value.trim().normalize("NFC");
-      const folded = normalizeSearch(value);
-      if (folded && Array.from(folded).length > 100)
-        return { filters: {}, invalid: true };
-      if (normalized) values.q = normalized;
+      if (isSearchTooLong(value)) values.q = value;
+      else if (normalized) values.q = normalized;
     } else if (value) {
       values[key] = value;
     }
@@ -300,12 +298,13 @@ function adminReauthResumeState(value) {
   };
 }
 
-function GalleryRoute({ auth }) {
+function GalleryRoute({ auth, galleryReturnPosition }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
   const filters = query.filters;
+  const overLimitSearch = isSearchTooLong(filters.q ?? "");
   const access = usePublicMetadata();
   const onQueryChange = useCallback(
     (patch, { replace = true } = {}) => {
@@ -362,7 +361,7 @@ function GalleryRoute({ auth }) {
         : undefined;
     },
     retry: false,
-    enabled: access.canRead && !query.invalid,
+    enabled: access.canRead && !query.invalid && !overLimitSearch,
     queryFn: async ({ pageParam, signal }) => {
       const page = await appsService.list(
         { ...filters, limit: 24, offset: pageParam },
@@ -378,6 +377,24 @@ function GalleryRoute({ auth }) {
       return page;
     },
   });
+  const queryStartedSinceReturn = useRef(false);
+  useEffect(() => {
+    if (galleryReturnPosition.current === null) return;
+    if (list.isFetching) {
+      queryStartedSinceReturn.current = true;
+      return;
+    }
+    if (queryStartedSinceReturn.current && list.isSuccess) {
+      window.scrollTo({ top: galleryReturnPosition.current });
+      galleryReturnPosition.current = null;
+      queryStartedSinceReturn.current = false;
+    }
+  }, [
+    galleryReturnPosition,
+    list.dataUpdatedAt,
+    list.isFetching,
+    list.isSuccess,
+  ]);
   const pages = list.data?.pages ?? [];
   const lastPage = pages.at(-1);
   const seen = new Set();
@@ -416,6 +433,17 @@ function GalleryRoute({ auth }) {
       onQueryChange={onQueryChange}
       initialFilters={filters}
       detailLinkState={{ fromGallery: true }}
+      onDetailClick={(event) => {
+        if (
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        )
+          return;
+        galleryReturnPosition.current = window.scrollY;
+      }}
       error={
         query.invalid
           ? new ServiceError(
@@ -430,7 +458,9 @@ function GalleryRoute({ auth }) {
       loading={
         !query.invalid &&
         (access.loading ||
-          (access.canRead && (list.isPending || list.isRefetching)))
+          (access.canRead &&
+            !overLimitSearch &&
+            (list.isPending || list.isRefetching)))
       }
       retry={() => access.retry(() => list.refetch())}
       resetQuery={resetQuery}
@@ -1303,6 +1333,7 @@ export default function App() {
     pathname: location.pathname,
     initial: true,
   });
+  const galleryReturnPosition = useRef(null);
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
   const authRequest = useRef(0);
@@ -1325,6 +1356,13 @@ export default function App() {
   });
   const [logoutPending, setLogoutPending] = useState(false);
   const [deletion, setDeletion] = useState(null);
+  useEffect(() => {
+    if (
+      (location.pathname !== "/" && location.state?.fromGallery !== true) ||
+      (location.pathname === "/" && navigationType !== "POP")
+    )
+      galleryReturnPosition.current = null;
+  }, [location.key, location.pathname, location.state, navigationType]);
 
   const onAppCreated = useCallback(
     (id) => {
@@ -1875,7 +1913,15 @@ export default function App() {
         logoutPending={logoutPending}
       />
       <Routes>
-        <Route path="/" element={<GalleryRoute auth={auth} />} />
+        <Route
+          path="/"
+          element={
+            <GalleryRoute
+              auth={auth}
+              galleryReturnPosition={galleryReturnPosition}
+            />
+          }
+        />
         <Route
           path="/apps/new"
           element={

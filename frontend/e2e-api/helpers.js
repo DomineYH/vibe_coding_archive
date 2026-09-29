@@ -10,6 +10,28 @@ export const viewports = [
   { width: 360, height: 844 },
 ];
 
+export function deferred() {
+  let resolve;
+  const promise = new Promise((complete) => {
+    resolve = complete;
+  });
+  return { promise, resolve };
+}
+
+export function fulfillServiceUnavailable(route, requestId) {
+  return route.fulfill({
+    status: 503,
+    contentType: "application/json",
+    body: JSON.stringify({
+      error: {
+        code: "SERVICE_UNAVAILABLE",
+        message: "Public service error",
+        request_id: requestId,
+      },
+    }),
+  });
+}
+
 export async function prepareViewportCapture(page, viewport) {
   await page.setViewportSize(viewport);
   expect(
@@ -29,5 +51,14 @@ export function blockExternalRequests(context) {
     return loopbackHosts.has(url.hostname)
       ? route.continue()
       : route.abort("blockedbyclient");
+  });
+}
+
+export function disableAutomaticPagination(page) {
+  return page.addInitScript(() => {
+    window.IntersectionObserver = class {
+      observe() {}
+      disconnect() {}
+    };
   });
 }

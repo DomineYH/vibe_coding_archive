@@ -458,6 +458,10 @@ export function normalizeSearch(value: string): string | undefined {
   return normalized ? caseFold(normalized) : undefined;
 }
 
+export function isSearchTooLong(value: string): boolean {
+  return codePoints(normalizeSearch(value) ?? "") > 100;
+}
+
 export type AppsService = {
   getMeta(options?: RequestOptions): Promise<Meta>;
   list(query?: ListAppsQuery, options?: RequestOptions): Promise<AppPage>;

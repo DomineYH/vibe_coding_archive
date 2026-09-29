@@ -9,7 +9,7 @@ import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AppCard, Btn, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
-import { normalizeSearch } from "../../services/apps-service";
+import { isSearchTooLong } from "../../services/apps-service";
 
 export function GalleryView({
   meta,
@@ -19,6 +19,7 @@ export function GalleryView({
   onQueryChange,
   initialFilters = {},
   detailLinkState,
+  onDetailClick,
   error,
   loading,
   retry,
@@ -50,8 +51,12 @@ export function GalleryView({
       loadMoreLocked.current = false;
     });
   }, [loadMore]);
-  const foldedSearch = normalizeSearch(search) ?? "";
-  const searchTooLong = !composing && Array.from(foldedSearch).length > 100;
+  const searchTooLong = !composing && isSearchTooLong(search);
+  const visibleSubjects = subjectsInUse.includes(subject)
+    ? subjectsInUse
+    : subject
+      ? [...subjectsInUse, subject]
+      : subjectsInUse;
   const resetRoute =
     error instanceof ServiceError && error.code === "MOCK_STORAGE_ERROR";
   const invalidQuery =
@@ -178,7 +183,7 @@ export function GalleryView({
             className="flex flex-wrap items-center gap-1.5"
             aria-label="과목 필터"
           >
-            {["", ...subjectsInUse].map((value) => {
+            {["", ...visibleSubjects].map((value) => {
               const label = value || "전체";
               return (
                 <button
@@ -333,6 +338,7 @@ export function GalleryView({
                   app={app}
                   theme={theme}
                   detailLinkState={detailLinkState}
+                  onDetailClick={onDetailClick}
                 />
               ) : null;
             })}
