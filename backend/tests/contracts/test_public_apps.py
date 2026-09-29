@@ -279,6 +279,35 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
         assert second_page["facets"]["subjects_in_use"] == ["수학", "영어"]
 
 
+@pytest.mark.parametrize("query", ["q", "subject", "grade"])
+def test_public_list_treats_bare_filter_keys_as_empty_values(
+    query: str, tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "bare-filter.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+
+    with TestClient(app) as client:
+        response = client.get(f"/api/v1/apps?{query}")
+
+    assert response.status_code == 200
+    assert response.json()["pagination"]["total"] == 2
+
+
+@pytest.mark.parametrize(("query", "field"), [("limit", "limit"), ("offset", "offset")])
+def test_public_list_rejects_bare_pagination_keys(
+    query: str, field: str, tmp_path: Path, make_test_app
+):
+    app = make_test_app(tmp_path / "bare-pagination.sqlite3")
+
+    with TestClient(app) as client:
+        response = client.get(f"/api/v1/apps?{query}")
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert field in response.json()["error"]["fields"]
+
+
 @pytest.mark.parametrize(
     "query",
     [

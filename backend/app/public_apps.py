@@ -268,6 +268,10 @@ def _parse_raw_query(request: Request) -> list[tuple[str, str]] | None:
         query = request.scope["query_string"].decode("utf-8")
         if re.search(r"%(?![0-9a-f]{2})", query, flags=re.IGNORECASE):
             return None
+        query = "&".join(
+            f"{part}=" if part and "=" not in part else part
+            for part in query.split("&")
+        )
         return parse_qsl(
             query,
             keep_blank_values=True,
