@@ -272,3 +272,11 @@ In API mode, a successful /api/v1/meta response supplies the canonical catalog w
 | Metadata failure and retry | Error stays visible until keyboard activation of the named retry; a real API response follows the explicit action. | The API browser test checks all five viewport sizes and blocks non-loopback requests; see [#79 evidence](evidence/phase-2/issue79/2026-09-29/README.md#final-commands-and-results-on-source-commit-4e212cab6d699965e5fc19d0f48b93020474e4d6). |
 
 The 122 pinned visual tests passed without a baseline update. Human UI-D/source-difference, screen-reader, physical-device, and local handover review remain pending; hosted CI remains pending the coordinator's PR workflow.
+
+## Issue #82 Q17 active-condition zero result (UI-D candidate)
+
+DomineYH decided on 2026-09-29 to defer Q17's condition-naming zero-result state and explicit reset from #82 to [follow-up issue #95](https://github.com/DomineYH/vibe_coding_archive/issues/95), which is blocked by #82. This is a UI-D candidate pending DomineYH approval, not an approved product difference.
+
+| Preserved reference | Q17 (A) | Status and evidence |
+| --- | --- | --- |
+| `docs/evidence/basic-design-runtime-20260922/reference/<viewport>/03-gallery-empty.png` shows the generic no-results message without naming the active condition or offering reset. The pinned `gallery-empty` case has an active search and the #78 mock comparison records zero differing pixels. | Name the active search/subject/grade conditions and provide an explicit reset in the normal zero-result state. | Deferred from #82 by DomineYH decision to #95. Approval and any resulting baseline change remain pending; no source reference or visual baseline changed. See the [#82 evidence ledger](evidence/phase-2/issue82/2026-09-29/README.md). |
