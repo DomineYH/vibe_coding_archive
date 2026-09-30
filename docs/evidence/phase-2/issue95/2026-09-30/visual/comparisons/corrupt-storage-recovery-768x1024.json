@@ -1,0 +1,20 @@
+{
+  "state": "corrupt-storage-recovery",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": null,
+  "screenshot": "corrupt-storage-recovery-768x1024.png",
+  "width": 768,
+  "height": 1024,
+  "comparisonStatus": "product_only",
+  "pixelComparison": "full",
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

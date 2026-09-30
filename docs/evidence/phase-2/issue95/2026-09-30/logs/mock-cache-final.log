@@ -1,0 +1,15 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e
+npm notice run playwright test e2e/gallery-zero-result.spec.js --grep accumulated
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:116929) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:116958) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero (17.0s)
+
+  1 passed (24.3s)

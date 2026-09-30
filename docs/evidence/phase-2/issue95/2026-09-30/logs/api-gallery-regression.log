@@ -1,0 +1,33 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e:api
+npm notice run node scripts/test-api-e2e.mjs gallery-query.spec.js gallery-paging.spec.js gallery-ime.spec.js gallery-refetch.spec.js gallery-races.spec.js
+[WebServer] INFO:     Started server process [117229]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:117260) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 13 tests using 1 worker
+
+(node:117288) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e-api/gallery-ime.spec.js:5:1 › uses the committed search during IME filter changes and debounces composition end (22.6s)
+  ✓   2 e2e-api/gallery-paging.spec.js:9:1 › retains the current cards after next-page failure and stops on duplicate-only pages (21.2s)
+  ✓   3 e2e-api/gallery-paging.spec.js:76:1 › stops and offers retry when a next page claims more data without progress (6.8s)
+  ✓   4 e2e-api/gallery-query.spec.js:5:1 › preserves an over-limit direct search query without requesting a wider list (3.6s)
+[WebServer] Malformed URI sequence in request URL
+[WebServer] Malformed URI sequence in request URL
+  ✓   5 e2e-api/gallery-query.spec.js:43:1 › rejects malformed gallery queries with an explicit reset (5.9s)
+  ✓   6 e2e-api/gallery-query.spec.js:77:1 › searches actual public names, nicknames, descriptions, symbols, and combined filters (12.8s)
+  ✓   7 e2e-api/gallery-query.spec.js:156:1 › keeps a selected valid subject and fixed grades when API results disappear (1.9s)
+  ✓   8 e2e-api/gallery-query.spec.js:206:1 › renders positive casefold and literal-symbol search matches (3.6s)
+  ✓   9 e2e-api/gallery-races.spec.js:9:1 › does not let a late search response replace the newest query (2.8s)
+  ✓  10 e2e-api/gallery-races.spec.js:62:1 › ignores a late retry response after changing the active search (2.8s)
+  ✓  11 e2e-api/gallery-races.spec.js:116:1 › ignores a late ordinary next page after changing the active search (3.4s)
+  ✓  12 e2e-api/gallery-refetch.spec.js:10:1 › keeps old gallery cards hidden after a refetch failure and retries by keyboard (5.7s)
+  ✓  13 e2e-api/gallery-refetch.spec.js:117:1 › hides old cards while a new API filter is loading (2.8s)
+
+  13 passed (1.7m)

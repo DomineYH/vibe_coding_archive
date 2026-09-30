@@ -1,0 +1,143 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js --grep gallery-empty
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:104298) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:104319) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Visual mismatch gallery-empty 1440x1000: {"width":1440,"height":1000,"comparisonStatus":"compared","pixelComparison":"full","expectedWidth":1440,"expectedHeight":1000,"differentPixels":123215,"maxChannelDelta":169,"bounds":{"left":0,"top":446,"right":1439,"bottom":916},"changedPixelSamples":[{"x":130,"y":446,"expected":[229,225,219,255],"actual":[229,225,220,255]},{"x":133,"y":446,"expected":[233,229,224,255],"actual":[233,230,224,255]},{"x":175,"y":446,"expected":[244,242,237,255],"actual":[245,242,238,255]},{"x":180,"y":446,"expected":[244,242,237,255],"actual":[245,242,238,255]},{"x":183,"y":446,"expected":[208,203,193,255],"actual":[207,201,191,255]},{"x":185,"y":446,"expected":[244,242,237,255],"actual":[245,242,238,255]},{"x":188,"y":446,"expected":[208,203,193,255],"actual":[207,201,191,255]},{"x":190,"y":446,"expected":[244,241,237,255],"actual":[245,242,238,255]},{"x":193,"y":446,"expected":[208,203,193,255],"actual":[207,201,191,255]},{"x":195,"y":446,"expected":[244,241,237,255],"actual":[245,242,238,255]},{"x":198,"y":446,"expected":[209,203,192,255],"actual":[207,201,191,255]},{"x":200,"y":446,"expected":[243,241,237,255],"actual":[245,242,238,255]},{"x":203,"y":446,"expected":[209,203,192,255],"actual":[207,201,191,255]},{"x":205,"y":446,"expected":[243,241,237,255],"actual":[245,242,238,255]},{"x":208,"y":446,"expected":[209,204,194,255],"actual":[207,201,191,255]},{"x":210,"y":446,"expected":[243,240,236,255],"actual":[245,242,238,255]},{"x":213,"y":446,"expected":[209,204,194,255],"actual":[207,201,191,255]},{"x":215,"y":446,"expected":[243,240,236,255],"actual":[245,242,238,255]},{"x":218,"y":446,"expected":[209,204,194,255],"actual":[207,201,191,255]},{"x":220,"y":446,"expected":[242,240,235,255],"actual":[245,242,238,255]}],"comparedRegion":null}
+  ✘  1 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1440x1000 (5.0s)
+(node:104452) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Visual mismatch gallery-empty 1024x900: {"width":1024,"height":951,"comparisonStatus":"dimensions_mismatch","pixelComparison":"full","expectedWidth":1024,"expectedHeight":900,"differentPixels":null,"maxChannelDelta":null,"bounds":null,"changedPixelSamples":[],"comparedRegion":null}
+  ✘  2 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1024x900 (7.2s)
+(node:104640) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Visual mismatch gallery-empty 768x1024: {"width":768,"height":1024,"comparisonStatus":"compared","pixelComparison":"full","expectedWidth":768,"expectedHeight":1024,"differentPixels":75527,"maxChannelDelta":169,"bounds":{"left":0,"top":446,"right":767,"bottom":916},"changedPixelSamples":[{"x":50,"y":446,"expected":[229,225,219,255],"actual":[229,225,220,255]},{"x":53,"y":446,"expected":[233,229,224,255],"actual":[233,230,224,255]},{"x":94,"y":446,"expected":[245,242,238,255],"actual":[244,242,237,255]},{"x":96,"y":446,"expected":[207,201,191,255],"actual":[208,203,193,255]},{"x":99,"y":446,"expected":[245,242,238,255],"actual":[244,241,237,255]},{"x":101,"y":446,"expected":[207,201,191,255],"actual":[209,203,192,255]},{"x":104,"y":446,"expected":[245,242,238,255],"actual":[244,241,237,255]},{"x":106,"y":446,"expected":[207,201,191,255],"actual":[209,203,192,255]},{"x":109,"y":446,"expected":[245,242,238,255],"actual":[243,241,237,255]},{"x":110,"y":446,"expected":[244,242,237,255],"actual":[245,242,238,255]},{"x":111,"y":446,"expected":[207,201,191,255],"actual":[209,204,194,255]},{"x":114,"y":446,"expected":[245,242,238,255],"actual":[243,241,237,255]},{"x":115,"y":446,"expected":[244,242,237,255],"actual":[245,242,238,255]},{"x":116,"y":446,"expected":[207,201,191,255],"actual":[209,204,194,255]},{"x":118,"y":446,"expected":[208,203,193,255],"actual":[207,201,191,255]},{"x":119,"y":446,"expected":[245,242,238,255],"actual":[243,240,236,255]},{"x":120,"y":446,"expected":[244,241,237,255],"actual":[245,242,238,255]},{"x":121,"y":446,"expected":[207,201,191,255],"actual":[209,204,194,255]},{"x":123,"y":446,"expected":[208,203,193,255],"actual":[207,201,191,255]},{"x":124,"y":446,"expected":[245,242,238,255],"actual":[242,240,235,255]}],"comparedRegion":null}
+  ✘  3 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 768x1024 (8.3s)
+(node:104806) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Visual mismatch gallery-empty 390x844: {"width":390,"height":994,"comparisonStatus":"dimensions_mismatch","pixelComparison":"full","expectedWidth":390,"expectedHeight":905,"differentPixels":null,"maxChannelDelta":null,"bounds":null,"changedPixelSamples":[],"comparedRegion":null}
+  ✘  4 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 390x844 (4.4s)
+(node:104944) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Visual mismatch gallery-empty 360x844: {"width":360,"height":1054,"comparisonStatus":"dimensions_mismatch","pixelComparison":"full","expectedWidth":360,"expectedHeight":965,"differentPixels":null,"maxChannelDelta":null,"bounds":null,"changedPixelSamples":[],"comparedRegion":null}
+  ✘  5 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 360x844 (5.8s)
+
+
+  1) visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1440x1000 ────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 123215
+
+      621 |       expect(comparison.height).toBe(comparison.expectedHeight);
+      622 |     }
+    > 623 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      624 |   } else {
+      625 |     expect(comparison.comparisonStatus).toBe("product_only");
+      626 |   }
+        at captureAndCompare (/mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:623:40)
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:739:7
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-1440x1000/error-context.md
+
+  2) visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1024x900 ─────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 900
+    Received: 951
+
+      619 |       expect(comparison.pixelComparison).toBe("region");
+      620 |     } else {
+    > 621 |       expect(comparison.height).toBe(comparison.expectedHeight);
+          |                                 ^
+      622 |     }
+      623 |     expect(comparison.differentPixels).toBe(0);
+      624 |   } else {
+        at captureAndCompare (/mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:621:33)
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:739:7
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-1024x900/error-context.md
+
+  3) visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 768x1024 ─────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 75527
+
+      621 |       expect(comparison.height).toBe(comparison.expectedHeight);
+      622 |     }
+    > 623 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      624 |   } else {
+      625 |     expect(comparison.comparisonStatus).toBe("product_only");
+      626 |   }
+        at captureAndCompare (/mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:623:40)
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:739:7
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-768x1024/error-context.md
+
+  4) visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 390x844 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 905
+    Received: 994
+
+      619 |       expect(comparison.pixelComparison).toBe("region");
+      620 |     } else {
+    > 621 |       expect(comparison.height).toBe(comparison.expectedHeight);
+          |                                 ^
+      622 |     }
+      623 |     expect(comparison.differentPixels).toBe(0);
+      624 |   } else {
+        at captureAndCompare (/mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:621:33)
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:739:7
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-390x844/error-context.md
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-390x844/error-context.md
+
+  5) visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 360x844 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 965
+    Received: 1054
+
+      619 |       expect(comparison.pixelComparison).toBe("region");
+      620 |     } else {
+    > 621 |       expect(comparison.height).toBe(comparison.expectedHeight);
+          |                                 ^
+      622 |     }
+      623 |     expect(comparison.differentPixels).toBe(0);
+      624 |   } else {
+        at captureAndCompare (/mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:621:33)
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:739:7
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-360x844/error-context.md
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-360x844/error-context.md
+
+  5 failed
+    visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1440x1000 ─────────────────
+    visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1024x900 ──────────────────
+    visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 768x1024 ──────────────────
+    visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 390x844 ───────────────────
+    visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 360x844 ───────────────────

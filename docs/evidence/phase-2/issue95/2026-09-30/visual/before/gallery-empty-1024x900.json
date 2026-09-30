@@ -1,0 +1,20 @@
+{
+  "state": "gallery-empty",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/03-gallery-empty.png",
+  "screenshot": "gallery-empty-1024x900.png",
+  "width": 1024,
+  "height": 900,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 1024,
+  "expectedHeight": 900,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}
