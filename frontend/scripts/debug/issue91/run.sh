@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 script=$(realpath "$0")
-lock=/tmp/claude-1000/-mnt-c-dev-vibe-coding-archive/f8bf8397-dea2-4b0b-ac26-c2b6e5aea7f6/scratchpad/playwright.lock
+lock=${ISSUE91_LOCK:-${TMPDIR:-/tmp}/issue91-playwright.lock}
 if [[ "${1:-}" != --locked ]]; then
   exec flock "$lock" bash "$script" --locked "$@"
 fi

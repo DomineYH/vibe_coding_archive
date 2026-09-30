@@ -37,7 +37,7 @@ helper의 모든 호출자를 확인했다. 수정 영향은 `gallery-loading`�
 
 ## 재현 명령과 잠금
 
-영구 진단 도구는 `frontend/scripts/debug/issue91/`에 명시적으로 보관했다. 임시 spec을 현재 worktree에서 생성하고 EXIT에서 제거한다. 모든 browser 실행은 요청한 고정 lock을 사용하고, lock 획득 뒤 5173/5174/8000 listener가 하나라도 있으면 종료한다. 다른 프로세스는 종료하지 않는다. Playwright webServer가 자신이 시작한 Vite를 정리하고, 실행 종료 시 포트를 다시 관찰한다.
+영구 진단 도구는 `frontend/scripts/debug/issue91/`에 명시적으로 보관했다. 임시 spec을 현재 worktree에서 생성하고 EXIT에서 제거한다. lock은 `ISSUE91_LOCK`으로 지정하며, 미설정 또는 빈 값이면 `${TMPDIR:-/tmp}/issue91-playwright.lock`을 사용한다. 같은 고정 포트를 사용하는 다른 pane과 실행할 때는 모든 실행 환경에서 `ISSUE91_LOCK`을 이미 합의한 동일 공유 lock 파일로 설정한다. 세션 전용 실제 경로는 환경 변수로만 전달하고 저장소에 하드코딩하지 않는다. lock 획득 뒤 5173/5174/8000 listener가 하나라도 있으면 종료한다. 다른 프로세스는 종료하지 않는다. Playwright webServer가 자신이 시작한 Vite를 정리하고, 실행 종료 시 포트를 다시 관찰한다.
 
 ```bash
 # repository root; 브라우저 경로는 필요하면 환경 변수로 덮어쓴다.
@@ -52,7 +52,7 @@ ISSUE91_NAV_DELAY=2000 frontend/scripts/debug/issue91/run.sh network-delay 3
 일반 회귀 실행 명령(cwd `frontend`, lock 안에서 포트 guard를 거친다):
 
 ```bash
-flock /tmp/claude-1000/-mnt-c-dev-vibe-coding-archive/f8bf8397-dea2-4b0b-ac26-c2b6e5aea7f6/scratchpad/playwright.lock \
+flock "${ISSUE91_LOCK:-${TMPDIR:-/tmp}/issue91-playwright.lock}" \
   bash -c 'set -euo pipefail
     if ss -H -ltn "( sport = :5173 or sport = :5174 or sport = :8000 )" | rg -q .; then echo PORT_OCCUPIED; exit 2; fi
     env -u VISUAL_BASELINE_CAPTURE \
