@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import uuidCases from "../../contracts/fixtures/uuid-cases.json";
 import type { CurrentAuthState } from "../src/services/auth-service";
 import { authService } from "../src/services/api/auth";
 import { healthService } from "../src/services/api/health";
@@ -208,4 +209,44 @@ describe("health API service", () => {
       health: { result: { state: "healthy" }, latestJob: null },
     });
   });
+});
+
+describe("health input UUID boundaries", () => {
+  it.each(uuidCases.valid)(
+    "accepts app ID %j and maps the response",
+    async (id) => {
+      const fetch = vi.fn().mockResolvedValue(
+        jsonResponse({
+          app_id: id,
+          url_version: 3,
+          server_time: time,
+          health: health(),
+        }),
+      );
+      vi.stubGlobal("fetch", fetch);
+      await expect(healthService.getAppHealth(id)).resolves.toMatchObject({
+        appId: id,
+      });
+      expect(fetch.mock.calls[0][0]).toBe(`/api/v1/apps/${id}/health`);
+    },
+  );
+
+  it.each(uuidCases.invalid)(
+    "rejects app, job, and batch ID %j before any request",
+    async (id) => {
+      const fetch = vi.fn();
+      vi.stubGlobal("fetch", fetch);
+      for (const request of [
+        healthService.getAppHealth,
+        healthService.requestCheck,
+        healthService.getJob,
+        healthService.getBatch,
+      ])
+        await expect(request(id)).rejects.toMatchObject({
+          code: "VALIDATION_ERROR",
+          outcome: "rejected",
+        });
+      expect(fetch).not.toHaveBeenCalled();
+    },
+  );
 });

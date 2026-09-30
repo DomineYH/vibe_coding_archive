@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import catalog from "../../contracts/catalog.json";
+import uuidCases from "../../contracts/fixtures/uuid-cases.json";
 import {
   mapAuthResult,
   mapAuthFlowContext,
@@ -557,4 +558,28 @@ describe("response mappers", () => {
       );
     }
   });
+});
+
+describe("archive app UUID contract boundaries", () => {
+  it.each(uuidCases.valid)("accepts app and author ID %j", (id) => {
+    expect(
+      mapAppPage({
+        ...page,
+        items: [{ ...card, id, owner: { ...card.owner, id } }],
+      }).items[0],
+    ).toMatchObject({ id, ownerId: id });
+  });
+
+  it.each(uuidCases.invalid)(
+    "rejects app and author ID %j with CONTRACT_ERROR",
+    (id) => {
+      for (const item of [
+        { ...card, id },
+        { ...card, owner: { ...card.owner, id } },
+      ])
+        expect(() => mapAppPage({ ...page, items: [item] })).toThrowError(
+          expect.objectContaining({ code: "CONTRACT_ERROR" }),
+        );
+    },
+  );
 });

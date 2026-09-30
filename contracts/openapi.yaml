@@ -706,7 +706,16 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: string, format: uuid }
+          description: >-
+            Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant
+            8/9/a/b. Hex is case-insensitive and normalized to lowercase.
+            Other formats return 404 NOT_FOUND; query errors take precedence.
+          schema:
+            type: string
+            format: uuid
+            pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+            minLength: 36
+            maxLength: 36
       responses:
         "200":
           description: Public app detail.

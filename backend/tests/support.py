@@ -12,7 +12,7 @@ def populate_public_and_private_apps(
     database_path: Path,
     public_count: int = 2,
     *,
-    valid_uuids: bool = False,
+    valid_uuids: bool = True,
     include_search_edge_cases: bool = False,
 ) -> None:
     uuid_prefix = (
