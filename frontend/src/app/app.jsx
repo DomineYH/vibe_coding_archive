@@ -17,6 +17,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import catalog from "../../../contracts/catalog.json";
+import { isUuid } from "../contracts/uuid";
 import { appsService } from "@services/apps";
 import { authService } from "@services/auth";
 import { healthService } from "@services/health";
@@ -254,15 +255,6 @@ function authScopeIdentity(auth) {
     auth.flow?.lastIdentityChangeRevision ?? null,
     auth.observationGeneration ?? 0,
   ]);
-}
-
-function isUuid(value) {
-  return (
-    typeof value === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    )
-  );
 }
 
 function adminReauthResumeState(value) {

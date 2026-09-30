@@ -27,6 +27,11 @@ from app.database import get_session
 from app.models import App, AppGrade, Member
 from app.models import HealthResult as HealthResultRow
 
+UUID_PATTERN = (
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-"
+    r"[89aAbB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+)
+
 Subject = Literal[*CATALOG["subjects"]]
 Grade = Literal[*CATALOG["grades"]]
 Uri = Annotated[str, WithJsonSchema({"type": "string", "format": "uri"})]
@@ -458,7 +463,22 @@ def list_public_apps(
 )
 def get_public_app(
     request: Request,
-    id: Annotated[str, ApiPath(json_schema_extra={"format": "uuid"})],
+    id: Annotated[
+        str,
+        ApiPath(
+            description=(
+                "Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant "
+                "8/9/a/b. Hex is case-insensitive and normalized to lowercase. "
+                "Other formats return 404 NOT_FOUND; query errors take precedence."
+            ),
+            json_schema_extra={
+                "format": "uuid",
+                "pattern": UUID_PATTERN,
+                "minLength": 36,
+                "maxLength": 36,
+            },
+        ),
+    ],
     session: Annotated[Session, Depends(get_session)],
 ) -> AppDetailResponse | JSONResponse:
     if _parse_raw_query(request) != []:
@@ -468,10 +488,9 @@ def get_public_app(
             "상세 조회는 쿼리를 지원하지 않습니다.",
             {"query": "상세 조회는 쿼리를 지원하지 않습니다."},
         )
-    try:
-        app_id = str(UUID(id))
-    except ValueError:
+    if not re.fullmatch(UUID_PATTERN, id):
         return _not_found()
+    app_id = id.lower()
     try:
         app = session.scalar(
             select(App)

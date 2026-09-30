@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import uuidCases from "../../contracts/fixtures/uuid-cases.json";
 import { readAuthRoute } from "../src/features/auth/auth-route";
 
 describe("authentication route parameters", () => {
@@ -49,4 +50,25 @@ describe("authentication route parameters", () => {
     ])
       expect(readAuthRoute(search).invalid).toBe(true);
   });
+});
+
+describe("UUID boundaries in login return destinations", () => {
+  it.each(uuidCases.valid)(
+    "accepts %j without changing the destination",
+    (id) => {
+      const returnTo = `/apps/${id}`;
+      expect(
+        readAuthRoute(`?return_to=${encodeURIComponent(returnTo)}`),
+      ).toEqual({ mode: "login", returnTo, invalid: false });
+    },
+  );
+
+  it.each(uuidCases.invalid)(
+    "rejects %j with the existing safe fallback",
+    (id) => {
+      expect(
+        readAuthRoute(`?return_to=${encodeURIComponent(`/apps/${id}`)}`),
+      ).toEqual({ mode: "login", returnTo: "/", invalid: true });
+    },
+  );
 });

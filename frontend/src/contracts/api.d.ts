@@ -2247,6 +2247,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                /** @description Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant 8/9/a/b. Hex is case-insensitive and normalized to lowercase. Other formats return 404 NOT_FOUND; query errors take precedence. */
                 id: string;
             };
             cookie?: never;

@@ -1,4 +1,5 @@
 import type { components } from "./api";
+import { isUuid } from "./uuid";
 import catalog from "../../../contracts/catalog.json";
 import { contractError } from "../services/service-error";
 
@@ -338,8 +339,6 @@ export type UserDeleteOperation = {
   serverTime: string;
 };
 
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const DATE_TIME =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const REASONS: WireReason[] = [
@@ -476,7 +475,7 @@ export function mapSelf(value: unknown): AuthUser {
   const role = item.role;
   const sessionKind = item.session_kind;
   if (
-    !UUID.test(id) ||
+    !isUuid(id) ||
     (role !== "user" && role !== "admin") ||
     (sessionKind !== "full" && sessionKind !== "change_only") ||
     typeof item.approved !== "boolean" ||
@@ -534,7 +533,7 @@ export function mapAuthFlowContext(value: unknown): AuthFlowContext {
   )
     throw contractError();
   const flowId = nonEmpty(item.flow_id);
-  if (!UUID.test(flowId)) throw contractError();
+  if (!isUuid(flowId)) throw contractError();
   return {
     flowId,
     revision: sequence(item.revision),
@@ -638,7 +637,7 @@ export function mapAuthFlowState(value: unknown): AuthFlowState {
     throw contractError();
   const flowId = nonEmpty(item.flow_id);
   if (
-    !UUID.test(flowId) ||
+    !isUuid(flowId) ||
     typeof item.recovery_ready !== "boolean" ||
     typeof item.session_cookie_present !== "boolean" ||
     (item.session_generation === null && item.session_cookie_present)
@@ -693,7 +692,7 @@ export function mapFlowRevision(value: unknown): FlowRevision {
   const item = record(value);
   if (!hasOnlyKeys(item, ["flow_id", "revision"])) throw contractError();
   const flowId = nonEmpty(item.flow_id);
-  if (!UUID.test(flowId)) throw contractError();
+  if (!isUuid(flowId)) throw contractError();
   return { flowId, revision: sequence(item.revision) };
 }
 
@@ -911,7 +910,7 @@ export function mapRegisteredUser(value: unknown): RegisteredUser {
   )
     throw contractError();
   const id = nonEmpty(item.id);
-  if (!UUID.test(id) || item.approved !== false) throw contractError();
+  if (!isUuid(id) || item.approved !== false) throw contractError();
   return {
     id,
     loginId: nonEmpty(item.login_id),
@@ -952,7 +951,7 @@ export function mapAdminUser(value: unknown): AdminUser {
     throw contractError();
   const id = nonEmpty(item.id);
   if (
-    !UUID.test(id) ||
+    !isUuid(id) ||
     (item.role !== "admin" && item.role !== "user") ||
     typeof item.approved !== "boolean"
   )
@@ -995,8 +994,8 @@ export function mapAdminStats(value: unknown): AdminStats {
   if (
     pendingUsers > totalUsers ||
     healthyApps > totalApps ||
-    (activeHealthBatchId !== null && !UUID.test(activeHealthBatchId)) ||
-    (latestHealthBatchId !== null && !UUID.test(latestHealthBatchId))
+    (activeHealthBatchId !== null && !isUuid(activeHealthBatchId)) ||
+    (latestHealthBatchId !== null && !isUuid(latestHealthBatchId))
   )
     throw contractError();
   return {
@@ -1062,8 +1061,8 @@ export function mapAdminApp(value: unknown): AdminApp {
   const ownerId = nonEmpty(owner.id);
   if (
     !hasOnlyKeys(owner, ["id", "nickname"]) ||
-    !UUID.test(id) ||
-    !UUID.test(ownerId) ||
+    !isUuid(id) ||
+    !isUuid(ownerId) ||
     typeof item.is_public !== "boolean"
   )
     throw contractError();
@@ -1134,7 +1133,7 @@ export function mapApprovalOperation(value: unknown): ApprovalOperation {
     throw contractError();
   const key = nonEmpty(item.key);
   const targetId = nonEmpty(item.target_id);
-  if (!UUID.test(key) || !UUID.test(targetId)) throw contractError();
+  if (!isUuid(key) || !isUuid(targetId)) throw contractError();
   const state = item.state as ApprovalOperation["state"];
   const appliedAccountVersion =
     item.applied_account_version === null
@@ -1201,7 +1200,7 @@ export function mapPasswordResetOperation(
     throw contractError();
   const key = nonEmpty(item.key);
   const targetId = nonEmpty(item.target_id);
-  if (!UUID.test(key) || !UUID.test(targetId)) throw contractError();
+  if (!isUuid(key) || !isUuid(targetId)) throw contractError();
   const state = item.state as PasswordResetOperation["state"];
   const appliedAccountVersion =
     item.applied_account_version === null
@@ -1269,7 +1268,7 @@ export function mapUserDeleteOperation(value: unknown): UserDeleteOperation {
 
   const key = nonEmpty(item.key);
   const targetId = nonEmpty(item.target_id);
-  if (!UUID.test(key) || !UUID.test(targetId)) throw contractError();
+  if (!isUuid(key) || !isUuid(targetId)) throw contractError();
   const issuedAt = dateTime(item.issued_at);
   const expiresAt = dateTime(item.expires_at);
   const state = item.state as UserDeleteOperation["state"];
@@ -1333,7 +1332,7 @@ export function mapAppWriteOperation(value: unknown): AppWriteOperation {
 
   const key = nonEmpty(item.key);
   const targetId = nullableString(item.target_id);
-  if (!UUID.test(key) || (targetId !== null && !UUID.test(targetId)))
+  if (!isUuid(key) || (targetId !== null && !isUuid(targetId)))
     throw contractError();
   const issuedAt = dateTime(item.issued_at);
   const expiresAt = dateTime(item.expires_at);
@@ -1528,7 +1527,7 @@ function mapJob(value: unknown): Wire["Job"] {
     !["queued", "running", "completed", "failed", "cancelled"].includes(
       string(job.status),
     ) ||
-    !UUID.test(nonEmpty(job.id))
+    !isUuid(nonEmpty(job.id))
   )
     throw contractError();
   dateTime(job.created_at);
@@ -1663,7 +1662,7 @@ export function mapHealthSnapshot(value: unknown): HealthSnapshot {
   if (!hasExactKeys(item, ["app_id", "url_version", "server_time", "health"]))
     throw contractError();
   const appId = nonEmpty(item.app_id);
-  if (!UUID.test(appId)) throw contractError();
+  if (!isUuid(appId)) throw contractError();
   return {
     appId,
     urlVersion: integer(item.url_version, 1),
@@ -1725,7 +1724,7 @@ export function mapHealthJobResponse(value: unknown): HealthJobResponse {
   )
     throw contractError();
   const appId = nonEmpty(item.app_id);
-  if (!UUID.test(appId)) throw contractError();
+  if (!isUuid(appId)) throw contractError();
   return {
     appId,
     urlVersion: integer(item.url_version, 1),
@@ -1752,7 +1751,7 @@ export function mapHealthBatch(value: unknown): HealthBatch {
   )
     throw contractError();
   const id = nonEmpty(item.id);
-  if (!UUID.test(id)) throw contractError();
+  if (!isUuid(id)) throw contractError();
   const createdAt = dateTime(item.created_at);
   const finishedAt = nullableDateTime(item.finished_at);
   const serverTime = dateTime(item.server_time);
@@ -1828,11 +1827,7 @@ function mapCard(value: unknown): AppCard {
   const owner = record(item.owner);
   const id = nonEmpty(item.id);
   const ownerId = nonEmpty(owner.id);
-  if (
-    !UUID.test(id) ||
-    !UUID.test(ownerId) ||
-    typeof item.is_public !== "boolean"
-  )
+  if (!isUuid(id) || !isUuid(ownerId) || typeof item.is_public !== "boolean")
     throw contractError();
   return {
     id,

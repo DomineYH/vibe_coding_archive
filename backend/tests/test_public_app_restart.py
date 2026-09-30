@@ -95,11 +95,11 @@ def test_public_apps_remain_after_api_process_restart(
     try:
         second = _read_public_apps(port)
         assert [item["id"] for item in second["items"]] == [
-            "00000000-0000-0000-0000-000000000002",
-            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-4000-8000-000000000002",
+            "00000000-0000-4000-8000-000000000001",
         ]
         assert second["pagination"]["total"] == 2
-        detail = _read_public_app_detail(port, "00000000-0000-0000-0000-000000000002")[
+        detail = _read_public_app_detail(port, "00000000-0000-4000-8000-000000000002")[
             "item"
         ]
         assert detail["name"] == "둘째 공개 앱"

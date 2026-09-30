@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
+from urllib.parse import quote
+from uuid import UUID
 
 import pytest
 import yaml
@@ -13,6 +16,7 @@ from app.models import App
 
 ROOT = Path(__file__).resolve().parents[3]
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
+UUID_CASES = json.loads((ROOT / "contracts/fixtures/uuid-cases.json").read_text())
 
 
 def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
@@ -28,20 +32,20 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         maximum_page = client.get("/api/v1/apps?limit=100")
         past_end = client.get("/api/v1/apps?limit=1&offset=10")
         oversized_offset = client.get("/api/v1/apps?offset=9223372036854775808")
-        detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000002")
-        private_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000003")
-        missing_detail = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
+        detail = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000002")
+        private_detail = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000003")
+        missing_detail = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000099")
         invalid_id_detail = client.get("/api/v1/apps/not-a-uuid")
         forged_identity_detail = client.get(
-            "/api/v1/apps/00000000-0000-0000-0000-000000000003",
+            "/api/v1/apps/00000000-0000-4000-8000-000000000003",
             headers={
                 "Authorization": "Bearer forged-owner-token",
                 "Cookie": "__Host-eduvibe_session_00000000-0000-4000-8000-000000000020_1=forged",
                 "X-EduVibe-Flow-Id": "00000000-0000-4000-8000-000000000020",
                 "X-EduVibe-Auth-Revision": "999",
                 "X-EduVibe-Session-Generation": "999",
-                "X-User-Id": "00000000-0000-0000-0000-000000000020",
-                "X-Member-Id": "00000000-0000-0000-0000-000000000020",
+                "X-User-Id": "00000000-0000-4000-8000-000000000020",
+                "X-Member-Id": "00000000-0000-4000-8000-000000000020",
             },
         )
         private_search = client.get("/api/v1/apps?q=private-app-sentinel")
@@ -62,7 +66,7 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         "has_more": True,
     }
     assert [item["id"] for item in page["items"]] == [
-        "00000000-0000-0000-0000-000000000002"
+        "00000000-0000-4000-8000-000000000002"
     ]
     card = page["items"][0]
     assert set(card) == {
@@ -78,7 +82,7 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
         "health",
     }
     assert card["owner"] == {
-        "id": "00000000-0000-0000-0000-000000000010",
+        "id": "00000000-0000-4000-8000-000000000010",
         "nickname": "공개 별명",
     }
     assert set(card["health"]) == {"result", "latest_job", "next_check_at"}
@@ -185,7 +189,7 @@ def test_public_detail_rejects_any_query(
 
     with TestClient(app) as client:
         response = client.get(
-            f"/api/v1/apps/00000000-0000-0000-0000-000000000001?{query}"
+            f"/api/v1/apps/00000000-0000-4000-8000-000000000001?{query}"
         )
 
     assert response.status_code == 400
@@ -211,26 +215,26 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
                     "name": "Straße %_ App",
                     "description": "Cafe\u0301 lesson Ꟍ",
                     "prompt": "Prompt-only sentinel",
-                    "id": "00000000-0000-0000-0000-000000000001",
+                    "id": "00000000-0000-4000-8000-000000000001",
                 },
             )
             connection.execute(
                 text(
                     "UPDATE apps SET name = 'Cross', description = 'FieldOnly' "
-                    "WHERE id = '00000000-0000-0000-0000-000000000002'"
+                    "WHERE id = '00000000-0000-4000-8000-000000000002'"
                 )
             )
             connection.execute(
                 text("UPDATE members SET nickname = 'CaseFold Owner' WHERE id = :id"),
-                {"id": "00000000-0000-0000-0000-000000000010"},
+                {"id": "00000000-0000-4000-8000-000000000010"},
             )
             connection.execute(text("DELETE FROM app_grades"))
             connection.execute(
                 text("INSERT INTO app_grades (app_id, grade) VALUES (:id, :grade)"),
                 [
-                    {"id": "00000000-0000-0000-0000-000000000001", "grade": "초2"},
-                    {"id": "00000000-0000-0000-0000-000000000002", "grade": "중1"},
-                    {"id": "00000000-0000-0000-0000-000000000003", "grade": "고1"},
+                    {"id": "00000000-0000-4000-8000-000000000001", "grade": "초2"},
+                    {"id": "00000000-0000-4000-8000-000000000002", "grade": "중1"},
+                    {"id": "00000000-0000-4000-8000-000000000003", "grade": "고1"},
                 ],
             )
 
@@ -239,14 +243,14 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
             assert response.status_code == 200
             return [item["id"] for item in response.json()["items"]]
 
-        assert list_ids(q="STRASSE") == ["00000000-0000-0000-0000-000000000001"]
-        assert list_ids(q="Café") == ["00000000-0000-0000-0000-000000000001"]
-        assert list_ids(q="Ꟍ") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="STRASSE") == ["00000000-0000-4000-8000-000000000001"]
+        assert list_ids(q="Café") == ["00000000-0000-4000-8000-000000000001"]
+        assert list_ids(q="Ꟍ") == ["00000000-0000-4000-8000-000000000001"]
         assert list_ids(q="casefold owner") == [
-            "00000000-0000-0000-0000-000000000002",
-            "00000000-0000-0000-0000-000000000001",
+            "00000000-0000-4000-8000-000000000002",
+            "00000000-0000-4000-8000-000000000001",
         ]
-        assert list_ids(q="%_") == ["00000000-0000-0000-0000-000000000001"]
+        assert list_ids(q="%_") == ["00000000-0000-4000-8000-000000000001"]
         assert list_ids(q="crossfield") == []
         assert list_ids(q="prompt-only") == []
         assert list_ids(q="private-login-sentinel") == []
@@ -260,7 +264,7 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
         assert filtered_response.status_code == 200
         filtered = filtered_response.json()
         assert [item["id"] for item in filtered["items"]] == [
-            "00000000-0000-0000-0000-000000000001"
+            "00000000-0000-4000-8000-000000000001"
         ]
         assert filtered["facets"]["subjects_in_use"] == ["수학", "영어"]
 
@@ -281,7 +285,7 @@ def test_public_list_search_filters_and_facets_follow_catalog_contract(
             params={"q": "", "subject": "", "grade": "", "limit": 1, "offset": 1},
         ).json()
         assert [item["id"] for item in second_page["items"]] == [
-            "00000000-0000-0000-0000-000000000001"
+            "00000000-0000-4000-8000-000000000001"
         ]
         assert second_page["pagination"]["total"] == 2
         assert second_page["facets"]["subjects_in_use"] == ["수학", "영어"]
@@ -385,7 +389,7 @@ def test_corrupt_stored_health_timestamp_is_server_error_not_query_error(
                 {
                     "checked_at": "not-a-timestamp",
                     "fresh_until": "2026-09-29T12:00:00+00:00",
-                    "app_id": "00000000-0000-0000-0000-000000000001",
+                    "app_id": "00000000-0000-4000-8000-000000000001",
                 },
             )
         response = client.get("/api/v1/apps")
@@ -405,12 +409,12 @@ def test_public_app_list_sorts_mixed_utc_timestamp_forms_by_actual_time(
         with app.state.engine.begin() as connection:
             connection.execute(
                 update(App)
-                .where(App.id == "00000000-0000-0000-0000-000000000001")
+                .where(App.id == "00000000-0000-4000-8000-000000000001")
                 .values(created_at="2026-09-28T12:00:00Z")
             )
             connection.execute(
                 update(App)
-                .where(App.id == "00000000-0000-0000-0000-000000000002")
+                .where(App.id == "00000000-0000-4000-8000-000000000002")
                 .values(created_at="2026-09-28T12:00:00.100000+00:00")
             )
         response = client.get("/api/v1/apps?limit=2")
@@ -423,12 +427,12 @@ def test_public_app_list_sorts_mixed_utc_timestamp_forms_by_actual_time(
 
     assert response.status_code == 200
     assert [item["id"] for item in response.json()["items"]] == [
-        "00000000-0000-0000-0000-000000000002",
-        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-4000-8000-000000000002",
+        "00000000-0000-4000-8000-000000000001",
     ]
     assert stored == {
-        "00000000-0000-0000-0000-000000000001": "2026-09-28T12:00:00.000000Z",
-        "00000000-0000-0000-0000-000000000002": "2026-09-28T12:00:00.100000Z",
+        "00000000-0000-4000-8000-000000000001": "2026-09-28T12:00:00.000000Z",
+        "00000000-0000-4000-8000-000000000002": "2026-09-28T12:00:00.100000Z",
     }
 
 
@@ -519,6 +523,19 @@ def test_public_apps_fastapi_declarations_match_openapi(
         actual_detail_parameters["id"]["schema"]["format"]
         == expected_detail_parameters["id"]["schema"]["format"]
     )
+    assert normalize_schema(
+        actual_detail_parameters["id"]["schema"], actual
+    ) == normalize_schema(
+        {
+            **expected_detail_parameters["id"]["schema"],
+            "description": expected_detail_parameters["id"]["description"],
+        },
+        source,
+    )
+    assert (
+        actual_detail_parameters["id"]["description"]
+        == (expected_detail_parameters["id"]["description"])
+    )
     actual_detail_error = actual["paths"]["/api/v1/apps/{id}"]["get"]["responses"][
         "400"
     ]["content"]["application/json"]["schema"]
@@ -542,11 +559,11 @@ def test_public_app_errors_use_safe_contract_envelopes(
         with app.state.engine.begin() as connection:
             connection.execute(
                 text("UPDATE apps SET name = 'public-error-sentinel' WHERE id = :id"),
-                {"id": "00000000-0000-0000-0000-000000000001"},
+                {"id": "00000000-0000-4000-8000-000000000001"},
             )
             connection.execute(text("DROP TABLE apps"))
         list_error = client.get("/api/v1/apps")
-        detail_error = client.get("/api/v1/apps/00000000-0000-0000-0000-000000000099")
+        detail_error = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000099")
 
     assert list_error.status_code == detail_error.status_code == 503
     assert set(list_error.json()) == set(detail_error.json()) == {"error"}
@@ -575,7 +592,7 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
     with TestClient(app):
         engine = app.state.engine
         member = {
-            "id": "00000000-0000-0000-0000-000000000010",
+            "id": "00000000-0000-4000-8000-000000000010",
             "login_id": "unique-login",
             "nickname": "별명",
             "email": None,
@@ -599,14 +616,14 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
             (
                 (
                     "INSERT INTO members (id, login_id, nickname, is_admin, approval_status) "
-                    "VALUES ('00000000-0000-0000-0000-000000000011', 'unique-login', 'n', 0, 'approved')"
+                    "VALUES ('00000000-0000-4000-8000-000000000011', 'unique-login', 'n', 0, 'approved')"
                 ),
                 {},
             ),
             (
                 "INSERT INTO apps (id, owner_id, name, url, prompt, description, subject, "
                 "is_public, theme_id, version, url_version, created_at, updated_at) "
-                "VALUES ('00000000-0000-0000-0000-000000000021', 'missing-owner', 'n', "
+                "VALUES ('00000000-0000-4000-8000-000000000021', 'missing-owner', 'n', "
                 "'https://example.test', '', '', '수학', 1, '"
                 + CATALOG["themes"][0]["id"]
                 + "', 1, 1, 't', 't')",
@@ -616,7 +633,7 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
                 (
                     "INSERT INTO apps (id, owner_id, name, url, prompt, description, subject, "
                     "is_public, theme_id, version, url_version, created_at, updated_at) "
-                    "VALUES ('00000000-0000-0000-0000-000000000022', :owner, 'n', "
+                    "VALUES ('00000000-0000-4000-8000-000000000022', :owner, 'n', "
                     "'https://example.test', '', '', 'not-a-subject', 1, :theme, 1, 1, 't', 't')"
                 ),
                 {
@@ -628,7 +645,7 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
                 (
                     "INSERT INTO apps (id, owner_id, name, url, prompt, description, subject, "
                     "is_public, theme_id, version, url_version, created_at, updated_at) "
-                    "VALUES ('00000000-0000-0000-0000-000000000023', :owner, 'n', "
+                    "VALUES ('00000000-0000-4000-8000-000000000023', :owner, 'n', "
                     "'https://example.test', '', '', '수학', 1, :theme, 0, 1, 't', 't')"
                 ),
                 {
@@ -641,7 +658,7 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
             with pytest.raises(IntegrityError), engine.begin() as connection:
                 connection.execute(text(statement), parameters)
 
-        app_id = "00000000-0000-0000-0000-000000000031"
+        app_id = "00000000-0000-4000-8000-000000000031"
         with engine.begin() as connection:
             connection.execute(
                 text(
@@ -675,3 +692,51 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
         ]:
             with pytest.raises(IntegrityError), engine.begin() as connection:
                 connection.execute(text(statement), {"id": app_id})
+
+
+def test_public_detail_uuid_format_and_query_precedence(
+    tmp_path: Path, make_test_app, seed_public_and_private_apps
+):
+    database_path = tmp_path / "uuid.sqlite3"
+    app = make_test_app(database_path)
+    seed_public_and_private_apps(database_path)
+    previous_id = "00000000-0000-4000-8000-000000000001"
+
+    with TestClient(app) as client:
+        missing = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000099")
+        private = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000003")
+        assert missing.status_code == private.status_code == 404
+        assert missing.json() == private.json()
+        assert missing.json()["error"]["code"] == "NOT_FOUND"
+
+        for app_id in UUID_CASES["invalid"] + UUID_CASES["valid"]:
+            # Store even parseable invalid IDs so a 404 proves validation, not absence.
+            try:
+                stored_id = str(UUID(app_id))
+            except ValueError:
+                stored_id = app_id
+            with sqlite3.connect(database_path) as connection:
+                for table, column in [
+                    ("apps", "id"),
+                    ("app_grades", "app_id"),
+                    ("health_results", "app_id"),
+                ]:
+                    connection.execute(
+                        f"UPDATE {table} SET {column} = ? WHERE {column} = ?",
+                        (stored_id, previous_id),
+                    )
+            previous_id = stored_id
+            path = f"/api/v1/apps/{quote(app_id, safe='')}"
+            response = client.get(path)
+            if app_id in UUID_CASES["valid"]:
+                lowercase = client.get(f"/api/v1/apps/{app_id.lower()}")
+                assert response.status_code == lowercase.status_code == 200, app_id
+                assert response.json()["item"] == lowercase.json()["item"]
+                assert response.json()["item"]["id"] == app_id.lower()
+            else:
+                assert response.status_code == 404, repr(app_id)
+                assert response.json() == missing.json()
+
+            query_response = client.get(f"{path}?tracking=1")
+            assert query_response.status_code == 400, repr(app_id)
+            assert query_response.json()["error"]["code"] == "VALIDATION_ERROR"

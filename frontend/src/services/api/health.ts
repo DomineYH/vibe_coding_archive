@@ -6,14 +6,12 @@ import {
   mapHealthSnapshot,
 } from "../../contracts/mappers";
 import { getJson } from "./apps";
+import { isUuid } from "../../contracts/uuid";
 import { ServiceError } from "../service-error";
 import type { HealthService } from "../health-service";
 
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
 function requireUuid(id: string): string {
-  if (!UUID.test(id))
+  if (!isUuid(id))
     throw new ServiceError("VALIDATION_ERROR", "검사 대상을 확인해 주세요.", {
       outcome: "rejected",
     });

@@ -1,11 +1,10 @@
 import catalog from "../../../../contracts/catalog.json";
+import { isUuid } from "../../contracts/uuid";
 import { normalizeSearch } from "../../services/apps-service";
 
 const modes = new Set(["login", "signup", "password-change", "reauth"]);
 const authKeys = new Set(["mode", "return_to"]);
 const galleryKeys = new Set(["q", "subject", "grade"]);
-const uuid =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function decode(value) {
   try {
@@ -71,7 +70,7 @@ function validReturnTo(path) {
   if (pathname === "/admin") return query === "";
   return (
     pathname === `/apps/${pathname.slice(6)}` &&
-    uuid.test(pathname.slice(6)) &&
+    isUuid(pathname.slice(6)) &&
     !query
   );
 }
