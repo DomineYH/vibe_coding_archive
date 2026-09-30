@@ -49,7 +49,7 @@ async function createOwnedApp(page, name) {
 }
 
 async function openEdit(page, id) {
-  await page.getByRole("link", { name: "앱 수정", exact: true }).click();
+  await page.getByRole("link", { name: "앱 편집", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/apps/${id}/edit$`));
   const form = page.getByRole("form", { name: "앱 수정 양식", exact: true });
   await expect(form).toBeVisible();

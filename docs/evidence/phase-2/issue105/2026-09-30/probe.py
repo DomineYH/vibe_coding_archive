@@ -160,7 +160,7 @@ def main():
                 if args.mode == 'source':
                     page.get_by_role('button', name='편집', exact=True).click()
                 else:
-                    page.get_by_role('link', name='앱 수정', exact=True).click()
+                    page.get_by_role('link', name='앱 편집', exact=True).click()
                     expect(page.get_by_role('form', name='앱 수정 양식')).to_be_visible()
                 shot('app-edit')
                 page.get_by_role('button', name='취소', exact=True).click()

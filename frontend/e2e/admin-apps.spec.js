@@ -119,7 +119,7 @@ test("admin can edit and delete another member's private app from the monitor", 
     }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "앱 수정", exact: true }).click();
+  await page.getByRole("link", { name: "앱 편집", exact: true }).click();
   await expect(page).toHaveURL(`/apps/${privateAppId}/edit`);
   const editForm = page.getByRole("form", {
     name: "앱 수정 양식",

@@ -1,11 +1,13 @@
 """Evidence-only full-image counts and DOM contribution analysis; never writes a baseline."""
 import json
+from hashlib import sha256
 from pathlib import Path
 
 from PIL import Image, ImageChops
 
 HERE = Path(__file__).resolve().parent
-REFERENCE = HERE.parents[3] / 'evidence/basic-design-runtime-20260922/reference'
+ROOT = HERE.parents[4]
+REFERENCE = ROOT / 'docs/evidence/basic-design-runtime-20260922/reference'
 BASELINES = {
     'app-create': '16-submit.png',
     'app-create-validation-error': '17-submit-error.png',
@@ -34,12 +36,15 @@ def main():
         tag = f"{viewport['width']}x{viewport['height']}"
         old = next(row for row in before if row['state'] == state and row['viewport'] == viewport)
         new = next(row for row in after if row['state'] == state and row['viewport'] == viewport)
-        filename = original['screenshot']
+        replay = ROOT / original['actualArtifact']
+        counterfactual = ROOT / new['counterfactualArtifact']
+        assert sha256(replay.read_bytes()).hexdigest() == original['actualSha256'], replay
+        assert sha256(counterfactual.read_bytes()).hexdigest() == new['counterfactualSha256'], counterfactual
         row = {
             'state': state, 'viewport': viewport,
             'originalHeight': original['height'], 'beforeHeight': old['height'], 'afterHeight': new['height'],
-            'sourceReplayVsPreserved': compare(HERE / 'source' / filename, REFERENCE / tag / BASELINES[state]),
-            'counterfactualVsSourceReplay': compare(HERE / 'normalized' / ('normalized-' + filename), HERE / 'source' / filename),
+            'sourceReplayVsPreserved': compare(replay, REFERENCE / tag / BASELINES[state]),
+            'counterfactualVsSourceReplay': compare(counterfactual, replay),
         }
         sections = lambda record: [element for element in record['elements'] if element['tag'] == 'SECTION']
         row['sections'] = [

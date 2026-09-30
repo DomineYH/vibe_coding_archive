@@ -161,7 +161,7 @@ test("signup through approval, app health, account deletion, and reset works as 
   await page.goForward();
   await expect(page).toHaveURL(`/apps/${appId}`);
 
-  await page.getByRole("link", { name: "앱 수정", exact: true }).click();
+  await page.getByRole("link", { name: "앱 편집", exact: true }).click();
   await expect(page).toHaveURL(`/apps/${appId}/edit`);
   let editForm = page.getByRole("form", { name: "앱 수정 양식", exact: true });
   await expect(editForm).toBeVisible();
@@ -185,7 +185,7 @@ test("signup through approval, app health, account deletion, and reset works as 
     page.getByRole("heading", { name: publishedName, exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "앱 수정", exact: true }).click();
+  await page.getByRole("link", { name: "앱 편집", exact: true }).click();
   await expect(page).toHaveURL(`/apps/${appId}/edit`);
   editForm = page.getByRole("form", { name: "앱 수정 양식", exact: true });
   await expect(editForm).toBeVisible();
@@ -231,7 +231,7 @@ test("signup through approval, app health, account deletion, and reset works as 
     healthTab.getByRole("heading", { name: publishedName, exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "앱 수정", exact: true }).click();
+  await page.getByRole("link", { name: "앱 편집", exact: true }).click();
   await expect(page).toHaveURL(`/apps/${appId}/edit`);
   editForm = page.getByRole("form", { name: "앱 수정 양식", exact: true });
   await expect(editForm).toBeVisible();

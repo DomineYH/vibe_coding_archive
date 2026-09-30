@@ -72,6 +72,23 @@ function renderDetail(appData = app) {
   );
 }
 
+describe("detail edit link label", () => {
+  it.each([true, false])(
+    "includes the visible label in the accessible name (public: %s)",
+    (isPublic) => {
+      render(
+        <MemoryRouter>
+          <AppDetailView app={{ ...app, isPublic }} meta={meta} canEdit />
+        </MemoryRouter>,
+      );
+      const link = screen.getByRole("link", { name: "앱 편집", exact: true });
+      expect(link).toHaveTextContent("편집");
+      expect(link).toHaveAccessibleName(new RegExp(link.textContent.trim()));
+      expect(link).toHaveAttribute("href", `/apps/${app.id}/edit`);
+    },
+  );
+});
+
 describe("public detail pending state", () => {
   it("moves detail-route focus to the stable main region while loading", () => {
     render(<AppDetailView loading retry={() => {}} />);

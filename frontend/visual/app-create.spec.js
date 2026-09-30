@@ -398,7 +398,7 @@ for (const viewport of viewports) {
     const detail = page.locator('[data-screen-label="비공개 앱 상세"]');
     await expect(detail).toBeVisible();
     await expect(
-      detail.getByRole("link", { name: "앱 수정", exact: true }),
+      detail.getByRole("link", { name: "앱 편집", exact: true }),
     ).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))

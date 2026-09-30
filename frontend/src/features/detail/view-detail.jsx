@@ -442,7 +442,7 @@ export function AppDetailView({
               <Link
                 to={`/apps/${app.id}/edit`}
                 state={{ fromDetail: true, fromGallery, fromAdmin }}
-                aria-label="앱 수정"
+                aria-label="앱 편집"
                 className="inline-flex h-8 select-none items-center justify-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3 text-[12.5px] font-semibold text-neutral-700 transition-all duration-200 hover:bg-neutral-50 active:scale-[0.97]"
               >
                 <Pencil size={13} aria-hidden="true" />
