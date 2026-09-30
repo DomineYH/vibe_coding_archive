@@ -1,0 +1,19 @@
+{
+  "state": "app-create-auth-concealed",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-create-auth-concealed-390x844.png",
+  "captureStatus": "stable",
+  "width": 390,
+  "height": 844,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "verification/captures/app-create-auth-concealed-390x844.png",
+  "actualSha256": "7c4608bc3bfbfa9778d80038791cd16326ec626e6724a1effa874f223150aafe"
+}

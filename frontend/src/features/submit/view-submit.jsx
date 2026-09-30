@@ -45,26 +45,29 @@ const inputClass =
 
 function Field({ id, label, required, hint, error, children }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+    <div className="min-w-0">
+      <div className="mb-1.5 flex items-baseline gap-1.5">
         <label
           htmlFor={id}
           className="text-[13px] font-semibold text-neutral-800"
         >
-          {label}{" "}
-          {required ? (
-            <span aria-hidden="true" className="text-red-600">
-              *
-            </span>
-          ) : null}
+          {label}
         </label>
+        {required ? (
+          <span
+            aria-hidden="true"
+            className="text-[12px] font-medium text-[#9B3B41]"
+          >
+            *
+          </span>
+        ) : null}
         {hint ? (
           <span className="text-[11.5px] text-neutral-400">{hint}</span>
         ) : null}
       </div>
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-[12px] text-red-700">
+        <p id={`${id}-error`} className="mt-1.5 text-[12px] text-red-700">
           {error}
         </p>
       ) : null}
@@ -406,16 +409,16 @@ export function SubmitView({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-center text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
           >
-            취소
+            <span>취소</span>
           </button>
         ) : (
           <Link
             to="/"
-            className="inline-flex h-8 shrink-0 items-center rounded-full px-3 text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-center text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
           >
-            취소
+            <span>취소</span>
           </Link>
         )}
       </div>
@@ -433,11 +436,11 @@ export function SubmitView({
         noValidate
         onSubmit={submit}
         aria-label={editing ? "앱 수정 양식" : "새 앱 등록 양식"}
-        className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
+        className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]"
       >
         <div className="flex min-w-0 flex-col gap-6">
           <fieldset disabled={saving || loadingLatest} className="contents">
-            <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-5 sm:p-6">
+            <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-6">
               <h2 className="text-[14px] font-bold text-neutral-900">
                 기본 정보
               </h2>
@@ -535,11 +538,19 @@ export function SubmitView({
               </Field>
             </section>
 
-            <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-5 sm:p-6">
+            <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-6">
               <h2 className="text-[14px] font-bold text-neutral-900">분류</h2>
               <div>
-                <div className="mb-2 text-[12.5px] font-semibold text-neutral-700">
-                  교과 과목 <span className="text-red-600">*</span>
+                <div className="mb-1.5 flex items-baseline gap-1.5">
+                  <span className="text-[13px] font-semibold text-neutral-800">
+                    교과 과목
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="text-[12px] font-medium text-[#9B3B41]"
+                  >
+                    *
+                  </span>
                 </div>
                 <div
                   role="group"
@@ -574,9 +585,17 @@ export function SubmitView({
                 ) : null}
               </div>
               <div>
-                <div className="mb-2 text-[12.5px] font-semibold text-neutral-700">
-                  적용 가능 학년 <span className="text-red-600">*</span>
-                  <span className="ml-1 font-normal text-neutral-400">
+                <div className="mb-1.5 flex items-baseline gap-1.5">
+                  <span className="text-[13px] font-semibold text-neutral-800">
+                    적용 가능 학년
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="text-[12px] font-medium text-[#9B3B41]"
+                  >
+                    *
+                  </span>
+                  <span className="text-[11.5px] text-neutral-400">
                     복수 선택 가능
                   </span>
                 </div>
@@ -614,7 +633,7 @@ export function SubmitView({
               </div>
             </section>
 
-            <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-5 sm:p-6">
+            <section className="flex min-w-0 flex-col gap-4 rounded-3xl border border-neutral-200/80 bg-white p-6">
               <h2 className="text-[14px] font-bold text-neutral-900">
                 기술 스택
               </h2>
@@ -711,7 +730,7 @@ export function SubmitView({
                 className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4C7A96] disabled:opacity-50 ${draft.isPublic ? "bg-[#3C7A72]" : "bg-neutral-300"}`}
               >
                 <span
-                  className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${draft.isPublic ? "left-6" : "left-1"}`}
+                  className={`absolute top-[3px] h-[22px] w-[22px] rounded-full bg-white shadow transition-all ${draft.isPublic ? "left-[26px]" : "left-[3px]"}`}
                 />
               </button>
             </div>

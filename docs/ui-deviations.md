@@ -294,3 +294,24 @@ Authorization update: **DomineYH 승인(2026-09-30, 권장안 일괄 승인)** p
 Actual verification: five before/after full and component captures retain the source difference; the EmptyState gains 89.125 CSS pixels and footer content matches after alignment. At 1024×900 the increased full-page height produces the documented backdrop rerasterization; this height consequence is included only in the five scoped product baselines. Final visual verification is 122/122, with all 57 configured comparisons at 0 differing pixels and existing comparison regions unchanged. See [measured evidence](evidence/phase-2/issue95/2026-09-30/source-differences.json) and [final run](evidence/phase-2/issue95/2026-09-30/logs/visual-final.log).
 
 The [completion approval record](https://github.com/DomineYH/vibe_coding_archive/issues/95#issuecomment-5909993510) explicitly includes the measured height consequence under HITL 권장안 채택 — DomineYH 승인(2026-09-30, 권장안 일괄 승인).
+
+## Issue #105 app-create scoped visual approval
+
+**HITL 권장안 채택 — DomineYH 승인(2026-09-30, 권장안 일괄 승인).** The implementation request permits only baselines supported by measured required differences. This supersedes the Agent Brief's no-baseline-change condition for **20 new product baselines**; preserved files/source PNGs and all previous baselines remain unchanged. Judge: Codex under DomineYH's delegation, 2026-09-30; scope: four states × five required viewports, entire PNG, no crop/mask, 0px. Final execution/review continues on 2026-10-01 after a model-capacity interruption; the delegated approval date remains 2026-09-30.
+
+The [#105 evidence ledger](evidence/phase-2/issue105/2026-09-30/README.md) classifies all 20 old dimension mismatches and restores unapproved Field/label/textarea layout, mobile padding/cancel, switch thumb, edit navigation, desktop identity presentation, private Chip/scope text and edit-control differences. Source replay matches all 20 preserved PNGs at 0px. Restoring only the identified required differences in an **evidence-only DOM counterfactual** also matches all 20 source PNGs at 0px; actual product acceptance never substitutes DOM.
+
+| Approved change ID | UI-D / requirement | Approved difference | States at all five viewports |
+| --- | --- | --- | --- |
+| I105-L | UI-D02/UI-D07, #34/#70 | Visible logout/mobile nickname and resulting header displacement | registration initial/error, edit initial, private detail |
+| I105-P | UI-D04, #40 | Placeholder avoids the source mock fixture name in API artifact | registration initial/error |
+| I105-V | UI-D07, #41 | External-site visibility disclaimer and height/wrapping | registration initial/error, edit initial, private detail |
+| I105-A | UI-D03, #40 | Associated errors, concise summary, invalid-input focus and resulting height/pixels | registration error |
+| I105-N | UI-D07, #41 | Initial edit save disabled until normalized values change | edit initial |
+| I105-H | UI-D06/UI-D04, #47 | Connection result/checked time/freshness/next check and mock-only note, including height/wrapping | private detail |
+
+[baseline-approval.json](evidence/phase-2/issue105/2026-09-30/baseline-approval.json) enumerates every ID × state × viewport, original/before/after dimensions/files, SHA-256, scope, judge and date. Strict baseline comparison requires expected PNG width/height, completed comparison and 0 differing pixels. Direct source comparisons remain recorded as 16 size mismatches and four nonzero comparisons. The other 50 captures remain `product_only` without new baselines or pixel-equality approval.
+
+This delegated approval resolves only #105's listed differences. Direct human, screen-reader, physical-device, cross-browser and hosted-CI inspection, and other issues' pending acceptance, are not claimed.
+
+Final capture verification on 2026-10-01 disables partial raster reuse only for app-create, with the same pinned browser/font/sRGB/viewports and strict full-PNG comparison. Ten repeated PNGs are identical; all 20 source replays and 20 diagnostic counterfactuals remain byte-identical to the preserved references. Every candidate was individually measured: 14 of the 20 new additions change only 36 pixels/max channel delta 2 on the already-required I105-L logout border; dimensions and all other pixels are identical. Six additions remain byte-identical. [The final canonical ledger](evidence/phase-2/issue105/2026-09-30/verification/canonical/approval.json) retains prior/final files, SHA-256, bounds, IDs/state/viewport, renderer setting and full 0px scope. Judge: Codex under delegation, 2026-10-01. **HITL 권장안 채택 — DomineYH 승인(2026-09-30, 권장안 일괄 승인)** adopts this existing I105-L capture scope. Earlier four-/ten-image proposals are superseded; no extra product style, submit-edge exception, tolerance, timeout or mask is adopted. Final affected checks are 30/30, with 20 exact comparisons and 50 observations.

@@ -1,0 +1,19 @@
+{
+  "state": "app-create-target-missing",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": null,
+  "screenshot": "app-create-target-missing-1440x1000.png",
+  "captureStatus": "stable",
+  "width": 1440,
+  "height": 1000,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "after-test/app-create-target-missing-1440x1000.png",
+  "actualSha256": "912ae3858a129423f77e6454d4201c65dd2d446fbc25c1f07a95376257e9f060"
+}

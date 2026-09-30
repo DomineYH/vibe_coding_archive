@@ -1,0 +1,3 @@
+npm notice run eduvibe-archive-frontend@1.0.0 check:dist
+npm notice run node scripts/check-dist.mjs
+API dist contains 96 files and no mock fixtures, Tweaks, references, or source maps.

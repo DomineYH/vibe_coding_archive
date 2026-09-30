@@ -1,0 +1,19 @@
+{
+  "state": "app-detail-private",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "12-detail-private.png",
+  "screenshot": "app-detail-private-1440x1000.png",
+  "captureStatus": "expected_match",
+  "width": 1440,
+  "height": 1569,
+  "expectedWidth": 1440,
+  "expectedHeight": 1569,
+  "comparisonStatus": "compared",
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "actualArtifact": "visual-state-baselines/1440x1000/12-detail-private.png",
+  "actualSha256": "b914a285064a754c2ede2dd912a63ccce91bdb6f6b1e8ef190e025e91744859f"
+}

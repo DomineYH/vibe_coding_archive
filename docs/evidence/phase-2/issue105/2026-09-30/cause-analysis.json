@@ -1,0 +1,1577 @@
+[
+  {
+    "state": "app-detail-private",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "originalHeight": 1361,
+    "beforeHeight": 1573,
+    "afterHeight": 1569,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1440,
+        1361
+      ],
+      "expected": [
+        1440,
+        1361
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1440,
+        1361
+      ],
+      "expected": [
+        1440,
+        1361
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "상세 설명 · 활용 매뉴얼(비공개) 우리 학교",
+        "source": 260.8125,
+        "before": 260.8125,
+        "after": 260.8125,
+        "sourceY": 627.25,
+        "beforeY": 631.25,
+        "afterY": 627.25
+      },
+      {
+        "name": "핵심 프롬프트복사하기교사 전용 수행평가 루브릭",
+        "source": 195.1875,
+        "before": 195.1875,
+        "after": 195.1875,
+        "sourceY": 912.0625,
+        "beforeY": 916.0625,
+        "afterY": 912.0625
+      },
+      {
+        "name": "기술 스택DatabaseSupabase (Po",
+        "source": 221,
+        "before": 221,
+        "after": 221,
+        "sourceY": 627.25,
+        "beforeY": 631.25,
+        "afterY": 627.25
+      },
+      {
+        "name": "연결 상태정상마지막 검사오늘 09:12연결 다",
+        "source": 176.75,
+        "before": 349.9375,
+        "after": 349.9375,
+        "sourceY": 872.25,
+        "beforeY": 876.25,
+        "afterY": 872.25
+      }
+    ]
+  },
+  {
+    "state": "app-edit",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "originalHeight": 1528,
+    "beforeHeight": 1517,
+    "afterHeight": 1528,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1440,
+        1528
+      ],
+      "expected": [
+        1440,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1440,
+        1528
+      ],
+      "expected": [
+        1440,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 583,
+        "after": 597,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 268,
+        "before": 270.5,
+        "after": 268,
+        "sourceY": 817.25,
+        "beforeY": 803.25,
+        "afterY": 817.25
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1109.25,
+        "beforeY": 1097.75,
+        "afterY": 1109.25
+      },
+      {
+        "name": "썸네일 미리보기과학 수행평가 루브릭 채점기과학",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "비공개본인과 관리자만 볼 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 676.25,
+        "beforeY": 676.25,
+        "afterY": 676.25
+      }
+    ]
+  },
+  {
+    "state": "app-create",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "originalHeight": 1528,
+    "beforeHeight": 1517,
+    "afterHeight": 1528,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1440,
+        1528
+      ],
+      "expected": [
+        1440,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1440,
+        1528
+      ],
+      "expected": [
+        1440,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 583,
+        "after": 597,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 268,
+        "before": 270.5,
+        "after": 268,
+        "sourceY": 817.25,
+        "beforeY": 803.25,
+        "afterY": 817.25
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1109.25,
+        "beforeY": 1097.75,
+        "afterY": 1109.25
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 676.25,
+        "beforeY": 676.25,
+        "afterY": 676.25
+      }
+    ]
+  },
+  {
+    "state": "app-create-validation-error",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "originalHeight": 1594,
+    "beforeHeight": 1726,
+    "afterHeight": 1738,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1440,
+        1594
+      ],
+      "expected": [
+        1440,
+        1594
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1440,
+        1594
+      ],
+      "expected": [
+        1440,
+        1594
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 679,
+        "after": 693,
+        "sourceY": 261.75,
+        "beforeY": 261.75,
+        "afterY": 261.75
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 268,
+        "before": 318.5,
+        "after": 316,
+        "sourceY": 882.75,
+        "beforeY": 964.75,
+        "afterY": 978.75
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1174.75,
+        "beforeY": 1307.25,
+        "afterY": 1318.75
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 261.75,
+        "beforeY": 261.75,
+        "afterY": 261.75
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 741.75,
+        "beforeY": 741.75,
+        "afterY": 741.75
+      }
+    ]
+  },
+  {
+    "state": "app-detail-private",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "originalHeight": 1341,
+    "beforeHeight": 1553,
+    "afterHeight": 1549,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1024,
+        1341
+      ],
+      "expected": [
+        1024,
+        1341
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1024,
+        1341
+      ],
+      "expected": [
+        1024,
+        1341
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "상세 설명 · 활용 매뉴얼(비공개) 우리 학교",
+        "source": 260.8125,
+        "before": 260.8125,
+        "after": 260.8125,
+        "sourceY": 608,
+        "beforeY": 612,
+        "afterY": 608
+      },
+      {
+        "name": "핵심 프롬프트복사하기교사 전용 수행평가 루브릭",
+        "source": 195.1875,
+        "before": 195.1875,
+        "after": 195.1875,
+        "sourceY": 892.8125,
+        "beforeY": 896.8125,
+        "afterY": 892.8125
+      },
+      {
+        "name": "기술 스택DatabaseSupabase (Po",
+        "source": 221,
+        "before": 221,
+        "after": 221,
+        "sourceY": 608,
+        "beforeY": 612,
+        "afterY": 608
+      },
+      {
+        "name": "연결 상태정상마지막 검사오늘 09:12연결 다",
+        "source": 176.75,
+        "before": 349.9375,
+        "after": 349.9375,
+        "sourceY": 853,
+        "beforeY": 857,
+        "afterY": 853
+      }
+    ]
+  },
+  {
+    "state": "app-edit",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "originalHeight": 1528,
+    "beforeHeight": 1517,
+    "afterHeight": 1528,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1024,
+        1528
+      ],
+      "expected": [
+        1024,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1024,
+        1528
+      ],
+      "expected": [
+        1024,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 583,
+        "after": 597,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 268,
+        "before": 270.5,
+        "after": 268,
+        "sourceY": 817.25,
+        "beforeY": 803.25,
+        "afterY": 817.25
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1109.25,
+        "beforeY": 1097.75,
+        "afterY": 1109.25
+      },
+      {
+        "name": "썸네일 미리보기과학 수행평가 루브릭 채점기과학",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "비공개본인과 관리자만 볼 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 676.25,
+        "beforeY": 676.25,
+        "afterY": 676.25
+      }
+    ]
+  },
+  {
+    "state": "app-create",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "originalHeight": 1528,
+    "beforeHeight": 1517,
+    "afterHeight": 1528,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1024,
+        1528
+      ],
+      "expected": [
+        1024,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1024,
+        1528
+      ],
+      "expected": [
+        1024,
+        1528
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 583,
+        "after": 597,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 268,
+        "before": 270.5,
+        "after": 268,
+        "sourceY": 817.25,
+        "beforeY": 803.25,
+        "afterY": 817.25
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1109.25,
+        "beforeY": 1097.75,
+        "afterY": 1109.25
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 676.25,
+        "beforeY": 676.25,
+        "afterY": 676.25
+      }
+    ]
+  },
+  {
+    "state": "app-create-validation-error",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "originalHeight": 1594,
+    "beforeHeight": 1726,
+    "afterHeight": 1738,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        1024,
+        1594
+      ],
+      "expected": [
+        1024,
+        1594
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        1024,
+        1594
+      ],
+      "expected": [
+        1024,
+        1594
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 679,
+        "after": 693,
+        "sourceY": 261.75,
+        "beforeY": 261.75,
+        "afterY": 261.75
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 268,
+        "before": 318.5,
+        "after": 316,
+        "sourceY": 882.75,
+        "beforeY": 964.75,
+        "afterY": 978.75
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1174.75,
+        "beforeY": 1307.25,
+        "afterY": 1318.75
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 261.75,
+        "beforeY": 261.75,
+        "afterY": 261.75
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 741.75,
+        "beforeY": 741.75,
+        "afterY": 741.75
+      }
+    ]
+  },
+  {
+    "state": "app-detail-private",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "originalHeight": 1733,
+    "beforeHeight": 1945,
+    "afterHeight": 1941,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        768,
+        1733
+      ],
+      "expected": [
+        768,
+        1733
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        768,
+        1733
+      ],
+      "expected": [
+        768,
+        1733
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "상세 설명 · 활용 매뉴얼(비공개) 우리 학교",
+        "source": 260.8125,
+        "before": 260.8125,
+        "after": 260.8125,
+        "sourceY": 520,
+        "beforeY": 524,
+        "afterY": 520
+      },
+      {
+        "name": "핵심 프롬프트복사하기교사 전용 수행평가 루브릭",
+        "source": 171.140625,
+        "before": 171.140625,
+        "after": 171.140625,
+        "sourceY": 804.8125,
+        "beforeY": 808.8125,
+        "afterY": 804.8125
+      },
+      {
+        "name": "기술 스택DatabaseSupabase (Po",
+        "source": 221,
+        "before": 221,
+        "after": 221,
+        "sourceY": 999.953125,
+        "beforeY": 1003.953125,
+        "afterY": 999.953125
+      },
+      {
+        "name": "연결 상태정상마지막 검사오늘 09:12연결 다",
+        "source": 176.75,
+        "before": 349.9375,
+        "after": 349.9375,
+        "sourceY": 1244.953125,
+        "beforeY": 1248.953125,
+        "afterY": 1244.953125
+      }
+    ]
+  },
+  {
+    "state": "app-edit",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "originalHeight": 2577,
+    "beforeHeight": 2588,
+    "afterHeight": 2600,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        768,
+        2577
+      ],
+      "expected": [
+        768,
+        2577
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        768,
+        2577
+      ],
+      "expected": [
+        768,
+        2577
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 583,
+        "after": 597,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 226,
+        "before": 228.5,
+        "after": 226,
+        "sourceY": 817.25,
+        "beforeY": 803.25,
+        "afterY": 817.25
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1067.25,
+        "beforeY": 1055.75,
+        "afterY": 1067.25
+      },
+      {
+        "name": "썸네일 미리보기과학 수행평가 루브릭 채점기과학",
+        "source": 888,
+        "before": 888,
+        "after": 888,
+        "sourceY": 1331.25,
+        "beforeY": 1319.75,
+        "afterY": 1331.25
+      },
+      {
+        "name": "비공개본인과 관리자만 볼 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2243.25,
+        "beforeY": 2231.75,
+        "afterY": 2243.25
+      }
+    ]
+  },
+  {
+    "state": "app-create",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "originalHeight": 2577,
+    "beforeHeight": 2588,
+    "afterHeight": 2600,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        768,
+        2577
+      ],
+      "expected": [
+        768,
+        2577
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        768,
+        2577
+      ],
+      "expected": [
+        768,
+        2577
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 583,
+        "after": 597,
+        "sourceY": 196.25,
+        "beforeY": 196.25,
+        "afterY": 196.25
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 226,
+        "before": 228.5,
+        "after": 226,
+        "sourceY": 817.25,
+        "beforeY": 803.25,
+        "afterY": 817.25
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1067.25,
+        "beforeY": 1055.75,
+        "afterY": 1067.25
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 888,
+        "before": 888,
+        "after": 888,
+        "sourceY": 1331.25,
+        "beforeY": 1319.75,
+        "afterY": 1331.25
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2243.25,
+        "beforeY": 2231.75,
+        "afterY": 2243.25
+      }
+    ]
+  },
+  {
+    "state": "app-create-validation-error",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "originalHeight": 2643,
+    "beforeHeight": 2798,
+    "afterHeight": 2809,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        768,
+        2643
+      ],
+      "expected": [
+        768,
+        2643
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        768,
+        2643
+      ],
+      "expected": [
+        768,
+        2643
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 679,
+        "after": 693,
+        "sourceY": 261.75,
+        "beforeY": 261.75,
+        "afterY": 261.75
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 226,
+        "before": 276.5,
+        "after": 274,
+        "sourceY": 882.75,
+        "beforeY": 964.75,
+        "afterY": 978.75
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 240,
+        "before": 240,
+        "after": 240,
+        "sourceY": 1132.75,
+        "beforeY": 1265.25,
+        "afterY": 1276.75
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 888,
+        "before": 888,
+        "after": 888,
+        "sourceY": 1396.75,
+        "beforeY": 1529.25,
+        "afterY": 1540.75
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2308.75,
+        "beforeY": 2441.25,
+        "afterY": 2452.75
+      }
+    ]
+  },
+  {
+    "state": "app-detail-private",
+    "viewport": {
+      "width": 360,
+      "height": 844
+    },
+    "originalHeight": 1939,
+    "beforeHeight": 2136,
+    "afterHeight": 2166,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        360,
+        1939
+      ],
+      "expected": [
+        360,
+        1939
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        360,
+        1939
+      ],
+      "expected": [
+        360,
+        1939
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "상세 설명 · 활용 매뉴얼(비공개) 우리 학교",
+        "source": 336.375,
+        "before": 336.375,
+        "after": 336.375,
+        "sourceY": 512,
+        "beforeY": 482,
+        "afterY": 512
+      },
+      {
+        "name": "핵심 프롬프트복사하기교사 전용 수행평가 루브릭",
+        "source": 291.375,
+        "before": 291.375,
+        "after": 291.375,
+        "sourceY": 872.375,
+        "beforeY": 842.375,
+        "afterY": 872.375
+      },
+      {
+        "name": "기술 스택DatabaseSupabase (Po",
+        "source": 221,
+        "before": 221,
+        "after": 221,
+        "sourceY": 1187.75,
+        "beforeY": 1157.75,
+        "afterY": 1187.75
+      },
+      {
+        "name": "연결 상태정상마지막 검사오늘 09:12연결 다",
+        "source": 176.75,
+        "before": 368.625,
+        "after": 368.625,
+        "sourceY": 1432.75,
+        "beforeY": 1402.75,
+        "afterY": 1432.75
+      }
+    ]
+  },
+  {
+    "state": "app-edit",
+    "viewport": {
+      "width": 360,
+      "height": 844
+    },
+    "originalHeight": 2478,
+    "beforeHeight": 2466,
+    "afterHeight": 2501,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        360,
+        2478
+      ],
+      "expected": [
+        360,
+        2478
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        360,
+        2478
+      ],
+      "expected": [
+        360,
+        2478
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 575,
+        "after": 597,
+        "sourceY": 216.5,
+        "beforeY": 216.5,
+        "afterY": 216.5
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 352,
+        "before": 346.5,
+        "after": 352,
+        "sourceY": 837.5,
+        "beforeY": 815.5,
+        "afterY": 837.5
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 409,
+        "before": 401,
+        "after": 409,
+        "sourceY": 1213.5,
+        "beforeY": 1186,
+        "afterY": 1213.5
+      },
+      {
+        "name": "썸네일 미리보기과학 수행평가 루브릭 채점기과학",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 1646.5,
+        "beforeY": 1611,
+        "afterY": 1646.5
+      },
+      {
+        "name": "비공개본인과 관리자만 볼 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2126.5,
+        "beforeY": 2091,
+        "afterY": 2126.5
+      }
+    ]
+  },
+  {
+    "state": "app-create",
+    "viewport": {
+      "width": 360,
+      "height": 844
+    },
+    "originalHeight": 2478,
+    "beforeHeight": 2466,
+    "afterHeight": 2501,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        360,
+        2478
+      ],
+      "expected": [
+        360,
+        2478
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        360,
+        2478
+      ],
+      "expected": [
+        360,
+        2478
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 575,
+        "after": 597,
+        "sourceY": 216.5,
+        "beforeY": 216.5,
+        "afterY": 216.5
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 352,
+        "before": 346.5,
+        "after": 352,
+        "sourceY": 837.5,
+        "beforeY": 815.5,
+        "afterY": 837.5
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 409,
+        "before": 401,
+        "after": 409,
+        "sourceY": 1213.5,
+        "beforeY": 1186,
+        "afterY": 1213.5
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 1646.5,
+        "beforeY": 1611,
+        "afterY": 1646.5
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2126.5,
+        "beforeY": 2091,
+        "afterY": 2126.5
+      }
+    ]
+  },
+  {
+    "state": "app-create-validation-error",
+    "viewport": {
+      "width": 360,
+      "height": 844
+    },
+    "originalHeight": 2563,
+    "beforeHeight": 2675,
+    "afterHeight": 2711,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        360,
+        2563
+      ],
+      "expected": [
+        360,
+        2563
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        360,
+        2563
+      ],
+      "expected": [
+        360,
+        2563
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 671,
+        "after": 693,
+        "sourceY": 301.5,
+        "beforeY": 282,
+        "afterY": 282
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 352,
+        "before": 394.5,
+        "after": 400,
+        "sourceY": 922.5,
+        "beforeY": 977,
+        "afterY": 999
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 409,
+        "before": 401,
+        "after": 409,
+        "sourceY": 1298.5,
+        "beforeY": 1395.5,
+        "afterY": 1423
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 456,
+        "before": 456,
+        "after": 456,
+        "sourceY": 1731.5,
+        "beforeY": 1820.5,
+        "afterY": 1856
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2211.5,
+        "beforeY": 2300.5,
+        "afterY": 2336
+      }
+    ]
+  },
+  {
+    "state": "app-detail-private",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "originalHeight": 1844,
+    "beforeHeight": 2056,
+    "afterHeight": 2052,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        390,
+        1844
+      ],
+      "expected": [
+        390,
+        1844
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        390,
+        1844
+      ],
+      "expected": [
+        390,
+        1844
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "상세 설명 · 활용 매뉴얼(비공개) 우리 학교",
+        "source": 286,
+        "before": 286,
+        "after": 286,
+        "sourceY": 491.125,
+        "beforeY": 495.125,
+        "afterY": 491.125
+      },
+      {
+        "name": "핵심 프롬프트복사하기교사 전용 수행평가 루브릭",
+        "source": 267.328125,
+        "before": 267.328125,
+        "after": 267.328125,
+        "sourceY": 801.125,
+        "beforeY": 805.125,
+        "afterY": 801.125
+      },
+      {
+        "name": "기술 스택DatabaseSupabase (Po",
+        "source": 221,
+        "before": 221,
+        "after": 221,
+        "sourceY": 1092.453125,
+        "beforeY": 1096.453125,
+        "afterY": 1092.453125
+      },
+      {
+        "name": "연결 상태정상마지막 검사오늘 09:12연결 다",
+        "source": 176.75,
+        "before": 349.9375,
+        "after": 349.9375,
+        "sourceY": 1337.453125,
+        "beforeY": 1341.453125,
+        "afterY": 1337.453125
+      }
+    ]
+  },
+  {
+    "state": "app-edit",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "originalHeight": 2512,
+    "beforeHeight": 2499,
+    "afterHeight": 2535,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        390,
+        2512
+      ],
+      "expected": [
+        390,
+        2512
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        390,
+        2512
+      ],
+      "expected": [
+        390,
+        2512
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 575,
+        "after": 597,
+        "sourceY": 216.5,
+        "beforeY": 216.5,
+        "afterY": 216.5
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 352,
+        "before": 346.5,
+        "after": 352,
+        "sourceY": 837.5,
+        "beforeY": 815.5,
+        "afterY": 837.5
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 409,
+        "before": 401,
+        "after": 409,
+        "sourceY": 1213.5,
+        "beforeY": 1186,
+        "afterY": 1213.5
+      },
+      {
+        "name": "썸네일 미리보기과학 수행평가 루브릭 채점기과학",
+        "source": 489.75,
+        "before": 489.75,
+        "after": 489.75,
+        "sourceY": 1646.5,
+        "beforeY": 1611,
+        "afterY": 1646.5
+      },
+      {
+        "name": "비공개본인과 관리자만 볼 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2160.25,
+        "beforeY": 2124.75,
+        "afterY": 2160.25
+      }
+    ]
+  },
+  {
+    "state": "app-create",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "originalHeight": 2512,
+    "beforeHeight": 2499,
+    "afterHeight": 2535,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        390,
+        2512
+      ],
+      "expected": [
+        390,
+        2512
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        390,
+        2512
+      ],
+      "expected": [
+        390,
+        2512
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 575,
+        "after": 597,
+        "sourceY": 216.5,
+        "beforeY": 216.5,
+        "afterY": 216.5
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 352,
+        "before": 346.5,
+        "after": 352,
+        "sourceY": 837.5,
+        "beforeY": 815.5,
+        "afterY": 837.5
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 409,
+        "before": 401,
+        "after": 409,
+        "sourceY": 1213.5,
+        "beforeY": 1186,
+        "afterY": 1213.5
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 489.75,
+        "before": 489.75,
+        "after": 489.75,
+        "sourceY": 1646.5,
+        "beforeY": 1611,
+        "afterY": 1646.5
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2160.25,
+        "beforeY": 2124.75,
+        "afterY": 2160.25
+      }
+    ]
+  },
+  {
+    "state": "app-create-validation-error",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "originalHeight": 2597,
+    "beforeHeight": 2709,
+    "afterHeight": 2744,
+    "sourceReplayVsPreserved": {
+      "actual": [
+        390,
+        2597
+      ],
+      "expected": [
+        390,
+        2597
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "counterfactualVsSourceReplay": {
+      "actual": [
+        390,
+        2597
+      ],
+      "expected": [
+        390,
+        2597
+      ],
+      "differentPixels": 0,
+      "bounds": null
+    },
+    "sections": [
+      {
+        "name": "기본 정보어플리케이션 이름*배포 URL*핵심 ",
+        "source": 597,
+        "before": 671,
+        "after": 693,
+        "sourceY": 301.5,
+        "beforeY": 282,
+        "afterY": 282
+      },
+      {
+        "name": "분류교과 과목*수학과학영어역사국어사회정보기타적",
+        "source": 352,
+        "before": 394.5,
+        "after": 400,
+        "sourceY": 922.5,
+        "beforeY": 977,
+        "afterY": 999
+      },
+      {
+        "name": "기술 스택DB백엔드 엔진프론트엔드 프레임워크호",
+        "source": 409,
+        "before": 401,
+        "after": 409,
+        "sourceY": 1298.5,
+        "beforeY": 1395.5,
+        "afterY": 1423
+      },
+      {
+        "name": "썸네일 미리보기앱 이름과목 · 학년Panton",
+        "source": 489.75,
+        "before": 489.75,
+        "after": 489.75,
+        "sourceY": 1731.5,
+        "beforeY": 1820.5,
+        "afterY": 1856
+      },
+      {
+        "name": "전체 공개모든 사용자가 열람할 수 있어요.",
+        "source": 82.9375,
+        "before": 105.625,
+        "after": 105.625,
+        "sourceY": 2245.25,
+        "beforeY": 2334.25,
+        "afterY": 2369.75
+      }
+    ]
+  }
+]

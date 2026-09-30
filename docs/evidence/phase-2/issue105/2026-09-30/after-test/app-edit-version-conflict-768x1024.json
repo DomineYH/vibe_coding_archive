@@ -1,0 +1,16 @@
+{
+  "state": "app-edit-version-conflict",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": null,
+  "screenshot": "app-edit-version-conflict-768x1024.png",
+  "width": 768,
+  "height": 2776,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

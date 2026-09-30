@@ -4,6 +4,7 @@ import {
   Check,
   ChevronLeft,
   Copy,
+  Pencil,
   RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -441,9 +442,11 @@ export function AppDetailView({
               <Link
                 to={`/apps/${app.id}/edit`}
                 state={{ fromDetail: true, fromGallery, fromAdmin }}
-                className="inline-flex h-9 items-center rounded-full border border-neutral-200 px-4 text-[12.5px] font-semibold text-neutral-700 hover:bg-neutral-100"
+                aria-label="앱 수정"
+                className="inline-flex h-8 select-none items-center justify-center gap-1.5 rounded-full border border-neutral-300 bg-white px-3 text-[12.5px] font-semibold text-neutral-700 transition-all duration-200 hover:bg-neutral-50 active:scale-[0.97]"
               >
-                앱 수정
+                <Pencil size={13} aria-hidden="true" />
+                <span>편집</span>
               </Link>
             ) : null}
             {canDelete ? (
@@ -601,6 +604,7 @@ export function AppDetailView({
             {app.grades.map((grade) => (
               <Chip key={grade}>{grade}</Chip>
             ))}
+            {!app.isPublic ? <Chip tone="yellow">비공개</Chip> : null}
           </div>
         </div>
         <a
@@ -809,7 +813,7 @@ export function AppDetailView({
             <div className="flex items-center justify-between border-b border-neutral-200/70 py-2">
               <span>공개 범위</span>
               <span className="font-semibold text-neutral-600">
-                {app.isPublic ? "전체 공개" : "비공개"}
+                {app.isPublic ? "전체 공개" : "본인 · 관리자만"}
               </span>
             </div>
             {!app.isPublic ? (

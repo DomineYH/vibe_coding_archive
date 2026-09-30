@@ -1,0 +1,16 @@
+{
+  "state": "app-create",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": "16-submit.png",
+  "screenshot": "app-create-390x844.png",
+  "width": 390,
+  "height": 2535,
+  "expectedWidth": 390,
+  "expectedHeight": 2512,
+  "comparisonStatus": "dimensions_mismatch",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

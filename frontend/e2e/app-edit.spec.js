@@ -88,6 +88,11 @@ test("owner edits an app, changes visibility, and the gallery no longer lists it
 }) => {
   const id = await createOwnedApp(page, "공개 범위 수정 대상");
   const form = await openEdit(page, id);
+  await expect(
+    page
+      .getByRole("banner")
+      .getByRole("link", { name: "앱 등록", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await form
     .getByRole("textbox", { name: "어플리케이션 이름", exact: true })
     .fill("비공개 수업 도구");

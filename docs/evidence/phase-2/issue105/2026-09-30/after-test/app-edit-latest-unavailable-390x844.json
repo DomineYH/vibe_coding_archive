@@ -1,0 +1,16 @@
+{
+  "state": "app-edit-latest-unavailable",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-edit-latest-unavailable-390x844.png",
+  "width": 390,
+  "height": 2751,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

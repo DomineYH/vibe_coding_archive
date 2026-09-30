@@ -1,0 +1,59 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js visual/issue105-settle.tmp.spec.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:174423) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:174503) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+0 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+1 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 36,
+  maxChannelDelta: 2
+}
+2 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 36,
+  maxChannelDelta: 2
+}
+3 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 36,
+  maxChannelDelta: 2
+}
+4 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 36,
+  maxChannelDelta: 2
+}
+  ✓  1 visual/issue105-settle.tmp.spec.js:4:1 › investigate screenshot stability (13.9s)
+
+  1 passed (34.2s)

@@ -1,0 +1,436 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js visual/issue105-full-raster.tmp.spec.js --retries=0 --workers=1 --output=test-results/issue105-full-raster-diagnostic
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:200036) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 25 tests using 1 worker
+
+(node:200066) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 1440x1000 (19.3s)
+(node:200223) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   2 visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 1440x1000 (10.4s)
+(node:200344) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 visual/issue105-full-raster.tmp.spec.js:303:3 › conceals an unresolved create draft during auth checks at 1440x1000 (2.8s)
+  ✓   4 visual/issue105-full-raster.tmp.spec.js:336:3 › shows confirmed create when its target is later unavailable at 1440x1000 (2.6s)
+  ✓   5 visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 1440x1000 (2.5s)
+  ✘   6 visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 1024x900 (5.7s)
+(node:200542) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   7 visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 1024x900 (7.8s)
+(node:200656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 visual/issue105-full-raster.tmp.spec.js:303:3 › conceals an unresolved create draft during auth checks at 1024x900 (2.3s)
+  ✓   9 visual/issue105-full-raster.tmp.spec.js:336:3 › shows confirmed create when its target is later unavailable at 1024x900 (2.3s)
+  ✘  10 visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 1024x900 (3.2s)
+(node:200837) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  11 visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 768x1024 (8.9s)
+(node:200927) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  12 visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 768x1024 (10.9s)
+(node:201081) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 visual/issue105-full-raster.tmp.spec.js:303:3 › conceals an unresolved create draft during auth checks at 768x1024 (2.4s)
+  ✓  14 visual/issue105-full-raster.tmp.spec.js:336:3 › shows confirmed create when its target is later unavailable at 768x1024 (2.4s)
+  ✘  15 visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 768x1024 (2.6s)
+(node:201216) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  16 visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 390x844 (4.4s)
+(node:201307) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  17 visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 390x844 (6.4s)
+(node:201436) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  18 visual/issue105-full-raster.tmp.spec.js:303:3 › conceals an unresolved create draft during auth checks at 390x844 (3.3s)
+  ✓  19 visual/issue105-full-raster.tmp.spec.js:336:3 › shows confirmed create when its target is later unavailable at 390x844 (2.7s)
+  ✘  20 visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 390x844 (2.6s)
+(node:201594) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  21 visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 360x844 (4.9s)
+(node:201681) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  22 visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 360x844 (6.4s)
+(node:201807) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  23 visual/issue105-full-raster.tmp.spec.js:303:3 › conceals an unresolved create draft during auth checks at 360x844 (2.3s)
+  ✓  24 visual/issue105-full-raster.tmp.spec.js:336:3 › shows confirmed create when its target is later unavailable at 360x844 (2.2s)
+  ✘  25 visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 360x844 (2.1s)
+
+
+  1) visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 1440x1000 ────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:144:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-1440x1000/error-context.md
+
+  2) visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 1440x1000 ────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:226:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-1440x1000/error-context.md
+
+  3) visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 1024x900 ─────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:136:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:144:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-1024x900/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-1024x900/error-context.md
+
+  4) visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 1024x900 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:226:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-1024x900/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-1024x900/error-context.md
+
+  5) visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 1024x900
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:406:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-96337-er-owner-update-at-1024x900/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-96337-er-owner-update-at-1024x900/error-context.md
+
+  6) visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 768x1024 ─────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:144:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-768x1024/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-768x1024/error-context.md
+
+  7) visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 768x1024 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:226:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-768x1024/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-768x1024/error-context.md
+
+  8) visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 768x1024
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:406:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-8f3e4-er-owner-update-at-768x1024/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-8f3e4-er-owner-update-at-768x1024/error-context.md
+
+  9) visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 390x844 ──────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:136:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:144:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-390x844/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-390x844/error-context.md
+
+  10) visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 390x844 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:226:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-390x844/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-390x844/error-context.md
+
+  11) visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 390x844
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:406:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-71e91-ter-owner-update-at-390x844/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-71e91-ter-owner-update-at-390x844/error-context.md
+
+  12) visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 360x844 ─────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:136:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-360x844/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-registration-form-at-360x844/error-context.md
+
+  13) visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 360x844 ─────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:226:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-360x844/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-app-edit-form-at-360x844/error-context.md
+
+  14) visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 360x844
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-full-raster.tmp.js:119
+
+      117 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      118 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 119 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      120 |   } else {
+      121 |     expect(comparison.comparisonStatus).toBe("product_only");
+      122 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-full-raster.tmp.js:119:45)
+        at <worktree>/frontend/visual/issue105-full-raster.tmp.spec.js:406:5
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-af765-ter-owner-update-at-360x844/error-context.md
+
+    Error Context: test-results/issue105-full-raster-diagnostic/issue105-full-raster.tmp-p-af765-ter-owner-update-at-360x844/error-context.md
+
+  14 failed
+    visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 1440x1000 ─────────────
+    visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 1440x1000 ─────────────────────
+    visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 1024x900 ──────────────
+    visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 1024x900 ──────────────────────
+    visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 1024x900
+    visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 768x1024 ──────────────
+    visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 768x1024 ──────────────────────
+    visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 768x1024
+    visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 390x844 ───────────────
+    visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 390x844 ───────────────────────
+    visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 390x844
+    visual/issue105-full-raster.tmp.spec.js:110:3 › app registration form at 360x844 ───────────────
+    visual/issue105-full-raster.tmp.spec.js:197:3 › app edit form at 360x844 ───────────────────────
+    visual/issue105-full-raster.tmp.spec.js:388:3 › private app detail after owner update at 360x844
+  11 passed (3.1m)

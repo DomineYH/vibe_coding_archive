@@ -1,0 +1,19 @@
+{
+  "state": "app-edit-version-conflict",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": null,
+  "screenshot": "app-edit-version-conflict-1024x900.png",
+  "captureStatus": "stable",
+  "width": 1024,
+  "height": 1594,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "verification/captures/app-edit-version-conflict-1024x900.png",
+  "actualSha256": "5383c7e9ce51b20da6a18bf025dd2e4b8ffeb2dea74a49d26d1074f05205597a"
+}

@@ -1,0 +1,16 @@
+{
+  "state": "app-create-auth-concealed",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": null,
+  "screenshot": "app-create-auth-concealed-1024x900.png",
+  "width": 1024,
+  "height": 900,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

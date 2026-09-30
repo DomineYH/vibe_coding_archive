@@ -1,0 +1,291 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js visual/issue105-canonical.tmp.spec.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:178816) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 25 tests using 1 worker
+
+(node:178903) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 1440x1000 (18.5s)
+(node:179013) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   2 visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 1440x1000 (11.7s)
+(node:179185) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 visual/issue105-canonical.tmp.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1440x1000 (2.8s)
+  ✓   4 visual/issue105-canonical.tmp.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1440x1000 (2.7s)
+  ✘   5 visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 1440x1000 (3.3s)
+(node:179324) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   6 visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 1024x900 (5.0s)
+(node:179432) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 1024x900 (7.0s)
+  ✓   8 visual/issue105-canonical.tmp.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1024x900 (2.1s)
+  ✓   9 visual/issue105-canonical.tmp.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1024x900 (2.4s)
+  ✘  10 visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 1024x900 (3.2s)
+(node:179632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  11 visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 768x1024 (9.4s)
+(node:179766) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  12 visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 768x1024 (13.6s)
+(node:179921) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 visual/issue105-canonical.tmp.spec.js:294:3 › conceals an unresolved create draft during auth checks at 768x1024 (2.7s)
+  ✓  14 visual/issue105-canonical.tmp.spec.js:327:3 › shows confirmed create when its target is later unavailable at 768x1024 (2.5s)
+  ✘  15 visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 768x1024 (3.1s)
+(node:180070) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  16 visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 390x844 (4.3s)
+  ✓  17 visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 390x844 (5.3s)
+  ✓  18 visual/issue105-canonical.tmp.spec.js:294:3 › conceals an unresolved create draft during auth checks at 390x844 (1.9s)
+  ✓  19 visual/issue105-canonical.tmp.spec.js:327:3 › shows confirmed create when its target is later unavailable at 390x844 (2.1s)
+  ✓  20 visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 390x844 (2.0s)
+  ✘  21 visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 360x844 (3.7s)
+(node:180316) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  22 visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 360x844 (5.7s)
+  ✓  23 visual/issue105-canonical.tmp.spec.js:294:3 › conceals an unresolved create draft during auth checks at 360x844 (2.2s)
+  ✓  24 visual/issue105-canonical.tmp.spec.js:327:3 › shows confirmed create when its target is later unavailable at 360x844 (2.4s)
+  ✓  25 visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 360x844 (2.1s)
+
+
+  1) visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 1440x1000 ──────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:135:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-1440x1000/error-context.md
+
+  2) visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 1440x1000 ──────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:217:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-edit-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-edit-form-at-1440x1000/error-context.md
+
+  3) visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 1440x1000
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:397:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-pri-822e7-r-owner-update-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-pri-822e7-r-owner-update-at-1440x1000/error-context.md
+
+  4) visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 1024x900 ───────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:127:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-1024x900/error-context.md
+
+  5) visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 1024x900
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:397:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-pri-ff63e-er-owner-update-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-pri-ff63e-er-owner-update-at-1024x900/error-context.md
+
+  6) visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 768x1024 ───────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:127:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-768x1024/error-context.md
+
+  7) visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 768x1024 ───────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:217:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-edit-form-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-edit-form-at-768x1024/error-context.md
+
+  8) visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 768x1024
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:397:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-pri-633e2-er-owner-update-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-pri-633e2-er-owner-update-at-768x1024/error-context.md
+
+  9) visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 360x844 ────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:127:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at issue105-canonical.tmp.js:137
+
+      135 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      136 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 137 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      138 |   } else {
+      139 |     expect(comparison.comparisonStatus).toBe("product_only");
+      140 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-canonical.tmp.js:137:45)
+        at <worktree>/frontend/visual/issue105-canonical.tmp.spec.js:135:5
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-360x844/error-context.md
+
+    Error Context: test-results/visual/issue105-canonical.tmp-app-registration-form-at-360x844/error-context.md
+
+  9 failed
+    visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 1440x1000 ───────────────
+    visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 1440x1000 ───────────────────────
+    visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 1440x1000
+    visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 1024x900 ────────────────
+    visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 1024x900
+    visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 768x1024 ────────────────
+    visual/issue105-canonical.tmp.spec.js:188:3 › app edit form at 768x1024 ────────────────────────
+    visual/issue105-canonical.tmp.spec.js:379:3 › private app detail after owner update at 768x1024
+    visual/issue105-canonical.tmp.spec.js:101:3 › app registration form at 360x844 ─────────────────
+  16 passed (2.8m)

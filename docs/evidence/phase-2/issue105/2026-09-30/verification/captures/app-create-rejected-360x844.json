@@ -1,0 +1,19 @@
+{
+  "state": "app-create-rejected",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-create-rejected-360x844.png",
+  "captureStatus": "stable",
+  "width": 360,
+  "height": 2567,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "after-test/app-create-rejected-360x844.png",
+  "actualSha256": "426bc63e6c6ea791f94cd92771240219ba00097481a885a0720cea43feb38671"
+}

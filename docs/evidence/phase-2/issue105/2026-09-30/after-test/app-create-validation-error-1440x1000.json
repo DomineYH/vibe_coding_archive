@@ -1,0 +1,16 @@
+{
+  "state": "app-create-validation-error",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "17-submit-error.png",
+  "screenshot": "app-create-validation-error-1440x1000.png",
+  "width": 1440,
+  "height": 1738,
+  "expectedWidth": 1440,
+  "expectedHeight": 1594,
+  "comparisonStatus": "dimensions_mismatch",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

@@ -173,8 +173,8 @@ function Header({
             </Btn>
           ) : auth.user ? (
             <>
-              <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:max-w-[145px] sm:gap-2 sm:text-[13px]">
-                <Avatar name={auth.user.nickname} size={28} />
+              <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 truncate text-[11.5px] font-semibold text-neutral-700 sm:gap-2 sm:rounded-full sm:bg-neutral-100 sm:py-1 sm:pl-1 sm:pr-3 sm:text-[13px]">
+                <Avatar name={auth.user.nickname} size={24} />
                 <span className="min-w-0 truncate">{auth.user.nickname}</span>
               </span>
               <Btn
@@ -1912,7 +1912,8 @@ export default function App() {
   }, [deletionNeedsConfirmation]);
 
   const active =
-    location.pathname === "/apps/new"
+    location.pathname === "/apps/new" ||
+    /^\/apps\/[^/]+\/edit$/.test(location.pathname)
       ? "submit"
       : location.pathname.startsWith("/apps/")
         ? "detail"

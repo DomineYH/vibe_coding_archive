@@ -1,0 +1,19 @@
+{
+  "state": "app-edit",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "13-edit.png",
+  "screenshot": "app-edit-1440x1000.png",
+  "captureStatus": "expected_match",
+  "width": 1440,
+  "height": 1528,
+  "expectedWidth": 1440,
+  "expectedHeight": 1528,
+  "comparisonStatus": "compared",
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "actualArtifact": "visual-state-baselines/1440x1000/13-edit.png",
+  "actualSha256": "69073a6c79ef0eca1c40f690a8349ccea0993b918b5025b5311327a8e8c350a9"
+}

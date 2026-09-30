@@ -1,0 +1,1057 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test --config=playwright.visual.config.js visual/issue105-diagnostic.spec.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:148719) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 25 tests using 1 worker
+
+(node:148778) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 visual/issue105-diagnostic.spec.js:100:3 › app registration form at 1440x1000 (18.9s)
+(node:148927) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   2 visual/issue105-diagnostic.spec.js:187:3 › app edit form at 1440x1000 (8.5s)
+(node:149098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   3 visual/issue105-diagnostic.spec.js:293:3 › conceals an unresolved create draft during auth checks at 1440x1000 (3.0s)
+  ✓   4 visual/issue105-diagnostic.spec.js:326:3 › shows confirmed create when its target is later unavailable at 1440x1000 (2.8s)
+  ✘   5 visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 1440x1000 (2.7s)
+(node:149233) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   6 visual/issue105-diagnostic.spec.js:100:3 › app registration form at 1024x900 (4.8s)
+(node:149337) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   7 visual/issue105-diagnostic.spec.js:187:3 › app edit form at 1024x900 (7.0s)
+(node:149486) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   8 visual/issue105-diagnostic.spec.js:293:3 › conceals an unresolved create draft during auth checks at 1024x900 (3.1s)
+  ✓   9 visual/issue105-diagnostic.spec.js:326:3 › shows confirmed create when its target is later unavailable at 1024x900 (3.2s)
+  ✘  10 visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 1024x900 (3.3s)
+(node:149637) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  11 visual/issue105-diagnostic.spec.js:100:3 › app registration form at 768x1024 (8.8s)
+(node:149797) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  12 visual/issue105-diagnostic.spec.js:187:3 › app edit form at 768x1024 (14.0s)
+(node:149919) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 visual/issue105-diagnostic.spec.js:293:3 › conceals an unresolved create draft during auth checks at 768x1024 (2.7s)
+  ✓  14 visual/issue105-diagnostic.spec.js:326:3 › shows confirmed create when its target is later unavailable at 768x1024 (3.6s)
+  ✘  15 visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 768x1024 (2.7s)
+(node:150106) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  16 visual/issue105-diagnostic.spec.js:100:3 › app registration form at 390x844 (5.1s)
+(node:150201) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  17 visual/issue105-diagnostic.spec.js:187:3 › app edit form at 390x844 (8.8s)
+(node:150314) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  18 visual/issue105-diagnostic.spec.js:293:3 › conceals an unresolved create draft during auth checks at 390x844 (2.9s)
+  ✓  19 visual/issue105-diagnostic.spec.js:326:3 › shows confirmed create when its target is later unavailable at 390x844 (3.0s)
+  ✘  20 visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 390x844 (2.8s)
+(node:150496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  21 visual/issue105-diagnostic.spec.js:100:3 › app registration form at 360x844 (6.2s)
+(node:150609) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  22 visual/issue105-diagnostic.spec.js:187:3 › app edit form at 360x844 (8.3s)
+(node:150773) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  23 visual/issue105-diagnostic.spec.js:293:3 › conceals an unresolved create draft during auth checks at 360x844 (4.5s)
+  ✓  24 visual/issue105-diagnostic.spec.js:326:3 › shows confirmed create when its target is later unavailable at 360x844 (3.9s)
+  ✘  25 visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 360x844 (4.8s)
+
+
+  1) visual/issue105-diagnostic.spec.js:100:3 › app registration form at 1440x1000 ─────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 31876
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1594
+    Received: 1738
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-1440x1000/error-context.md
+
+  2) visual/issue105-diagnostic.spec.js:187:3 › app edit form at 1440x1000 ─────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 37155
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-1440x1000/error-context.md
+
+  3) visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 1440x1000 ─
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1361
+    Received: 1569
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-7cb1a-r-owner-update-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-7cb1a-r-owner-update-at-1440x1000/error-context.md
+
+  4) visual/issue105-diagnostic.spec.js:100:3 › app registration form at 1024x900 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 31876
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1594
+    Received: 1738
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-1024x900/error-context.md
+
+  5) visual/issue105-diagnostic.spec.js:187:3 › app edit form at 1024x900 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 37159
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-1024x900/error-context.md
+
+  6) visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 1024x900 ──
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1341
+    Received: 1549
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-aaa98-er-owner-update-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-aaa98-er-owner-update-at-1024x900/error-context.md
+
+  7) visual/issue105-diagnostic.spec.js:100:3 › app registration form at 768x1024 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2577
+    Received: 2600
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2643
+    Received: 2809
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-768x1024/error-context.md
+
+  8) visual/issue105-diagnostic.spec.js:187:3 › app edit form at 768x1024 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2577
+    Received: 2600
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-768x1024/error-context.md
+
+  9) visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 768x1024 ──
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1733
+    Received: 1941
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-5a61d-er-owner-update-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-5a61d-er-owner-update-at-768x1024/error-context.md
+
+  10) visual/issue105-diagnostic.spec.js:100:3 › app registration form at 390x844 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2512
+    Received: 2535
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2597
+    Received: 2744
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-390x844/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-390x844/error-context.md
+
+  11) visual/issue105-diagnostic.spec.js:187:3 › app edit form at 390x844 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2512
+    Received: 2535
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-390x844/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-390x844/error-context.md
+
+  12) visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 390x844 ──
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1844
+    Received: 2052
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-85ea2-ter-owner-update-at-390x844/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-85ea2-ter-owner-update-at-390x844/error-context.md
+
+  13) visual/issue105-diagnostic.spec.js:100:3 › app registration form at 360x844 ──────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2478
+    Received: 2501
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:126:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2563
+    Received: 2711
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:134:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-360x844/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-registration-form-at-360x844/error-context.md
+
+  14) visual/issue105-diagnostic.spec.js:187:3 › app edit form at 360x844 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2478
+    Received: 2501
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:216:5
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-360x844/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-app-edit-form-at-360x844/error-context.md
+
+  15) visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 360x844 ──
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1939
+    Received: 2166
+
+       at issue105-diagnostic-capture.js:114
+
+      112 |   if (baseline) {
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+    > 114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+          |                                    ^
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:114:36)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: "compared"
+    Received: "dimensions_mismatch"
+
+       at issue105-diagnostic-capture.js:115
+
+      113 |     expect.soft(comparison.width).toBe(comparison.expectedWidth);
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+    > 115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+          |                                              ^
+      116 |     expect.soft(comparison.differentPixels).toBe(0);
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:115:46)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: null
+
+       at issue105-diagnostic-capture.js:116
+
+      114 |     expect.soft(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect.soft(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect.soft(comparison.differentPixels).toBe(0);
+          |                                             ^
+      117 |   } else {
+      118 |     expect.soft(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect.soft(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/issue105-diagnostic-capture.js:116:45)
+        at <worktree>/frontend/visual/issue105-diagnostic.spec.js:396:5
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-b130e-ter-owner-update-at-360x844/error-context.md
+
+    Error Context: test-results/visual/issue105-diagnostic-privat-b130e-ter-owner-update-at-360x844/error-context.md
+
+  15 failed
+    visual/issue105-diagnostic.spec.js:100:3 › app registration form at 1440x1000 ──────────────────
+    visual/issue105-diagnostic.spec.js:187:3 › app edit form at 1440x1000 ──────────────────────────
+    visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 1440x1000 ──
+    visual/issue105-diagnostic.spec.js:100:3 › app registration form at 1024x900 ───────────────────
+    visual/issue105-diagnostic.spec.js:187:3 › app edit form at 1024x900 ───────────────────────────
+    visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 1024x900 ───
+    visual/issue105-diagnostic.spec.js:100:3 › app registration form at 768x1024 ───────────────────
+    visual/issue105-diagnostic.spec.js:187:3 › app edit form at 768x1024 ───────────────────────────
+    visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 768x1024 ───
+    visual/issue105-diagnostic.spec.js:100:3 › app registration form at 390x844 ────────────────────
+    visual/issue105-diagnostic.spec.js:187:3 › app edit form at 390x844 ────────────────────────────
+    visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 390x844 ────
+    visual/issue105-diagnostic.spec.js:100:3 › app registration form at 360x844 ────────────────────
+    visual/issue105-diagnostic.spec.js:187:3 › app edit form at 360x844 ────────────────────────────
+    visual/issue105-diagnostic.spec.js:378:3 › private app detail after owner update at 360x844 ────
+  10 passed (3.5m)

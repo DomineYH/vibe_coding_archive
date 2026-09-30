@@ -1,0 +1,16 @@
+{
+  "state": "app-create-expired",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-create-expired-390x844.png",
+  "width": 390,
+  "height": 2703,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

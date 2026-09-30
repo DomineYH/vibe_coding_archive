@@ -1,0 +1,18 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test --config=playwright.visual.config.js visual/app-create-capture.spec.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:168306) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:168455) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: height (1.2s)
+  ✓  2 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: width (477ms)
+  ✓  3 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: one-pixel (485ms)
+  ✓  4 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: identical (487ms)
+  ✓  5 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: product-only (387ms)
+
+  5 passed (43.9s)

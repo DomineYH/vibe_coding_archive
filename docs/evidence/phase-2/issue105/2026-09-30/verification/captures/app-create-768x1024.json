@@ -1,0 +1,19 @@
+{
+  "state": "app-create",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": "16-submit.png",
+  "screenshot": "app-create-768x1024.png",
+  "captureStatus": "expected_match",
+  "width": 768,
+  "height": 2600,
+  "expectedWidth": 768,
+  "expectedHeight": 2600,
+  "comparisonStatus": "compared",
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "actualArtifact": "visual-state-baselines/768x1024/16-submit.png",
+  "actualSha256": "0449b065cf876c9abc3bde4ce3d8bffd8a6fbce81c80d151d9b47f6717198c37"
+}

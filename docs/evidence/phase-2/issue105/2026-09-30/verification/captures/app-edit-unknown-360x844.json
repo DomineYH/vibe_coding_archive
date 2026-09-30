@@ -1,0 +1,19 @@
+{
+  "state": "app-edit-unknown",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-edit-unknown-360x844.png",
+  "captureStatus": "stable",
+  "width": 360,
+  "height": 2765,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "after-test/app-edit-unknown-360x844.png",
+  "actualSha256": "2f1c94d903794336aad45f8c7a70ee26cabc6f0c6a00e0a638ee8dc8284ae660"
+}

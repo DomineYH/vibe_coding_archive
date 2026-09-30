@@ -1,0 +1,273 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:168900) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 128 tests using 1 worker
+
+(node:168958) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓    1 visual/admin.spec.js:166:3 › admin approval screen at 1440x1000 (38.9s)
+  ✓    2 visual/admin.spec.js:166:3 › admin approval screen at 1024x900 (16.7s)
+  ✓    3 visual/admin.spec.js:166:3 › admin approval screen at 768x1024 (17.0s)
+  ✓    4 visual/admin.spec.js:166:3 › admin approval screen at 390x844 (20.1s)
+  ✓    5 visual/admin.spec.js:166:3 › admin approval screen at 360x844 (13.6s)
+  ✓    6 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: height (215ms)
+  ✓    7 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: width (191ms)
+  ✓    8 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: one-pixel (208ms)
+  ✓    9 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: identical (213ms)
+  ✓   10 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: product-only (222ms)
+  ✘   11 visual/app-create.spec.js:101:3 › app registration form at 1440x1000 (2.1s)
+(node:169576) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   12 visual/app-create.spec.js:188:3 › app edit form at 1440x1000 (6.6s)
+  ✓   13 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1440x1000 (2.2s)
+  ✓   14 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1440x1000 (2.6s)
+  ✓   15 visual/app-create.spec.js:379:3 › private app detail after owner update at 1440x1000 (2.6s)
+  ✘   16 visual/app-create.spec.js:101:3 › app registration form at 1024x900 (2.3s)
+(node:169813) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   17 visual/app-create.spec.js:188:3 › app edit form at 1024x900 (6.7s)
+  ✓   18 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1024x900 (2.7s)
+  ✓   19 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1024x900 (3.0s)
+  ✓   20 visual/app-create.spec.js:379:3 › private app detail after owner update at 1024x900 (3.0s)
+  ✓   21 visual/app-create.spec.js:101:3 › app registration form at 768x1024 (6.5s)
+  ✘   22 visual/app-create.spec.js:188:3 › app edit form at 768x1024 (2.8s)
+(node:170074) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   23 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 768x1024 (2.5s)
+  ✓   24 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 768x1024 (2.5s)
+  ✓   25 visual/app-create.spec.js:379:3 › private app detail after owner update at 768x1024 (2.4s)
+  ✘   26 visual/app-create.spec.js:101:3 › app registration form at 390x844 (2.5s)
+(node:170214) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   27 visual/app-create.spec.js:188:3 › app edit form at 390x844 (4.9s)
+  ✓   28 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 390x844 (2.0s)
+  ✓   29 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 390x844 (2.1s)
+  ✓   30 visual/app-create.spec.js:379:3 › private app detail after owner update at 390x844 (2.0s)
+  ✘   31 visual/app-create.spec.js:101:3 › app registration form at 360x844 (2.1s)
+(node:170449) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   32 visual/app-create.spec.js:188:3 › app edit form at 360x844 (5.3s)
+  ✓   33 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 360x844 (2.3s)
+  ✓   34 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 360x844 (2.5s)
+  ✓   35 visual/app-create.spec.js:379:3 › private app detail after owner update at 360x844 (2.4s)
+  ✓   36 visual/app-delete.spec.js:169:3 › owner app deletion flow at 1440x1000 (15.2s)
+  ✓   37 visual/app-delete.spec.js:169:3 › owner app deletion flow at 1024x900 (13.1s)
+  ✓   38 visual/app-delete.spec.js:169:3 › owner app deletion flow at 768x1024 (12.6s)
+  ✓   39 visual/app-delete.spec.js:169:3 › owner app deletion flow at 390x844 (9.8s)
+  ✓   40 visual/app-delete.spec.js:169:3 › owner app deletion flow at 360x844 (10.0s)
+  ✓   41 visual/auth.spec.js:191:3 › auth and private-read screens at 1440x1000 (24.1s)
+  ✓   42 visual/auth.spec.js:191:3 › auth and private-read screens at 1024x900 (23.9s)
+  ✓   43 visual/auth.spec.js:191:3 › auth and private-read screens at 768x1024 (23.8s)
+  ✓   44 visual/auth.spec.js:191:3 › auth and private-read screens at 390x844 (16.9s)
+  ✓   45 visual/auth.spec.js:191:3 › auth and private-read screens at 360x844 (17.8s)
+  ✓   46 visual/gallery.spec.js:256:1 › gallery-loading status is unique while authentication is checking (869ms)
+  ✓   47 visual/gallery.spec.js:740:3 › gallery matches the original at 1440x1000 (2.2s)
+  ✓   48 visual/gallery.spec.js:749:3 › public detail matches the original at 1440x1000 (2.3s)
+  ✓   49 visual/gallery.spec.js:760:3 › public detail copy success matches the original at 1440x1000 (2.0s)
+  ✓   50 visual/gallery.spec.js:740:3 › gallery matches the original at 1024x900 (2.7s)
+  ✓   51 visual/gallery.spec.js:749:3 › public detail matches the original at 1024x900 (1.8s)
+  ✓   52 visual/gallery.spec.js:760:3 › public detail copy success matches the original at 1024x900 (1.8s)
+  ✓   53 visual/gallery.spec.js:740:3 › gallery matches the original at 768x1024 (2.3s)
+  ✓   54 visual/gallery.spec.js:749:3 › public detail matches the original at 768x1024 (1.4s)
+  ✓   55 visual/gallery.spec.js:760:3 › public detail copy success matches the original at 768x1024 (1.7s)
+  ✓   56 visual/gallery.spec.js:740:3 › gallery matches the original at 390x844 (2.0s)
+  ✓   57 visual/gallery.spec.js:749:3 › public detail matches the original at 390x844 (1.2s)
+  ✓   58 visual/gallery.spec.js:760:3 › public detail copy success matches the original at 390x844 (1.3s)
+  ✓   59 visual/gallery.spec.js:740:3 › gallery matches the original at 360x844 (1.8s)
+  ✓   60 visual/gallery.spec.js:749:3 › public detail matches the original at 360x844 (1.1s)
+  ✓   61 visual/gallery.spec.js:760:3 › public detail copy success matches the original at 360x844 (1.2s)
+  ✓   62 visual/gallery.spec.js:794:5 › gallery-loading matches its baseline at 1440x1000 (1.1s)
+  ✓   63 visual/gallery.spec.js:794:5 › gallery-loading matches its baseline at 1024x900 (1.1s)
+  ✓   64 visual/gallery.spec.js:794:5 › gallery-loading matches its baseline at 768x1024 (1.1s)
+  ✓   65 visual/gallery.spec.js:794:5 › gallery-loading matches its baseline at 390x844 (966ms)
+  ✓   66 visual/gallery.spec.js:794:5 › gallery-loading matches its baseline at 360x844 (887ms)
+  ✓   67 visual/gallery.spec.js:794:5 › gallery-empty matches its baseline at 1440x1000 (3.0s)
+  ✓   68 visual/gallery.spec.js:794:5 › gallery-empty matches its baseline at 1024x900 (3.0s)
+  ✓   69 visual/gallery.spec.js:794:5 › gallery-empty matches its baseline at 768x1024 (2.9s)
+  ✓   70 visual/gallery.spec.js:794:5 › gallery-empty matches its baseline at 390x844 (2.7s)
+  ✓   71 visual/gallery.spec.js:794:5 › gallery-empty matches its baseline at 360x844 (2.5s)
+  ✓   72 visual/gallery.spec.js:794:5 › gallery-failure matches its baseline at 1440x1000 (921ms)
+  ✓   73 visual/gallery.spec.js:794:5 › gallery-failure matches its baseline at 1024x900 (999ms)
+  ✓   74 visual/gallery.spec.js:794:5 › gallery-failure matches its baseline at 768x1024 (882ms)
+  ✓   75 visual/gallery.spec.js:794:5 › gallery-failure matches its baseline at 390x844 (847ms)
+  ✓   76 visual/gallery.spec.js:794:5 › gallery-failure matches its baseline at 360x844 (890ms)
+  ✓   77 visual/gallery.spec.js:794:5 › corrupt-storage-recovery is captured product-only at 1440x1000 (858ms)
+  ✓   78 visual/gallery.spec.js:794:5 › corrupt-storage-recovery is captured product-only at 1024x900 (787ms)
+  ✓   79 visual/gallery.spec.js:794:5 › corrupt-storage-recovery is captured product-only at 768x1024 (826ms)
+  ✓   80 visual/gallery.spec.js:794:5 › corrupt-storage-recovery is captured product-only at 390x844 (795ms)
+  ✓   81 visual/gallery.spec.js:794:5 › corrupt-storage-recovery is captured product-only at 360x844 (791ms)
+  ✓   82 visual/gallery.spec.js:794:5 › gallery-api-order matches its baseline at 1440x1000 (1.9s)
+  ✓   83 visual/gallery.spec.js:794:5 › gallery-api-order matches its baseline at 1024x900 (2.0s)
+  ✓   84 visual/gallery.spec.js:794:5 › gallery-api-order matches its baseline at 768x1024 (2.1s)
+  ✓   85 visual/gallery.spec.js:794:5 › gallery-api-order matches its baseline at 390x844 (2.0s)
+  ✓   86 visual/gallery.spec.js:794:5 › gallery-api-order matches its baseline at 360x844 (1.9s)
+  ✓   87 visual/gallery.spec.js:794:5 › gallery-filtered matches its baseline at 1440x1000 (1.2s)
+  ✓   88 visual/gallery.spec.js:794:5 › gallery-filtered matches its baseline at 1024x900 (1.2s)
+  ✓   89 visual/gallery.spec.js:794:5 › gallery-filtered matches its baseline at 768x1024 (1.1s)
+  ✓   90 visual/gallery.spec.js:794:5 › gallery-filtered matches its baseline at 390x844 (1.1s)
+  ✓   91 visual/gallery.spec.js:794:5 › gallery-filtered matches its baseline at 360x844 (1.1s)
+  ✓   92 visual/gallery.spec.js:794:5 › gallery-query-overflow matches its baseline at 1440x1000 (1.4s)
+  ✓   93 visual/gallery.spec.js:794:5 › gallery-query-overflow matches its baseline at 1024x900 (1.3s)
+  ✓   94 visual/gallery.spec.js:794:5 › gallery-query-overflow matches its baseline at 768x1024 (1.3s)
+  ✓   95 visual/gallery.spec.js:794:5 › gallery-query-overflow matches its baseline at 390x844 (1.2s)
+  ✓   96 visual/gallery.spec.js:794:5 › gallery-query-overflow matches its baseline at 360x844 (1.2s)
+  ✓   97 visual/gallery.spec.js:794:5 › gallery-duplicate-continue matches its baseline at 1440x1000 (2.7s)
+  ✓   98 visual/gallery.spec.js:794:5 › gallery-duplicate-continue matches its baseline at 1024x900 (2.5s)
+  ✓   99 visual/gallery.spec.js:794:5 › gallery-duplicate-continue matches its baseline at 768x1024 (2.8s)
+  ✓  100 visual/gallery.spec.js:794:5 › gallery-duplicate-continue matches its baseline at 390x844 (2.5s)
+  ✓  101 visual/gallery.spec.js:794:5 › gallery-duplicate-continue matches its baseline at 360x844 (2.6s)
+  ✓  102 visual/gallery.spec.js:794:5 › gallery-next-page-error matches its baseline at 1440x1000 (2.3s)
+  ✓  103 visual/gallery.spec.js:794:5 › gallery-next-page-error matches its baseline at 1024x900 (2.2s)
+  ✓  104 visual/gallery.spec.js:794:5 › gallery-next-page-error matches its baseline at 768x1024 (2.4s)
+  ✓  105 visual/gallery.spec.js:794:5 › gallery-next-page-error matches its baseline at 390x844 (2.2s)
+  ✓  106 visual/gallery.spec.js:794:5 › gallery-next-page-error matches its baseline at 360x844 (2.1s)
+  ✓  107 visual/gallery.spec.js:794:5 › health-result-error is captured product-only at 1440x1000 (1.4s)
+  ✓  108 visual/gallery.spec.js:794:5 › health-result-error is captured product-only at 1024x900 (1.4s)
+  ✓  109 visual/gallery.spec.js:794:5 › health-result-error is captured product-only at 768x1024 (1.4s)
+  ✓  110 visual/gallery.spec.js:794:5 › health-result-error is captured product-only at 390x844 (1.2s)
+  ✓  111 visual/gallery.spec.js:794:5 › health-result-error is captured product-only at 360x844 (1.2s)
+  ✓  112 visual/gallery.spec.js:794:5 › health-job-failed is captured product-only at 1440x1000 (1.6s)
+  ✓  113 visual/gallery.spec.js:794:5 › health-job-failed is captured product-only at 1024x900 (1.5s)
+  ✓  114 visual/gallery.spec.js:794:5 › health-job-failed is captured product-only at 768x1024 (1.4s)
+  ✓  115 visual/gallery.spec.js:794:5 › health-job-failed is captured product-only at 390x844 (1.2s)
+  ✓  116 visual/gallery.spec.js:794:5 › health-job-failed is captured product-only at 360x844 (1.3s)
+  ✓  117 visual/gallery.spec.js:794:5 › health-query-error is captured product-only at 1440x1000 (1.7s)
+  ✓  118 visual/gallery.spec.js:794:5 › health-query-error is captured product-only at 1024x900 (1.6s)
+  ✓  119 visual/gallery.spec.js:794:5 › health-query-error is captured product-only at 768x1024 (1.6s)
+  ✓  120 visual/gallery.spec.js:794:5 › health-query-error is captured product-only at 390x844 (1.3s)
+  ✓  121 visual/gallery.spec.js:794:5 › health-query-error is captured product-only at 360x844 (1.3s)
+  ✓  122 visual/gallery.spec.js:794:5 › health-stale is captured product-only at 1440x1000 (1.8s)
+  ✓  123 visual/gallery.spec.js:794:5 › health-stale is captured product-only at 1024x900 (1.7s)
+  ✓  124 visual/gallery.spec.js:794:5 › health-stale is captured product-only at 768x1024 (1.6s)
+  ✓  125 visual/gallery.spec.js:794:5 › health-stale is captured product-only at 390x844 (1.3s)
+  ✓  126 visual/gallery.spec.js:794:5 › health-stale is captured product-only at 360x844 (1.3s)
+  ✓  127 visual/gallery.spec.js:801:3 › gallery key component matches its original capture (1.1s)
+  ✓  128 visual/gallery.spec.js:801:3 › detail key component matches its original capture (1.2s)
+
+
+  1) visual/app-create.spec.js:101:3 › app registration form at 1440x1000 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:116
+
+      114 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      117 |   } else {
+      118 |     expect(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:116:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-1440x1000/error-context.md
+
+  2) visual/app-create.spec.js:101:3 › app registration form at 1024x900 ───────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:116
+
+      114 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      117 |   } else {
+      118 |     expect(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:116:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-1024x900/error-context.md
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-1024x900/error-context.md
+
+  3) visual/app-create.spec.js:188:3 › app edit form at 768x1024 ───────────────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:116
+
+      114 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      117 |   } else {
+      118 |     expect(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:116:40)
+        at <worktree>/frontend/visual/app-create.spec.js:217:5
+
+    Error Context: test-results/visual/app-create-app-edit-form-at-768x1024/error-context.md
+
+    Error Context: test-results/visual/app-create-app-edit-form-at-768x1024/error-context.md
+
+  4) visual/app-create.spec.js:101:3 › app registration form at 390x844 ────────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:116
+
+      114 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      117 |   } else {
+      118 |     expect(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:116:40)
+        at <worktree>/frontend/visual/app-create.spec.js:135:5
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-390x844/error-context.md
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-390x844/error-context.md
+
+  5) visual/app-create.spec.js:101:3 › app registration form at 360x844 ────────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:116
+
+      114 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      115 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 116 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      117 |   } else {
+      118 |     expect(comparison.comparisonStatus).toBe("product_only");
+      119 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:116:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-360x844/error-context.md
+
+    Error Context: test-results/visual/app-create-app-registration-form-at-360x844/error-context.md
+
+  5 failed
+    visual/app-create.spec.js:101:3 › app registration form at 1440x1000 ───────────────────────────
+    visual/app-create.spec.js:101:3 › app registration form at 1024x900 ────────────────────────────
+    visual/app-create.spec.js:188:3 › app edit form at 768x1024 ────────────────────────────────────
+    visual/app-create.spec.js:101:3 › app registration form at 390x844 ─────────────────────────────
+    visual/app-create.spec.js:101:3 › app registration form at 360x844 ─────────────────────────────
+  123 passed (8.9m)

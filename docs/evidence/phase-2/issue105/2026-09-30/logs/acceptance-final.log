@@ -1,0 +1,10 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run --pool=threads --maxWorkers=1 tests/acceptance-record.test.js
+
+ RUN  v5.0.1 <worktree>/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  02:02:42
+   Duration  60.94s (environment 83%, setup 15%)
