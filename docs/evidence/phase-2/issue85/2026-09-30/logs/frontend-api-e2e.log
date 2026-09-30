@@ -1,0 +1,68 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e:api
+npm notice run node scripts/test-api-e2e.mjs
+[WebServer] INFO:     Started server process [16343]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:16365) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 23 tests using 1 worker
+
+(node:16387) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 e2e-api/apps.spec.js:28:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data (30.7s)
+(node:16542) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 e2e-api/apps.spec.js:133:1 › an API list failure stays visible until explicit retry reaches the server (3.4s)
+  ✓   3 e2e-api/detail.spec.js:79:1 › reads the real long detail, rejects query input, and reloads without private calls (6.8s)
+  ✓   4 e2e-api/detail.spec.js:228:1 › renders one not-found state for private, missing, and malformed details (5.0s)
+  ✓   5 e2e-api/detail.spec.js:280:1 › keeps detail transport failure visible until keyboard retry reaches the server (2.5s)
+  ✓   6 e2e-api/detail.spec.js:309:1 › keeps malformed detail responses as an explicit error until a real retry succeeds (2.2s)
+  ✓   7 e2e-api/detail.spec.js:365:1 › copies a real detail prompt through the fallback and restores selection and focus (4.2s)
+  ✓   8 e2e-api/detail.spec.js:410:1 › shows manual copy guidance when both clipboard methods fail (4.1s)
+  ✓   9 e2e-api/detail.spec.js:445:1 › ignores a late detail response after history returns to a different app (2.1s)
+  ✓  10 e2e-api/gallery-ime.spec.js:5:1 › uses the committed search during IME filter changes and debounces composition end (8.5s)
+  ✓  11 e2e-api/gallery-paging.spec.js:9:1 › retains the current cards after next-page failure and stops on duplicate-only pages (19.6s)
+  ✓  12 e2e-api/gallery-paging.spec.js:76:1 › stops and offers retry when a next page claims more data without progress (8.1s)
+  ✓  13 e2e-api/gallery-query.spec.js:5:1 › preserves an over-limit direct search query without requesting a wider list (3.7s)
+[WebServer] Malformed URI sequence in request URL
+[WebServer] Malformed URI sequence in request URL
+  ✓  14 e2e-api/gallery-query.spec.js:43:1 › rejects malformed gallery queries with an explicit reset (6.1s)
+  ✓  15 e2e-api/gallery-query.spec.js:77:1 › searches actual public names, nicknames, descriptions, symbols, and combined filters (10.4s)
+  ✓  16 e2e-api/gallery-query.spec.js:156:1 › keeps a selected valid subject and fixed grades when API results disappear (1.5s)
+  ✓  17 e2e-api/gallery-query.spec.js:206:1 › renders positive casefold and literal-symbol search matches (3.3s)
+  ✓  18 e2e-api/gallery-races.spec.js:9:1 › does not let a late search response replace the newest query (2.4s)
+  ✓  19 e2e-api/gallery-races.spec.js:62:1 › ignores a late retry response after changing the active search (2.6s)
+  ✓  20 e2e-api/gallery-races.spec.js:116:1 › ignores a late ordinary next page after changing the active search (2.4s)
+  ✓  21 e2e-api/gallery-refetch.spec.js:10:1 › keeps old gallery cards hidden after a refetch failure and retries by keyboard (4.7s)
+  ✓  22 e2e-api/gallery-refetch.spec.js:117:1 › hides old cards while a new API filter is loading (2.8s)
+  ✓  23 e2e-api/meta.spec.js:52:1 › API metadata failure retries through the real server before public reads (5.8s)
+
+
+  1) e2e-api/apps.spec.js:28:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.setViewportSize: Target page, context or browser has been closed
+
+       at helpers.js:36
+
+      34 |
+      35 | export async function prepareViewportCapture(page, viewport) {
+    > 36 |   await page.setViewportSize(viewport);
+         |              ^
+      37 |   expect(
+      38 |     await page.evaluate(() => document.documentElement.scrollWidth),
+      39 |   ).toBeLessThanOrEqual(viewport.width);
+        at prepareViewportCapture (/mnt/c/dev/vibe_coding_archive/frontend/e2e-api/helpers.js:36:14)
+        at capture (/mnt/c/dev/vibe_coding_archive/frontend/e2e-api/apps.spec.js:16:9)
+        at /mnt/c/dev/vibe_coding_archive/frontend/e2e-api/apps.spec.js:83:43
+
+    Error Context: test-results/apps-public-API-gallery-fi-d6f27-d-restores-real-SQLite-data/error-context.md
+
+  1 failed
+    e2e-api/apps.spec.js:28:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data
+  22 passed (2.6m)

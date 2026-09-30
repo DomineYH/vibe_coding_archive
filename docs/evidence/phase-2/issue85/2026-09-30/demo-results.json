@@ -1,0 +1,276 @@
+{
+  "started_utc": "2026-09-30T01:30:23.696Z",
+  "mode": "api",
+  "database": "owned temporary file SQLite; no seed",
+  "checkpoints": [
+    {
+      "name": "controlled metadata failure/delayed real loading; keyboard retry reaches real server",
+      "result": "PASS"
+    },
+    {
+      "name": "actual meta → public gallery; all other capabilities disabled",
+      "result": "PASS"
+    },
+    {
+      "name": "controlled next-page failure retains 24 cards; keyboard real retry",
+      "result": "PASS"
+    },
+    {
+      "name": "search AND subject AND grade → second page (24 → 25 cards)",
+      "result": "PASS"
+    },
+    {
+      "name": "valid zero results is not an error",
+      "result": "PASS"
+    },
+    {
+      "name": "keyboard detail focus; real Clipboard API copied exact DB prompt",
+      "result": "PASS"
+    },
+    {
+      "name": "new tab opened; external request blocked, no destination success claimed",
+      "result": "PASS"
+    },
+    {
+      "name": "reload; private/missing same 404; sensitive sentinels absent",
+      "result": "PASS"
+    },
+    {
+      "name": "keyboard gallery return retains query, subject and grade",
+      "result": "PASS"
+    },
+    {
+      "name": "same file DB after process restart → same ID and full item → browser",
+      "result": "PASS"
+    },
+    {
+      "name": "real long nickname/name/prompt/detail at pinned five viewports",
+      "result": "PASS"
+    },
+    {
+      "name": "unsupported auth/admin routes remain unavailable",
+      "result": "PASS"
+    }
+  ],
+  "captures": [
+    "visual/demo/meta-error-controlled-1440x1000.png",
+    "visual/demo/meta-error-controlled-1024x900.png",
+    "visual/demo/meta-error-controlled-768x1024.png",
+    "visual/demo/meta-error-controlled-390x844.png",
+    "visual/demo/meta-error-controlled-360x844.png",
+    "visual/demo/meta-loading-delayed-real-1440x1000.png",
+    "visual/demo/meta-loading-delayed-real-1024x900.png",
+    "visual/demo/meta-loading-delayed-real-768x1024.png",
+    "visual/demo/meta-loading-delayed-real-390x844.png",
+    "visual/demo/meta-loading-delayed-real-360x844.png",
+    "visual/demo/gallery-1440x1000.png",
+    "visual/demo/gallery-1024x900.png",
+    "visual/demo/gallery-768x1024.png",
+    "visual/demo/gallery-390x844.png",
+    "visual/demo/gallery-360x844.png",
+    "visual/demo/next-page-loading-before-controlled-error-1440x1000.png",
+    "visual/demo/next-page-loading-before-controlled-error-1024x900.png",
+    "visual/demo/next-page-loading-before-controlled-error-768x1024.png",
+    "visual/demo/next-page-loading-before-controlled-error-390x844.png",
+    "visual/demo/next-page-loading-before-controlled-error-360x844.png",
+    "visual/demo/next-page-error-controlled-1440x1000.png",
+    "visual/demo/next-page-error-controlled-1024x900.png",
+    "visual/demo/next-page-error-controlled-768x1024.png",
+    "visual/demo/next-page-error-controlled-390x844.png",
+    "visual/demo/next-page-error-controlled-360x844.png",
+    "visual/demo/next-page-retry-pending-delayed-real-1440x1000.png",
+    "visual/demo/next-page-retry-pending-delayed-real-1024x900.png",
+    "visual/demo/next-page-retry-pending-delayed-real-768x1024.png",
+    "visual/demo/next-page-retry-pending-delayed-real-390x844.png",
+    "visual/demo/next-page-retry-pending-delayed-real-360x844.png",
+    "visual/demo/filtered-page2-1440x1000.png",
+    "visual/demo/filtered-page2-1024x900.png",
+    "visual/demo/filtered-page2-768x1024.png",
+    "visual/demo/filtered-page2-390x844.png",
+    "visual/demo/filtered-page2-360x844.png",
+    "visual/demo/zero-results-1440x1000.png",
+    "visual/demo/zero-results-1024x900.png",
+    "visual/demo/zero-results-768x1024.png",
+    "visual/demo/zero-results-390x844.png",
+    "visual/demo/zero-results-360x844.png",
+    "visual/demo/detail-copy-success-1440x1000.png",
+    "visual/demo/detail-copy-success-1024x900.png",
+    "visual/demo/detail-copy-success-768x1024.png",
+    "visual/demo/detail-copy-success-390x844.png",
+    "visual/demo/detail-copy-success-360x844.png",
+    "visual/demo/detail-unchecked-1440x1000.png",
+    "visual/demo/detail-unchecked-1024x900.png",
+    "visual/demo/detail-unchecked-768x1024.png",
+    "visual/demo/detail-unchecked-390x844.png",
+    "visual/demo/detail-unchecked-360x844.png",
+    "visual/demo/restarted-detail-1440x1000.png",
+    "visual/demo/restarted-detail-1024x900.png",
+    "visual/demo/restarted-detail-768x1024.png",
+    "visual/demo/restarted-detail-390x844.png",
+    "visual/demo/restarted-detail-360x844.png",
+    "visual/demo/long-detail-1440x1000.png",
+    "visual/demo/long-detail-1024x900.png",
+    "visual/demo/long-detail-768x1024.png",
+    "visual/demo/long-detail-390x844.png",
+    "visual/demo/long-detail-360x844.png",
+    "visual/demo/auth-unavailable-1440x1000.png",
+    "visual/demo/auth-unavailable-1024x900.png",
+    "visual/demo/auth-unavailable-768x1024.png",
+    "visual/demo/auth-unavailable-390x844.png",
+    "visual/demo/auth-unavailable-360x844.png",
+    "visual/demo/admin-unavailable-1440x1000.png",
+    "visual/demo/admin-unavailable-1024x900.png",
+    "visual/demo/admin-unavailable-768x1024.png",
+    "visual/demo/admin-unavailable-390x844.png",
+    "visual/demo/admin-unavailable-360x844.png"
+  ],
+  "external_attempts_blocked": 1,
+  "browser": "151.0.7922.34",
+  "api_requests": [
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps/00000000-0000-4000-8000-000000000027"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps/00000000-0000-4000-8000-000000000027"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps/00000000-0000-4000-8000-000000000027"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps/00000000-0000-4000-8000-000000000027"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/meta"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/apps/00000000-0000-4000-8000-000000000001"
+    }
+  ],
+  "finished_utc": "2026-09-30T01:31:57.938Z",
+  "result": "PASS",
+  "capture_retention": {
+    "historical_generated_paths": true,
+    "generated_capture_count": 70,
+    "committed_final_snapshot_paths": [
+      "visual/demo/meta-error-controlled-390x844.png",
+      "visual/demo/meta-loading-delayed-real-390x844.png",
+      "visual/demo/gallery-1440x1000.png",
+      "visual/demo/gallery-1024x900.png",
+      "visual/demo/gallery-768x1024.png",
+      "visual/demo/gallery-390x844.png",
+      "visual/demo/gallery-360x844.png",
+      "visual/demo/next-page-error-controlled-1440x1000.png",
+      "visual/demo/filtered-page2-1440x1000.png",
+      "visual/demo/zero-results-360x844.png",
+      "visual/demo/detail-copy-success-1440x1000.png",
+      "visual/demo/detail-copy-success-1024x900.png",
+      "visual/demo/detail-copy-success-768x1024.png",
+      "visual/demo/detail-copy-success-390x844.png",
+      "visual/demo/detail-copy-success-360x844.png",
+      "visual/demo/restarted-detail-360x844.png",
+      "visual/demo/long-detail-360x844.png",
+      "visual/demo/auth-unavailable-360x844.png",
+      "visual/demo/admin-unavailable-360x844.png"
+    ],
+    "manifest": "capture-inventory.json",
+    "note": "captures records this execution's locally generated paths, not attachment links. Committed selected snapshot provenance is in the manifest; superseded harness runs reused paths, so final snapshots are not claimed to be first-failure bytes."
+  }
+}

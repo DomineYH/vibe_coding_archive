@@ -1,0 +1,21 @@
+[
+  "tests/mock-state-validation.test.ts",
+  "tests/openapi-contract.test.js",
+  "tests/acceptance-record.test.js",
+  "tests/mock-apps.test.ts",
+  "tests/admin-mappers.test.ts",
+  "tests/health-batches.test.ts",
+  "tests/api-apps.test.ts",
+  "tests/mock-health.test.ts",
+  "tests/detail-view.test.jsx",
+  "tests/health-service.test.ts",
+  "tests/health-mappers.test.ts",
+  "tests/apps-service.test.ts",
+  "tests/health-batches-api.test.ts",
+  "tests/health-batch-mappers.test.ts",
+  "tests/check-dist.test.js",
+  "tests/auth-route.test.ts",
+  "tests/api-auth.test.ts",
+  "tests/auth-view.test.jsx",
+  "tests/presentation.test.js"
+]

@@ -1,0 +1,48 @@
+{
+  "source_environment": "backend/.venv (locked install executed once)",
+  "reverification_environment": "/tmp/issue85-run/backend-venv (same installed files copied to Linux temporary filesystem)",
+  "dist_info_record_files_compared": 40,
+  "records_equal": true,
+  "changes": "Copied command-entrypoint shebangs point to the copied interpreter; package files/versions and repository source unchanged",
+  "import_probe": [
+    {
+      "target": "original",
+      "command": "/mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python -c \"import app.cli\"",
+      "elapsed_seconds": 21.782,
+      "exit_code": 0
+    },
+    {
+      "target": "same installed packages copied to Linux temp filesystem",
+      "command": "/tmp/issue85-run/backend-venv/bin/python -c \"import app.cli\"",
+      "elapsed_seconds": 2.681,
+      "exit_code": 0
+    }
+  ],
+  "frontend_dependency_copy": {
+    "installed_manifests_compared_to_original_and_lock": 349,
+    "identical": true,
+    "source": "frontend/node_modules (npm ci once)",
+    "copied": "/tmp/issue85-run/frontend-dependencies/node_modules",
+    "purpose": "avoid WSL mounted-filesystem worker startup timeouts; no dependency/lock change",
+    "temporary_link": "frontend/node_modules -> copied node_modules; original tree restored after verification",
+    "font_adjustment": "Identical Pretendard files temporarily copied inside frontend/.issue85-fonts and linked from the copied dependency tree, so existing Vite fs.allow applies; no product Vite configuration/security change. Original mounted node_modules restored at finish.",
+    "restored_original_node_modules": true,
+    "temporary_font_directory_removed": true
+  },
+  "source_copy": {
+    "source": "feat/issue-85-phase2-local-handover working tree",
+    "target": "/tmp/issue85-run/source-copy",
+    "files_compared": 116,
+    "all_sha256_equal": true,
+    "exclusions": [
+      "installed dependencies",
+      "build outputs",
+      "caches",
+      "prior test outputs"
+    ],
+    "backend": "original branch source, copied locked Python environment",
+    "purpose": "selected failed API case revalidation on native Linux source storage; no timeout/config/dependency/product change",
+    "selected_test_change": "e2e-api/apps.spec.js now uses existing disableAutomaticPagination helper; source and replay sha256 identical",
+    "test_sha256": "05ef6bf6b3e8a852a82be834e429f37283551d52ee0b155d0852912752e6f269"
+  }
+}

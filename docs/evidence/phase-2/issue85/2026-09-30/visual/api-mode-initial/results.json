@@ -1,0 +1,19 @@
+{
+  "execution": "frontend-api-e2e first invocation",
+  "command_record": "../../commands.json",
+  "origin_log": "../../logs/frontend-api-e2e.log",
+  "exit_code": 1,
+  "counts": {
+    "passed": 22,
+    "failed": 1
+  },
+  "failure": "30s timeout during viewport capture after the first filtered frame",
+  "capture_note": "The one attached frame is the last saved frame before timeout, not an image of the exception. Failure itself is preserved in the original log.",
+  "locally_generated_first_case_captures": 6,
+  "committed_pngs": 1,
+  "not_committed_pngs": 5,
+  "committed_paths": [
+    "issue81/filtered-1440x1000.png"
+  ],
+  "manifest": "../../capture-inventory.json"
+}

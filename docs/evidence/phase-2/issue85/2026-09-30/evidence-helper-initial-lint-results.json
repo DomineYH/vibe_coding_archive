@@ -1,0 +1,28 @@
+{
+  "scope": "first focused checks of new evidence helpers, outside timestamp wrapper; captured CLI responses summarized, not a raw-log claim",
+  "started_utc": null,
+  "finished_utc": null,
+  "results": [
+    {
+      "target": "api-reverify.py",
+      "command": "ruff check docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py",
+      "exit_code": 1,
+      "findings": {
+        "I001": 1,
+        "PLW1510": 1
+      },
+      "correction": "sort imports; explicit default check=False",
+      "final_log": "logs/evidence-helper-static.log"
+    },
+    {
+      "target": "audit.py",
+      "command": "ruff check docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "exit_code": 1,
+      "findings": {
+        "FURB167": 3
+      },
+      "correction": "re.MULTILINE instead of alias",
+      "final_log": "logs/evidence-audit-static-final.log"
+    }
+  ]
+}

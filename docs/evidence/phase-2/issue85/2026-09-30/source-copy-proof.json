@@ -1,0 +1,19 @@
+{
+  "source": "feat/issue-85-phase2-local-handover working tree",
+  "target": "/tmp/issue85-run/source-copy",
+  "files_compared": 116,
+  "all_sha256_equal": true,
+  "exclusions": [
+    "installed dependencies",
+    "build outputs",
+    "caches",
+    "prior test outputs"
+  ],
+  "backend": "original branch source, copied locked Python environment",
+  "purpose": "selected failed API case revalidation on native Linux source storage; no timeout/config/dependency/product change",
+  "selected_test_change": "e2e-api/apps.spec.js now uses existing disableAutomaticPagination helper; source and replay sha256 identical",
+  "test_sha256": "05ef6bf6b3e8a852a82be834e429f37283551d52ee0b155d0852912752e6f269",
+  "executed_demo_sha256": "472f23fe484dc05bfce3fc699f2d8f9300c48cd08fb45460cf9d8ba2b92dde70",
+  "final_demo_sha256": "4c8ad2c9c432be436b2539a7520a5be7b1e7bd707c745e8700e321ddc25968dd",
+  "after_execution": "Demo formatted only; API replay adapter formatted/import-order fixed and explicit default check=False added; targeted syntax/formatter/linter passed. Frontend product/config and corrected manual test remain byte-identical to replay."
+}

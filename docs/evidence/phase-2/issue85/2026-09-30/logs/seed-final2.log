@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /tmp/issue85-run/backend-venv/bin/python
+cachedir: .pytest_cache
+rootdir: /mnt/c/dev/vibe_coding_archive/backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 1 item
+
+tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits PASSED [100%]
+
+============================== 1 passed in 51.59s ==============================

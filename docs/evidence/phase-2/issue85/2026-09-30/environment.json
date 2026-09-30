@@ -1,0 +1,67 @@
+{
+  "product_base_commit": "53652f750c3b67fb9513ac4f919dde136d1da955",
+  "branch": "feat/issue-85-phase2-local-handover",
+  "additional_changes": "docs/acceptance.md; docs/evidence/phase-2/issue85/2026-09-30; frontend/scripts/test-seeded-dev-ui.mjs verification-only port/cache correction; frontend/e2e-api/apps.spec.js existing manual-path helper reuse",
+  "os": "Ubuntu 24.04.3 LTS",
+  "kernel": "6.6.87.2-microsoft-standard-WSL2",
+  "node": "v22.23.2",
+  "npm": "12.0.2",
+  "uv": "uv 0.11.28 (x86_64-unknown-linux-gnu)",
+  "python": "3.12.3",
+  "sqlite": "3.45.1",
+  "packages": {
+    "fastapi": "0.141.1",
+    "pydantic": "2.13.5",
+    "pydantic-settings": "2.15.0",
+    "sqlalchemy": "2.0.54",
+    "alembic": "1.20.0",
+    "uvicorn": "0.53.0",
+    "pytest": "9.1.1",
+    "ruff": "0.16.8",
+    "pwdlib": "0.3.1",
+    "httpx": "0.28.1",
+    "starlette": "1.7.0",
+    "anyio": "4.15.1"
+  },
+  "playwright": "1.63.0",
+  "visual_seed_demo_chromium": "151.0.7922.34",
+  "functional_chromium": "153.0.8010.12",
+  "viewports": [
+    [
+      1440,
+      1000
+    ],
+    [
+      1024,
+      900
+    ],
+    [
+      768,
+      1024
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      360,
+      844
+    ]
+  ],
+  "visual_clock": "2026-09-22T00:12:00Z",
+  "api_server_time": "actual execution UTC",
+  "fixture_date": "Original API fixture dates span 2026-09-27~29 (tests/support.py); missing seed rows use actual 2026-09-30 execution time, edited values preserved",
+  "locale": "ko-KR",
+  "timezone": "Asia/Seoul",
+  "dpr": 1,
+  "pretendard": "1.3.9",
+  "cjk_font": "Noto Sans CJK JP",
+  "cjk_sha256": "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a",
+  "lock_and_protected_hashes": {
+    "backend/uv.lock": "6d18d4707b42bc09fd2817dec3968d02f3f992af9b682fdb57a1a5513322d8d9",
+    "frontend/package-lock.json": "a144ceeb246e3a37aab67fec9912b0a95107b0b9c7dbb17b3c8fe1a93478c087",
+    "contracts/openapi.yaml": "fdbe34c2abe5a06b7340fc667c82562a67e132f14f1a6a556711668fe45a4197",
+    "frontend/src/contracts/api.d.ts": "fb0a9760c44638a96bdfe5193031612fd5652af9c00e790b53fafe914791860e"
+  },
+  "verification_dependency_environment": "Original locked installs on mounted filesystem; failed tests reverified with byte-identical installed dependencies copied to Linux storage, see environment-reverification.json"
+}

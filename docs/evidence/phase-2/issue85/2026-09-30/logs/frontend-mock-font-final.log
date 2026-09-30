@@ -1,0 +1,15 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e
+npm notice run playwright test e2e/admin-apps.spec.js:106 e2e/admin-apps.spec.js:198
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:16102) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:16128) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor (23.8s)
+  ✓  2 e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths (5.2s)
+
+  2 passed (34.5s)

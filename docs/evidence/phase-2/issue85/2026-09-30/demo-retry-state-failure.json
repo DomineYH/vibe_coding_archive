@@ -1,0 +1,57 @@
+{
+  "started_utc": "2026-09-30T01:26:50.361Z",
+  "mode": "api",
+  "database": "owned temporary file SQLite; no seed",
+  "checkpoints": [
+    {
+      "name": "controlled metadata failure/delayed real loading; keyboard retry reaches real server",
+      "result": "PASS"
+    },
+    {
+      "name": "actual meta → public gallery; all other capabilities disabled",
+      "result": "PASS"
+    }
+  ],
+  "captures": [
+    "visual/demo/meta-error-controlled-1440x1000.png",
+    "visual/demo/meta-error-controlled-1024x900.png",
+    "visual/demo/meta-error-controlled-768x1024.png",
+    "visual/demo/meta-error-controlled-390x844.png",
+    "visual/demo/meta-error-controlled-360x844.png",
+    "visual/demo/meta-loading-delayed-real-1440x1000.png",
+    "visual/demo/meta-loading-delayed-real-1024x900.png",
+    "visual/demo/meta-loading-delayed-real-768x1024.png",
+    "visual/demo/meta-loading-delayed-real-390x844.png",
+    "visual/demo/meta-loading-delayed-real-360x844.png",
+    "visual/demo/gallery-1440x1000.png",
+    "visual/demo/gallery-1024x900.png",
+    "visual/demo/gallery-768x1024.png",
+    "visual/demo/gallery-390x844.png",
+    "visual/demo/gallery-360x844.png",
+    "visual/demo/next-page-error-controlled-1440x1000.png",
+    "visual/demo/next-page-error-controlled-1024x900.png",
+    "visual/demo/next-page-error-controlled-768x1024.png",
+    "visual/demo/next-page-error-controlled-390x844.png",
+    "visual/demo/next-page-error-controlled-360x844.png"
+  ],
+  "external_attempts_blocked": 0,
+  "browser": "151.0.7922.34",
+  "result": "FAIL",
+  "failure": "expect(locator).toBeDisabled() failed\n\nLocator: getByRole('button', { name: '불러오는 중이에요' })\nExpected: disabled\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeDisabled\" getByRole('button', { name: '불러오는 중이에요' }) with timeout 5000ms\n  - waiting for getByRole('button', { name: '불러오는 중이에요' })\n",
+  "capture_retention": {
+    "historical_generated_paths": true,
+    "generated_capture_count": 20,
+    "committed_final_snapshot_paths": [
+      "visual/demo/meta-error-controlled-390x844.png",
+      "visual/demo/meta-loading-delayed-real-390x844.png",
+      "visual/demo/gallery-1440x1000.png",
+      "visual/demo/gallery-1024x900.png",
+      "visual/demo/gallery-768x1024.png",
+      "visual/demo/gallery-390x844.png",
+      "visual/demo/gallery-360x844.png",
+      "visual/demo/next-page-error-controlled-1440x1000.png"
+    ],
+    "manifest": "capture-inventory.json",
+    "note": "captures records this execution's locally generated paths, not attachment links. Committed selected snapshot provenance is in the manifest; superseded harness runs reused paths, so final snapshots are not claimed to be first-failure bytes."
+  }
+}

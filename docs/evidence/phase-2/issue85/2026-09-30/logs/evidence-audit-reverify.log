@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/mnt/c/dev/vibe_coding_archive/docs/evidence/phase-2/issue85/2026-09-30/audit.py", line 102, in <module>
+    assert (file.parent / relative).exists(), (file.name, target)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ('README.md', 'asset-audit.json')

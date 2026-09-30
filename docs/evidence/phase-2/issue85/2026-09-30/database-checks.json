@@ -1,0 +1,12 @@
+{
+  "sqlite_version": "3.45.1",
+  "integrity_check": [
+    "ok"
+  ],
+  "foreign_key_check_count": 0,
+  "foreign_keys": 1,
+  "journal_mode": "wal",
+  "revision": "0002_public_apps",
+  "public_apps": 30,
+  "private_apps": 1
+}

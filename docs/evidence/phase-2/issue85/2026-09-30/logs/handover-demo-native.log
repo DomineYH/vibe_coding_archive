@@ -1,0 +1,11 @@
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+route.continue: Route is already handled!
+    at /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/demo.mjs:86:132 {
+  log: [],
+  name: 'Error'
+}
+
+Node.js v22.23.2
