@@ -280,3 +280,7 @@ DomineYH decided on 2026-09-29 to defer Q17's condition-naming zero-result state
 | Preserved reference | Q17 (A) | Status and evidence |
 | --- | --- | --- |
 | `docs/evidence/basic-design-runtime-20260922/reference/<viewport>/03-gallery-empty.png` shows the generic no-results message without naming the active condition or offering reset. The pinned `gallery-empty` case has an active search and the #78 mock comparison records zero differing pixels. | Name the active search/subject/grade conditions and provide an explicit reset in the normal zero-result state. | Deferred from #82 by DomineYH decision to #95. Approval and any resulting baseline change remain pending; no source reference or visual baseline changed. See the [#82 evidence ledger](evidence/phase-2/issue82/2026-09-29/README.md). |
+
+## Issue #95 Q17 decision handoff (visual approval pending)
+
+The [Q17 zero-result condition/reset decision](https://github.com/DomineYH/vibe_coding_archive/issues/95#issuecomment-5906455892) records **HITL 권장안 채택** on 2026-09-30. Q1–Q3 also received direct user confirmation. The decision covers applied search/subject/grade labels and explicit reset; its detailed contract lives only in that comment. This remains a UI-D candidate: implementation, five-viewport before/after evidence, and actual visual/baseline approval are pending. No source reference, product baseline, or zero-pixel tolerance changed. See the [acceptance handoff](acceptance.md#issue-95-q17-decision-handoff).

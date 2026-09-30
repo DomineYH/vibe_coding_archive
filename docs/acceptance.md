@@ -420,3 +420,9 @@ The [detailed crosswalk](evidence/phase-2/issue85/2026-09-30/traceability.md) co
 | #85 AC10 | Local vs actual later phases/operations | Unavailable routes and ownership register | Auth/write/admin/worker/device/screen-reader/release distinct | Boundary assertions and explicit transfer | See per-row local checks and not-run owners | [Scope](evidence/phase-2/issue85/2026-09-30/README.md#unverified-and-handover) | No automatic #1/#77 closure, phase advancement or public approval | Only local public-read evidence consolidated; later actual work unexecuted | Phase 3~6/#22/#16/#17; no issue or GitHub mutation |
 
 DomineYH Phase 2 local acceptance/rejection: **수락 대기**. UI-D/current API visual-difference judgement: **판정 대기**. Human date/evidence: —. The agent does not mark these accepted, close the issue/spec/map, or approve public operation.
+
+## Issue #95 Q17 decision handoff
+
+Status: **DECISION RECORDED; IMPLEMENTATION AND VISUAL ACCEPTANCE PENDING**. The [Q17 zero-result condition/reset decision](https://github.com/DomineYH/vibe_coding_archive/issues/95#issuecomment-5906455892) is the canonical contract and records **HITL 권장안 채택** plus direct Q1–Q3 confirmation on 2026-09-30. The [UI-D candidate](ui-deviations.md#issue-95-q17-decision-handoff-visual-approval-pending) remains unapproved for actual visual/baseline changes.
+
+The issue remains OPEN. Its mock/API behavior, keyboard reset/focus, five-viewport captures, actual visual approval, and approved-baseline regression criteria require later implementation and verification. This planning session reviewed tracker state and existing code/evidence only; it did not run product tests or claim a visual pass. Existing partial acceptance is unchanged.
