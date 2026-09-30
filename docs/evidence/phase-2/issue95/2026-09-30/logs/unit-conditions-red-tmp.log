@@ -1,0 +1,224 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run tests/gallery-view.test.jsx -t names the applied --pool=threads
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-impl95/frontend
+
+ ❯ tests/gallery-view.test.jsx (15 tests | 1 failed | 14 skipped) 312ms
+   ❯ public gallery states (14)
+     × names the applied zero-result conditions while search edits are pending 297ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/gallery-view.test.jsx > public gallery states > names the applied zero-result conditions while search edits are pending
+TestingLibraryElementError: Unable to find an element with the text: 검색어: “분수” · 과목: 수학 · 학년: 초3. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"mx-auto w-full max-w-[1280px] px-5 pb-24 sm:px-8"[39m
+      [33mdata-screen-label[39m=[32m"갤러리"[39m
+      [33mtabindex[39m=[32m"-1"[39m
+    [36m>[39m
+      [36m<section[39m
+        [33mclass[39m=[32m"flex flex-col items-start gap-5 pb-8 pt-12 sm:pt-16"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex w-full flex-col items-start gap-5 sm:flex-row sm:items-end sm:justify-between"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"flex flex-col items-start gap-5"[39m
+          [36m>[39m
+            [36m<span[39m
+              [33mclass[39m=[32m"acc-text text-[11.5px] font-bold uppercase tracking-[0.22em]"[39m
+            [36m>[39m
+              [0mTeachers’ Vibe Coding Archive[0m
+            [36m</span>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"max-w-2xl break-keep text-[34px] font-extrabold leading-[1.15] tracking-tight text-neutral-900 sm:text-[44px]"[39m
+              [33mstyle[39m=[32m"text-wrap: balance;"[39m
+            [36m>[39m
+              [0m수업을 바꾼 앱과[0m
+              [36m<br[39m
+                [33mclass[39m=[32m"sm:hidden"[39m
+              [36m/>[39m
+              [0m 그 앱을 만든[0m
+              [0m [0m
+              [36m<span[39m
+                [33mclass[39m=[32m"acc-text"[39m
+              [36m>[39m
+                [0m프롬프트[0m
+              [36m</span>[39m
+              [0m까지.[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"max-w-xl break-keep text-[14.5px] leading-relaxed text-neutral-500"[39m
+              [33mstyle[39m=[32m"text-wrap: pretty;"[39m
+            [36m>[39m
+              [0mAI로 만든 교육용 웹 앱을 프롬프트와 함께 공유해요. 마음에 드는 앱은 프롬프트를 복사해 우리 반에 맞게 다시 만들 수 있어요.[0m
+            [36m</p>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</section>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"sticky top-[57px] z-20 -mx-5 mb-7 border-y border-neutral-200/70 bg-[#EAE7E2]/88 px-5 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex flex-wrap items-center gap-2"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-label[39m=[32m"과목 필터"[39m
+            [33mclass[39m=[32m"flex flex-wrap items-center gap-1.5"[39m
+            [33mrole[39m=[32m"group"[39m
+          [36m>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"false"[39m
+              [33mclass[39m=[32m"h-8 rounded-full px-3.5 text-[12.5px] font-semibold transition-all border border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0m전체[0m
+            [36m</button>[39m
+            [36m<button[39m
+              [33maria-pressed[39m=[32m"true"[39m
+              [33mclass[39m=[32m"h-8 rounded-full px-3.5 text-[12.5px] font-semibold transition-all acc-bg text-white shadow-sm"[39m
+              [33mtype[39m=[32m"button"[39m
+            [36m>[39m
+              [0m수학[0m
+            [36m</button>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"ml-auto flex items-center gap-2"[39m
+          [36m>[39m
+            [36m<label[39m
+              [33mclass[39m=[32m"sr-only"[39m
+              [33mfor[39m=[32m"grade-filter"[39m
+            [36m>[39m
+              [0m학년 필터[0m
+            [36m</label>[39m
+            [36m<select[39m
+              [33mclass[39m=[32m"h-8 rounded-full border border-neutral-200 bg-white pl-3 pr-7 text-[12.5px] font-semibold text-neutral-600 outline-none focus-visible:ring-2 focus-visible:ring-[#4C7A96]"[39m
+              [33mid[39m=[32m"grade-filter"[39m
+            [36m>[39m
+              [36m<option[39m
+                [33mvalue[39m=[32m""[39m
+              [36m>[39m
+                [0m학년 전체[0m
+              [36m</option>[39m
+            [36m</select>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"relative"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"[39m
+              [36m>[39m
+                [36m<svg[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"lucide lucide-search"[39m
+                  [33mfill[39m=[32m"none"[39m
+                  [33mheight[39m=[32m"13"[39m
+                  [33mstroke[39m=[32m"currentColor"[39m
+                  [33mstroke-linecap[39m=[32m"round"[39m
+                  [33mstroke-linejoin[39m=[32m"round"[39m
+                  [33mstroke-width[39m=[32m"2"[39m
+                  [33mviewBox[39m=[32m"0 0 24 24"[39m
+                  [33mwidth[39m=[32m"13"[39m
+                  [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                [36m>[39m
+                  [36m<circle[39m
+                    [33mcx[39m=[32m"11"[39m
+                    [33mcy[39m=[32m"11"[39m
+                    [33mr[39m=[32m"8"[39m
+                  [36m/>[39m
+                  [36m<path[39m
+                    [33md[39m=[32m"m21 21-4.3-4.3"[39m
+                  [36m/>[39m
+                [36m</svg>[39m
+              [36m</span>[39m
+              [36m<label[39m
+                [33mclass[39m=[32m"sr-only"[39m
+                [33mfor[39m=[32m"gallery-search"[39m
+              [36m>[39m
+                [0m앱·작성자 검색[0m
+              [36m</label>[39m
+              [36m<input[39m
+                [33mclass[39m=[32m"h-8 w-36 rounded-full border border-neutral-200 bg-white pl-8 pr-3 text-[12.5px] outline-none transition-all focus:w-48 focus:border-[#4C7A96]/40 sm:w-44"[39m
+                [33mid[39m=[32m"gallery-search"[39m
+                [33mplaceholder[39m=[32m"앱·작성자 검색"[39m
+                [33mvalue[39m=[32m"분수"[39m
+              [36m/>[39m
+            [36m</div>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-col items-center justify-center rounded-3xl border border-dashed border-neutral-300 bg-white/60 px-6 py-16 text-center"[39m
+      [36m>[39m
+        [36m<span[39m
+          [33maria-hidden[39m=[32m"true"[39m
+          [33mclass[39m=[32m"mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 text-neutral-400"[39m
+        [36m>[39m
+          [36m<svg[39m
+            [33mclass[39m=[32m"lucide lucide-search-x"[39m
+            [33mfill[39m=[32m"none"[39m
+            [33mheight[39m=[32m"22"[39m
+            [33mstroke[39m=[32m"currentColor"[39m
+            [33mstroke-linecap[39m=[32m"round"[39m
+            [33mstroke-linejoin[39m=[32m"round"[39m
+            [33mstroke-width[39m=[32m"2"[39m
+            [33mviewBox[39m=[32m"0 0 24 24"[39m
+            [33mwidth[39m=[32m"22"[39m
+            [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+          [36m>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m13.5 8.5-5 5"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m8.5 8.5 5 5"[39m
+            [36m/>[39m
+            [36m<circle[39m
+              [33mcx[39m=[32m"11"[39m
+              [33mcy[39m=[32m"11"[39m
+              [33mr[39m=[32m"8"[39m
+            [36m/>[39m
+            [36m<path[39m
+              [33md[39m=[32m"m21 21-4.3-4.3"[39m
+            [36m/>[39m
+          [36m</svg>[39m
+        [36m</span>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"text-[15px] font-bold text-neutral-700"[39m
+        [36m>[39m
+          [0m조건에 맞는 앱이 없어요[0m
+        [36m</div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"mt-1 max-w-xs text-[13px] leading-relaxed text-neutral-500"[39m
+        [36m>[39m
+          [0m다른 과목이나 학년으로 바꿔 보거나, 검색어를 지워 보세요.[0m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</main>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError ../../../../../tmp/impl95-fast/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../../../../tmp/impl95-fast/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../../../../tmp/impl95-fast/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../../../../tmp/impl95-fast/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ tests/gallery-view.test.jsx:31:31
+     29|       </MemoryRouter>,
+     30|     );
+     31|     const conditions = screen.getByText(
+       |                               ^
+     32|       "검색어: “분수” · 과목: 수학 · 학년: 초3",
+     33|     );
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 14 skipped (15)
+   Start at  19:09:44
+   Duration  7.08s (transform 37%, environment 32%, import 21%, tests 5%, setup 5%, worker 1%)
+
+  Transform  transforming modules took 2.35s · 37% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns

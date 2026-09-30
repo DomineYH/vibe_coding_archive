@@ -1,0 +1,10 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run tests/gallery-view.test.jsx --pool=threads
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-impl95/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  19:13:27
+   Duration  12.54s (tests 44%, transform 25%, environment 17%, import 11%, setup 2%)

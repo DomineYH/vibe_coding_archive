@@ -1,0 +1,25 @@
+{
+  "state": "detail-copy-done",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/360x844/05-copy-done.png",
+  "screenshot": "detail-copy-done-360x844.png",
+  "width": 360,
+  "height": 2147,
+  "comparisonStatus": "dimensions_mismatch",
+  "pixelComparison": "region",
+  "expectedWidth": 360,
+  "expectedHeight": 1955,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": {
+    "left": 251,
+    "top": 902.25,
+    "width": 69,
+    "height": 30
+  }
+}

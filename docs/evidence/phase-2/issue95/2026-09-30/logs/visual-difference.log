@@ -1,0 +1,53 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js --grep gallery-empty
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:103098) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+(node:103121) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1440x1000 (1ms)
+  -  2 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1024x900
+  -  3 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 768x1024
+  -  4 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 390x844
+  -  5 visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 360x844
+
+
+  1) visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1440x1000 ────────────────
+
+    "beforeAll" hook timeout of 60000ms exceeded.
+
+      76 |   "detail-component",
+      77 | ]);
+    > 78 | test.beforeAll(async ({ browser }) => {
+         |      ^
+      79 |   expect(browser.version()).toBe("151.0.7922.34");
+      80 |   let fontPath;
+      81 |   try {
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:78:6
+
+    Error: page.goto: Test ended.
+    Call log:
+      - navigating to "http://localhost:5173/apps/00000000-0000-4000-8000-000000000001", waiting until "load"
+
+
+      101 |   const page = await browser.newPage();
+      102 |   try {
+    > 103 |     await page.goto(
+          |                ^
+      104 |       "http://localhost:5173/apps/00000000-0000-4000-8000-000000000001",
+      105 |     );
+      106 |     await page.locator("pre").waitFor();
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/visual/gallery.spec.js:103:16
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-1440x1000/error-context.md
+
+    Error Context: test-results/visual/gallery-gallery-empty-matches-its-baseline-at-1440x1000/error-context.md
+
+  1 failed
+    visual/gallery.spec.js:738:5 › gallery-empty matches its baseline at 1440x1000 ─────────────────
+  4 did not run

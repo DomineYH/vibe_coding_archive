@@ -80,7 +80,7 @@ async function run() {
     // E2E uses isolated synthetic rows; it never calls the development seed.
     playwright = spawn(
       path.join(frontend, "node_modules", ".bin", "playwright"),
-      ["test", "--config=playwright.api.config.js"],
+      ["test", "--config=playwright.api.config.js", ...process.argv.slice(2)],
       {
         cwd: frontend,
         env,

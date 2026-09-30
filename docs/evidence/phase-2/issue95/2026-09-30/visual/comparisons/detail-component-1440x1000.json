@@ -1,0 +1,25 @@
+{
+  "state": "detail-component",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/04-detail-public-component.png",
+  "screenshot": "detail-component-1440x1000.png",
+  "width": 340,
+  "height": 729,
+  "comparisonStatus": "dimensions_mismatch",
+  "pixelComparison": "region",
+  "expectedWidth": 340,
+  "expectedHeight": 555,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": {
+    "left": 0,
+    "top": 0,
+    "width": 340,
+    "height": 220
+  }
+}

@@ -1,0 +1,45 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run tests/gallery-view.test.jsx -t clears draft --pool=threads
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-impl95/frontend
+
+ ❯ tests/gallery-view.test.jsx (17 tests | 2 failed | 15 skipped) 645ms
+   ❯ public gallery states (16)
+     × clears draft search, restores defaults and focuses search on keyboard reset (composing=false) 488ms
+     × clears draft search, restores defaults and focuses search on keyboard reset (composing=true) 147ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/gallery-view.test.jsx > public gallery states > clears draft search, restores defaults and focuses search on keyboard reset (composing=false)
+ FAIL  tests/gallery-view.test.jsx > public gallery states > clears draft search, restores defaults and focuses search on keyboard reset (composing=true)
+Error: expect(element).toHaveFocus()
+
+Expected element with focus:
+  <input
+  class="h-8 w-36 rounded-full border border-neutral-200 bg-white pl-8 pr-3 text-[12.5px] outline-none transition-all focus:w-48 focus:border-[#4C7A96]/40 sm:w-44"
+  id="gallery-search"
+  placeholder="앱·작성자 검색"
+  value=""
+/>
+Received element with focus:
+  <button
+  class="inline-flex select-none items-center justify-center gap-1.5 font-semibold transition-all duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 h-10 rounded-full px-5 text-[13.5px] acc-bg text-white shadow-sm hover:brightness-110 hover:shadow-md "
+  type="button"
+>
+  조건 초기화
+</button>
+ ❯ tests/gallery-view.test.jsx:44:23
+     42|         screen.getByRole("button", { name: "조건 초기화" }).focus();
+     43|         await user.keyboard(composing ? " " : "{Enter}");
+     44|         expect(input).toHaveFocus();
+       |                       ^
+     45|         expect(input).toHaveValue("");
+     46|         if (composing) fireEvent.compositionEnd(input);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 15 skipped (17)
+   Start at  19:12:58
+   Duration  5.85s (transform 37%, environment 25%, import 21%, tests 12%, setup 5%)

@@ -17,6 +17,10 @@ const issue33BaselineRoot = path.join(
   root,
   "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines",
 );
+const issue95BaselineRoot = path.join(
+  root,
+  "docs/evidence/phase-2/issue95/2026-09-30/visual-state-baselines",
+);
 const outputRoot = path.resolve("test-results/visual/captures");
 const originalApps = JSON.parse(
   readFileSync(path.resolve("src/fixtures/public-apps.json"), "utf8"),
@@ -582,12 +586,25 @@ async function captureAndCompare(
   const name = `${state}-${viewport.width}x${viewport.height}.png`;
   mkdirSync(outputRoot, { recursive: true });
   writeFileSync(path.join(outputRoot, name), actual);
+  let emptyStateBounds;
+  if (state === "gallery-empty") {
+    const empty = page
+      .getByText("조건에 맞는 앱이 없어요", { exact: true })
+      .locator("..");
+    emptyStateBounds = await empty.boundingBox();
+    await empty.screenshot({
+      path: path.join(outputRoot, name.replace(".png", "-component.png")),
+      animations: "disabled",
+      caret: "hide",
+    });
+  }
   const result = {
     state,
     viewport,
     baseline: baselinePath ? path.relative(root, baselinePath) : null,
     screenshot: name,
     ...comparison,
+    ...(emptyStateBounds ? { emptyStateBounds } : {}),
   };
   writeFileSync(
     path.join(outputRoot, `${state}-${viewport.width}x${viewport.height}.json`),
@@ -704,7 +721,7 @@ for (const state of addedStates) {
       state === "corrupt-storage-recovery" || state.startsWith("health-")
         ? null
         : state === "gallery-empty"
-          ? path.join(baselineRoot, tag, "03-gallery-empty.png")
+          ? path.join(issue95BaselineRoot, `${state}-${tag}.png`)
           : [
                 "gallery-api-order",
                 "gallery-filtered",

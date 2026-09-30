@@ -1,0 +1,13 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run --pool=threads --maxWorkers=2
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-impl95/frontend
+
+
+ Test Files  29 passed (29)
+      Tests  799 passed (799)
+   Start at  19:42:42
+   Duration  80.61s (environment 43%, tests 30%, transform 12%, setup 7%, import 7%, worker 1%)
+
+    Isolate  29 workers spawned · ~2.68s startup each (spawn + environment, per file)
+             at least ~36.12s faster with isolate: false — reuses workers across files instead of one per file

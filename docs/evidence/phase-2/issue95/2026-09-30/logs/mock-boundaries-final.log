@@ -1,0 +1,51 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e
+npm notice run playwright test e2e/gallery-zero-result.spec.js --grep accumulated|history entry|late prior
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:116264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:116286) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero (22.8s)
+(node:116429) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  2 e2e/gallery-zero-result.spec.js:171:1 › reset replaces its history entry and cancels draft debounce and IME (3.3s)
+  ✓  3 e2e/gallery-zero-result.spec.js:308:1 › a late prior-condition response cannot replace the reset default list (4.7s)
+
+
+  1) e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3', { exact: true }) with timeout 10000ms
+      - waiting for getByText('검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3', { exact: true })
+
+
+      49 |   page.on("request", (request) => {
+      50 |     const url = new URL(request.url());
+    > 51 |     if (url.pathname === "/api/v1/apps" && !url.searchParams.has("q"))
+         |     ^
+      52 |       defaultOffsets.push(url.searchParams.get("offset"));
+      53 |   });
+      54 |   await page.getByRole("button", { name: "조건 초기화" }).click();
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:51:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/gallery-zero-result-zero-r-4201e-and-restarts-at-offset-zero/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/gallery-zero-result-zero-r-4201e-and-restarts-at-offset-zero/error-context.md
+
+  1 failed
+    e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero
+  2 passed (39.1s)

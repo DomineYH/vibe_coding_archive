@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { GalleryView } from "../src/features/gallery/view-gallery";
@@ -17,6 +18,73 @@ describe("connection result badge", () => {
 });
 
 describe("public gallery states", () => {
+  it.each([false, true])(
+    "clears draft search, restores defaults and focuses search on keyboard reset (composing=%s)",
+    async (composing) => {
+      const user = userEvent.setup();
+      function Gallery() {
+        const [filters, setFilters] = useState({
+          q: "분수",
+          subject: "수학",
+          grade: "초3",
+        });
+        return (
+          <GalleryView
+            page={{ items: [], facets: { subjectsInUse: [] } }}
+            initialFilters={filters}
+            onQueryChange={(patch) =>
+              setFilters((value) => ({ ...value, ...patch }))
+            }
+            resetQuery={() => setFilters({})}
+          />
+        );
+      }
+      render(
+        <MemoryRouter>
+          <Gallery />
+        </MemoryRouter>,
+      );
+      const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+      if (composing) fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: "입력중" } });
+      screen.getByRole("button", { name: "조건 초기화" }).focus();
+      await user.keyboard(composing ? " " : "{Enter}");
+      expect(input).toHaveFocus();
+      expect(input).toHaveValue("");
+      if (composing) fireEvent.compositionEnd(input);
+      await act(async () => {
+        await new Promise((resolve) => window.setTimeout(resolve, 400));
+      });
+      expect(
+        screen.getByText("검색어: 없음 · 과목: 전체 · 학년: 전체"),
+      ).toBeVisible();
+      expect(input).toHaveValue("");
+    },
+  );
+
+  it("names the applied zero-result conditions while search edits are pending", () => {
+    render(
+      <MemoryRouter>
+        <GalleryView
+          page={{ items: [], facets: { subjectsInUse: [] } }}
+          initialFilters={{ q: "분수", subject: "수학", grade: "초3" }}
+          onQueryChange={() => {}}
+          resetQuery={() => {}}
+        />
+      </MemoryRouter>,
+    );
+    const conditions = screen.getByText(
+      "검색어: “분수” · 과목: 수학 · 학년: 초3",
+    );
+    const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+    fireEvent.change(input, { target: { value: "보류된 검색" } });
+    expect(conditions).toBeVisible();
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: "조합중" } });
+    expect(conditions).toBeVisible();
+    expect(screen.getByRole("button", { name: "조건 초기화" })).toBeVisible();
+  });
+
   it("announces initial loading without showing the empty-results message", () => {
     render(
       <MemoryRouter>

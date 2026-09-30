@@ -1,0 +1,26 @@
+{
+  "state": "gallery-empty",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": "docs/evidence/phase-2/issue95/2026-09-30/visual-state-baselines/gallery-empty-768x1024.png",
+  "screenshot": "gallery-empty-768x1024.png",
+  "width": 768,
+  "height": 1024,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 768,
+  "expectedHeight": 1024,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null,
+  "emptyStateBounds": {
+    "x": 32,
+    "y": 445.5625,
+    "width": 704,
+    "height": 326.75
+  }
+}

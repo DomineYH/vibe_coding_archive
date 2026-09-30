@@ -293,6 +293,7 @@ function adminReauthResumeState(value) {
 function GalleryRoute({ auth, galleryReturnPosition }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [, setSearchParams] = useSearchParams();
   const query = readGalleryFilters(location.search);
   const filters = query.filters;
@@ -313,10 +314,13 @@ function GalleryRoute({ auth, galleryReturnPosition }) {
     },
     [setSearchParams],
   );
-  const resetQuery = useCallback(
-    () => setSearchParams(new URLSearchParams(), { replace: true }),
-    [setSearchParams],
-  );
+  const resetQuery = useCallback(() => {
+    void queryClient.resetQueries({
+      queryKey: [__DATA_MODE__, "apps", "list", "", null, null, 24],
+      exact: true,
+    });
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }, [queryClient, setSearchParams]);
   useEffect(() => {
     if (query.invalid) return;
     const params = new URLSearchParams();

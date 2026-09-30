@@ -1,0 +1,52 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e:api
+npm notice run node scripts/test-api-e2e.mjs gallery-zero-result.spec.js
+[WebServer] INFO:     Started server process [104010]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:104034) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:104053) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 e2e/gallery-zero-result.spec.js:12:1 › zero-result reset discards accumulated default pages and restarts at offset zero (26.1s)
+
+
+  1) e2e/gallery-zero-result.spec.js:12:1 › zero-result reset discards accumulated default pages and restarts at offset zero
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('a.card-r')
+    Expected: 24
+    Received: 30
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('a.card-r') with timeout 10000ms
+      - waiting for locator('a.card-r')
+        2 × locator resolved to 0 elements
+          - unexpected value "0"
+          - locator resolved to 30 elements
+          - unexpected value "30"
+        20 × locator resolved to 30 elements
+           - unexpected value "30"
+
+
+      38 |   await expect(search).toBeFocused();
+      39 |   await expect(page).toHaveURL(/\/$/);
+    > 40 |   await expect(cards).toHaveCount(24);
+         |                       ^
+      41 |   expect(
+      42 |     await cards.evaluateAll((items) =>
+      43 |       items.map((item) => item.getAttribute("href")),
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:40:23
+
+    Error Context: test-results/gallery-zero-result-zero-r-4201e-and-restarts-at-offset-zero/error-context.md
+
+  1 failed
+    e2e/gallery-zero-result.spec.js:12:1 › zero-result reset discards accumulated default pages and restarts at offset zero

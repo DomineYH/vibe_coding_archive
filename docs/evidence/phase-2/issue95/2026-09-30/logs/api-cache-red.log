@@ -1,0 +1,41 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e:api
+npm notice run node scripts/test-api-e2e.mjs gallery-zero-result.spec.js
+[WebServer] INFO:     Started server process [101830]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:101865) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:101905) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 e2e/gallery-zero-result.spec.js:12:1 › zero-result reset discards accumulated default pages and restarts at offset zero (30.1s)
+
+
+  1) e2e/gallery-zero-result.spec.js:12:1 › zero-result reset discards accumulated default pages and restarts at offset zero
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5174/", waiting until "load"
+
+
+      18 |     await page.getByLabel("갤러리 시나리오").selectOption("long_list");
+      19 |     await page.getByRole("link", { name: "갤러리로" }).click();
+    > 20 |   } else await page.goto("/");
+         |                     ^
+      21 |   const cards = page.locator("a.card-r");
+      22 |   await expect(cards).toHaveCount(24);
+      23 |   const firstIds = await cards.evaluateAll((items) =>
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:20:21
+
+    Error Context: test-results/gallery-zero-result-zero-r-4201e-and-restarts-at-offset-zero/error-context.md
+
+  1 failed
+    e2e/gallery-zero-result.spec.js:12:1 › zero-result reset discards accumulated default pages and restarts at offset zero

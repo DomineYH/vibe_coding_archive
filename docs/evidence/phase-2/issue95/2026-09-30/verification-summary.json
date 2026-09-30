@@ -1,0 +1,18 @@
+{
+  "visual_tests": 122,
+  "pixel_comparisons": 57,
+  "new_gallery_empty_baseline_comparisons": 5,
+  "existing_baseline_comparisons": 52,
+  "different_pixels": 0,
+  "full_comparisons": 46,
+  "existing_region_comparisons": 11,
+  "product_only_captures": 25,
+  "new_baselines": {
+    "visual-state-baselines/gallery-empty-1024x900.png": "9fd72f33232f6f121fc7a01b08349240e23070f61d2a3b0afc77bffb7a755373",
+    "visual-state-baselines/gallery-empty-1440x1000.png": "62938daa1f538398c1dc940d27c814c844e152f1be93eac516a8a0ca7e669876",
+    "visual-state-baselines/gallery-empty-360x844.png": "333dbe77784dd2ba68efaeacbca58d381ba22220a657e30538fd9dba14625070",
+    "visual-state-baselines/gallery-empty-390x844.png": "0bc969bc4c5572a4de2f378c720639769cda422736257a3ce649403815f9d84d",
+    "visual-state-baselines/gallery-empty-768x1024.png": "3f2bd1afd7748004132b2cc3d0e4e8ce6eabf5d6c8fa53d7171c12bcd0c6a558"
+  },
+  "preserved_source_differences": []
+}
