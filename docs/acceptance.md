@@ -423,7 +423,7 @@ DomineYH Phase 2 local acceptance/rejection: **수락 대기**. UI-D/current API
 
 ## Issue #95 Q17 decision handoff
 
-Status: **DECISION RECORDED; IMPLEMENTATION AND VISUAL ACCEPTANCE PENDING**. The [Q17 zero-result condition/reset decision](https://github.com/DomineYH/vibe_coding_archive/issues/95#issuecomment-5906455892) is the canonical contract and records **HITL 권장안 채택** plus direct Q1–Q3 confirmation on 2026-09-30. The [UI-D candidate](ui-deviations.md#issue-95-q17-decision-handoff-visual-approval-pending) still awaits implementation and actual visual verification; baseline authorization is updated below.
+Status: **DECISION RECORDED; IMPLEMENTATION AND VISUAL ACCEPTANCE PENDING**. The [Q17 zero-result condition/reset decision](https://github.com/DomineYH/vibe_coding_archive/issues/95#issuecomment-5906455892) is the canonical contract and records **HITL 권장안 채택** on 2026-09-30; for Q1–Q3, 코디네이터가 사용자 위임(HITL 권장안 채택)에 따라 추천안 선택. The [UI-D candidate](ui-deviations.md#issue-95-q17-decision-handoff-visual-approval-pending) still awaits implementation and actual visual verification; baseline authorization is updated below.
 
 The issue remains OPEN. Its mock/API behavior, keyboard reset/focus, five-viewport captures, actual visual approval, and approved-baseline regression criteria require later implementation and verification. This planning session reviewed tracker state and existing code/evidence only; it did not run product tests or claim a visual pass. Existing partial acceptance is unchanged.
 
