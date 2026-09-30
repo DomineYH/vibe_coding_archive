@@ -1,7 +1,8 @@
 /* global document, requestAnimationFrame */
 
 import { chromium, expect } from "@playwright/test";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "vite";
@@ -50,9 +51,14 @@ if (
   throw new Error("Seed UI verification requires its temporary loopback API.");
 
 process.env.VITE_DATA_MODE = "api";
+const cacheDirectory = await mkdtemp(
+  path.join(os.tmpdir(), "eduvibe-seed-ui-"),
+);
 const vite = await createServer({
   configFile: path.join(frontend, "vite.config.js"),
   root: frontend,
+  cacheDir: cacheDirectory,
+  optimizeDeps: { entries: ["index.html"] },
   server: {
     host: "127.0.0.1",
     port: 0,
@@ -63,8 +69,19 @@ const vite = await createServer({
 let browser;
 
 try {
-  await vite.listen();
+  // Vite 6 treats port 0 as its default; the native listener asks the OS.
+  await new Promise((resolve, reject) => {
+    vite.httpServer.once("error", reject);
+    vite.httpServer.listen(0, "127.0.0.1", resolve);
+  });
   const address = vite.httpServer.address();
+  expect(
+    address.port,
+    "Seed UI must not claim a fixed development port",
+  ).not.toBe(5173);
+  expect(address.port, "Seed UI must not claim the fixed API UI port").not.toBe(
+    5174,
+  );
   const origin = `http://127.0.0.1:${address.port}`;
   browser = await chromium.launch({
     executablePath: chromiumExecutable(),
@@ -114,6 +131,16 @@ try {
     /Existing app edit.*시연 교사.*수학/,
   );
   await expect(page.locator("a.card-r")).toHaveCount(1);
+  await page.evaluate(() => document.fonts.ready);
+  const pretendardLoaded = await page.evaluate(() =>
+    Array.from(document.fonts).some(
+      (face) => face.family.includes("Pretendard") && face.status === "loaded",
+    ),
+  );
+  expect(
+    pretendardLoaded,
+    "Seed captures require the actual Pretendard font",
+  ).toBe(true);
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.evaluate(async () => {
@@ -199,6 +226,9 @@ try {
     `${JSON.stringify(
       {
         environment: "test-owned temporary checkout; development API",
+        ui_port: address.port,
+        isolated_vite_cache: true,
+        pretendard_loaded: pretendardLoaded,
         public_count: list.pagination.total,
         public_id: publicId,
         rendered_name: "Existing app edit",
@@ -215,4 +245,5 @@ try {
 } finally {
   await browser?.close();
   await vite.close();
+  await rm(cacheDirectory, { recursive: true, force: true });
 }
