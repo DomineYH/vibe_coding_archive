@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/mnt/c/dev/vibe_coding_archive/docs/evidence/phase-2/issue85/2026-09-30/audit.py", line 84, in <module>
+    assert not any(
+           ^^^^^^^^
+AssertionError: /mnt/c/dev/vibe_coding_archive/docs/evidence/phase-2/issue85/2026-09-30/audit.py

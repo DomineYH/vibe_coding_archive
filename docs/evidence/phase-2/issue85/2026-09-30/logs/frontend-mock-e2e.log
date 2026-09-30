@@ -1,0 +1,180 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e
+npm notice run playwright test
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:8473) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 106 tests using 1 worker
+
+(node:8592) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘    1 e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor (30.8s)
+(node:8725) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘    2 e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths (30.9s)
+(node:8920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓    3 e2e/admin-apps.spec.js:262:1 › authenticated header text stays on one line at narrow widths (15.8s)
+  ✓    4 e2e/admin-apps.spec.js:290:1 › admin monitor retains the first page and retries a failed next page (8.1s)
+  ✓    5 e2e/admin-apps.spec.js:324:1 › admin monitor deduplicates an overlapping page and keeps empty/error states clear (9.7s)
+  ✓    6 e2e/admin-apps.spec.js:371:1 › whole scan rediscovers the active batch by ID after reload (7.6s)
+  ✓    7 e2e/admin-apps.spec.js:424:1 › whole scan reports mixed terminal counts and marks stale rows (14.4s)
+  ✓    8 e2e/admin-apps.spec.js:455:1 › empty batches show cooldown time and unavailable health capability (4.7s)
+  ✓    9 e2e/admin-apps.spec.js:486:1 › admin tabs are operable with the keyboard (4.0s)
+  ✓   10 e2e/admin.spec.js:58:1 › an approved member can log in and loses access after approval is revoked (9.1s)
+  ✓   11 e2e/admin.spec.js:114:1 › non-admins are denied and the protected admin account has no approval control (7.6s)
+  ✓   12 e2e/admin.spec.js:129:1 › admins see the complete public and private app monitor summaries (5.3s)
+  ✓   13 e2e/admin.spec.js:179:1 › member password reset requires reauthentication and an explicit submit (9.2s)
+  ✓   14 e2e/admin.spec.js:322:1 › member deletion reauthenticates, preserves cancellation, and removes owned apps (7.4s)
+  ✓   15 e2e/admin.spec.js:389:1 › app-count conflict requires an explicit current-member refresh (5.1s)
+  ✓   16 e2e/admin.spec.js:430:1 › unknown deletion result needs lookup and an explicit same-key retry (6.8s)
+  ✓   17 e2e/admin.spec.js:461:1 › a lost delete response is resolved with its issued key without replay (5.2s)
+  ✓   18 e2e/admin.spec.js:490:1 › pending deletion confirmation stays distinct and resolves by its known key (6.3s)
+  ✓   19 e2e/admin.spec.js:525:1 › reauthenticating an expired recent-auth delete preserves its key without replay (7.4s)
+  ✓   20 e2e/admin.spec.js:575:1 › a delayed delete cannot apply after the admin permission changes (6.4s)
+  ✓   21 e2e/admin.spec.js:610:1 › unknown password-reset results require explicit query, same-key retry, or cancel (7.7s)
+  ✓   22 e2e/admin.spec.js:691:1 › a lost reset response stays unknown until the member operation is read (7.1s)
+  ✓   23 e2e/admin.spec.js:761:1 › a delayed password reset is rejected after the admin session changes (5.3s)
+  ✓   24 e2e/admin.spec.js:832:1 › reauthenticating an expired recent-auth reset preserves its key without replay (7.0s)
+  ✓   25 e2e/admin.spec.js:926:1 › unknown approval results require explicit query, same-key resubmit, or cancel (6.2s)
+  ✓   26 e2e/admin.spec.js:981:1 › expired approval keys stay unknown and require a current-state recheck (5.5s)
+  ✓   27 e2e/admin.spec.js:1044:1 › list failures retry and offset pages keep their rows on an additional-load error (5.9s)
+  ✓   28 e2e/admin.spec.js:1101:1 › a late approval response is rejected after the auth flow changes (5.1s)
+  ✓   29 e2e/app-create.spec.js:84:1 › protects direct access to the registration route (2.2s)
+  ✓   30 e2e/app-create.spec.js:93:1 › approved member registers, refreshes, and returns to the updated gallery (6.7s)
+  ✓   31 e2e/app-create.spec.js:128:1 › keeps over-limit and invalid URL values for correction (3.5s)
+  ✓   32 e2e/app-create.spec.js:164:1 › supports keyboard selection for categories, theme, and visibility (3.7s)
+  ✓   33 e2e/app-create.spec.js:201:1 › locks the form on an unknown result and only retries the same request after an explicit choice (5.1s)
+  ✓   34 e2e/app-create.spec.js:260:1 › waits for a delayed save before taking a blocked navigation to the created detail (5.3s)
+  ✓   35 e2e/app-create.spec.js:283:1 › reads a committed result after the create response is lost (4.8s)
+  ✓   36 e2e/app-create.spec.js:307:1 › keeps confirmed create success distinct when the app is later unavailable (5.8s)
+  ✓   37 e2e/app-create.spec.js:363:1 › keeps an expired write locked after its result can no longer be checked (5.1s)
+  ✓   38 e2e/app-create.spec.js:396:1 › hides an unresolved draft during repeated auth failures and restores it only after recheck (5.3s)
+  ✓   39 e2e/app-create.spec.js:441:1 › discards the in-tab draft after logout even when the same member returns (6.3s)
+  ✓   40 e2e/app-create.spec.js:461:1 › discards old drafts across an A to B to A member switch (9.0s)
+  ✓   41 e2e/app-create.spec.js:496:1 › shows a rejected save without clearing the draft (4.7s)
+  ✓   42 e2e/app-create.spec.js:516:1 › defers internal navigation until a dirty draft is kept or discarded (5.5s)
+  ✓   43 e2e/app-edit.spec.js:86:1 › owner edits an app, changes visibility, and the gallery no longer lists it (8.5s)
+  ✓   44 e2e/app-edit.spec.js:119:1 › private app content stays hidden from non-owner members (15.7s)
+  ✓   45 e2e/app-edit.spec.js:174:1 › locks a delayed edit and waits before leaving for the confirmed detail (7.7s)
+  ✓   46 e2e/app-edit.spec.js:206:1 › version conflict preserves the draft until the author confirms loading latest content (11.2s)
+  ✓   47 e2e/app-edit.spec.js:259:1 › unknown update outcome requires an explicit result check before completion (6.8s)
+  ✓   48 e2e/app-edit.spec.js:289:1 › hides and restores an unresolved edit draft around failed auth checks (5.6s)
+  ✓   49 e2e/app-edit.spec.js:336:1 › unresolved update can only be retried with the original request (6.1s)
+  ✓   50 e2e/app-edit.spec.js:376:1 › confirmed rejection keeps the form values available for correction (6.9s)
+  ✓   51 e2e/app-edit.spec.js:397:1 › keyboard privacy control and field errors have accessible state (6.8s)
+  ✓   52 e2e/app-edit.spec.js:427:1 › owner cancels the inline delete prompt without changing the app (6.8s)
+  ✓   53 e2e/app-edit.spec.js:449:1 › a different approved member can view a public app but cannot delete it (8.4s)
+  ✓   54 e2e/app-edit.spec.js:463:1 › owner confirms a delayed delete once and returns to a refreshed gallery (5.8s)
+  ✓   55 e2e/app-edit.spec.js:494:1 › unknown delete result stays on detail until the issued key confirms success (5.7s)
+  ✓   56 e2e/app-edit.spec.js:531:1 › keeps an expired deletion unknown and never repeats it with a new key (5.6s)
+  ✓   57 e2e/app-edit.spec.js:568:1 › unresolved deletion warns before refresh and keeps its key when the author stays (5.7s)
+  ✓   58 e2e/auth-recovery.spec.js:25:1 › a lost login response stays public-only until its result is settled (5.7s)
+  ✓   59 e2e/auth-recovery.spec.js:59:1 › a second tab can settle a gated transition before its first tab resumes (4.5s)
+  ✓   60 e2e/auth-recovery.spec.js:96:1 › a missing session cookie can be discarded only by its exact transition (2.5s)
+  ✓   61 e2e/auth-recovery.spec.js:113:1 › discarding a missing password-change session preserves the password change (5.1s)
+  ✓   62 e2e/auth-recovery.spec.js:172:1 › an unavailable result stays unresolved until explicit flow reset (2.9s)
+  ✓   63 e2e/auth.spec.js:38:1 › an approved member stays signed in after refresh and can log out (4.0s)
+  ✓   64 e2e/auth.spec.js:55:1 › private detail is hidden until auth restore, then available to its owner and admin (6.2s)
+  ✓   65 e2e/auth.spec.js:94:1 › return_to rejects external and repeatedly encoded paths (3.0s)
+  ✓   66 e2e/auth.spec.js:112:1 › bad credentials and communication failures do not log out or sign in (4.8s)
+  ✓   67 e2e/auth.spec.js:157:1 › login validation identifies fields and auth transition conceals the form (4.1s)
+  ✓   68 e2e/auth.spec.js:194:1 › a logout communication failure keeps the session and private view (5.0s)
+  ✓   69 e2e/auth.spec.js:233:1 › a logout in another tab removes the old protected view (6.9s)
+  ✓   70 e2e/auth.spec.js:257:1 › a delayed private read is discarded when authentication changes (3.9s)
+  ✓   71 e2e/auth.spec.js:297:1 › private detail stays hidden until a visible-tab auth check succeeds (6.1s)
+  ✓   72 e2e/auth.spec.js:398:1 › direct public detail remains available when auth observation fails (5.3s)
+  ✓   73 e2e/auth.spec.js:424:1 › a private route keeps explicit recovery for damaged mock storage (2.9s)
+  ✓   74 e2e/auth.spec.js:447:1 › an authenticated member gets 403 for the admin route while admin can open it (5.4s)
+  ✓   75 e2e/auth.spec.js:482:1 › signup form exposes labeled required and optional fields (2.2s)
+  ✓   76 e2e/auth.spec.js:525:1 › signup rejects disabled contacts and resets after returning from pending state (5.1s)
+  ✓   77 e2e/auth.spec.js:589:1 › signup identifies confirmation and duplicate ID errors without clearing input (2.7s)
+  ✓   78 e2e/auth.spec.js:618:1 › signup network failure preserves the form (3.4s)
+  ✓   79 e2e/auth.spec.js:639:1 › signup blocks a second pending submit (6.7s)
+  ✓   80 e2e/auth.spec.js:673:1 › password-change route requires a change-only session (3.0s)
+  ✓   81 e2e/auth.spec.js:692:1 › an expired temporary password gets a specific login message (3.0s)
+  ✓   82 e2e/auth.spec.js:715:1 › temporary member can browse publicly, then change to a full session (7.1s)
+  ✓   83 e2e/auth.spec.js:804:1 › temporary administrator is kept out of admin tools until changing password (3.2s)
+  ✓   84 e2e/gallery.spec.js:15:1 › public gallery opens a detail route and supports refresh and browser history (6.9s)
+  ✓   85 e2e/gallery.spec.js:79:1 › opens public detail directly and rejects an unknown app (5.4s)
+  ✓   86 e2e/gallery.spec.js:133:1 › preserves gallery filters through detail navigation, history, and reload (4.3s)
+  ✓   87 e2e/gallery.spec.js:175:1 › search edits replace history while subject and grade filters remain navigable (10.5s)
+  ✓   88 e2e/gallery.spec.js:207:1 › same-path filter history preserves the gallery position (3.9s)
+[WebServer] Malformed URI sequence in request URL
+[WebServer] Malformed URI sequence in request URL
+[WebServer] Malformed URI sequence in request URL
+  ✓   89 e2e/gallery.spec.js:233:1 › rejects invalid gallery query values and offers an explicit reset (18.5s)
+  ✓   90 e2e/gallery.spec.js:273:1 › canonicalizes empty filters and preserves valid zero-result conditions (4.0s)
+  ✓   91 e2e/gallery.spec.js:293:1 › gallery navigation is keyboard reachable and controls have accessible names (11.9s)
+  ✓   92 e2e/gallery.spec.js:367:1 › filters search by app, author, and description and distinguishes an empty result (4.8s)
+  ✓   93 e2e/gallery.spec.js:381:1 › an unabortable stale search response cannot replace newer results (5.5s)
+  ✓   94 e2e/gallery.spec.js:407:1 › a same-range refetch failure hides previously loaded cards (3.1s)
+  ✓   95 e2e/gallery.spec.js:436:1 › selects long-list and long-copy mock states for deterministic layout review (5.5s)
+  ✓   96 e2e/gallery.spec.js:462:1 › deduplicates duplicate pages and stops when a response cannot advance (6.6s)
+  ✓   97 e2e/gallery.spec.js:500:1 › explicitly selects empty and failure scenarios, then lets the visitor retry (4.5s)
+  ✓   98 e2e/gallery.spec.js:532:1 › damaged mock catalog is reported until the visitor explicitly resets it (4.0s)
+  ✓   99 e2e/gallery.spec.js:564:1 › a mock reset in one tab refreshes the other tab (5.5s)
+  ✓  100 e2e/health-check.spec.js:62:1 › runs each synthetic result and labels its state (16.9s)
+  ✓  101 e2e/health-check.spec.js:90:1 › preserves the last result on job failure and requires explicit progress retry (8.6s)
+  ✓  102 e2e/health-check.spec.js:127:1 › shows queued and running work as separate active job states (7.0s)
+  ✓  103 e2e/health-check.spec.js:148:1 › shows HTTP measurements only to a current administrator (4.3s)
+  ✓  104 e2e/health-check.spec.js:168:1 › marks the exact freshness boundary stale and rejects stale cooldown reuse (4.0s)
+  ✓  105 e2e/issue-49.spec.js:84:1 › signup through approval, app health, account deletion, and reset works as one journey (29.9s)
+  ✓  106 e2e/issue-49.spec.js:545:1 › explicit reset discards an in-flight app registration response (7.2s)
+
+
+  1) e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/auth?mode=login", waiting until "load"
+
+
+       5 |
+       6 | async function loginAsAdmin(page) {
+    >  7 |   await page.goto("/auth?mode=login");
+         |              ^
+       8 |   const form = page.locator('[data-screen-label="로그인"] form');
+       9 |   await expect(form).toBeVisible();
+      10 |   await form.getByLabel("로그인 아이디", { exact: true }).fill("admin");
+        at loginAsAdmin (/mnt/c/dev/vibe_coding_archive/frontend/e2e/admin-apps.spec.js:7:14)
+        at /mnt/c/dev/vibe_coding_archive/frontend/e2e/admin-apps.spec.js:109:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-apps-admin-can-edit--4c7e1-rivate-app-from-the-monitor/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-apps-admin-can-edit--4c7e1-rivate-app-from-the-monitor/error-context.md
+
+  2) e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/auth?mode=login", waiting until "load"
+
+
+       5 |
+       6 | async function loginAsAdmin(page) {
+    >  7 |   await page.goto("/auth?mode=login");
+         |              ^
+       8 |   const form = page.locator('[data-screen-label="로그인"] form');
+       9 |   await expect(form).toBeVisible();
+      10 |   await form.getByLabel("로그인 아이디", { exact: true }).fill("admin");
+        at loginAsAdmin (/mnt/c/dev/vibe_coding_archive/frontend/e2e/admin-apps.spec.js:7:14)
+        at /mnt/c/dev/vibe_coding_archive/frontend/e2e/admin-apps.spec.js:201:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/admin-apps-Health-Monitor--e6652-tus-badges-at-narrow-widths/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/admin-apps-Health-Monitor--e6652-tus-badges-at-narrow-widths/error-context.md
+
+  2 failed
+    e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor
+    e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths
+  104 passed (13.9m)

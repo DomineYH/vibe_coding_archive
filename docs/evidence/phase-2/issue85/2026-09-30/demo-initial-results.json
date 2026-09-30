@@ -1,0 +1,18 @@
+{
+  "started_utc": "2026-09-30T01:17:24.584Z",
+  "mode": "api",
+  "database": "owned temporary file SQLite; no seed",
+  "checkpoints": [],
+  "captures": [],
+  "external_attempts_blocked": 0,
+  "browser": "151.0.7922.34",
+  "result": "FAIL",
+  "failure": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:5174/\", waiting until \"load\"\u001b[22m\n",
+  "capture_retention": {
+    "historical_generated_paths": true,
+    "generated_capture_count": 0,
+    "committed_final_snapshot_paths": [],
+    "manifest": "capture-inventory.json",
+    "note": "captures records this execution's locally generated paths, not attachment links. Committed selected snapshot provenance is in the manifest; superseded harness runs reused paths, so final snapshots are not claimed to be first-failure bytes."
+  }
+}

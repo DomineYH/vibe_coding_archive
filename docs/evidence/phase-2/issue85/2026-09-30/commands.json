@@ -1,0 +1,514 @@
+{
+  "required_invocations": 13,
+  "timestamp_caveat": "WSL UTC wall clock sometimes stepped backwards; raw timestamps retained, not used as elapsed/performance evidence. Four initial commands have only log file time, explicitly null start/finish.",
+  "invocations": [
+    {
+      "name": "backend-sync",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "uv sync --locked",
+      "started_utc": null,
+      "finished_utc": null,
+      "log_last_modified_utc": "2026-09-30T00:23:40.099254+00:00",
+      "timestamp_note": "initial command started before wrapper; start/finish not separately captured",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/backend-sync.log"
+    },
+    {
+      "name": "backend-ruff",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "uv run --frozen ruff check .",
+      "started_utc": null,
+      "finished_utc": null,
+      "log_last_modified_utc": "2026-09-30T00:24:22.619525+00:00",
+      "timestamp_note": "initial command started before wrapper; start/finish not separately captured",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/backend-ruff.log"
+    },
+    {
+      "name": "backend-format",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "uv run --frozen ruff format --check .",
+      "started_utc": null,
+      "finished_utc": null,
+      "log_last_modified_utc": "2026-09-30T00:24:23.997525+00:00",
+      "timestamp_note": "initial command started before wrapper; start/finish not separately captured",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/backend-format.log"
+    },
+    {
+      "name": "frontend-ci",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm ci",
+      "started_utc": null,
+      "finished_utc": null,
+      "log_last_modified_utc": "2026-09-30T00:29:30.577784+00:00",
+      "timestamp_note": "initial command started before wrapper; start/finish not separately captured",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/frontend-ci.log"
+    },
+    {
+      "name": "backend-pytest",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf PYTEST_ADDOPTS=-v APP_ENV=test uv run --frozen pytest",
+      "started_utc": "2026-09-30T00:32:09.801611+00:00",
+      "finished_utc": "2026-09-30T00:48:15.313554+00:00",
+      "exit_code": 1,
+      "required_first_invocation": true,
+      "log": "logs/backend-pytest.log",
+      "counts": {
+        "passed": 64,
+        "failed": 10,
+        "collected": 74
+      }
+    },
+    {
+      "name": "frontend-check",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm run check",
+      "started_utc": "2026-09-30T00:32:10.965595+00:00",
+      "finished_utc": "2026-09-30T00:37:26.422826+00:00",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/frontend-check.log"
+    },
+    {
+      "name": "frontend-unit",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm test",
+      "started_utc": "2026-09-30T00:32:33.556280+00:00",
+      "finished_utc": "2026-09-30T00:37:32.146562+00:00",
+      "exit_code": 1,
+      "required_first_invocation": true,
+      "log": "logs/frontend-unit.log",
+      "counts": {
+        "passed": 148,
+        "passed_files": 9,
+        "worker_errors": 19
+      }
+    },
+    {
+      "name": "frontend-mock-e2e",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "CI=true npm run test:e2e",
+      "started_utc": "2026-09-30T00:38:01.890769+00:00",
+      "finished_utc": "2026-09-30T00:51:29.620500+00:00",
+      "exit_code": 1,
+      "required_first_invocation": true,
+      "log": "logs/frontend-mock-e2e.log",
+      "counts": {
+        "passed": 104,
+        "failed": 2
+      }
+    },
+    {
+      "name": "frontend-unit-reverify",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm test -- --maxWorkers=1 tests/mock-state-validation.test.ts tests/openapi-contract.test.js tests/acceptance-record.test.js tests/mock-apps.test.ts tests/admin-mappers.test.ts tests/health-batches.test.ts tests/api-apps.test.ts tests/mock-health.test.ts tests/detail-view.test.jsx tests/health-service.test.ts tests/health-mappers.test.ts tests/apps-service.test.ts tests/health-batches-api.test.ts tests/health-batch-mappers.test.ts tests/check-dist.test.js tests/auth-route.test.ts tests/api-auth.test.ts tests/auth-view.test.jsx tests/presentation.test.js",
+      "started_utc": "2026-09-30T00:38:35.145931+00:00",
+      "finished_utc": "2026-09-30T00:57:27.586085+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/frontend-unit-reverify.log",
+      "counts": {
+        "passed": 2,
+        "passed_files": 2,
+        "worker_errors": 17
+      }
+    },
+    {
+      "name": "backend-reverify",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf APP_ENV=test uv run --frozen pytest -v tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits tests/test_dev_seed.py::test_seed_cli_refuses_noninteractive_wrong_environment_and_wrong_database tests/test_dev_seed.py::test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating tests/test_dev_seed.py::test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes tests/test_dev_seed.py::test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes tests/test_public_app_restart.py::test_public_apps_remain_after_api_process_restart tests/test_settings.py::test_unmigrated_database_refuses_process_start_without_leaking_path tests/test_settings.py::test_persistent_database_path_refuses_test_process_start_safely tests/test_settings.py::test_unknown_database_revision_refuses_process_start_safely tests/test_settings.py::test_database_revision_mismatch_refuses_process_start_safely",
+      "started_utc": "2026-09-30T00:48:38.334674+00:00",
+      "finished_utc": "2026-09-30T00:52:02.973254+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/backend-reverify.log",
+      "counts": {
+        "passed": 9,
+        "failed": 1
+      }
+    },
+    {
+      "name": "frontend-build-mock",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm run build:mock",
+      "started_utc": "2026-09-30T00:49:00.502306+00:00",
+      "finished_utc": "2026-09-30T00:52:20.367414+00:00",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/frontend-build-mock.log"
+    },
+    {
+      "name": "frontend-build-api",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm run build",
+      "started_utc": "2026-09-30T00:52:20.813324+00:00",
+      "finished_utc": "2026-09-30T00:54:07.758654+00:00",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/frontend-build-api.log"
+    },
+    {
+      "name": "frontend-dist",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm run check:dist",
+      "started_utc": "2026-09-30T00:54:08.137416+00:00",
+      "finished_utc": "2026-09-30T00:54:07.845005+00:00",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/frontend-dist.log"
+    },
+    {
+      "name": "seed-port-red",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf APP_ENV=test uv run --frozen pytest -v tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits",
+      "started_utc": "2026-09-30T00:55:32.864503+00:00",
+      "finished_utc": "2026-09-30T00:55:52.335148+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/seed-port-red.log"
+    },
+    {
+      "name": "seed-port-green",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf APP_ENV=test uv run --frozen pytest -v tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits",
+      "started_utc": "2026-09-30T00:56:58.178297+00:00",
+      "finished_utc": "2026-09-30T00:58:22.277111+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/seed-port-green.log"
+    },
+    {
+      "name": "seed-helper-static",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npx --no-install eslint scripts/test-seeded-dev-ui.mjs && npx --no-install prettier --check scripts/test-seeded-dev-ui.mjs",
+      "started_utc": "2026-09-30T00:57:45.750351+00:00",
+      "finished_utc": "2026-09-30T00:58:51.880486+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/seed-helper-static.log"
+    },
+    {
+      "name": "frontend-unit-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm test -- --maxWorkers=1 tests/mock-state-validation.test.ts tests/openapi-contract.test.js tests/acceptance-record.test.js tests/mock-apps.test.ts tests/admin-mappers.test.ts tests/health-batches.test.ts tests/api-apps.test.ts tests/mock-health.test.ts tests/detail-view.test.jsx tests/health-service.test.ts tests/health-mappers.test.ts tests/apps-service.test.ts tests/health-batches-api.test.ts tests/health-batch-mappers.test.ts tests/check-dist.test.js tests/auth-route.test.ts tests/presentation.test.js",
+      "started_utc": "2026-09-30T00:59:40.341545+00:00",
+      "finished_utc": "2026-09-30T00:59:40.684389+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/frontend-unit-final.log",
+      "counts": {
+        "collected": 0,
+        "environment_error": true
+      }
+    },
+    {
+      "name": "seed-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf APP_ENV=test uv run --frozen pytest -v tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits",
+      "started_utc": "2026-09-30T00:59:40.894490+00:00",
+      "finished_utc": "2026-09-30T00:59:51.571995+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/seed-final.log",
+      "counts": {
+        "passed": 0,
+        "failed": 1,
+        "environment_error": true
+      }
+    },
+    {
+      "name": "frontend-unit-final2",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npm test -- --maxWorkers=1 tests/mock-state-validation.test.ts tests/openapi-contract.test.js tests/acceptance-record.test.js tests/mock-apps.test.ts tests/admin-mappers.test.ts tests/health-batches.test.ts tests/api-apps.test.ts tests/mock-health.test.ts tests/detail-view.test.jsx tests/health-service.test.ts tests/health-mappers.test.ts tests/apps-service.test.ts tests/health-batches-api.test.ts tests/health-batch-mappers.test.ts tests/check-dist.test.js tests/auth-route.test.ts tests/presentation.test.js",
+      "started_utc": "2026-09-30T01:00:15.624792+00:00",
+      "finished_utc": "2026-09-30T01:01:07.539773+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/frontend-unit-final2.log",
+      "counts": {
+        "passed": 273,
+        "passed_files": 17
+      }
+    },
+    {
+      "name": "seed-final2",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf APP_ENV=test uv run --frozen pytest -v tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits",
+      "started_utc": "2026-09-30T01:00:30.075616+00:00",
+      "finished_utc": "2026-09-30T01:01:21.571425+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/seed-final2.log"
+    },
+    {
+      "name": "frontend-mock-reverify",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "CI=true npm run test:e2e -- e2e/admin-apps.spec.js:106 e2e/admin-apps.spec.js:198",
+      "started_utc": "2026-09-30T01:02:36.928663+00:00",
+      "finished_utc": "2026-09-30T01:02:58.953407+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/frontend-mock-reverify.log"
+    },
+    {
+      "name": "seed-font-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/backend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv ISSUE84_VERIFY_SEEDED_UI=1 PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell FONTCONFIG_FILE=/mnt/c/dev/vibe_coding_archive/frontend/visual/fontconfig.conf APP_ENV=test uv run --frozen pytest -v tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits",
+      "started_utc": "2026-09-30T01:07:29.967373+00:00",
+      "finished_utc": "2026-09-30T01:08:17.165752+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/seed-font-final.log",
+      "counts": {
+        "passed": 1,
+        "failed": 0
+      }
+    },
+    {
+      "name": "frontend-mock-font-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "CI=true npm run test:e2e -- e2e/admin-apps.spec.js:106 e2e/admin-apps.spec.js:198",
+      "started_utc": "2026-09-30T01:08:56.087881+00:00",
+      "finished_utc": "2026-09-30T01:09:30.597041+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/frontend-mock-font-final.log",
+      "counts": {
+        "passed": 2,
+        "failed": 0
+      }
+    },
+    {
+      "name": "seed-helper-static-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "npx --no-install eslint scripts/test-seeded-dev-ui.mjs && npx --no-install prettier --check scripts/test-seeded-dev-ui.mjs",
+      "started_utc": "2026-09-30T01:08:57.074770+00:00",
+      "finished_utc": "2026-09-30T01:09:06.183581+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/seed-helper-static-final.log"
+    },
+    {
+      "name": "frontend-api-e2e",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv npm run test:e2e:api",
+      "started_utc": "2026-09-30T01:09:30.831433+00:00",
+      "finished_utc": "2026-09-30T01:11:59.670153+00:00",
+      "exit_code": 1,
+      "required_first_invocation": true,
+      "log": "logs/frontend-api-e2e.log",
+      "counts": {
+        "passed": 22,
+        "failed": 1
+      }
+    },
+    {
+      "name": "frontend-api-reverify",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv python3 docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py e2e-api/apps.spec.js:28",
+      "started_utc": "2026-09-30T01:16:09.874501+00:00",
+      "finished_utc": "2026-09-30T01:16:56.696969+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/frontend-api-reverify.log"
+    },
+    {
+      "name": "handover-demo",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv FONTCONFIG_FILE=\"$PWD/frontend/visual/fontconfig.conf\" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell node docs/evidence/phase-2/issue85/2026-09-30/demo.mjs",
+      "started_utc": "2026-09-30T01:17:22.478362+00:00",
+      "finished_utc": "2026-09-30T01:18:07.372504+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/handover-demo.log"
+    },
+    {
+      "name": "frontend-visual",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "CI=true VISUAL_BASELINE_CAPTURE=0 FONTCONFIG_FILE=\"$PWD/visual/fontconfig.conf\" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell npm run test:visual",
+      "started_utc": "2026-09-30T01:18:24.620782+00:00",
+      "finished_utc": "2026-09-30T01:31:11.918852+00:00",
+      "exit_code": 0,
+      "required_first_invocation": true,
+      "log": "logs/frontend-visual.log",
+      "counts": {
+        "passed": 122,
+        "failed": 0
+      }
+    },
+    {
+      "name": "frontend-api-source-reverify",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv python3 /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py e2e-api/apps.spec.js:28",
+      "started_utc": "2026-09-30T01:20:36.276585+00:00",
+      "finished_utc": "2026-09-30T01:21:26.351060+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/frontend-api-source-reverify.log"
+    },
+    {
+      "name": "frontend-api-manual-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv python3 /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py e2e-api/apps.spec.js:29",
+      "started_utc": "2026-09-30T01:22:11.887848+00:00",
+      "finished_utc": "2026-09-30T01:22:58.285647+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/frontend-api-manual-final.log"
+    },
+    {
+      "name": "verifier-static-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive/frontend",
+      "command": "node_modules/.bin/eslint scripts/test-seeded-dev-ui.mjs e2e-api/apps.spec.js && node_modules/.bin/prettier --check scripts/test-seeded-dev-ui.mjs e2e-api/apps.spec.js",
+      "started_utc": "2026-09-30T01:22:35.536083+00:00",
+      "finished_utc": "2026-09-30T01:22:44.402511+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/verifier-static-final.log"
+    },
+    {
+      "name": "handover-demo-native",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv FONTCONFIG_FILE=\"$PWD/frontend/visual/fontconfig.conf\" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell node /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/demo.mjs",
+      "started_utc": "2026-09-30T01:23:34.111954+00:00",
+      "finished_utc": "2026-09-30T01:24:00.799950+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/handover-demo-native.log"
+    },
+    {
+      "name": "handover-demo-native-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv FONTCONFIG_FILE=\"$PWD/frontend/visual/fontconfig.conf\" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell node /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/demo.mjs",
+      "started_utc": "2026-09-30T01:25:35.164847+00:00",
+      "finished_utc": "2026-09-30T01:26:15.565708+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/handover-demo-native-final.log"
+    },
+    {
+      "name": "handover-demo-baseurl",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv FONTCONFIG_FILE=\"$PWD/frontend/visual/fontconfig.conf\" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell node /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/demo.mjs",
+      "started_utc": "2026-09-30T01:26:48.141033+00:00",
+      "finished_utc": "2026-09-30T01:27:48.586546+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/handover-demo-baseurl.log"
+    },
+    {
+      "name": "handover-demo-states",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv FONTCONFIG_FILE=\"$PWD/frontend/visual/fontconfig.conf\" PLAYWRIGHT_CHROMIUM_EXECUTABLE=/tmp/issue85-run/chrome/chrome-headless-shell-linux64/chrome-headless-shell node /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/demo.mjs",
+      "started_utc": "2026-09-30T01:30:21.935665+00:00",
+      "finished_utc": "2026-09-30T01:31:58.479397+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/handover-demo-states.log",
+      "counts": {
+        "passed_checkpoints": 12,
+        "captures": 70
+      }
+    },
+    {
+      "name": "frontend-api-serial-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "UV_PROJECT_ENVIRONMENT=/tmp/issue85-run/backend-venv python3 /tmp/issue85-run/source-copy/docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py e2e-api/apps.spec.js:29",
+      "started_utc": "2026-09-30T01:32:43.604677+00:00",
+      "finished_utc": "2026-09-30T01:33:21.032992+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/frontend-api-serial-final.log",
+      "counts": {
+        "passed": 1,
+        "failed": 0
+      }
+    },
+    {
+      "name": "evidence-helper-static",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "/tmp/issue85-run/backend-venv/bin/ruff check docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py && /tmp/issue85-run/backend-venv/bin/ruff format --check docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py && frontend/node_modules/.bin/prettier --check docs/evidence/phase-2/issue85/2026-09-30/demo.mjs && node --check docs/evidence/phase-2/issue85/2026-09-30/demo.mjs",
+      "started_utc": "2026-09-30T01:34:46.217859+00:00",
+      "finished_utc": "2026-09-30T01:34:46.504987+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/evidence-helper-static.log"
+    },
+    {
+      "name": "evidence-audit-static",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "/tmp/issue85-run/backend-venv/bin/ruff check docs/evidence/phase-2/issue85/2026-09-30/audit.py && /tmp/issue85-run/backend-venv/bin/ruff format --check docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "started_utc": "2026-09-30T01:41:31.776318+00:00",
+      "finished_utc": "2026-09-30T01:41:32.027415+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit-static.log"
+    },
+    {
+      "name": "evidence-audit",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "python3 docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "started_utc": "2026-09-30T01:41:32.217514+00:00",
+      "finished_utc": "2026-09-30T01:41:42.946776+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit.log"
+    },
+    {
+      "name": "evidence-audit-reverify",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "python3 docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "started_utc": "2026-09-30T01:43:05.193132+00:00",
+      "finished_utc": "2026-09-30T01:43:15.917443+00:00",
+      "exit_code": 1,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit-reverify.log"
+    },
+    {
+      "name": "evidence-audit-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "python3 docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "started_utc": "2026-09-30T01:44:39.497819+00:00",
+      "finished_utc": "2026-09-30T01:44:52.167892+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit-final.log"
+    },
+    {
+      "name": "evidence-audit-links",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "python3 docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "started_utc": "2026-09-30T01:45:46.815427+00:00",
+      "finished_utc": "2026-09-30T01:46:00.509135+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit-links.log"
+    },
+    {
+      "name": "evidence-audit-static-final",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "/tmp/issue85-run/backend-venv/bin/ruff check docs/evidence/phase-2/issue85/2026-09-30/audit.py docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py && /tmp/issue85-run/backend-venv/bin/ruff format --check docs/evidence/phase-2/issue85/2026-09-30/audit.py docs/evidence/phase-2/issue85/2026-09-30/api-reverify.py",
+      "started_utc": "2026-09-30T01:46:19.001367+00:00",
+      "finished_utc": "2026-09-30T01:46:19.238064+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit-static-final.log"
+    },
+    {
+      "name": "evidence-audit-reviewed",
+      "cwd": "/mnt/c/dev/vibe_coding_archive",
+      "command": "python3 docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+      "started_utc": "2026-09-30T01:53:28.985952+00:00",
+      "finished_utc": "2026-09-30T01:53:42.330480+00:00",
+      "exit_code": 0,
+      "required_first_invocation": false,
+      "log": "logs/evidence-audit-reviewed.log"
+    }
+  ]
+}

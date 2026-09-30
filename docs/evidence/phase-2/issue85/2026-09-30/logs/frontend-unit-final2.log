@@ -1,0 +1,14 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run --maxWorkers=1 tests/mock-state-validation.test.ts tests/openapi-contract.test.js tests/acceptance-record.test.js tests/mock-apps.test.ts tests/admin-mappers.test.ts tests/health-batches.test.ts tests/api-apps.test.ts tests/mock-health.test.ts tests/detail-view.test.jsx tests/health-service.test.ts tests/health-mappers.test.ts tests/apps-service.test.ts tests/health-batches-api.test.ts tests/health-batch-mappers.test.ts tests/check-dist.test.js tests/auth-route.test.ts tests/presentation.test.js
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive/frontend
+
+
+ Test Files  17 passed (17)
+      Tests  273 passed (273)
+   Start at  10:00:17
+   Duration  53.12s (environment 56%, tests 19%, transform 11%, setup 8%, import 5%, worker 1%)
+
+Environment  jsdom was created 17 times · 25.26s total, 56% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments

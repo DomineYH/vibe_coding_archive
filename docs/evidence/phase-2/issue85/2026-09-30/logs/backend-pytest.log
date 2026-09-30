@@ -1,0 +1,691 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /mnt/c/dev/vibe_coding_archive/backend
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.15.1, asyncio-1.4.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 74 items
+
+tests/contracts/test_public_apps.py::test_public_list_and_detail_use_contract_dtos_and_hide_private_fields PASSED [  1%]
+tests/contracts/test_public_apps.py::test_public_detail_rejects_any_query[q=ignored] PASSED [  2%]
+tests/contracts/test_public_apps.py::test_public_detail_rejects_any_query[tracking=1] PASSED [  4%]
+tests/contracts/test_public_apps.py::test_public_detail_rejects_any_query[q=%] PASSED [  5%]
+tests/contracts/test_public_apps.py::test_public_detail_rejects_any_query[q=one&q=two] PASSED [  6%]
+tests/contracts/test_public_apps.py::test_public_list_search_filters_and_facets_follow_catalog_contract PASSED [  8%]
+tests/contracts/test_public_apps.py::test_public_list_treats_bare_filter_keys_as_empty_values[q] PASSED [  9%]
+tests/contracts/test_public_apps.py::test_public_list_treats_bare_filter_keys_as_empty_values[subject] PASSED [ 10%]
+tests/contracts/test_public_apps.py::test_public_list_treats_bare_filter_keys_as_empty_values[grade] PASSED [ 12%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_bare_pagination_keys[limit-limit] PASSED [ 13%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_bare_pagination_keys[offset-offset] PASSED [ 14%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[q=word&q=word] PASSED [ 16%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[tracking=1] PASSED [ 17%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[q=%] PASSED [ 18%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[q=%FF] PASSED [ 20%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[q=%C3%28] PASSED [ 21%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[subject=physics] PASSED [ 22%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[subject=\uc804\uccb4] PASSED [ 24%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[grade=\ub300\ud559] PASSED [ 25%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[limit=0] PASSED [ 27%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[limit=1.5] PASSED [ 28%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[limit=101] PASSED [ 29%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[limit=1e2] PASSED [ 31%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[offset=-1] PASSED [ 32%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_invalid_raw_query_values[offset=\uff11] PASSED [ 33%]
+tests/contracts/test_public_apps.py::test_public_list_rejects_search_over_post_casefold_limit PASSED [ 35%]
+tests/contracts/test_public_apps.py::test_corrupt_stored_health_timestamp_is_server_error_not_query_error PASSED [ 36%]
+tests/contracts/test_public_apps.py::test_public_app_list_sorts_mixed_utc_timestamp_forms_by_actual_time PASSED [ 37%]
+tests/contracts/test_public_apps.py::test_public_apps_fastapi_declarations_match_openapi PASSED [ 39%]
+tests/contracts/test_public_apps.py::test_public_app_errors_use_safe_contract_envelopes PASSED [ 40%]
+tests/contracts/test_public_apps.py::test_file_database_constraints_reject_invalid_app_and_health_rows PASSED [ 41%]
+tests/contracts/test_public_meta_health.py::test_meta_health_and_readiness_use_public_contract_and_file_database PASSED [ 43%]
+tests/contracts/test_public_meta_health.py::test_fastapi_declarations_match_the_single_openapi_source PASSED [ 44%]
+tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits FAILED [ 45%]
+tests/test_dev_seed.py::test_seed_cli_refuses_noninteractive_wrong_environment_and_wrong_database FAILED [ 47%]
+tests/test_dev_seed.py::test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating FAILED [ 48%]
+tests/test_dev_seed.py::test_seed_cli_validates_password_without_echo_or_partial_writes[passwords0-15 to 128] PASSED [ 50%]
+tests/test_dev_seed.py::test_seed_cli_validates_password_without_echo_or_partial_writes[passwords1-do not match] PASSED [ 51%]
+tests/test_dev_seed.py::test_seed_cli_login_collision_rolls_back_every_new_row PASSED [ 52%]
+tests/test_dev_seed.py::test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes FAILED [ 54%]
+tests/test_dev_seed.py::test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes FAILED [ 55%]
+tests/test_public_app_restart.py::test_public_apps_remain_after_api_process_restart FAILED [ 56%]
+tests/test_settings.py::test_app_env_is_required_from_process_environment PASSED [ 58%]
+tests/test_settings.py::test_development_environment_file_is_overridden_by_process_values PASSED [ 59%]
+tests/test_settings.py::test_test_environment_does_not_fall_back_to_development_dotenv PASSED [ 60%]
+tests/test_settings.py::test_test_environment_requires_a_dedicated_temporary_database[database_path0] PASSED [ 62%]
+tests/test_settings.py::test_test_environment_requires_a_dedicated_temporary_database[database_path1] PASSED [ 63%]
+tests/test_settings.py::test_production_rejects_development_origin_and_repository_database PASSED [ 64%]
+tests/test_settings.py::test_production_rejects_origin_with_whitespace_in_host PASSED [ 66%]
+tests/test_settings.py::test_production_rejects_temporary_database_path PASSED [ 67%]
+tests/test_settings.py::test_production_rejects_loopback_origin_with_trailing_dns_dot PASSED [ 68%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[http://localhost:0] PASSED [ 70%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[http://localhost:99999] PASSED [ 71%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[http://localhost:not-a-port] PASSED [ 72%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://[malformed-ipv6] PASSED [ 74%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://[archive.example.org]] PASSED [ 75%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://-archive.example.org] PASSED [ 77%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://archive..example.org] PASSED [ 78%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://bad_host.example] PASSED [ 79%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://xn--a.example] PASSED [ 81%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://archive.example.org/] PASSED [ 82%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[ https://archive.example.org] PASSED [ 83%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://archive.example.org?] PASSED [ 85%]
+tests/test_settings.py::test_invalid_public_origin_is_reported_as_configuration_error[https://archive.example.org#] PASSED [ 86%]
+tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved[https://archive.example.org] PASSED [ 87%]
+tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved[https://archive.example.org.] PASSED [ 89%]
+tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved[http://192.0.2.1:8080] PASSED [ 90%]
+tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved[https://[2001:db8::1]:8443] PASSED [ 91%]
+tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved[https://b\xfccher.example] PASSED [ 93%]
+tests/test_settings.py::test_valid_dns_ip_and_idn_origins_are_preserved[https://xn--bcher-kva.example] PASSED [ 94%]
+tests/test_settings.py::test_unmigrated_database_refuses_process_start_without_leaking_path FAILED [ 95%]
+tests/test_settings.py::test_persistent_database_path_refuses_test_process_start_safely FAILED [ 97%]
+tests/test_settings.py::test_unknown_database_revision_refuses_process_start_safely FAILED [ 98%]
+tests/test_settings.py::test_database_revision_mismatch_refuses_process_start_safely FAILED [100%]
+
+=================================== FAILURES ===================================
+______ test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits ______
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_seeds_only_missi0')
+
+    def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
+        tmp_path: Path,
+    ):
+        repo, backend = _copy_backend(tmp_path)
+        database_path = _migrate(backend)
+
+>       empty_server, empty_base_url = _start_development_api(backend)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_dev_seed.py:244:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+backend = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_seeds_only_missi0/checkout/backend')
+
+    def _start_development_api(backend: Path) -> tuple[subprocess.Popen, str]:
+        listener = socket.socket()
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(128)
+        port = listener.getsockname()[1]
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "app.main:app",
+                "--fd",
+                str(listener.fileno()),
+                "--no-access-log",
+            ],
+            cwd=backend,
+            env=_environment(),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            pass_fds=(listener.fileno(),),
+        )
+        listener.close()
+        base_url = f"http://127.0.0.1:{port}"
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                raise AssertionError(
+                    f"Development API exited during startup: {process.communicate()[1]}"
+                )
+            try:
+                with urlopen(f"{base_url}/healthz", timeout=0.5) as response:
+                    if response.status == 200:
+                        return process, base_url
+            except (URLError, TimeoutError):
+                time.sleep(0.05)
+        process.terminate()
+>       raise AssertionError(
+            f"Development API did not become ready: {process.communicate(timeout=5)[1]}"
+        )
+E       AssertionError: Development API did not become ready:
+
+tests/test_dev_seed.py:166: AssertionError
+__ test_seed_cli_refuses_noninteractive_wrong_environment_and_wrong_database ___
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_refuses_noninter0')
+
+    def test_seed_cli_refuses_noninteractive_wrong_environment_and_wrong_database(
+        tmp_path: Path,
+    ):
+        repo, backend = _copy_backend(tmp_path)
+        default_database = repo / "storage" / "development.sqlite3"
+
+>       result = subprocess.run(
+            [sys.executable, "-m", "app.cli", "seed"],
+            cwd=backend,
+            env=_environment(),
+            input="",
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+
+tests/test_dev_seed.py:390:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/usr/lib/python3.12/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: -9 args: ['/mnt/c/dev/vibe_coding_archive/backend/.venv/...>
+endtime = 2040.79581008, orig_timeout = 10, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python', '-m', 'app.cli', 'seed']' timed out after 10 seconds
+
+/usr/lib/python3.12/subprocess.py:1253: TimeoutExpired
+___ test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating ___
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_rejects_missing_0')
+
+    def test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating(
+        tmp_path: Path,
+    ):
+        repo, backend = _copy_backend(tmp_path)
+        database_path = repo / "storage" / "development.sqlite3"
+
+>       status, output = _run_cli(backend)
+                         ^^^^^^^^^^^^^^^^^
+
+tests/test_dev_seed.py:434:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+backend = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_rejects_missing_0/checkout/backend')
+app_env = 'development', database_path = None, passwords = ()
+
+    def _run_cli(
+        backend: Path,
+        *,
+        app_env="development",
+        database_path: Path | None = None,
+        passwords=(),
+    ) -> tuple[int, str]:
+        pid, terminal = pty.fork()
+        if pid == 0:
+            os.chdir(backend)
+            os.execve(
+                sys.executable,
+                [sys.executable, "-m", "app.cli", "seed"],
+                _environment(app_env=app_env, database_path=database_path),
+            )
+
+        output = bytearray()
+        sent = 0
+        deadline = time.monotonic() + 20
+        status = None
+        try:
+            while time.monotonic() < deadline:
+                ready, _, _ = select.select([terminal], [], [], 0.1)
+                if ready:
+                    try:
+                        output.extend(os.read(terminal, 4096))
+                    except OSError as error:
+                        if error.errno != errno.EIO:
+                            raise
+                occurrences = sum(output.count(prompt) for prompt in PROMPTS)
+                while sent < occurrences:
+                    response = passwords[sent] if sent < len(passwords) else ""
+                    os.write(terminal, response.encode() + b"\n")
+                    sent += 1
+                waited, child_status = os.waitpid(pid, os.WNOHANG)
+                if waited:
+                    status = child_status
+                    break
+            if status is None:
+                os.kill(pid, signal.SIGKILL)
+                _, status = os.waitpid(pid, 0)
+>               raise AssertionError(
+                    f"seed CLI timed out: {output.decode(errors='replace')}"
+                )
+E               AssertionError: seed CLI timed out: Run the explicit development migration first.
+
+tests/test_dev_seed.py:114: AssertionError
+___ test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes ___
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_rejects_normaliz0')
+
+    def test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes(
+        tmp_path: Path,
+    ):
+        _repo, backend = _copy_backend(tmp_path)
+        database_path = _migrate(backend)
+        blocker_id = "00000000-0000-0000-0000-000000000099"
+        blocker_login = "  SEED-MEMBER-ONE  "
+        with sqlite3.connect(database_path) as connection:
+            connection.execute(
+                "INSERT INTO members "
+                "(id, login_id, nickname, is_admin, approval_status) "
+                "VALUES (?, ?, 'Existing member', 0, 'approved')",
+                (blocker_id, blocker_login),
+            )
+            connection.commit()
+
+>       status, output = _run_cli(backend)
+                         ^^^^^^^^^^^^^^^^^
+
+tests/test_dev_seed.py:552:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+backend = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_rejects_normaliz0/checkout/backend')
+app_env = 'development', database_path = None, passwords = ()
+
+    def _run_cli(
+        backend: Path,
+        *,
+        app_env="development",
+        database_path: Path | None = None,
+        passwords=(),
+    ) -> tuple[int, str]:
+        pid, terminal = pty.fork()
+        if pid == 0:
+            os.chdir(backend)
+            os.execve(
+                sys.executable,
+                [sys.executable, "-m", "app.cli", "seed"],
+                _environment(app_env=app_env, database_path=database_path),
+            )
+
+        output = bytearray()
+        sent = 0
+        deadline = time.monotonic() + 20
+        status = None
+        try:
+            while time.monotonic() < deadline:
+                ready, _, _ = select.select([terminal], [], [], 0.1)
+                if ready:
+                    try:
+                        output.extend(os.read(terminal, 4096))
+                    except OSError as error:
+                        if error.errno != errno.EIO:
+                            raise
+                occurrences = sum(output.count(prompt) for prompt in PROMPTS)
+                while sent < occurrences:
+                    response = passwords[sent] if sent < len(passwords) else ""
+                    os.write(terminal, response.encode() + b"\n")
+                    sent += 1
+                waited, child_status = os.waitpid(pid, os.WNOHANG)
+                if waited:
+                    status = child_status
+                    break
+            if status is None:
+                os.kill(pid, signal.SIGKILL)
+                _, status = os.waitpid(pid, 0)
+>               raise AssertionError(
+                    f"seed CLI timed out: {output.decode(errors='replace')}"
+                )
+E               AssertionError: seed CLI timed out:
+
+tests/test_dev_seed.py:114: AssertionError
+_ test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes _
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_rejects_seed_mem0')
+
+    def test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes(
+        tmp_path: Path,
+    ):
+        _repo, backend = _copy_backend(tmp_path)
+        database_path = _migrate(backend)
+        blocker_login = "another-member"
+        with sqlite3.connect(database_path) as connection:
+            connection.execute(
+                "INSERT INTO members "
+                "(id, login_id, nickname, is_admin, approval_status) "
+                "VALUES (?, ?, 'Existing member', 0, 'approved')",
+                (MEMBER_IDS[0], blocker_login),
+            )
+            connection.commit()
+
+>       status, output = _run_cli(backend)
+                         ^^^^^^^^^^^^^^^^^
+
+tests/test_dev_seed.py:579:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+backend = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_seed_cli_rejects_seed_mem0/checkout/backend')
+app_env = 'development', database_path = None, passwords = ()
+
+    def _run_cli(
+        backend: Path,
+        *,
+        app_env="development",
+        database_path: Path | None = None,
+        passwords=(),
+    ) -> tuple[int, str]:
+        pid, terminal = pty.fork()
+        if pid == 0:
+            os.chdir(backend)
+            os.execve(
+                sys.executable,
+                [sys.executable, "-m", "app.cli", "seed"],
+                _environment(app_env=app_env, database_path=database_path),
+            )
+
+        output = bytearray()
+        sent = 0
+        deadline = time.monotonic() + 20
+        status = None
+        try:
+            while time.monotonic() < deadline:
+                ready, _, _ = select.select([terminal], [], [], 0.1)
+                if ready:
+                    try:
+                        output.extend(os.read(terminal, 4096))
+                    except OSError as error:
+                        if error.errno != errno.EIO:
+                            raise
+                occurrences = sum(output.count(prompt) for prompt in PROMPTS)
+                while sent < occurrences:
+                    response = passwords[sent] if sent < len(passwords) else ""
+                    os.write(terminal, response.encode() + b"\n")
+                    sent += 1
+                waited, child_status = os.waitpid(pid, os.WNOHANG)
+                if waited:
+                    status = child_status
+                    break
+            if status is None:
+                os.kill(pid, signal.SIGKILL)
+                _, status = os.waitpid(pid, 0)
+>               raise AssertionError(
+                    f"seed CLI timed out: {output.decode(errors='replace')}"
+                )
+E               AssertionError: seed CLI timed out:
+
+tests/test_dev_seed.py:114: AssertionError
+______________ test_public_apps_remain_after_api_process_restart _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_public_apps_remain_after_0')
+migrate_test_database = <function migrate_test_database.<locals>.migrate at 0x738fa0615d00>
+seed_public_and_private_apps = <function populate_public_and_private_apps at 0x738fa2fced40>
+
+    def test_public_apps_remain_after_api_process_restart(
+        tmp_path: Path, migrate_test_database, seed_public_and_private_apps
+    ):
+        database_path = tmp_path / "restart.sqlite3"
+        migrate_test_database(database_path)
+        seed_public_and_private_apps(database_path)
+        port = _server_port()
+>       first_process = _start_server(database_path, port)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_public_app_restart.py:83:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+database_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_public_apps_remain_after_0/restart.sqlite3')
+port = 51865
+
+    def _start_server(database_path: Path, port: int) -> subprocess.Popen:
+        environment = {
+            **os.environ,
+            "APP_ENV": "test",
+            "DATABASE_PATH": str(database_path),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+        }
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "app.main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+                "--no-access-log",
+            ],
+            cwd=BACKEND,
+            env=environment,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                stderr = process.communicate()[1]
+                raise AssertionError(f"API process exited during startup: {stderr}")
+            try:
+                with urlopen(f"http://127.0.0.1:{port}/healthz", timeout=0.5) as response:
+                    if response.status == 200:
+                        return process
+            except URLError:
+                time.sleep(0.05)
+        process.terminate()
+        stderr = process.communicate(timeout=5)[1]
+>       raise AssertionError(f"API process did not become ready: {stderr}")
+E       AssertionError: API process did not become ready:
+
+tests/test_public_app_restart.py:61: AssertionError
+_____ test_unmigrated_database_refuses_process_start_without_leaking_path ______
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_unmigrated_database_refus0')
+
+    def test_unmigrated_database_refuses_process_start_without_leaking_path(
+        tmp_path: Path,
+    ):
+        database_path = tmp_path / "unmigrated.sqlite3"
+        with sqlite3.connect(database_path):
+            pass
+>       result = _run_application(database_path)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_settings.py:269:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_settings.py:42: in _run_application
+    return subprocess.run(
+/usr/lib/python3.12/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: -9 args: ['/mnt/c/dev/vibe_coding_archive/backend/.venv/...>
+endtime = 2297.906365338, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python', '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '0']' timed out after 20 seconds
+
+/usr/lib/python3.12/subprocess.py:1253: TimeoutExpired
+_______ test_persistent_database_path_refuses_test_process_start_safely ________
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_persistent_database_path_0')
+
+    def test_persistent_database_path_refuses_test_process_start_safely(
+        tmp_path: Path,
+    ):
+        database_path = Path(tempfile.gettempdir()).parent / "persistent.sqlite3"
+>       result = _run_application(database_path)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_settings.py:284:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_settings.py:42: in _run_application
+    return subprocess.run(
+/usr/lib/python3.12/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: -9 args: ['/mnt/c/dev/vibe_coding_archive/backend/.venv/...>
+endtime = 2318.555124263, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python', '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '0']' timed out after 20 seconds
+
+/usr/lib/python3.12/subprocess.py:1253: TimeoutExpired
+_________ test_unknown_database_revision_refuses_process_start_safely __________
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_unknown_database_revision0')
+
+    def test_unknown_database_revision_refuses_process_start_safely(tmp_path: Path):
+        database_path = tmp_path / "unknown-revision.sqlite3"
+        with sqlite3.connect(database_path) as connection:
+            connection.execute(
+                "CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"
+            )
+            connection.execute(
+                "INSERT INTO alembic_version (version_num) VALUES (?)",
+                ("revision-not-in-this-build",),
+            )
+
+>       result = _run_application(database_path)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_settings.py:299:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_settings.py:42: in _run_application
+    return subprocess.run(
+/usr/lib/python3.12/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: -9 args: ['/mnt/c/dev/vibe_coding_archive/backend/.venv/...>
+endtime = 2339.079044031, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python', '-m', 'uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '0']' timed out after 20 seconds
+
+/usr/lib/python3.12/subprocess.py:1253: TimeoutExpired
+_________ test_database_revision_mismatch_refuses_process_start_safely _________
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-0/test_database_revision_mismatc0')
+
+    def test_database_revision_mismatch_refuses_process_start_safely(
+        tmp_path: Path,
+    ):
+        database_path = tmp_path / "mismatched-revision.sqlite3"
+        environment = _test_environment(database_path)
+        migration = subprocess.run(
+            ["uv", "run", "--frozen", "alembic", "upgrade", "head"],
+            cwd=BACKEND,
+            env=environment,
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=False,
+        )
+        assert migration.returncode == 0, migration.stdout + migration.stderr
+
+        bootstrap = """\
+    import app.database
+    app.database.current_head = lambda: 'another-expected-revision'
+    import uvicorn
+    uvicorn.run('app.main:app', host='127.0.0.1', port=0)
+    """
+>       result = _run_application(database_path, bootstrap=bootstrap)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_settings.py:325:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests/test_settings.py:42: in _run_application
+    return subprocess.run(
+/usr/lib/python3.12/subprocess.py:550: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:1209: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib/python3.12/subprocess.py:2116: in _communicate
+    self._check_timeout(endtime, orig_timeout, stdout, stderr)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: -9 args: ['/mnt/c/dev/vibe_coding_archive/backend/.venv/...>
+endtime = 2378.071130888, orig_timeout = 20, stdout_seq = [], stderr_seq = []
+skip_check_and_raise = False
+
+    def _check_timeout(self, endtime, orig_timeout, stdout_seq, stderr_seq,
+                       skip_check_and_raise=False):
+        """Convenience for checking if a timeout has expired."""
+        if endtime is None:
+            return
+        if skip_check_and_raise or _time() > endtime:
+>           raise TimeoutExpired(
+                    self.args, orig_timeout,
+                    output=b''.join(stdout_seq) if stdout_seq else None,
+                    stderr=b''.join(stderr_seq) if stderr_seq else None)
+E           subprocess.TimeoutExpired: Command '['/mnt/c/dev/vibe_coding_archive/backend/.venv/bin/python', '-c', "import app.database\napp.database.current_head = lambda: 'another-expected-revision'\nimport uvicorn\nuvicorn.run('app.main:app', host='127.0.0.1', port=0)\n"]' timed out after 20 seconds
+
+/usr/lib/python3.12/subprocess.py:1253: TimeoutExpired
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /mnt/c/dev/vibe_coding_archive/backend/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits
+FAILED tests/test_dev_seed.py::test_seed_cli_refuses_noninteractive_wrong_environment_and_wrong_database
+FAILED tests/test_dev_seed.py::test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating
+FAILED tests/test_dev_seed.py::test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes
+FAILED tests/test_dev_seed.py::test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes
+FAILED tests/test_public_app_restart.py::test_public_apps_remain_after_api_process_restart
+FAILED tests/test_settings.py::test_unmigrated_database_refuses_process_start_without_leaking_path
+FAILED tests/test_settings.py::test_persistent_database_path_refuses_test_process_start_safely
+FAILED tests/test_settings.py::test_unknown_database_revision_refuses_process_start_safely
+FAILED tests/test_settings.py::test_database_revision_mismatch_refuses_process_start_safely
+============ 10 failed, 64 passed, 1 warning in 1002.26s (0:16:42) =============

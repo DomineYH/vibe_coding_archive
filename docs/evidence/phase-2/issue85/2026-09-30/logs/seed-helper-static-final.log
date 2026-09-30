@@ -1,0 +1,6 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'eslint' scripts/test-seeded-dev-ui.mjs
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'prettier' --check scripts/test-seeded-dev-ui.mjs
+Checking formatting...
+All matched files use Prettier code style!

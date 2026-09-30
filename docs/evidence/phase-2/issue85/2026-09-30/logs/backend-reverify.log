@@ -1,0 +1,981 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /tmp/issue85-run/backend-venv/bin/python
+cachedir: .pytest_cache
+rootdir: /mnt/c/dev/vibe_coding_archive/backend
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.15.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 10 items
+
+tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits FAILED [ 10%]
+tests/test_dev_seed.py::test_seed_cli_refuses_noninteractive_wrong_environment_and_wrong_database PASSED [ 20%]
+tests/test_dev_seed.py::test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating PASSED [ 30%]
+tests/test_dev_seed.py::test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes PASSED [ 40%]
+tests/test_dev_seed.py::test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_writes PASSED [ 50%]
+tests/test_public_app_restart.py::test_public_apps_remain_after_api_process_restart PASSED [ 60%]
+tests/test_settings.py::test_unmigrated_database_refuses_process_start_without_leaking_path PASSED [ 70%]
+tests/test_settings.py::test_persistent_database_path_refuses_test_process_start_safely PASSED [ 80%]
+tests/test_settings.py::test_unknown_database_revision_refuses_process_start_safely PASSED [ 90%]
+tests/test_settings.py::test_database_revision_mismatch_refuses_process_start_safely PASSED [100%]
+
+=================================== FAILURES ===================================
+______ test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits ______
+
+tmp_path = PosixPath('/tmp/pytest-of-dominelinux/pytest-1/test_seed_cli_seeds_only_missi0')
+
+    def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
+        tmp_path: Path,
+    ):
+        repo, backend = _copy_backend(tmp_path)
+        database_path = _migrate(backend)
+
+        empty_server, empty_base_url = _start_development_api(backend)
+        try:
+            status, page = _read_api_json(empty_base_url, "/api/v1/apps")
+            assert status == 200
+            assert page["items"] == []
+            assert page["pagination"]["total"] == 0
+            assert page["facets"]["subjects_in_use"] == []
+        finally:
+            _stop_development_api(empty_server)
+
+        status, output = _run_cli(backend, passwords=(TEST_PASSWORD, TEST_PASSWORD))
+        assert status == 0, output
+        assert TEST_PASSWORD not in output
+        assert sum(output.count(prompt.decode()) for prompt in PROMPTS) == 2
+        assert "Seeded 2 members and 2 apps." in output
+
+        with sqlite3.connect(database_path) as connection:
+            members = connection.execute(
+                "SELECT id, login_id, nickname, password_hash, is_admin, approval_status "
+                "FROM members ORDER BY id"
+            ).fetchall()
+            assert [member[0] for member in members] == list(MEMBER_IDS)
+            assert all(not member[4] and member[5] == "approved" for member in members)
+            assert all(
+                PasswordHash.recommended().verify(TEST_PASSWORD, member[3])
+                for member in members
+            )
+            assert len({member[3] for member in members}) == 2
+            assert connection.execute("SELECT COUNT(*) FROM apps").fetchone()[0] == 2
+            public = connection.execute(
+                "SELECT id, owner_id, name, prompt, is_public FROM apps WHERE id = ?",
+                (PUBLIC_APP_ID,),
+            ).fetchone()
+            private = connection.execute(
+                "SELECT id, is_public FROM apps WHERE id = ?", (PRIVATE_APP_ID,)
+            ).fetchone()
+            assert public[0] == PUBLIC_APP_ID and public[1] == MEMBER_IDS[0]
+            assert public[4] == 1 and private == (PRIVATE_APP_ID, 0)
+            assert (
+                connection.execute(
+                    "SELECT COUNT(*) FROM health_results WHERE state <> 'unchecked' "
+                    "OR checked_at IS NOT NULL OR fresh_until IS NOT NULL"
+                ).fetchone()[0]
+                == 0
+            )
+
+        first_server, first_base_url = _start_development_api(backend)
+        try:
+            first_page, first_detail = _assert_seed_api_read(first_base_url)
+        finally:
+            _stop_development_api(first_server)
+
+        second_server, second_base_url = _start_development_api(backend)
+        try:
+            second_page, second_detail = _assert_seed_api_read(second_base_url)
+        finally:
+            _stop_development_api(second_server)
+        assert first_page["items"] == second_page["items"]
+        assert first_page["pagination"] == second_page["pagination"]
+        assert first_detail == second_detail
+
+        with sqlite3.connect(database_path) as connection:
+            connection.execute(
+                "UPDATE apps SET name = 'Existing app edit', prompt = 'Existing prompt' "
+                "WHERE id = ?",
+                (PUBLIC_APP_ID,),
+            )
+            connection.commit()
+
+        if os.environ.get("ISSUE84_VERIFY_SEEDED_UI") == "1":
+            ui_server, ui_base_url = _start_development_api(backend)
+            try:
+>               _verify_seeded_ui(ui_base_url)
+
+tests/test_dev_seed.py:316:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+base_url = 'http://127.0.0.1:41751'
+
+    def _verify_seeded_ui(base_url: str) -> None:
+        frontend = ROOT / "frontend"
+        result = subprocess.run(
+            ["node", "scripts/test-seeded-dev-ui.mjs"],
+            cwd=frontend,
+            env={
+                **os.environ,
+                "ISSUE84_SEED_UI_API_URL": base_url,
+            },
+            capture_output=True,
+            text=True,
+            timeout=180,
+            check=False,
+        )
+>       assert result.returncode == 0, result.stdout + result.stderr
+E       AssertionError: 9:49:23 AM [vite] (client) Re-optimizing dependencies because vite config has changed
+E         Port 5173 is in use, trying another one...
+E         Error:   Failed to scan for dependencies from entries:
+E           /mnt/c/dev/vibe_coding_archive/frontend/index.html
+E         /mnt/c/dev/vibe_coding_archive/frontend/dist-mock/index.html
+E
+E           ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/auth/view-auth.jsx:4:29:
+E               4 │ import { ServiceError } from "../../services/service-error";
+E                 ╵                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/gallery/view-gallery.jsx:11:29:
+E               11 │ import { ServiceError } from "../../services/service-error";
+E                  ╵                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/detail/view-detail.jsx:17:7:
+E               17 │ } from "../../components/ui";
+E                  ╵        ~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/services/api/apps.ts:21:28:
+E               21 │ import { authService } from "./auth";
+E                  ╵                             ~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/submit/view-submit.jsx:8:29:
+E               8 │ import { ServiceError } from "../../services/service-error";
+E                 ╵                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/admin/view-admin.jsx:8:41:
+E               8 │ import { Avatar, Btn, StatusBadge } from "../../components/ui";
+E                 ╵                                          ~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/services/mock/state.ts:8:7:
+E               8 │ } from "../../contracts/mappers";
+E                 ╵        ~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/gallery/view-gallery.jsx:12:32:
+E               12 │ import { isSearchTooLong } from "../../services/apps-service";
+E                  ╵                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/detail/view-detail.jsx:18:29:
+E               18 │ import { ServiceError } from "../../services/service-error";
+E                  ╵                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14490:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14478:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/submit/view-submit.jsx:9:28:
+E               9 │ import { appsService } from "@services/apps";
+E                 ╵                             ~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/admin/view-admin.jsx:9:32:
+E               9 │ import { formatCheckedAt } from "../../components/presentation";
+E                 ╵                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/services/mock/state.ts:9:29:
+E               9 │ import { ServiceError } from "../service-error";
+E                 ╵                              ~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14490:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14478:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/submit/view-submit.jsx:10:28:
+E               10 │ import { authService } from "@services/auth";
+E                  ╵                             ~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/services/mock/state.ts:15:30:
+E               15 │ import { MOCK_ACCOUNTS } from "./accounts";
+E                  ╵                               ~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14490:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14478:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/admin/view-admin.jsx:11:29:
+E               11 │ import { adminService } from "@services/admin";
+E                  ╵                              ~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14490:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14478:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/admin/view-admin.jsx:12:30:
+E               12 │ import { healthService } from "@services/health";
+E                  ╵                               ~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/features/admin/view-admin.jsx:13:29:
+E               13 │ import { ServiceError } from "../../services/service-error";
+E                  ╵                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E         ✘ [ERROR] The server is being restarted or closed. Request is outdated [plugin vite:dep-scan]
+E
+E             node_modules/esbuild/lib/main.js:1217:27:
+E               1217 │         let result = await callback({
+E                    ╵                            ^
+E
+E             at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)
+E             at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)
+E             at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)
+E             at resolve (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14325:28)
+E             at file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14534:34
+E             at requestCallbacks.on-resolve (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1217:28)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E
+E           This error came from the "onResolve" callback registered here:
+E
+E             node_modules/esbuild/lib/main.js:1141:20:
+E               1141 │       let promise = setup({
+E                    ╵                     ^
+E
+E             at setup (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14529:13)
+E             at handlePlugins (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1141:21)
+E             at buildOrContextImpl (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:854:5)
+E             at Object.buildOrContext (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:680:5)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:68
+E             at new Promise (<anonymous>)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:2035:27)
+E             at Object.context (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1877:58)
+E             at prepareEsbuildScanner (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14266:24)
+E
+E           The plugin "vite:dep-scan" was triggered by this import
+E
+E             src/contracts/mappers.ts:3:30:
+E               3 │ import { contractError } from "../services/service-error";
+E                 ╵                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+E
+E
+E             at failureErrorWithLog (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1467:15)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:926:25
+E             at runOnEndCallbacks (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:1307:45)
+E             at buildResponseToResult (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:924:7)
+E             at /mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:936:9
+E             at new Promise (<anonymous>)
+E             at requestCallbacks.on-end (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:935:54)
+E             at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)
+E             at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)
+E             at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)
+E             at Socket.emit (node:events:519:28)
+E             at addChunk (node:internal/streams/readable:561:12)
+E             at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+E             at Readable.push (node:internal/streams/readable:392:5)
+E             at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+E             at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)
+E         node:internal/modules/run_main:123
+E             triggerUncaughtException(
+E             ^
+E
+E         page.goto: Timeout 30000ms exceeded.
+E         Call log:
+E           - navigating to "http://127.0.0.1:5174/", waiting until "load"
+E
+E             at /mnt/c/dev/vibe_coding_archive/frontend/scripts/test-seeded-dev-ui.mjs:95:14 {
+E           log: [
+E             '  - navigating to "http://127.0.0.1:5174/", waiting until "load"'
+E           ],
+E           name: 'TimeoutError'
+E         }
+E
+E         Node.js v22.23.2
+E
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['node', 'scripts/test-seeded-dev-ui.mjs'], returncode=1, stdout='9:49:23 AM [vite] (client) Re-optimizing dependencies because vite config has changed\nPort 5173 is in use, trying another one...\n', stderr='Error:   Failed to scan for dependencies from entries:\n  /mnt/c/dev/vibe_coding_archive/frontend/index.html\n/mnt/c/dev/vibe_coding_archive/frontend/dist-mock/index.html\n\n  \x1b[31m✘ \x1b[41;31m[\x1b[41;97mERROR\x1b[41;31m]\x1b[0m \x1b[1mThe server is being restarted or closed. Request is outdated\x1b[0m \x1b[1m\x1b[35m[plugin vite:dep-scan]\x1b[0m\n\n    node_modules/esbuild/lib/main.js:1217:27:\n\x1b[37m      1217 │         let result = await \x1b[32m\x1b[37mcallback({\n           ╵                            \x1b[32m^\x1b[0m\n\n    at throwClosedServerError (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42185:15)\n    at EnvironmentPluginContainer.resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:42364:9)\n    at resolveId (file:///mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:14314:40)\n    at r..._coding_archive/frontend/node_modules/esbuild/lib/main.js:935:54)\n    at handleRequest (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:628:17)\n    at handleIncomingPacket (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:653:7)\n    at Socket.readFromStdout (/mnt/c/dev/vibe_coding_archive/frontend/node_modules/esbuild/lib/main.js:581:7)\n    at Socket.emit (node:events:519:28)\n    at addChunk (node:internal/streams/readable:561:12)\n    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)\n    at Readable.push (node:internal/streams/readable:392:5)\n    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)\n    at Pipe.callbackTrampoline (node:internal/async_hooks:130:17)\nnode:internal/modules/run_main:123\n    triggerUncaughtException(\n    ^\n\npage.goto: Timeout 30000ms exceeded.\nCall log:\n\x1b[2m  - navigating to "http://127.0.0.1:5174/", waiting until "load"\x1b[22m\n\n    at /mnt/c/dev/vibe_coding_archive/frontend/scripts/test-seeded-dev-ui.mjs:95:14 {\n  log: [\n    \'  - navigating to "http://127.0.0.1:5174/", waiting until "load"\'\n  ],\n  name: \'TimeoutError\'\n}\n\nNode.js v22.23.2\n').returncode
+
+tests/test_dev_seed.py:198: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_dev_seed.py::test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits
+=================== 1 failed, 9 passed in 210.67s (0:03:30) ====================

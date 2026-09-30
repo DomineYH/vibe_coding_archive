@@ -1,0 +1,47 @@
+{
+  "started_utc": "2026-09-30T01:25:37.362Z",
+  "mode": "api",
+  "database": "owned temporary file SQLite; no seed",
+  "checkpoints": [
+    {
+      "name": "controlled metadata failure/delayed real loading; keyboard retry reaches real server",
+      "result": "PASS"
+    }
+  ],
+  "captures": [
+    "visual/demo/meta-error-controlled-1440x1000.png",
+    "visual/demo/meta-error-controlled-1024x900.png",
+    "visual/demo/meta-error-controlled-768x1024.png",
+    "visual/demo/meta-error-controlled-390x844.png",
+    "visual/demo/meta-error-controlled-360x844.png",
+    "visual/demo/meta-loading-delayed-real-1440x1000.png",
+    "visual/demo/meta-loading-delayed-real-1024x900.png",
+    "visual/demo/meta-loading-delayed-real-768x1024.png",
+    "visual/demo/meta-loading-delayed-real-390x844.png",
+    "visual/demo/meta-loading-delayed-real-360x844.png",
+    "visual/demo/gallery-1440x1000.png",
+    "visual/demo/gallery-1024x900.png",
+    "visual/demo/gallery-768x1024.png",
+    "visual/demo/gallery-390x844.png",
+    "visual/demo/gallery-360x844.png"
+  ],
+  "external_attempts_blocked": 0,
+  "browser": "151.0.7922.34",
+  "result": "FAIL",
+  "failure": "apiRequestContext.get: Invalid URL",
+  "capture_retention": {
+    "historical_generated_paths": true,
+    "generated_capture_count": 15,
+    "committed_final_snapshot_paths": [
+      "visual/demo/meta-error-controlled-390x844.png",
+      "visual/demo/meta-loading-delayed-real-390x844.png",
+      "visual/demo/gallery-1440x1000.png",
+      "visual/demo/gallery-1024x900.png",
+      "visual/demo/gallery-768x1024.png",
+      "visual/demo/gallery-390x844.png",
+      "visual/demo/gallery-360x844.png"
+    ],
+    "manifest": "capture-inventory.json",
+    "note": "captures records this execution's locally generated paths, not attachment links. Committed selected snapshot provenance is in the manifest; superseded harness runs reused paths, so final snapshots are not claimed to be first-failure bytes."
+  }
+}

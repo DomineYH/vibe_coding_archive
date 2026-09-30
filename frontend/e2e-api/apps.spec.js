@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   blockExternalRequests,
+  disableAutomaticPagination,
   loopbackHosts,
   prepareViewportCapture,
   viewports,
@@ -37,6 +38,7 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
     if (!loopbackHosts.has(url.hostname)) externalRequests.push(url.hostname);
   });
   await blockExternalRequests(context);
+  await disableAutomaticPagination(page);
 
   await page.goto("/");
   await expect(page.locator("a.card-r")).toHaveCount(24);

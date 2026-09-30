@@ -1,0 +1,39 @@
+[WebServer] INFO:     Started server process [19210]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:19249) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:19286) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 e2e-api/apps.spec.js:29:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data (31.9s)
+
+
+  1) e2e-api/apps.spec.js:29:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.setViewportSize: Target page, context or browser has been closed
+
+       at helpers.js:36
+
+      34 |
+      35 | export async function prepareViewportCapture(page, viewport) {
+    > 36 |   await page.setViewportSize(viewport);
+         |              ^
+      37 |   expect(
+      38 |     await page.evaluate(() => document.documentElement.scrollWidth),
+      39 |   ).toBeLessThanOrEqual(viewport.width);
+        at prepareViewportCapture (/tmp/issue85-run/source-copy/frontend/e2e-api/helpers.js:36:14)
+        at capture (/tmp/issue85-run/source-copy/frontend/e2e-api/apps.spec.js:17:9)
+        at /tmp/issue85-run/source-copy/frontend/e2e-api/apps.spec.js:85:43
+
+    Error Context: test-results/apps-public-API-gallery-fi-d6f27-d-restores-real-SQLite-data/error-context.md
+
+  1 failed
+    e2e-api/apps.spec.js:29:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data

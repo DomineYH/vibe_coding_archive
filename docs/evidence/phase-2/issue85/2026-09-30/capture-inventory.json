@@ -1,0 +1,4591 @@
+{
+  "captured_pngs": 241,
+  "no_baseline_updates": true,
+  "records": [
+    {
+      "path": "visual/api-mode/issue81/detail-1024x900.png",
+      "sha256": "ab49b5bb13f889fac35436bcc9bc80169fc73431153c1936ec9a598692244cb0",
+      "bytes": 218646,
+      "png_dimensions": [
+        1024,
+        1487
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/detail-1440x1000.png",
+      "sha256": "e3834ff121a5336d983641616ed29393f7149f337164e152bf3f056dc47d4b42",
+      "bytes": 243288,
+      "png_dimensions": [
+        1440,
+        1507
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/detail-360x844.png",
+      "sha256": "9fd2f3b150f1caa24086252edeb9fba08cd317426b50950f0bc2e7e74b339123",
+      "bytes": 96459,
+      "png_dimensions": [
+        360,
+        1687
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/detail-390x844.png",
+      "sha256": "2ef1c55a55bf0487941e0aa9b2015b43f4da0a5001b5aad7f68e297b4795602f",
+      "bytes": 100096,
+      "png_dimensions": [
+        390,
+        1700
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/detail-768x1024.png",
+      "sha256": "371012035f9a631322801c1de528deac7c40a9f455cba390bf1549aab87f5c5f",
+      "bytes": 162548,
+      "png_dimensions": [
+        768,
+        1751
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-1024x900-full.png",
+      "sha256": "c69a201836d4e566487fa1e8760ea8b2ffdf405c0cfec7202f9847af73870315",
+      "bytes": 55305,
+      "png_dimensions": [
+        1024,
+        918
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-1024x900-status.png",
+      "sha256": "7334c31e08001156917b648a3ef2edb477f3d6bf2a782fdaf0082f4b40c60a3c",
+      "bytes": 14026,
+      "png_dimensions": [
+        960,
+        295
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-1440x1000-full.png",
+      "sha256": "30a1f1a62b07bd64d5b601ea0dbcd758013909b600ad8b5126f98f6a93c3ed1b",
+      "bytes": 56916,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-1440x1000-status.png",
+      "sha256": "ecd9bb96907339f3a71890833a5c11be3858c94db491f8aafdacbd6591ac63e2",
+      "bytes": 12098,
+      "png_dimensions": [
+        1216,
+        295
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-360x844-full.png",
+      "sha256": "93dc3cef4960096db52a4ecd446085696f7d9cba91c6b83cf4c297b63686f3ca",
+      "bytes": 46593,
+      "png_dimensions": [
+        360,
+        960
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-360x844-status.png",
+      "sha256": "c5f36efb5fc2a986d5888f91d6d4107c361f19a5395615e32badb313ffdf0d7c",
+      "bytes": 10443,
+      "png_dimensions": [
+        320,
+        294
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-390x844-full.png",
+      "sha256": "09395fc2765222ea5bc9040dfa05f8cf689f165fa5ef10b49d5001415592a4a2",
+      "bytes": 46504,
+      "png_dimensions": [
+        390,
+        921
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-390x844-status.png",
+      "sha256": "c3f91ad8c2df3eac893b332327522e4aad8c63dfb24e4a099a3fec7f112dd217",
+      "bytes": 10500,
+      "png_dimensions": [
+        350,
+        294
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-768x1024-full.png",
+      "sha256": "c3e2ca18afbd09dbfc2f70657cc118ad5e26c05d969280643a379e29b360fb5d",
+      "bytes": 53250,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/failure-768x1024-status.png",
+      "sha256": "a8b33dcf7d9575373d6c119fe8e7147a14bfa9fe6e11a9420caa7d929d71ee6d",
+      "bytes": 12468,
+      "png_dimensions": [
+        704,
+        295
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/filtered-1024x900.png",
+      "sha256": "ba5585c45c5a029d4f0706ca0597ec4ed40650e85645ee14ed7ba37edf0a72f1",
+      "bytes": 891228,
+      "png_dimensions": [
+        1024,
+        3589
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "filtered",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/filtered-1440x1000.png",
+      "sha256": "81d6041f8f38669bbfaf54d5acc88fe985b35d5592c471d519d66dd246525085",
+      "bytes": 735804,
+      "png_dimensions": [
+        1440,
+        2849
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "filtered",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/filtered-360x844.png",
+      "sha256": "3acfd94b057f6427e073271cd1bb27a14b0d7ccb23879863209a266a4803f8c6",
+      "bytes": 1120742,
+      "png_dimensions": [
+        360,
+        9186
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "filtered",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/filtered-390x844.png",
+      "sha256": "aa3f04204c6e813131f362477a65baef7b0efbe2060e985c5d4906323b96383d",
+      "bytes": 1300881,
+      "png_dimensions": [
+        390,
+        9616
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "filtered",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/filtered-768x1024.png",
+      "sha256": "4279da01e9bbd47cc3d91bf2257e665df06ff9a31b23ceb28acb714b98b5d6b5",
+      "bytes": 1153095,
+      "png_dimensions": [
+        768,
+        5203
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "filtered",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/gallery-1024x900.png",
+      "sha256": "9461817845782be1c771ee21855d02496f9765ced948f2547bc1cd04dfc4e295",
+      "bytes": 855056,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/gallery-1440x1000.png",
+      "sha256": "436ca5b9b02862bb4dead7a79d51a436f80503d64b3d96369debc40f505f1579",
+      "bytes": 709908,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/gallery-360x844.png",
+      "sha256": "e7709d18235c7775085ecbcc5b659e41397724465fbfdb9c7c9d5542eab80c35",
+      "bytes": 1093521,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/gallery-390x844.png",
+      "sha256": "2fceacedcafc44ddaab1ff7a1a3cacb5c4d7ff67b4bcb69eaccac72b67079a03",
+      "bytes": 1261845,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/gallery-768x1024.png",
+      "sha256": "a22398f4419ea2035f0ac8bd118103a605b643a9301866f820e6fc363790607b",
+      "bytes": 1116725,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/list-error-1024x900.png",
+      "sha256": "c69a201836d4e566487fa1e8760ea8b2ffdf405c0cfec7202f9847af73870315",
+      "bytes": 55305,
+      "png_dimensions": [
+        1024,
+        918
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "list-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/list-error-1440x1000.png",
+      "sha256": "30a1f1a62b07bd64d5b601ea0dbcd758013909b600ad8b5126f98f6a93c3ed1b",
+      "bytes": 56916,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "list-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/list-error-360x844.png",
+      "sha256": "13088572169967c89e95f74e0172165004cfe0591d0697bcfa271cc20f7e7bb7",
+      "bytes": 46595,
+      "png_dimensions": [
+        360,
+        960
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "list-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/list-error-390x844.png",
+      "sha256": "09395fc2765222ea5bc9040dfa05f8cf689f165fa5ef10b49d5001415592a4a2",
+      "bytes": 46504,
+      "png_dimensions": [
+        390,
+        921
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "list-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/list-error-768x1024.png",
+      "sha256": "c3e2ca18afbd09dbfc2f70657cc118ad5e26c05d969280643a379e29b360fb5d",
+      "bytes": 53250,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "list-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-1024x900-full.png",
+      "sha256": "217afc4bf5eb35e266c6bfa2504586f05b0082c7a5dd524f15ccb863132c863f",
+      "bytes": 53529,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-1024x900-status.png",
+      "sha256": "62dea7f2fd65ab4c166ab4fc0c5a69e958c5bef25cb12e0e1b3483d3b240731b",
+      "bytes": 11335,
+      "png_dimensions": [
+        960,
+        239
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-1440x1000-full.png",
+      "sha256": "dc70acb8944f8ce52fc4e9d3b7e6a0e4b45be3c69791a3a4b977760e799aa044",
+      "bytes": 60035,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-1440x1000-status.png",
+      "sha256": "b9eb062f927bd75d4cea31e883490be0472c37264b5306f0ae44ce83c893cdf4",
+      "bytes": 12992,
+      "png_dimensions": [
+        1216,
+        239
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-360x844-full.png",
+      "sha256": "1a6b660f45007582d8f3dd6cdf5880adca2e4bf9011362603b36aa684f873804",
+      "bytes": 46566,
+      "png_dimensions": [
+        360,
+        904
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-360x844-status.png",
+      "sha256": "cf5d8853cb89a604ce962a8d9ec283546c80a530b7d7bd3c7b4c5fba9d62b49e",
+      "bytes": 9800,
+      "png_dimensions": [
+        320,
+        238
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-390x844-full.png",
+      "sha256": "d46ad6f249a90e94eb0c9bf8fd27b82bd50295d279c379ece1e97f4d952d0e8d",
+      "bytes": 46465,
+      "png_dimensions": [
+        390,
+        865
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-390x844-status.png",
+      "sha256": "a688dae9d7013b569335c0230ff195dd074ae662fb690602c648133378bc6cf5",
+      "bytes": 9986,
+      "png_dimensions": [
+        350,
+        238
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-768x1024-full.png",
+      "sha256": "893b5bd87def555e0af57108c4ffef81bb4d1bd1da8f029497af27d813e6fa2c",
+      "bytes": 52435,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/loading-768x1024-status.png",
+      "sha256": "2f45ebac6e7c0c61d86055e83e99fe7ce7738ded50d36de0225a377b9e566c3d",
+      "bytes": 10544,
+      "png_dimensions": [
+        704,
+        239
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/zero-results-1024x900.png",
+      "sha256": "d09177036730f46df02b6c5c2a47acb95a74621548e1c3852e236f7e646870ab",
+      "bytes": 55730,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/zero-results-1440x1000.png",
+      "sha256": "7edf217486ee1794e160e812e67bbd70b69a3d8fa95f6604b47a3173ff0b1656",
+      "bytes": 61122,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/zero-results-360x844.png",
+      "sha256": "2e87c5abfac887d46ed28c7e7a3d6d85905212b2dbee20db2fbdf24d401923f8",
+      "bytes": 48612,
+      "png_dimensions": [
+        360,
+        965
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/zero-results-390x844.png",
+      "sha256": "f1016dafd3018ac25d107eb41f189b546de0f193e5be298201987ac13c337d07",
+      "bytes": 49518,
+      "png_dimensions": [
+        390,
+        905
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue81/zero-results-768x1024.png",
+      "sha256": "43a2158dc708cb1741b153e3958914d069e9416baae92f01a432640db53e8d10",
+      "bytes": 54611,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-serial-final.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/combined-filter-1024x900.png",
+      "sha256": "4415c992afb0d6715f77a043b98609e3b9ead68833e96743b4de1291a05b4661",
+      "bytes": 894661,
+      "png_dimensions": [
+        1024,
+        3589
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "combined-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/combined-filter-1440x1000.png",
+      "sha256": "350492cde2fff022b8dcbb3c0c59a9fd33f5996bbc6c7801bbcf5e1609826625",
+      "bytes": 732654,
+      "png_dimensions": [
+        1440,
+        2849
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "combined-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/combined-filter-360x844.png",
+      "sha256": "2dd48b86ac0d6f8cf271211bfaf89193d328d38b71898d664bb3ddc108f1e736",
+      "bytes": 1119918,
+      "png_dimensions": [
+        360,
+        9186
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "combined-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/combined-filter-390x844.png",
+      "sha256": "2c24391e5b7846dae0973e04a8d5e07f37fa1dcb2da57e6572f8a4b34528c664",
+      "bytes": 1298220,
+      "png_dimensions": [
+        390,
+        9616
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "combined-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/combined-filter-768x1024.png",
+      "sha256": "153616a20c4f1bac66852eb5346acb26b287eb7bcce485b6ae3321f276c16684",
+      "bytes": 1151075,
+      "png_dimensions": [
+        768,
+        5203
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "combined-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/duplicate-only-page-1024x900.png",
+      "sha256": "f404a02d3fba2c83dcc9ff5050edbf169d90fb34f786398ef3329ddf189fab93",
+      "bytes": 864770,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "duplicate-only-page",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/duplicate-only-page-1440x1000.png",
+      "sha256": "fadf7ebd0992f200d2f55e688571e0c6c67ebb6db4263c8c17c64d968b94eb12",
+      "bytes": 725233,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "duplicate-only-page",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/duplicate-only-page-360x844.png",
+      "sha256": "fd2443fc47814424e1af429b5f5ae2fec6720303394ea30a77ca995145085fbf",
+      "bytes": 1093811,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "duplicate-only-page",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/duplicate-only-page-390x844.png",
+      "sha256": "e4b05d6ce78e1e1c6f05788be6f2e4b151b256cae9fbd35b6f697e0d210d4f3d",
+      "bytes": 1263178,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "duplicate-only-page",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/duplicate-only-page-768x1024.png",
+      "sha256": "eb451d001d5dc6eec6177850a48a69686bbfac1abbc58ada60bfd669a4abc21c",
+      "bytes": 1115893,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "duplicate-only-page",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/ime-composition-filter-1024x900.png",
+      "sha256": "f4acc2a68ee56a4d1a5ee5a21f3129f13b464d22c5bff7c100a8e96bbc5c9454",
+      "bytes": 838766,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "ime-composition-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/ime-composition-filter-1440x1000.png",
+      "sha256": "e2a75198263a2f0cced8b040090b4545ed26d31381525a1de85f6fcf36629ddd",
+      "bytes": 692894,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "ime-composition-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/ime-composition-filter-360x844.png",
+      "sha256": "4a5d145630ca87cbb766169b30e80cc11742131b8131335fe0d851509b153b52",
+      "bytes": 1079899,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "ime-composition-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/ime-composition-filter-390x844.png",
+      "sha256": "6b773e3a1ced5470ee12fd9e0159e8c893f40011962447398bbf8774d0ab632e",
+      "bytes": 1250653,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "ime-composition-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/ime-composition-filter-768x1024.png",
+      "sha256": "eff5c4ab63e3965e3669fc099155435732134f17e04c1c9fdd0399e1b75add9b",
+      "bytes": 1105115,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "ime-composition-filter",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/invalid-query-1024x900.png",
+      "sha256": "868e418ba77c1e8f5ca8a1cb924b53685c822bb0740c76491f54a638c6ccab01",
+      "bytes": 57257,
+      "png_dimensions": [
+        1024,
+        918
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/invalid-query-1440x1000.png",
+      "sha256": "c3f8b3edf7b7fe67ba62dd87b4c94c3a637c17b0c4ca8060399e140f3ee64de0",
+      "bytes": 58914,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/invalid-query-360x844.png",
+      "sha256": "d939c08037a8e0aa155b736e062138bd527279c664ab8f87f0801bb68d203cf3",
+      "bytes": 48508,
+      "png_dimensions": [
+        360,
+        960
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/invalid-query-390x844.png",
+      "sha256": "68ed9db344451d43419ab814b0ef8a17f603f5fc3b304683304a8dd8c89a3ea0",
+      "bytes": 48407,
+      "png_dimensions": [
+        390,
+        921
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/invalid-query-768x1024.png",
+      "sha256": "05dafc7356b681a2f5e97669ed9a2fb4c02a4986d84d8e3b720f33e6c3266474",
+      "bytes": 55179,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/literal-symbol-zero-results-1024x900.png",
+      "sha256": "c3d58ef8f2727af953734ef789fda1fb189a9f61510bf5795769ac971a8d68d4",
+      "bytes": 54934,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "literal-symbol-zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/literal-symbol-zero-results-1440x1000.png",
+      "sha256": "85fc15a7764fe069ece6f602e1bb8d292aee6d43c2a68925e0c133ea4d031a99",
+      "bytes": 60340,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "literal-symbol-zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/literal-symbol-zero-results-360x844.png",
+      "sha256": "9f5427cd58af4b57a77b25948803401e34242dbeb216f64088c07d50cb2d029d",
+      "bytes": 47760,
+      "png_dimensions": [
+        360,
+        965
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "literal-symbol-zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/literal-symbol-zero-results-390x844.png",
+      "sha256": "cb469c0388a662ac1cf7398b60eb32aa818edc1ad1f222508a7f7dbd4a88bb77",
+      "bytes": 48747,
+      "png_dimensions": [
+        390,
+        905
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "literal-symbol-zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/literal-symbol-zero-results-768x1024.png",
+      "sha256": "c609d4d4d126e6de9cf0bc190997015aa1aa8a3bc0ec996a61c6d07635dd9613",
+      "bytes": 53885,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "literal-symbol-zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/new-filter-loading-1024x900.png",
+      "sha256": "ef5febbc57c45371d5121d40f28e52f606611ac17b927352d3546c3a5def847c",
+      "bytes": 54505,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "new-filter-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/new-filter-loading-1440x1000.png",
+      "sha256": "1166fa3fa7c93b753068900c5dc200f219ff960e4c1b29a5983aef111e06672b",
+      "bytes": 59957,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "new-filter-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/new-filter-loading-360x844.png",
+      "sha256": "15e7af495407f2e49d4cc22681f3760c6c43ad0b6185d5ac1bc2ff0773bf1279",
+      "bytes": 48363,
+      "png_dimensions": [
+        360,
+        944
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "new-filter-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/new-filter-loading-390x844.png",
+      "sha256": "0e8262a9d5239afb19efda368e9db68744208e261a47d5958407e749124b9d3c",
+      "bytes": 48518,
+      "png_dimensions": [
+        390,
+        905
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "new-filter-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/new-filter-loading-768x1024.png",
+      "sha256": "e4acb28aca69c64efc1532d5d1eafc85eaf0b20c03d8eabb055ccbb65577ec78",
+      "bytes": 53507,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "new-filter-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/next-page-error-1024x900.png",
+      "sha256": "e064d66eb8d5899a0f98108004737e61787fb50cebfb6c9fb629184ba62ddf6c",
+      "bytes": 868203,
+      "png_dimensions": [
+        1024,
+        3361
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "next-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/next-page-error-1440x1000.png",
+      "sha256": "d2876b6fb0e03d282da9bb1b75aa07fadca59f899a11336a84357deb017b7bea",
+      "bytes": 728956,
+      "png_dimensions": [
+        1440,
+        2632
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "next-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/next-page-error-360x844.png",
+      "sha256": "98f516b885d46d64749fc7a0364abf5c5e73361ed2e5d3f216985708593a2e71",
+      "bytes": 1098174,
+      "png_dimensions": [
+        360,
+        8950
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "next-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/next-page-error-390x844.png",
+      "sha256": "4ac1a857f3f586e68561b54d6635803541b0d686991c3e1aa61a6cd772cade57",
+      "bytes": 1265567,
+      "png_dimensions": [
+        390,
+        9361
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "next-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/next-page-error-768x1024.png",
+      "sha256": "65cae06e430bf07ba0bf7ff6573a60f33090f944369fff0c4a614e067424e5ca",
+      "bytes": 1119393,
+      "png_dimensions": [
+        768,
+        4953
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "next-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/no-progress-page-error-1024x900.png",
+      "sha256": "d46768907afef6464cec5ba82ad19cf350f2f8fe25772f0bf5950da508f29bc6",
+      "bytes": 871401,
+      "png_dimensions": [
+        1024,
+        3361
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "no-progress-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/no-progress-page-error-1440x1000.png",
+      "sha256": "0fe4e00db934d25ac53eb3316188146d42566691326a793609ff24fc7cc227b5",
+      "bytes": 730097,
+      "png_dimensions": [
+        1440,
+        2632
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "no-progress-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/no-progress-page-error-360x844.png",
+      "sha256": "96a863d41eb57ff35bfc3979623f39ba9b13756f6dea9cebd2facf2b0a46d097",
+      "bytes": 1097204,
+      "png_dimensions": [
+        360,
+        8950
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "no-progress-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/no-progress-page-error-390x844.png",
+      "sha256": "4ac1a857f3f586e68561b54d6635803541b0d686991c3e1aa61a6cd772cade57",
+      "bytes": 1265567,
+      "png_dimensions": [
+        390,
+        9361
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "no-progress-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/no-progress-page-error-768x1024.png",
+      "sha256": "f06fa1aa01e763d01b6e68023cb09c4036b9359648a2e70de57bcfa22f8f6ad6",
+      "bytes": 1116772,
+      "png_dimensions": [
+        768,
+        4953
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "no-progress-page-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-search-1024x900.png",
+      "sha256": "b7ae32e29cc6a65ebe0a7eeddcb48bf027c3aee7b368e510b32f13813ef12074",
+      "bytes": 54716,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-search-1440x1000.png",
+      "sha256": "89a2f0339e89b0dfb54831e6d7d81ce45e5e4a334e68e2838208d7711f61d751",
+      "bytes": 56365,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-search-360x844.png",
+      "sha256": "a3ec8c9d6de645b8389ef44900cf3e22956b4aad73054989ec6d34ff7a0bb959",
+      "bytes": 46132,
+      "png_dimensions": [
+        360,
+        925
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-search-390x844.png",
+      "sha256": "63c2a9e8bdce507a0ed0cb10559bc5604abff75b1c8622aeba8b284503293ee6",
+      "bytes": 46024,
+      "png_dimensions": [
+        390,
+        886
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-search-768x1024.png",
+      "sha256": "a958718ac8d56bfe15a8f3c055824ab11d9b7b056880801ce5c48bc546744280",
+      "bytes": 53021,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-typed-search-1024x900.png",
+      "sha256": "9cfff9f7974d164b18bf4cd68dc39b7b2017687928ac3c414db27418de79f785",
+      "bytes": 56587,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-typed-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-typed-search-1440x1000.png",
+      "sha256": "09167ba89a26aa53f5a0778a45814fc6112a0e2e08c65ed7f1231b4cc1293b74",
+      "bytes": 58227,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-typed-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-typed-search-360x844.png",
+      "sha256": "a4386d8904fbf1bfc27a7050c4cb3fa7037d3214f3b248d3e0629112d9c727cd",
+      "bytes": 48624,
+      "png_dimensions": [
+        360,
+        965
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-typed-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-typed-search-390x844.png",
+      "sha256": "c7720cfd2d771731c2f7c5e6a306ecd84aaeacb9ffa667ca5190a95b7f7f5f07",
+      "bytes": 48522,
+      "png_dimensions": [
+        390,
+        926
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-typed-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/over-limit-typed-search-768x1024.png",
+      "sha256": "db1b51504e5341d7f913c0522b47f33c92f072369ec53ad5c9cf1d5e136b12cb",
+      "bytes": 54702,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "over-limit-typed-search",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/paged-gallery-1024x900.png",
+      "sha256": "9461817845782be1c771ee21855d02496f9765ced948f2547bc1cd04dfc4e295",
+      "bytes": 855056,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "paged-gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/paged-gallery-1440x1000.png",
+      "sha256": "436ca5b9b02862bb4dead7a79d51a436f80503d64b3d96369debc40f505f1579",
+      "bytes": 709908,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "paged-gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/paged-gallery-360x844.png",
+      "sha256": "65a17e6e6ceee752ce3ab15fef5b70259b72c2ff794e3b821d268ac7ba7b71c8",
+      "bytes": 1093517,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "paged-gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/paged-gallery-390x844.png",
+      "sha256": "2fceacedcafc44ddaab1ff7a1a3cacb5c4d7ff67b4bcb69eaccac72b67079a03",
+      "bytes": 1261845,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "paged-gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/paged-gallery-768x1024.png",
+      "sha256": "a22398f4419ea2035f0ac8bd118103a605b643a9301866f820e6fc363790607b",
+      "bytes": 1116725,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "paged-gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-error-1024x900.png",
+      "sha256": "b1bbc34d42ab5639280efc3dca7761295ccdfcfa37fe3abd3998c0c8d92c514a",
+      "bytes": 55858,
+      "png_dimensions": [
+        1024,
+        918
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-error-1440x1000.png",
+      "sha256": "2e30c50952e176257925207451826594937d7a4abb6f5b6e5daeb50f4d98470b",
+      "bytes": 57511,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-error-360x844.png",
+      "sha256": "b5932429fcff8c2e585edeebfcdc37b97606040ed2f034464cff6eaec9f93d72",
+      "bytes": 47867,
+      "png_dimensions": [
+        360,
+        1000
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-error",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-error-390x844.png",
+      "sha256": "0ff372b43bc4757be23899ccd22b1245b1d4cea06a87193335901e1d3493cb3a",
+      "bytes": 47740,
+      "png_dimensions": [
+        390,
+        961
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-error-768x1024.png",
+      "sha256": "7dfb69d9202c13c6eae844229e2d0d5cef2427129fa98209db50ce9a2c7262fb",
+      "bytes": 53828,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-retry-loading-1024x900.png",
+      "sha256": "463f31aeae3b8f16d6458c495125ccb4e2682c9288ba51ac6d1446c79a5d8d23",
+      "bytes": 54205,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-retry-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-retry-loading-1440x1000.png",
+      "sha256": "ef1bbc1362ede1650dec00984d3c7f165b26c26ccb5d0e7fc69c77065be68f38",
+      "bytes": 60912,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-retry-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-retry-loading-360x844.png",
+      "sha256": "ee56d33cfd38626fac972a3b28c32f672d8cc74e08e98e00eeda6fae6274f50c",
+      "bytes": 47996,
+      "png_dimensions": [
+        360,
+        944
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-retry-loading",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-retry-loading-390x844.png",
+      "sha256": "8b60c62bfafcddf0d346298a4e8da1d35d81f15f5912baec3c3fe8361c6a65aa",
+      "bytes": 48275,
+      "png_dimensions": [
+        390,
+        905
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-retry-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue82/refetch-retry-loading-768x1024.png",
+      "sha256": "33684735160977e80f7b9c92e66b4fe64900b1f1273401690ecb13c641260d95",
+      "bytes": 53187,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "refetch-retry-loading",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-1024x900.png",
+      "sha256": "ac1b472c7a91356b57f56538c566dca108e120ba18d83689cb0b9f4e603f4c2d",
+      "bytes": 423143,
+      "png_dimensions": [
+        1024,
+        2845
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-1440x1000.png",
+      "sha256": "63cf2708b7439aa72b4f05393dabe90194fb34d221b46853a3a1337c3d6518bd",
+      "bytes": 428422,
+      "png_dimensions": [
+        1440,
+        2830
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-360x844.png",
+      "sha256": "61bc14d6053adedf39e16a31022eb4961387121ab83986cb548deaec42e11f3e",
+      "bytes": 171998,
+      "png_dimensions": [
+        360,
+        4126
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-390x844.png",
+      "sha256": "4a6c2e18cfeaf8c69d48d95e4b14ff7a3dd0ac2c2e0223b6caca105f9543bc60",
+      "bytes": 210434,
+      "png_dimensions": [
+        390,
+        4097
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-768x1024.png",
+      "sha256": "fcc6cc583ee055acdfa67938dfdf4e5a8dee500ef8d7c959172275b9a663fb15",
+      "bytes": 331406,
+      "png_dimensions": [
+        768,
+        3435
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-contract-error-1024x900.png",
+      "sha256": "393083a6bcfba325cbe484b5c9b01ee8b0340223cc9715ab3955726e77786922",
+      "bytes": 30086,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-contract-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-contract-error-1440x1000.png",
+      "sha256": "13c259b8881fb1cd659c25976dacebd028aff3b4a45ef61d809cae52eff0d796",
+      "bytes": 36020,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-contract-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-contract-error-360x844.png",
+      "sha256": "b9d44fb92a43d493735cc0168d4e2444823814b994005c2ddc29c2082be248eb",
+      "bytes": 25396,
+      "png_dimensions": [
+        360,
+        844
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-contract-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-contract-error-390x844.png",
+      "sha256": "f67198042a19f202d58734048cc123a23d1ab9c9a7ded34e139f397f4f466e41",
+      "bytes": 25570,
+      "png_dimensions": [
+        390,
+        844
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-contract-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-contract-error-768x1024.png",
+      "sha256": "8169670dce506c529860b31ee5f78a03213ae63a602c22470ec9462b285aa5fa",
+      "bytes": 31393,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-contract-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-failure-1024x900.png",
+      "sha256": "81604d453413a906988836ebb9e4754324cbaa41722f5e2825ed92b377933518",
+      "bytes": 427771,
+      "png_dimensions": [
+        1024,
+        2845
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-failure-1440x1000.png",
+      "sha256": "9d31287bdf140d6ccfd8b500a3f97b27d4c19577f27267dcae9f2e860087fbe9",
+      "bytes": 433155,
+      "png_dimensions": [
+        1440,
+        2830
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-failure-360x844.png",
+      "sha256": "5745cdd7e92c516193035e9b860f88e45ac8097bef93b4520f7ee3c82b31cf89",
+      "bytes": 176523,
+      "png_dimensions": [
+        360,
+        4144
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-failure",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-failure-390x844.png",
+      "sha256": "39bdf33f7eda8951d69b4ed0b41547a8a587c037f64289805d14d252f99d7d5f",
+      "bytes": 215310,
+      "png_dimensions": [
+        390,
+        4115
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-failure-768x1024.png",
+      "sha256": "88e10b55c1e2e2ce9f67b1e85188c328ad7c4b29311f0c0e5270fd0947d54c59",
+      "bytes": 335874,
+      "png_dimensions": [
+        768,
+        3435
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-failure",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-success-1024x900.png",
+      "sha256": "4690bea8236b847fb3e7d89cf9dbdee6b334ea5e3092212bdc86ba457d7202d9",
+      "bytes": 423367,
+      "png_dimensions": [
+        1024,
+        2845
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-success",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-success-1440x1000.png",
+      "sha256": "c526a2a25809a06ce0b0ecf4a58ffca97423cff266227cdd312c916b639b20ee",
+      "bytes": 428638,
+      "png_dimensions": [
+        1440,
+        2830
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-success",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-success-360x844.png",
+      "sha256": "884419fac6f2e3134c0b0900019a32787a02baeda33a0eec8069117ad9295198",
+      "bytes": 172295,
+      "png_dimensions": [
+        360,
+        4126
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-success",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-success-390x844.png",
+      "sha256": "df4be706794090fb4deee4edf00ed692948464d242a855ca97e5efe1259cfb05",
+      "bytes": 210757,
+      "png_dimensions": [
+        390,
+        4097
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-success",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-copy-success-768x1024.png",
+      "sha256": "ebc4e5093a19aaf0da9dd6a778cc7f35530d3fb2f067b588d7c6c2533d1fc928",
+      "bytes": 331598,
+      "png_dimensions": [
+        768,
+        3435
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-copy-success",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-network-error-1024x900.png",
+      "sha256": "df44224f9e9c900ff6f189c1df187ae1deca2061f37453170c94388d626a1df3",
+      "bytes": 29217,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-network-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-network-error-1440x1000.png",
+      "sha256": "ff354e1bbdffddea734f784c0f9afc5322d6792e44a6463ef4f065ca86bc750d",
+      "bytes": 35199,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-network-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-network-error-360x844.png",
+      "sha256": "11d258c793b9e1e3125bd630bfee5aa557ac39788c158882e8e1487849698321",
+      "bytes": 24551,
+      "png_dimensions": [
+        360,
+        844
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-network-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-network-error-390x844.png",
+      "sha256": "d377f9a2c8d0c5aee75ed2e85afa8c2a602f4da1a60a3bea0112bfe39ec6d147",
+      "bytes": 24738,
+      "png_dimensions": [
+        390,
+        844
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-network-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-network-error-768x1024.png",
+      "sha256": "d08a3f7b24123a2ac67bbde29f1c597e62295aa21a2dd2dcdac3a48ac42f3922",
+      "bytes": 30535,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-network-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-not-found-1024x900.png",
+      "sha256": "918c29120de0139023bce03aac1d0aa4e8fb9e4085eb60b9267abf9cb90d7982",
+      "bytes": 28164,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-not-found",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-not-found-1440x1000.png",
+      "sha256": "d1ebc7d7bd8f85e141f7bbaa41313d510783e9e6e33c247c11390f910672ac60",
+      "bytes": 34262,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-not-found",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-not-found-360x844.png",
+      "sha256": "9af95ed67f7eae31ea449bb92336f6c2aebc908de1d57c0903dd5dc0301ab35e",
+      "bytes": 23655,
+      "png_dimensions": [
+        360,
+        844
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-not-found",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-not-found-390x844.png",
+      "sha256": "b001ef3ddb545277859e3baa785002fca290558e155987f3e6f97a936c3366d2",
+      "bytes": 23843,
+      "png_dimensions": [
+        390,
+        844
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-not-found",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/detail-not-found-768x1024.png",
+      "sha256": "04a379c52fd91a6395c83549c46b4e290793bf24d538134a83510cfc04106701",
+      "bytes": 29534,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "detail-not-found",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/invalid-detail-query-1024x900.png",
+      "sha256": "8f6ad2a8f714ea63f8bb4c9ebc8d37e892fc9bd528b759a2b922b97175f941b4",
+      "bytes": 30177,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-detail-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/invalid-detail-query-1440x1000.png",
+      "sha256": "7a33fa8cfba5159b444fe1a8695baa7ec8405b17bf4b21e1cd440d03a3647d49",
+      "bytes": 36126,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-detail-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/invalid-detail-query-360x844.png",
+      "sha256": "1a791320d90e5c1c90b3ff8ea4092bc09a51cf2b4fbbaa2f827effbb317435a5",
+      "bytes": 25515,
+      "png_dimensions": [
+        360,
+        844
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-detail-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/invalid-detail-query-390x844.png",
+      "sha256": "33e0c23d9c3ca570dae5d800e8d563d78e3ef83cd169a5db62e87f573af88f1b",
+      "bytes": 25705,
+      "png_dimensions": [
+        390,
+        844
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-detail-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode/issue83/invalid-detail-query-768x1024.png",
+      "sha256": "44cba4646b1188cc8c6f1a13101d42cb9ea5fc3e61265c4ca826db27afad39df",
+      "bytes": 31522,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "functional actual API; source/case controls in tests and log",
+      "state": "invalid-detail-query",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode-initial/issue81/filtered-1440x1000.png",
+      "sha256": "81d6041f8f38669bbfaf54d5acc88fe985b35d5592c471d519d66dd246525085",
+      "bytes": 735804,
+      "png_dimensions": [
+        1440,
+        2849
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "first failed vertical case: before timeout",
+      "state": "filtered",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/api-mode-initial/issue81/gallery-1024x900.png",
+      "sha256": "9461817845782be1c771ee21855d02496f9765ced948f2547bc1cd04dfc4e295",
+      "bytes": 855056,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "first failed vertical case: before timeout",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode-initial/issue81/gallery-1440x1000.png",
+      "sha256": "436ca5b9b02862bb4dead7a79d51a436f80503d64b3d96369debc40f505f1579",
+      "bytes": 709908,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "first failed vertical case: before timeout",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode-initial/issue81/gallery-360x844.png",
+      "sha256": "e7709d18235c7775085ecbcc5b659e41397724465fbfdb9c7c9d5542eab80c35",
+      "bytes": 1093521,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "first failed vertical case: before timeout",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode-initial/issue81/gallery-390x844.png",
+      "sha256": "2fceacedcafc44ddaab1ff7a1a3cacb5c4d7ff67b4bcb69eaccac72b67079a03",
+      "bytes": 1261845,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "first failed vertical case: before timeout",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/api-mode-initial/issue81/gallery-768x1024.png",
+      "sha256": "a22398f4419ea2035f0ac8bd118103a605b643a9301866f820e6fc363790607b",
+      "bytes": 1116725,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/frontend-api-e2e.log",
+      "browser": "153.0.8010.12",
+      "scope": "first failed vertical case: before timeout",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/admin-unavailable-1024x900.png",
+      "sha256": "090879022bdaee11cfb7793ef405430a6cc94d5aeec085fd1c9088192e373652",
+      "bytes": 29294,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "admin-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/admin-unavailable-1440x1000.png",
+      "sha256": "936ae4c4f7fca7ea3633b4cb907bd06acd0ef6b2d3973d94ca5b495a31a34a0e",
+      "bytes": 31564,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "admin-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/admin-unavailable-360x844.png",
+      "sha256": "dd00a083248b691be0eeccb23848a2911a0ef84817aa34a5bc3169e844a7a065",
+      "bytes": 24901,
+      "png_dimensions": [
+        360,
+        844
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "admin-unavailable",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/admin-unavailable-390x844.png",
+      "sha256": "2ad2971202b80ff945490a719ccbe90f34ee6eebdcfb192f7b2971533ecd77fd",
+      "bytes": 26149,
+      "png_dimensions": [
+        390,
+        844
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "admin-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/admin-unavailable-768x1024.png",
+      "sha256": "1189cbc186996aa98c8c6d61655dbdd2eeb0751a6efa977166ee90512aeaeddb",
+      "bytes": 28361,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "admin-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/auth-unavailable-1024x900.png",
+      "sha256": "030dba367f9fcb660e32ab9b23e5cfa7f2f30d016b1d19d1300b8f2a0e0fa248",
+      "bytes": 29752,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "auth-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/auth-unavailable-1440x1000.png",
+      "sha256": "7508956005c8703534602e2eef62e559e836472bf62a1eadbedeac94ad825667",
+      "bytes": 31986,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "auth-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/auth-unavailable-360x844.png",
+      "sha256": "40a9db1d439d38607ead3b44371699772ae32143cd206013875f360449a9f873",
+      "bytes": 24795,
+      "png_dimensions": [
+        360,
+        844
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "auth-unavailable",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/auth-unavailable-390x844.png",
+      "sha256": "dd0e3604e46c179f6b71d40c5f5a3d8e7bc2ae2aea1b802cb751422e87e34427",
+      "bytes": 26027,
+      "png_dimensions": [
+        390,
+        844
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "auth-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/auth-unavailable-768x1024.png",
+      "sha256": "fd60f0090584b44ed35c6a383449546d91a82830b0d6764cb8d101944fe97610",
+      "bytes": 29473,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "auth-unavailable",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/detail-copy-success-1024x900.png",
+      "sha256": "ac41a43db97b9e1339b6ea3d80c869b23f93c7badfb7e3d0ee191d29f9e30cc7",
+      "bytes": 218924,
+      "png_dimensions": [
+        1024,
+        1487
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-copy-success",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/detail-copy-success-1440x1000.png",
+      "sha256": "78cf565fa7a80271605bcaa151e2f0eff9d704f79d8736747a70350642bcf4d1",
+      "bytes": 243559,
+      "png_dimensions": [
+        1440,
+        1507
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-copy-success",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/detail-copy-success-360x844.png",
+      "sha256": "5698cf3260165d74f53cacb79ea35d50f44c828e37079f7d4e8dce9b54c9cfed",
+      "bytes": 96742,
+      "png_dimensions": [
+        360,
+        1687
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-copy-success",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/detail-copy-success-390x844.png",
+      "sha256": "48e58a69df97c1fed6263f3b9dd9e36c8d397a9d03a2674d8e67ae155238852a",
+      "bytes": 100355,
+      "png_dimensions": [
+        390,
+        1700
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-copy-success",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/detail-copy-success-768x1024.png",
+      "sha256": "164de797dee28de06e8bf860706fd2c99ae649cf751b6d8b49fdcddc969ffe5e",
+      "bytes": 162800,
+      "png_dimensions": [
+        768,
+        1751
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-copy-success",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/detail-unchecked-1024x900.png",
+      "sha256": "6dd268d3a4525af2946b17bb3c49c638f160a77f81cdf5f82224f72efe07c146",
+      "bytes": 218300,
+      "png_dimensions": [
+        1024,
+        1487
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-unchecked",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/detail-unchecked-1440x1000.png",
+      "sha256": "732e0d11d66a57feef219a0781f5411b474c871f1794f018422fa3efc66c0963",
+      "bytes": 242944,
+      "png_dimensions": [
+        1440,
+        1507
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-unchecked",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/detail-unchecked-360x844.png",
+      "sha256": "142eefff8dbcf1a81d5a2a7ee72929f92c896766a411d5299abbf5dac5842bc1",
+      "bytes": 96302,
+      "png_dimensions": [
+        360,
+        1687
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-unchecked",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/detail-unchecked-390x844.png",
+      "sha256": "61143d19532d71144d9835117119a04badf4125bd3405b345537b2367e46a4d0",
+      "bytes": 99939,
+      "png_dimensions": [
+        390,
+        1700
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-unchecked",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/detail-unchecked-768x1024.png",
+      "sha256": "2b4d166156c3acf6dfe1b8636d188b40b598bca6dd686952d388684bf1a6339b",
+      "bytes": 162174,
+      "png_dimensions": [
+        768,
+        1751
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "detail-unchecked",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/filtered-page2-1024x900.png",
+      "sha256": "72069dc6c9a03f840ff3d05e71875dac002fdd5d23ebbb4f2739326020a87d9f",
+      "bytes": 891025,
+      "png_dimensions": [
+        1024,
+        3589
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "filtered-page2",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/filtered-page2-1440x1000.png",
+      "sha256": "f5f9fa7143487b509e9ada22f81534d7a6779d1bc1eea8886a205358c9674ba6",
+      "bytes": 748878,
+      "png_dimensions": [
+        1440,
+        2849
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "filtered-page2",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/filtered-page2-360x844.png",
+      "sha256": "3acfd94b057f6427e073271cd1bb27a14b0d7ccb23879863209a266a4803f8c6",
+      "bytes": 1120742,
+      "png_dimensions": [
+        360,
+        9186
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "filtered-page2",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/filtered-page2-390x844.png",
+      "sha256": "2c24391e5b7846dae0973e04a8d5e07f37fa1dcb2da57e6572f8a4b34528c664",
+      "bytes": 1298220,
+      "png_dimensions": [
+        390,
+        9616
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "filtered-page2",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/filtered-page2-768x1024.png",
+      "sha256": "4279da01e9bbd47cc3d91bf2257e665df06ff9a31b23ceb28acb714b98b5d6b5",
+      "bytes": 1153095,
+      "png_dimensions": [
+        768,
+        5203
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "filtered-page2",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/gallery-1024x900.png",
+      "sha256": "047895550a187de85b40c82a8b999866b4e588b8480514fad5007da976d6a384",
+      "bytes": 860967,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/gallery-1440x1000.png",
+      "sha256": "59477e1315a5f5d5cce712ce3e654518d1de7bc140f94627a0fb29ab1b426196",
+      "bytes": 717051,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/gallery-360x844.png",
+      "sha256": "06e431ed41a16cc7549ebee546286d9bebecd129d60a5ed3004eff617b78ad9c",
+      "bytes": 1097538,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/gallery-390x844.png",
+      "sha256": "47a8ebc58b539e2b3d7ecea5278e3629ad81bfa3ae780f46235945dacbb729f1",
+      "bytes": 1266743,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/gallery-768x1024.png",
+      "sha256": "e7db03efff0e0360a6a1423911810350a15e388b0da63091d9a3ce12e4dfbaab",
+      "bytes": 1127376,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/long-detail-1024x900.png",
+      "sha256": "ac1b472c7a91356b57f56538c566dca108e120ba18d83689cb0b9f4e603f4c2d",
+      "bytes": 423143,
+      "png_dimensions": [
+        1024,
+        2845
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "long-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/long-detail-1440x1000.png",
+      "sha256": "63cf2708b7439aa72b4f05393dabe90194fb34d221b46853a3a1337c3d6518bd",
+      "bytes": 428422,
+      "png_dimensions": [
+        1440,
+        2830
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "long-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/long-detail-360x844.png",
+      "sha256": "61bc14d6053adedf39e16a31022eb4961387121ab83986cb548deaec42e11f3e",
+      "bytes": 171998,
+      "png_dimensions": [
+        360,
+        4126
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "long-detail",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/long-detail-390x844.png",
+      "sha256": "4a6c2e18cfeaf8c69d48d95e4b14ff7a3dd0ac2c2e0223b6caca105f9543bc60",
+      "bytes": 210434,
+      "png_dimensions": [
+        390,
+        4097
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "long-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/long-detail-768x1024.png",
+      "sha256": "fcc6cc583ee055acdfa67938dfdf4e5a8dee500ef8d7c959172275b9a663fb15",
+      "bytes": 331406,
+      "png_dimensions": [
+        768,
+        3435
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "long-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-error-controlled-1024x900.png",
+      "sha256": "c69a201836d4e566487fa1e8760ea8b2ffdf405c0cfec7202f9847af73870315",
+      "bytes": 55305,
+      "png_dimensions": [
+        1024,
+        918
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-error-controlled-1440x1000.png",
+      "sha256": "30a1f1a62b07bd64d5b601ea0dbcd758013909b600ad8b5126f98f6a93c3ed1b",
+      "bytes": 56916,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-error-controlled-360x844.png",
+      "sha256": "13088572169967c89e95f74e0172165004cfe0591d0697bcfa271cc20f7e7bb7",
+      "bytes": 46595,
+      "png_dimensions": [
+        360,
+        960
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-error-controlled-390x844.png",
+      "sha256": "09395fc2765222ea5bc9040dfa05f8cf689f165fa5ef10b49d5001415592a4a2",
+      "bytes": 46504,
+      "png_dimensions": [
+        390,
+        921
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-error-controlled",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/meta-error-controlled-768x1024.png",
+      "sha256": "c3e2ca18afbd09dbfc2f70657cc118ad5e26c05d969280643a379e29b360fb5d",
+      "bytes": 53250,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-loading-delayed-real-1024x900.png",
+      "sha256": "217afc4bf5eb35e266c6bfa2504586f05b0082c7a5dd524f15ccb863132c863f",
+      "bytes": 53529,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-loading-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-loading-delayed-real-1440x1000.png",
+      "sha256": "dc70acb8944f8ce52fc4e9d3b7e6a0e4b45be3c69791a3a4b977760e799aa044",
+      "bytes": 60035,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-loading-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-loading-delayed-real-360x844.png",
+      "sha256": "1a6b660f45007582d8f3dd6cdf5880adca2e4bf9011362603b36aa684f873804",
+      "bytes": 46566,
+      "png_dimensions": [
+        360,
+        904
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-loading-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/meta-loading-delayed-real-390x844.png",
+      "sha256": "e04603076798eeae8c6ae976561849cb96590d817cff92bdf7974cbb9ff9a7eb",
+      "bytes": 46472,
+      "png_dimensions": [
+        390,
+        865
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-loading-delayed-real",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/meta-loading-delayed-real-768x1024.png",
+      "sha256": "893b5bd87def555e0af57108c4ffef81bb4d1bd1da8f029497af27d813e6fa2c",
+      "bytes": 52435,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "meta-loading-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-error-controlled-1024x900.png",
+      "sha256": "fca65ba5d2290775ea80d5fc8342fdade9f3e86ae6ff44552a1a941dc6019af9",
+      "bytes": 852760,
+      "png_dimensions": [
+        1024,
+        3361
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-error-controlled-1440x1000.png",
+      "sha256": "72367cc88d3dd95d49fcc75998740b63f7da4fa52c388e255e9da62f7a66d462",
+      "bytes": 711579,
+      "png_dimensions": [
+        1440,
+        2632
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-error-controlled",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/next-page-error-controlled-360x844.png",
+      "sha256": "8f59ba37ba32390b8aeb22bda6e8979d0d2aee13dc7c18ebf5756a75a4bd30ac",
+      "bytes": 1083664,
+      "png_dimensions": [
+        360,
+        8950
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-error-controlled-390x844.png",
+      "sha256": "e3c6b1f5d30b972c1c7e73906cbd1dfa48245640e7bb2360da0ab31a4f657a47",
+      "bytes": 1254381,
+      "png_dimensions": [
+        390,
+        9361
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-error-controlled-768x1024.png",
+      "sha256": "a9c069b03d66a140c201ae649bde88e63acb57c1074c9097c6d3c7f4e155b744",
+      "bytes": 1107957,
+      "png_dimensions": [
+        768,
+        4953
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-error-controlled",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-loading-before-controlled-error-1024x900.png",
+      "sha256": "f612cb2c22f701fe4a38eb6da078b45a348bc2640b7e56f97707e34881568a9a",
+      "bytes": 849460,
+      "png_dimensions": [
+        1024,
+        3330
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-loading-before-controlled-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-loading-before-controlled-error-1440x1000.png",
+      "sha256": "697dcf95dde779d3b9d0adb5c5cdcfb58b2cefe67312e0269de5be7e959cf239",
+      "bytes": 708232,
+      "png_dimensions": [
+        1440,
+        2600
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-loading-before-controlled-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-loading-before-controlled-error-360x844.png",
+      "sha256": "e7a908049012527c10dcb3903137b5402fc19d0e5fbfbc7c11fa9b5c96b0fb1d",
+      "bytes": 1080604,
+      "png_dimensions": [
+        360,
+        8918
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-loading-before-controlled-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-loading-before-controlled-error-390x844.png",
+      "sha256": "0c20bfd8fc2832db1716706d3f87193b78c0dd7b55a1a0afd256a9c6ac2feb99",
+      "bytes": 1251487,
+      "png_dimensions": [
+        390,
+        9329
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-loading-before-controlled-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-loading-before-controlled-error-768x1024.png",
+      "sha256": "53e189388be9543b6de7a0cc48ad128946ceb33827edd00a55f66bf50a8246b2",
+      "bytes": 1104765,
+      "png_dimensions": [
+        768,
+        4922
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-loading-before-controlled-error",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-retry-pending-delayed-real-1024x900.png",
+      "sha256": "ed276246b9ac37493c400f06682c13e25aed204206f67057d1531146ca4dc420",
+      "bytes": 853703,
+      "png_dimensions": [
+        1024,
+        3361
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-retry-pending-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-retry-pending-delayed-real-1440x1000.png",
+      "sha256": "6e3bd18ebdb9565e2c96a9490195558a9d1f5b61b415680eee88eb21cb62bc56",
+      "bytes": 712533,
+      "png_dimensions": [
+        1440,
+        2632
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-retry-pending-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-retry-pending-delayed-real-360x844.png",
+      "sha256": "cd5567a19f5937fa3cabc28fe621c9347dec265e58396f1123d748859619547f",
+      "bytes": 1084588,
+      "png_dimensions": [
+        360,
+        8950
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-retry-pending-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-retry-pending-delayed-real-390x844.png",
+      "sha256": "c610bae5ce59d486def176522e112516fc2af1f52e001ef9e1cd86cb394e4115",
+      "bytes": 1254243,
+      "png_dimensions": [
+        390,
+        9361
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-retry-pending-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/next-page-retry-pending-delayed-real-768x1024.png",
+      "sha256": "6a9557ba9ff9e20d129a7ca722bb25973079eee255d1d4fcbc5c98e2ea2772b5",
+      "bytes": 1108926,
+      "png_dimensions": [
+        768,
+        4953
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "next-page-retry-pending-delayed-real",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/restarted-detail-1024x900.png",
+      "sha256": "ab49b5bb13f889fac35436bcc9bc80169fc73431153c1936ec9a598692244cb0",
+      "bytes": 218646,
+      "png_dimensions": [
+        1024,
+        1487
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "restarted-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/restarted-detail-1440x1000.png",
+      "sha256": "e3834ff121a5336d983641616ed29393f7149f337164e152bf3f056dc47d4b42",
+      "bytes": 243288,
+      "png_dimensions": [
+        1440,
+        1507
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "restarted-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/restarted-detail-360x844.png",
+      "sha256": "9fd2f3b150f1caa24086252edeb9fba08cd317426b50950f0bc2e7e74b339123",
+      "bytes": 96459,
+      "png_dimensions": [
+        360,
+        1687
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "restarted-detail",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/restarted-detail-390x844.png",
+      "sha256": "2ef1c55a55bf0487941e0aa9b2015b43f4da0a5001b5aad7f68e297b4795602f",
+      "bytes": 100096,
+      "png_dimensions": [
+        390,
+        1700
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "restarted-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/restarted-detail-768x1024.png",
+      "sha256": "371012035f9a631322801c1de528deac7c40a9f455cba390bf1549aab87f5c5f",
+      "bytes": 162548,
+      "png_dimensions": [
+        768,
+        1751
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "restarted-detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/zero-results-1024x900.png",
+      "sha256": "d09177036730f46df02b6c5c2a47acb95a74621548e1c3852e236f7e646870ab",
+      "bytes": 55730,
+      "png_dimensions": [
+        1024,
+        900
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/zero-results-1440x1000.png",
+      "sha256": "7edf217486ee1794e160e812e67bbd70b69a3d8fa95f6604b47a3173ff0b1656",
+      "bytes": 61122,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/zero-results-360x844.png",
+      "sha256": "f8932344d057ef0693450a80f9b08b735739ba7f61e9a16a71a52bb61ff983c5",
+      "bytes": 48541,
+      "png_dimensions": [
+        360,
+        965
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "zero-results",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/demo/zero-results-390x844.png",
+      "sha256": "721bb5e59d310d85e77f42d523ed0f249b70067751a0780fb54767b267dabe9f",
+      "bytes": 49453,
+      "png_dimensions": [
+        390,
+        905
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/demo/zero-results-768x1024.png",
+      "sha256": "43a2158dc708cb1741b153e3958914d069e9416baae92f01a432640db53e8d10",
+      "bytes": 54611,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/handover-demo-states.log",
+      "browser": "151.0.7922.34",
+      "scope": "pinned real API; controlled states named in filename",
+      "state": "zero-results",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/detail-1024x900.png",
+      "sha256": "6713a1882424f63c553d2d514b4b0fb6ffe387c6a50cfb8b01bd2bcc3ea0adcf",
+      "bytes": 219170,
+      "png_dimensions": [
+        1024,
+        1427
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/detail-1440x1000.png",
+      "sha256": "7f9a06f55ade810e2da52e495133e70896fb7f731c76918cba7940d7339062e7",
+      "bytes": 243373,
+      "png_dimensions": [
+        1440,
+        1447
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/detail-360x844.png",
+      "sha256": "30438e9dadee9d4df35a1047dea8fb398651897eaf87646cb63c5a0faa9fa3a7",
+      "bytes": 95871,
+      "png_dimensions": [
+        360,
+        1596
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "detail",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/seed-mode/detail-390x844.png",
+      "sha256": "12ab353e47f9c0dfcf2c97f14cdd57f26d0835308132484a3e148bd6ee1f4336",
+      "bytes": 99295,
+      "png_dimensions": [
+        390,
+        1609
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/detail-768x1024.png",
+      "sha256": "bdc7759f0c139a2ca8f61147512decf0365f433cf89bf2f4e6ba0e8e2abab833",
+      "bytes": 159901,
+      "png_dimensions": [
+        768,
+        1620
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/gallery-1024x900.png",
+      "sha256": "32d558dfcd63af6d8f25eb2d38f4bf612744c5a8ae55bb4fa67925f5e4926a67",
+      "bytes": 85914,
+      "png_dimensions": [
+        1024,
+        921
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/gallery-1440x1000.png",
+      "sha256": "749b83ca5638f4bc84f8768dc8c0eb98f285e97b2a3734c3099d229110da444d",
+      "bytes": 86114,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/gallery-360x844.png",
+      "sha256": "c1893df25869844791af17a44094eedf90e1e22098fbf53dc998110de34f14cd",
+      "bytes": 79868,
+      "png_dimensions": [
+        360,
+        1011
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/seed-mode/gallery-390x844.png",
+      "sha256": "9722357d66b2241bd8954bd38efef7c813364f4d2d6df2f2a4edb80b3e83dadb",
+      "bytes": 87144,
+      "png_dimensions": [
+        390,
+        991
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode/gallery-768x1024.png",
+      "sha256": "7f0b8783216f241a3f1065c80218f9b359783d1127b0bc6fbcba7510f280ff38",
+      "bytes": 93057,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/seed-font-final.log",
+      "browser": "151.0.7922.34",
+      "scope": "temporary development seed API; font-loaded assertion",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/detail-1024x900.png",
+      "sha256": "ca0ec45bda3953976d39bb20f5afc3dcf6160ee72d3e329bc0c9aa53e8624be1",
+      "bytes": 225807,
+      "png_dimensions": [
+        1024,
+        1427
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/detail-1440x1000.png",
+      "sha256": "bd83d592cbdfaab827ce61564a1a9536b17d232952b17040a67797a1c6fba942",
+      "bytes": 249320,
+      "png_dimensions": [
+        1440,
+        1447
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/detail-360x844.png",
+      "sha256": "628357846b0c6f9227e15c1a1065371c01b908cb1d1f8ce9a4165af8143119be",
+      "bytes": 101788,
+      "png_dimensions": [
+        360,
+        1621
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/detail-390x844.png",
+      "sha256": "6a9447d2d1ff32e9aacab013c6a6b392e7baae6b447e541c3bffac1e8e4ca8d6",
+      "bytes": 105297,
+      "png_dimensions": [
+        390,
+        1609
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/detail-768x1024.png",
+      "sha256": "29d9e8d82c7d2ab85804883b2f5605501a38ac5f630c0fd60de0c916669fbd5e",
+      "bytes": 166503,
+      "png_dimensions": [
+        768,
+        1620
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "detail",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/gallery-1024x900.png",
+      "sha256": "8702297e950996af55de5a57b37ef2620bca428e823ec911abf638ff3de09cda",
+      "bytes": 91373,
+      "png_dimensions": [
+        1024,
+        921
+      ],
+      "requested_viewport": [
+        1024,
+        900
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/gallery-1440x1000.png",
+      "sha256": "996cde6ef84ac731f6d0dcde4fa159487b562bcabd076c3f7f720b8423a51741",
+      "bytes": 91849,
+      "png_dimensions": [
+        1440,
+        1000
+      ],
+      "requested_viewport": [
+        1440,
+        1000
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/gallery-360x844.png",
+      "sha256": "32c5090873947d7efc78222c28b328aa87f71ce1ec70e9b8e6b097313943f82d",
+      "bytes": 84328,
+      "png_dimensions": [
+        360,
+        1011
+      ],
+      "requested_viewport": [
+        360,
+        844
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "gallery",
+      "committed": true,
+      "retention": "committed representative capture"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/gallery-390x844.png",
+      "sha256": "0fd693fbbb06341fdb587e51ca4ffbd11e27533854614d8ffbd59dd31e81b7ee",
+      "bytes": 93166,
+      "png_dimensions": [
+        390,
+        1030
+      ],
+      "requested_viewport": [
+        390,
+        844
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    },
+    {
+      "path": "visual/seed-mode-font-blocked/gallery-768x1024.png",
+      "sha256": "95092a122d33a3007f17fdce3ad5d235bef40e839c153641e95c9dfa17bf1ec5",
+      "bytes": 98407,
+      "png_dimensions": [
+        768,
+        1024
+      ],
+      "requested_viewport": [
+        768,
+        1024
+      ],
+      "origin_log": "logs/seed-final2.log",
+      "browser": "151.0.7922.34",
+      "scope": "superseded: function only; font-blocked, invalid fixed-font visual evidence",
+      "state": "gallery",
+      "committed": false,
+      "retention": "로컬에서 생성·확인했으나 커밋하지 않음"
+    }
+  ],
+  "captured_pngs_scope": "locally generated and checked; not committed-file count",
+  "committed_pngs": 26,
+  "not_committed_pngs": 215,
+  "original_png_bytes": 88524665,
+  "committed_png_bytes": 9080439,
+  "retention_policy": "Representative state captures only; full five-viewport sets retained once for pinned demo gallery and detail-copy-success. Omitted PNGs retain historical path, SHA-256, viewport and state; no lossless/lossy recompression or test rerun."
+}

@@ -1,0 +1,53 @@
+[WebServer] INFO:     Started server process [18609]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:18656) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:18687) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 e2e-api/apps.spec.js:28:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data (30.3s)
+
+
+  1) e2e-api/apps.spec.js:28:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.click: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '더 불러오기' })
+        - locator resolved to <button type="button" class="inline-flex select-none items-center justify-center gap-1.5 font-semibold transition-all duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 h-10 rounded-full px-5 text-[13.5px] acc-bg text-white shadow-sm hover:brightness-110 hover:shadow-md ">더 불러오기</button>
+      - attempting click action
+        - waiting for element to be visible, enabled and stable
+        - element is visible, enabled and stable
+        - scrolling into view if needed
+        - done scrolling
+        - performing click action
+        - <div aria-live="polite" class="mt-8 flex justify-center">…</div> intercepts pointer events
+      - retrying click action
+        - waiting for element to be visible, enabled and stable
+        - element is not stable
+      - retrying click action
+        - waiting 20ms
+        - waiting for element to be visible, enabled and stable
+      - element was detached from the DOM, retrying
+
+
+      77 |     );
+      78 |   });
+    > 79 |   await page.getByRole("button", { name: "더 불러오기" }).click();
+         |                                                      ^
+      80 |   await secondPage;
+      81 |   await expect(page.locator("a.card-r")).toHaveCount(25);
+      82 |
+        at /tmp/issue85-run/source-copy/frontend/e2e-api/apps.spec.js:79:54
+
+    Error Context: test-results/apps-public-API-gallery-fi-d6f27-d-restores-real-SQLite-data/error-context.md
+
+  1 failed
+    e2e-api/apps.spec.js:28:1 › public API gallery filters, paginates, opens, refreshes, and restores real SQLite data

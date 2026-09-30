@@ -1,0 +1,39 @@
+{
+  "result": "PASS",
+  "executed_utc": "2026-09-30T02:18:37.598905+00:00",
+  "command": "python3 docs/evidence/phase-2/issue85/2026-09-30/audit.py",
+  "tracked_change_allowlist": [
+    "docs/acceptance.md",
+    "frontend/e2e-api/apps.spec.js",
+    "frontend/scripts/test-seeded-dev-ui.mjs"
+  ],
+  "evidence_prefix": "docs/evidence/phase-2/issue85/2026-09-30/",
+  "files_inspected": 99,
+  "text_files_scanned": 73,
+  "protected_hashes_equal": true,
+  "prior_tracked_api_captures_restored": true,
+  "forbidden_file_or_known_credential_hits": 0,
+  "local_links_resolved": 460,
+  "markdown_files_checked": 5,
+  "generated_pngs": 241,
+  "committed_pngs": 26,
+  "not_committed_pngs": 215,
+  "committed_png_bytes": 9080439,
+  "capture_hashes_and_retention_verified": true,
+  "evidence_limit_bytes": 10000000,
+  "evidence_bytes_under_limit": true,
+  "traceability_counts": {
+    "user_stories": 37,
+    "ui_d": 9,
+    "cases": 17
+  },
+  "required_first_invocations": 13,
+  "first_invocation_failures": [
+    "backend-pytest",
+    "frontend-unit",
+    "frontend-mock-e2e",
+    "frontend-api-e2e"
+  ],
+  "binary_limit": "PNG safety uses public-only capture sources and agent visual inspection, not OCR or arbitrary-secret detection.",
+  "operations_limit": "Repository/evidence/build inspection; no hosted static-server or backup-security claim."
+}

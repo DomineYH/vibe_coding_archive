@@ -1,0 +1,233 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive/frontend
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 19 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/mock-state-validation.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ runNextTicks node:internal/process/task_queues:64:5
+ ❯ listOnTimeout node:internal/timers:547:9
+ ❯ processTimers node:internal/timers:521:7
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/openapi-contract.test.js.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/acceptance-record.test.js.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/mock-apps.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/admin-mappers.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/health-batches.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/api-apps.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/mock-health.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/detail-view.test.jsx.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/health-service.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/health-mappers.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/apps-service.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/health-batches-api.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/health-batch-mappers.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/check-dist.test.js.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/auth-route.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/api-auth.test.ts.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/auth-view.test.jsx.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive/frontend/tests/presentation.test.js.
+ ❯ node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:585:17
+ ❯ processTimers node:internal/timers:521:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  9 passed (9)
+      Tests  148 passed (148)
+     Errors  19 errors
+   Start at  09:32:42
+   Duration  303.43s (environment 60%, setup 26%, import 7%, transform 3%, tests 3%, worker 2%)
+
+Environment  jsdom was created 9 times · 351.91s total, 60% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
