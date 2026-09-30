@@ -699,7 +699,7 @@ def test_public_detail_uuid_format_and_query_precedence(
 ):
     database_path = tmp_path / "uuid.sqlite3"
     app = make_test_app(database_path)
-    seed_public_and_private_apps(database_path, valid_uuids=True)
+    seed_public_and_private_apps(database_path)
     previous_id = "00000000-0000-4000-8000-000000000001"
 
     with TestClient(app) as client:

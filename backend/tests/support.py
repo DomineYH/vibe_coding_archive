@@ -12,15 +12,10 @@ def populate_public_and_private_apps(
     database_path: Path,
     public_count: int = 2,
     *,
-    valid_uuids: bool = True,
     include_search_edge_cases: bool = False,
 ) -> None:
-    uuid_prefix = (
-        "00000000-0000-4000-8000-" if valid_uuids else "00000000-0000-0000-0000-"
-    )
-
     def fixture_uuid(value: int) -> str:
-        return f"{uuid_prefix}{value:012d}"
+        return f"00000000-0000-4000-8000-{value:012d}"
 
     connection = sqlite3.connect(database_path)
     try:
