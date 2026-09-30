@@ -1,0 +1,7 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'prettier' --write src/features/gallery/view-gallery.jsx tests/gallery-view.test.jsx e2e/gallery-zero-result.spec.js e2e-api/gallery-zero-result.spec.js scripts/test-api-e2e.mjs
+src/features/gallery/view-gallery.jsx 330ms (unchanged)
+tests/gallery-view.test.jsx 235ms
+e2e/gallery-zero-result.spec.js 37ms
+e2e-api/gallery-zero-result.spec.js 10ms (unchanged)
+scripts/test-api-e2e.mjs 44ms (unchanged)

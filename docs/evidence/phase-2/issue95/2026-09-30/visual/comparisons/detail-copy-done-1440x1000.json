@@ -1,0 +1,25 @@
+{
+  "state": "detail-copy-done",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "baseline": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/05-copy-done.png",
+  "screenshot": "detail-copy-done-1440x1000.png",
+  "width": 1440,
+  "height": 1533,
+  "comparisonStatus": "dimensions_mismatch",
+  "pixelComparison": "region",
+  "expectedWidth": 1440,
+  "expectedHeight": 1360,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": {
+    "left": 775,
+    "top": 925.5625,
+    "width": 69,
+    "height": 30
+  }
+}

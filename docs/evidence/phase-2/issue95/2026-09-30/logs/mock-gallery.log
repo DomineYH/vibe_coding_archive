@@ -1,0 +1,130 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e
+npm notice run playwright test e2e/gallery.spec.js e2e/gallery-zero-result.spec.js
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:109321) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 34 tests using 1 worker
+
+(node:109371) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero (31.0s)
+(node:109585) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: “없는앱-증거” · 과목: 전체 · 학년: 전체 (3.9s)
+  ✓   3 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: 없음 · 과목: 기타 · 학년: 전체 (3.5s)
+  ✓   4 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: 없음 · 과목: 전체 · 학년: 고3 (3.6s)
+  ✓   5 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3 (3.4s)
+  ✓   6 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 1440x1000 (6.7s)
+  ✓   7 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 1440x1000 (6.5s)
+  ✓   8 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 1024x900 (7.0s)
+  ✓   9 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 1024x900 (6.0s)
+  ✓  10 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 768x1024 (4.4s)
+  ✓  11 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 768x1024 (4.2s)
+  ✓  12 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 390x844 (3.9s)
+  ✓  13 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 390x844 (3.3s)
+  ✓  14 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 360x844 (2.8s)
+  ✓  15 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 360x844 (2.9s)
+  ✘  16 e2e/gallery-zero-result.spec.js:165:1 › reset replaces its history entry and cancels draft debounce and IME (12.1s)
+(node:110017) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  17 e2e/gallery-zero-result.spec.js:221:1 › default zero result keeps reset available and refetches the first page (2.9s)
+  ✘  18 e2e/gallery-zero-result.spec.js:300:1 › a late prior-condition response cannot replace the reset default list (13.3s)
+(node:110204) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  19 e2e/gallery.spec.js:15:1 › public gallery opens a detail route and supports refresh and browser history (6.8s)
+  ✓  20 e2e/gallery.spec.js:79:1 › opens public detail directly and rejects an unknown app (4.7s)
+  ✓  21 e2e/gallery.spec.js:133:1 › preserves gallery filters through detail navigation, history, and reload (4.0s)
+  ✓  22 e2e/gallery.spec.js:175:1 › search edits replace history while subject and grade filters remain navigable (8.4s)
+  ✓  23 e2e/gallery.spec.js:207:1 › same-path filter history preserves the gallery position (2.2s)
+[WebServer] Malformed URI sequence in request URL
+[WebServer] Malformed URI sequence in request URL
+[WebServer] Malformed URI sequence in request URL
+  ✓  24 e2e/gallery.spec.js:233:1 › rejects invalid gallery query values and offers an explicit reset (10.5s)
+  ✓  25 e2e/gallery.spec.js:273:1 › canonicalizes empty filters and preserves valid zero-result conditions (2.5s)
+  ✓  26 e2e/gallery.spec.js:293:1 › gallery navigation is keyboard reachable and controls have accessible names (6.9s)
+  ✓  27 e2e/gallery.spec.js:367:1 › filters search by app, author, and description and distinguishes an empty result (2.7s)
+  ✓  28 e2e/gallery.spec.js:381:1 › an unabortable stale search response cannot replace newer results (3.9s)
+  ✓  29 e2e/gallery.spec.js:407:1 › a same-range refetch failure hides previously loaded cards (1.6s)
+  ✓  30 e2e/gallery.spec.js:436:1 › selects long-list and long-copy mock states for deterministic layout review (3.9s)
+  ✓  31 e2e/gallery.spec.js:462:1 › deduplicates duplicate pages and stops when a response cannot advance (6.2s)
+  ✓  32 e2e/gallery.spec.js:500:1 › explicitly selects empty and failure scenarios, then lets the visitor retry (3.3s)
+  ✓  33 e2e/gallery.spec.js:532:1 › damaged mock catalog is reported until the visitor explicitly resets it (3.6s)
+  ✓  34 e2e/gallery.spec.js:564:1 › a mock reset in one tab refreshes the other tab (5.8s)
+
+
+  1) e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero
+
+    Test timeout of 30000ms exceeded.
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/gallery-zero-result-zero-r-4201e-and-restarts-at-offset-zero/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/gallery-zero-result-zero-r-4201e-and-restarts-at-offset-zero/error-context.md
+
+  2) e2e/gallery-zero-result.spec.js:165:1 › reset replaces its history entry and cancels draft debounce and IME
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('a.card-r').first()
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('a.card-r').first() with timeout 10000ms
+      - waiting for locator('a.card-r').first()
+
+
+      198 |   await expect(page).toHaveURL(/\/$/);
+      199 |   await expect(search).toHaveValue("");
+    > 200 |   await expect(page.locator("a.card-r").first()).toBeVisible();
+          |                                                  ^
+      201 |   await page.goBack();
+      202 |   await expect(page).toHaveURL(/\?subject=%EC%88%98%ED%95%99$/);
+      203 |   await expect(search).toHaveValue("");
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:200:50
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/gallery-zero-result-reset--79b7e-cels-draft-debounce-and-IME/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/gallery-zero-result-reset--79b7e-cels-draft-debounce-and-IME/error-context.md
+
+  3) e2e/gallery-zero-result.spec.js:300:1 › a late prior-condition response cannot replace the reset default list
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('조건에 맞는 앱이 없어요')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('조건에 맞는 앱이 없어요') with timeout 10000ms
+      - waiting for getByText('조건에 맞는 앱이 없어요')
+
+
+      345 |       "공개 아카이브를 불러오는 중이에요",
+      346 |     );
+    > 347 |     await page.goBack();
+          |                         ^
+      348 |     if (!api) await page.clock.runFor(330);
+      349 |     await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+      350 |     await page.getByRole("button", { name: "조건 초기화" }).click();
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:347:51
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/gallery-zero-result-a-late-0ffe7-lace-the-reset-default-list/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/gallery-zero-result-a-late-0ffe7-lace-the-reset-default-list/error-context.md
+
+  3 failed
+    e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero
+    e2e/gallery-zero-result.spec.js:165:1 › reset replaces its history entry and cancels draft debounce and IME
+    e2e/gallery-zero-result.spec.js:300:1 › a late prior-condition response cannot replace the reset default list
+  31 passed (3.6m)

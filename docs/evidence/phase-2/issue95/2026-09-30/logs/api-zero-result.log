@@ -1,0 +1,94 @@
+State Recv-Q Send-Q Local Address:Port Peer Address:PortProcess
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e:api
+npm notice run node scripts/test-api-e2e.mjs gallery-zero-result.spec.js
+[WebServer] INFO:     Started server process [106862]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev:api
+[WebServer] npm notice run VITE_DATA_MODE=api vite --host localhost --port 5174 --strictPort
+[WebServer] (node:106892) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 18 tests using 1 worker
+
+(node:106932) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/gallery-zero-result.spec.js:28:1 › zero-result reset discards accumulated default pages and restarts at offset zero (17.9s)
+  ✓   2 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: “없는앱-증거” · 과목: 전체 · 학년: 전체 (1.8s)
+  ✓   3 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: 없음 · 과목: 기타 · 학년: 전체 (1.8s)
+  ✓   4 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: 없음 · 과목: 전체 · 학년: 고3 (1.7s)
+  ✓   5 e2e/gallery-zero-result.spec.js:75:3 › normal zero result names applied conditions: 검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3 (1.7s)
+  ✓   6 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 1440x1000 (3.9s)
+  ✓   7 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 1440x1000 (3.6s)
+  ✓   8 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 1024x900 (3.5s)
+  ✓   9 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 1024x900 (3.4s)
+  ✓  10 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 768x1024 (3.5s)
+  ✓  11 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 768x1024 (3.5s)
+  ✓  12 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 390x844 (3.4s)
+  ✓  13 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 390x844 (3.3s)
+  ✓  14 e2e/gallery-zero-result.spec.js:99:5 › keyboard Enter reset wraps the complete query at 360x844 (3.0s)
+  ✓  15 e2e/gallery-zero-result.spec.js:99:5 › keyboard Space reset wraps the complete query at 360x844 (2.9s)
+  ✘  16 e2e/gallery-zero-result.spec.js:165:1 › reset replaces its history entry and cancels draft debounce and IME (11.7s)
+(node:107442) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ✓  17 e2e/gallery-zero-result.spec.js:208:1 › default zero result keeps reset available and refetches the first page (1.9s)
+  ✘  18 e2e/gallery-zero-result.spec.js:287:1 › a late prior-condition response cannot replace the reset default list (2.1s)
+
+
+  1) e2e/gallery-zero-result.spec.js:165:1 › reset replaces its history entry and cancels draft debounce and IME
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3', { exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3', { exact: true }) with timeout 10000ms
+      - waiting for getByText('검색어: “없는앱-증거” · 과목: 수학 · 학년: 초3', { exact: true })
+
+
+      180 |       exact: true,
+      181 |     }),
+    > 182 |   ).toBeVisible();
+          |     ^
+      183 |   await page.getByRole("button", { name: "조건 초기화" }).click();
+      184 |   await page.clock.runFor(400);
+      185 |   await expect(page).toHaveURL(/\/$/);
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:182:5
+
+    Error Context: test-results/gallery-zero-result-reset--79b7e-cels-draft-debounce-and-IME/error-context.md
+
+  2) e2e/gallery-zero-result.spec.js:287:1 › a late prior-condition response cannot replace the reset default list
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('status')
+    Expected substring: "공개 아카이브를 불러오는 중이에요"
+    Error: strict mode violation: getByRole('status') resolved to 2 elements:
+        1) <span role="status" class="text-[12px] text-neutral-500">인증 기능 준비 중</span> aka getByText('인증 기능 준비 중')
+        2) <div role="status" aria-live="polite">…</div> aka getByRole('status').filter({ hasText: '공개 아카이브를 불러오는 중이에요잠시만 기다려 주세요' })
+
+    Call log:
+      - Expect "toContainText" getByRole('status') with timeout 10000ms
+      - waiting for getByRole('status')
+
+
+      327 |     if (api) await started.promise;
+      328 |     else await page.clock.runFor(300);
+    > 329 |     await expect(page.getByRole("status")).toContainText(
+          |                                            ^
+      330 |       "공개 아카이브를 불러오는 중이에요",
+      331 |     );
+      332 |     await page.goBack();
+        at /mnt/c/dev/vibe_coding_archive-impl95/frontend/e2e/gallery-zero-result.spec.js:329:44
+
+    Error Context: test-results/gallery-zero-result-a-late-0ffe7-lace-the-reset-default-list/error-context.md
+
+  2 failed
+    e2e/gallery-zero-result.spec.js:165:1 › reset replaces its history entry and cancels draft debounce and IME
+    e2e/gallery-zero-result.spec.js:287:1 › a late prior-condition response cannot replace the reset default list
+  16 passed (1.4m)

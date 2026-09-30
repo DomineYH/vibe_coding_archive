@@ -1,0 +1,20 @@
+{
+  "state": "gallery-filtered",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-filtered-1024x900.png",
+  "screenshot": "gallery-filtered-1024x900.png",
+  "width": 1024,
+  "height": 921,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 1024,
+  "expectedHeight": 921,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

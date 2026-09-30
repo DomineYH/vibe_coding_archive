@@ -1,0 +1,20 @@
+{
+  "state": "gallery-duplicate-continue",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-duplicate-continue-360x844.png",
+  "screenshot": "gallery-duplicate-continue-360x844.png",
+  "width": 360,
+  "height": 8552,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 360,
+  "expectedHeight": 8552,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

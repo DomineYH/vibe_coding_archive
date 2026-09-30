@@ -17,6 +17,10 @@ const issue33BaselineRoot = path.join(
   root,
   "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines",
 );
+const issue95BaselineRoot = path.join(
+  root,
+  "docs/evidence/phase-2/issue95/2026-09-30/visual-state-baselines",
+);
 const outputRoot = path.resolve("test-results/visual/captures");
 const originalApps = JSON.parse(
   readFileSync(path.resolve("src/fixtures/public-apps.json"), "utf8"),
@@ -245,6 +249,62 @@ async function compareInPage(page, actual, expected, region = null) {
   );
 }
 
+function galleryLoadingStatus(page) {
+  return page.getByRole("main").getByRole("status");
+}
+
+test("gallery-loading status is unique while authentication is checking", async ({
+  page,
+}) => {
+  let releaseAuth;
+  const authGate = new Promise((resolve) => {
+    releaseAuth = resolve;
+  });
+  await page.exposeFunction("__issue91AuthGate", () => authGate);
+  await page.route("**/src/services/mock/auth.ts", async (route) => {
+    const response = await route.fetch();
+    const body = await response.text();
+    const method = "async getCurrentAuthState({ signal } = {}) {";
+    expect(body).toContain(method);
+    await route.fulfill({
+      response,
+      body: body.replace(
+        method,
+        `${method}\n await window.__issue91AuthGate();`,
+      ),
+    });
+  });
+  await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      "eduvibe-archive-mock-v1",
+      JSON.stringify({
+        version: 2,
+        generation: 0,
+        scenario: "list_delayed",
+        apps: [],
+        private_apps: [],
+        principal_id: null,
+      }),
+    );
+  });
+  await page.clock.pauseAt(
+    new Date(await page.evaluate(() => Date.now() + 10)),
+  );
+  try {
+    await page.goto("/");
+    await expect(page.getByRole("banner").getByRole("status")).toHaveText(
+      "로그인 상태 확인 중",
+    );
+    await expect(page.getByRole("status")).toHaveCount(2);
+    await expect(galleryLoadingStatus(page)).toContainText(
+      "공개 아카이브를 불러오는 중이에요",
+    );
+  } finally {
+    releaseAuth();
+  }
+});
+
 async function captureAndCompare(
   page,
   state,
@@ -421,7 +481,7 @@ async function captureAndCompare(
       page.getByRole("heading", { name: "분수 피자 가게" }),
     ).toBeVisible();
   else if (state === "gallery-loading") {
-    await expect(page.getByRole("status")).toContainText(
+    await expect(galleryLoadingStatus(page)).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
     await page.evaluate(async () => {
@@ -430,7 +490,7 @@ async function captureAndCompare(
     });
     const pauseTime = await page.evaluate(() => Date.now() + 10);
     await page.clock.pauseAt(new Date(pauseTime));
-    await expect(page.getByRole("status")).toContainText(
+    await expect(galleryLoadingStatus(page)).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
   } else if (state === "gallery-empty")
@@ -522,7 +582,7 @@ async function captureAndCompare(
     );
   }
   if (state === "gallery-loading")
-    await expect(page.getByRole("status")).toContainText(
+    await expect(galleryLoadingStatus(page)).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
   const actual = componentSelector
@@ -536,7 +596,7 @@ async function captureAndCompare(
         caret: "hide",
       });
   if (state === "gallery-loading")
-    await expect(page.getByRole("status")).toContainText(
+    await expect(galleryLoadingStatus(page)).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
   if (
@@ -582,12 +642,25 @@ async function captureAndCompare(
   const name = `${state}-${viewport.width}x${viewport.height}.png`;
   mkdirSync(outputRoot, { recursive: true });
   writeFileSync(path.join(outputRoot, name), actual);
+  let emptyStateBounds;
+  if (state === "gallery-empty") {
+    const empty = page
+      .getByText("조건에 맞는 앱이 없어요", { exact: true })
+      .locator("..");
+    emptyStateBounds = await empty.boundingBox();
+    await empty.screenshot({
+      path: path.join(outputRoot, name.replace(".png", "-component.png")),
+      animations: "disabled",
+      caret: "hide",
+    });
+  }
   const result = {
     state,
     viewport,
     baseline: baselinePath ? path.relative(root, baselinePath) : null,
     screenshot: name,
     ...comparison,
+    ...(emptyStateBounds ? { emptyStateBounds } : {}),
   };
   writeFileSync(
     path.join(outputRoot, `${state}-${viewport.width}x${viewport.height}.json`),
@@ -704,7 +777,7 @@ for (const state of addedStates) {
       state === "corrupt-storage-recovery" || state.startsWith("health-")
         ? null
         : state === "gallery-empty"
-          ? path.join(baselineRoot, tag, "03-gallery-empty.png")
+          ? path.join(issue95BaselineRoot, `${state}-${tag}.png`)
           : [
                 "gallery-api-order",
                 "gallery-filtered",

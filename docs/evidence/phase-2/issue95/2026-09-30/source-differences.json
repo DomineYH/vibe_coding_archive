@@ -1,0 +1,192 @@
+[
+  {
+    "changeId": "Q17-95",
+    "state": "gallery-empty",
+    "viewport": {
+      "width": 1024,
+      "height": 900
+    },
+    "beforeFull": "visual/before/gallery-empty-1024x900.png",
+    "afterFull": "visual/after/gallery-empty-1024x900.png",
+    "beforeComponent": "visual/before/gallery-empty-1024x900-component.png",
+    "afterComponent": "visual/after/gallery-empty-1024x900-component.png",
+    "beforeSize": [
+      1024,
+      900
+    ],
+    "afterSize": [
+      1024,
+      951
+    ],
+    "beforeComponentRegion": [
+      32,
+      445,
+      992,
+      684
+    ],
+    "afterComponentBounds": {
+      "x": 32,
+      "y": 445.5625,
+      "width": 960,
+      "height": 326.75
+    },
+    "unchangedHeaderIntroFiltersDifferentPixels": 20272,
+    "footerShiftPixels": 89,
+    "alignedFooterDifferentPixels": 0,
+    "fullComparison": "dimensions_mismatch",
+    "fullDifferentPixels": null,
+    "review": "HITL 권장안 채택; DomineYH 승인(2026-09-30, 권장안 일괄 승인); condition/button and height/wrapping only"
+  },
+  {
+    "changeId": "Q17-95",
+    "state": "gallery-empty",
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "beforeFull": "visual/before/gallery-empty-1440x1000.png",
+    "afterFull": "visual/after/gallery-empty-1440x1000.png",
+    "beforeComponent": "visual/before/gallery-empty-1440x1000-component.png",
+    "afterComponent": "visual/after/gallery-empty-1440x1000-component.png",
+    "beforeSize": [
+      1440,
+      1000
+    ],
+    "afterSize": [
+      1440,
+      1000
+    ],
+    "beforeComponentRegion": [
+      112,
+      445,
+      1328,
+      684
+    ],
+    "afterComponentBounds": {
+      "x": 112,
+      "y": 445.5625,
+      "width": 1216,
+      "height": 326.75
+    },
+    "unchangedHeaderIntroFiltersDifferentPixels": 0,
+    "footerShiftPixels": 89,
+    "alignedFooterDifferentPixels": 0,
+    "fullComparison": "compared",
+    "fullDifferentPixels": 123215,
+    "review": "HITL 권장안 채택; DomineYH 승인(2026-09-30, 권장안 일괄 승인); condition/button and height/wrapping only"
+  },
+  {
+    "changeId": "Q17-95",
+    "state": "gallery-empty",
+    "viewport": {
+      "width": 360,
+      "height": 844
+    },
+    "beforeFull": "visual/before/gallery-empty-360x844.png",
+    "afterFull": "visual/after/gallery-empty-360x844.png",
+    "beforeComponent": "visual/before/gallery-empty-360x844-component.png",
+    "afterComponent": "visual/after/gallery-empty-360x844-component.png",
+    "beforeSize": [
+      360,
+      965
+    ],
+    "afterSize": [
+      360,
+      1054
+    ],
+    "beforeComponentRegion": [
+      20,
+      509,
+      340,
+      768
+    ],
+    "afterComponentBounds": {
+      "x": 20,
+      "y": 509.21875,
+      "width": 320,
+      "height": 347.875
+    },
+    "unchangedHeaderIntroFiltersDifferentPixels": 0,
+    "footerShiftPixels": 89,
+    "alignedFooterDifferentPixels": 0,
+    "fullComparison": "dimensions_mismatch",
+    "fullDifferentPixels": null,
+    "review": "HITL 권장안 채택; DomineYH 승인(2026-09-30, 권장안 일괄 승인); condition/button and height/wrapping only"
+  },
+  {
+    "changeId": "Q17-95",
+    "state": "gallery-empty",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "beforeFull": "visual/before/gallery-empty-390x844.png",
+    "afterFull": "visual/after/gallery-empty-390x844.png",
+    "beforeComponent": "visual/before/gallery-empty-390x844-component.png",
+    "afterComponent": "visual/after/gallery-empty-390x844-component.png",
+    "beforeSize": [
+      390,
+      905
+    ],
+    "afterSize": [
+      390,
+      994
+    ],
+    "beforeComponentRegion": [
+      20,
+      470,
+      370,
+      708
+    ],
+    "afterComponentBounds": {
+      "x": 20,
+      "y": 470.125,
+      "width": 350,
+      "height": 326.75
+    },
+    "unchangedHeaderIntroFiltersDifferentPixels": 0,
+    "footerShiftPixels": 89,
+    "alignedFooterDifferentPixels": 0,
+    "fullComparison": "dimensions_mismatch",
+    "fullDifferentPixels": null,
+    "review": "HITL 권장안 채택; DomineYH 승인(2026-09-30, 권장안 일괄 승인); condition/button and height/wrapping only"
+  },
+  {
+    "changeId": "Q17-95",
+    "state": "gallery-empty",
+    "viewport": {
+      "width": 768,
+      "height": 1024
+    },
+    "beforeFull": "visual/before/gallery-empty-768x1024.png",
+    "afterFull": "visual/after/gallery-empty-768x1024.png",
+    "beforeComponent": "visual/before/gallery-empty-768x1024-component.png",
+    "afterComponent": "visual/after/gallery-empty-768x1024-component.png",
+    "beforeSize": [
+      768,
+      1024
+    ],
+    "afterSize": [
+      768,
+      1024
+    ],
+    "beforeComponentRegion": [
+      32,
+      445,
+      736,
+      684
+    ],
+    "afterComponentBounds": {
+      "x": 32,
+      "y": 445.5625,
+      "width": 704,
+      "height": 326.75
+    },
+    "unchangedHeaderIntroFiltersDifferentPixels": 0,
+    "footerShiftPixels": 89,
+    "alignedFooterDifferentPixels": 0,
+    "fullComparison": "compared",
+    "fullDifferentPixels": 75527,
+    "review": "HITL 권장안 채택; DomineYH 승인(2026-09-30, 권장안 일괄 승인); condition/button and height/wrapping only"
+  }
+]

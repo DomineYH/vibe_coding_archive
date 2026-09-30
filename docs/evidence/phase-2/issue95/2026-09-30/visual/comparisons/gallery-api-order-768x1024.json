@@ -1,0 +1,20 @@
+{
+  "state": "gallery-api-order",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-api-order-768x1024.png",
+  "screenshot": "gallery-api-order-768x1024.png",
+  "width": 768,
+  "height": 3313,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 768,
+  "expectedHeight": 3313,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

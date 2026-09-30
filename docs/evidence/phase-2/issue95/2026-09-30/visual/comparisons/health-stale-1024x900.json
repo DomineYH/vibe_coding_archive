@@ -1,0 +1,20 @@
+{
+  "state": "health-stale",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": null,
+  "screenshot": "health-stale-1024x900.png",
+  "width": 1024,
+  "height": 1514,
+  "comparisonStatus": "product_only",
+  "pixelComparison": "full",
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}

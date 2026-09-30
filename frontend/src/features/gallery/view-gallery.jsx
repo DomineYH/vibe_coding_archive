@@ -42,6 +42,7 @@ export function GalleryView({
   const lastRouteSearch = useRef(initialSearch);
   const routeSearchPending = useRef(false);
   const mainRef = useRef(null);
+  const searchRef = useRef(null);
   const loadMoreRegionRef = useRef(null);
   const loadMoreLocked = useRef(false);
   const startLoadMore = useCallback(() => {
@@ -132,7 +133,9 @@ export function GalleryView({
   };
   const handleResetQuery = () => {
     setSearch("");
+    setComposing(false);
     resetQuery();
+    searchRef.current?.focus({ preventScroll: true });
   };
   const changeSearch = (value) => {
     setSearch(value);
@@ -237,6 +240,7 @@ export function GalleryView({
                 앱·작성자 검색
               </label>
               <input
+                ref={searchRef}
                 id="gallery-search"
                 value={search}
                 onChange={(event) => changeSearch(event.target.value)}
@@ -374,7 +378,15 @@ export function GalleryView({
         <EmptyState
           title="조건에 맞는 앱이 없어요"
           desc="다른 과목이나 학년으로 바꿔 보거나, 검색어를 지워 보세요."
-        />
+        >
+          <div className="flex flex-col items-center gap-3">
+            <p className="max-w-xs text-[13px] leading-relaxed text-neutral-600 [overflow-wrap:anywhere]">
+              검색어: {initialSearch ? `“${initialSearch}”` : "없음"} · 과목:{" "}
+              {subject || "전체"} · 학년: {grade || "전체"}
+            </p>
+            <Btn onClick={handleResetQuery}>조건 초기화</Btn>
+          </div>
+        </EmptyState>
       )}
     </main>
   );

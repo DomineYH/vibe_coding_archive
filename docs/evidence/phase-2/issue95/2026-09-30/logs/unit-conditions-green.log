@@ -1,0 +1,14 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run tests/gallery-view.test.jsx -t names the applied --pool=threads
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-impl95/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 14 skipped (15)
+   Start at  19:10:32
+   Duration  8.31s (transform 37%, environment 30%, import 19%, tests 8%, setup 5%, worker 1%)
+
+  Transform  transforming modules took 2.89s · 37% of tracked time, re-done on every run
+             persist transforms across runs with fsModuleCache: true
+             learn more: https://vitest.dev/guide/improving-performance#caching-between-reruns

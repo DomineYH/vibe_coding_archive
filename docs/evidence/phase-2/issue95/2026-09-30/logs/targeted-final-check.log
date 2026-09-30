@@ -1,0 +1,6 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'eslint' e2e/gallery-zero-result.spec.js e2e-api/gallery-zero-result.spec.js scripts/test-api-e2e.mjs src/app/app.jsx src/features/gallery/view-gallery.jsx tests/gallery-view.test.jsx visual/gallery.spec.js
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'prettier' --check e2e/gallery-zero-result.spec.js e2e-api/gallery-zero-result.spec.js scripts/test-api-e2e.mjs src/app/app.jsx src/features/gallery/view-gallery.jsx tests/gallery-view.test.jsx visual/gallery.spec.js
+Checking formatting...
+All matched files use Prettier code style!

@@ -1,0 +1,310 @@
+{"run": "gallery-original-gated-red", "event": "end", "repeat": 0, "status": "failed", "ms": 2206, "signature": "strict-status", "failureCapture": null}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Navigate", "line": 188, "ms": 36766, "elapsedMs": 38654.751218, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Evaluate", "line": 189, "ms": 1721, "elapsedMs": 40379.33491900001, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Reload", "line": 190, "ms": 3078, "elapsedMs": 43460.209842000004, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Navigate", "line": 22, "ms": 3051, "elapsedMs": 46514.57842, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Navigate", "line": 192, "ms": 2180, "elapsedMs": 54178.84869400001, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Evaluate", "line": 209, "ms": 67, "elapsedMs": 57450.271283, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Evaluate", "line": 134, "ms": 54, "elapsedMs": 57530.778702999996, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Screenshot", "line": 140, "ms": 2048, "elapsedMs": 59606.511513, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Evaluate", "line": 71, "ms": 485, "elapsedMs": 60110.091038000006, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Evaluate", "line": 134, "ms": 36, "elapsedMs": 60789.52624, "failed": false}
+{"run": "app-cold-cpu6-latency150", "event": "step", "repeat": 0, "api": "Screenshot", "line": 140, "ms": 1928, "elapsedMs": 62757.18959, "failed": true}
+{"run": "app-cold-cpu6-latency150", "event": "end", "repeat": 0, "status": "timedOut", "ms": 61417, "signature": "screenshot-60s", "failureCapture": "app-create-validation-error"}
+{"run": "gallery-regression-red", "event": "end", "ordinal": 0, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "failed", "approxMs": 2400, "signature": "strict-status"}
+{"run": "gallery-regression-red", "event": "end", "ordinal": 1, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "failed", "approxMs": 1800, "signature": "strict-status"}
+{"run": "gallery-regression-red", "event": "end", "ordinal": 2, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "failed", "approxMs": 1700, "signature": "strict-status"}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 0, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "passed", "approxMs": 1400, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 1, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1440x1000", "status": "passed", "approxMs": 2100, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 2, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1024x900", "status": "passed", "approxMs": 1900, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 3, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 768x1024", "status": "passed", "approxMs": 1800, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 4, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 390x844", "status": "passed", "approxMs": 1700, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 5, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 360x844", "status": "passed", "approxMs": 1700, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 6, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "passed", "approxMs": 1700, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 7, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1440x1000", "status": "passed", "approxMs": 2100, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 8, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1024x900", "status": "passed", "approxMs": 2000, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 9, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 768x1024", "status": "passed", "approxMs": 2300, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 10, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 390x844", "status": "passed", "approxMs": 1800, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 11, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 360x844", "status": "passed", "approxMs": 1900, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 12, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "passed", "approxMs": 1400, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 13, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1440x1000", "status": "passed", "approxMs": 1700, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 14, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1024x900", "status": "passed", "approxMs": 1400, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 15, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 768x1024", "status": "passed", "approxMs": 1300, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 16, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 390x844", "status": "passed", "approxMs": 1200, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 17, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 360x844", "status": "passed", "approxMs": 1200, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 18, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "passed", "approxMs": 1000, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 19, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1440x1000", "status": "passed", "approxMs": 1600, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 20, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1024x900", "status": "passed", "approxMs": 1400, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 21, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 768x1024", "status": "passed", "approxMs": 1300, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 22, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 390x844", "status": "passed", "approxMs": 1300, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 23, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 360x844", "status": "passed", "approxMs": 1300, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 24, "title": "visual/gallery.spec.js:252:1 › gallery-loading status is unique while authentication is checking", "status": "passed", "approxMs": 1100, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 25, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1440x1000", "status": "passed", "approxMs": 1500, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 26, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 1024x900", "status": "passed", "approxMs": 1400, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 27, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 768x1024", "status": "passed", "approxMs": 1300, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 28, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 390x844", "status": "passed", "approxMs": 1200, "signature": null}
+{"run": "gallery-regression-and-baselines-green", "event": "end", "ordinal": 29, "title": "visual/gallery.spec.js:777:5 › gallery-loading matches its baseline at 360x844", "status": "passed", "approxMs": 1300, "signature": null}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 188, "ms": 6410, "elapsedMs": 24662.858771999996, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 189, "ms": 1963, "elapsedMs": 26629.535215, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Reload", "capture": null, "line": 190, "ms": 2315, "elapsedMs": 28945.315532999997, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 22, "ms": 2012, "elapsedMs": 30959.247478, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 192, "ms": 1905, "elapsedMs": 35945.255418, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 209, "ms": 13, "elapsedMs": 38158.696581, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 39, "elapsedMs": 38202.49798099999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 1, "line": 140, "ms": 1343, "elapsedMs": 39580.97726, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 335, "elapsedMs": 39931.38065399999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 18, "elapsedMs": 40360.592131, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 2, "line": 140, "ms": 1526, "elapsedMs": 41917.166986, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 359, "elapsedMs": 42294.272151, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 60, "ms": 31, "elapsedMs": 43953.450698, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 42, "elapsedMs": 44647.893635, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 3, "line": 140, "ms": 2148, "elapsedMs": 46817.077338999996, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 322, "elapsedMs": 47142.421109999996, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 60, "ms": 37, "elapsedMs": 47273.442698, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 40, "elapsedMs": 48234.933074, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 4, "line": 140, "ms": 2431, "elapsedMs": 50700.839846999996, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 363, "elapsedMs": 51070.337843, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 245, "ms": 45, "elapsedMs": 51178.331548999995, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 26, "elapsedMs": 52413.052216, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 5, "line": 140, "ms": 2526, "elapsedMs": 54969.487159, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 247, "elapsedMs": 55218.413673, "failed": false}
+{"run": "stress-warm-6-valid", "event": "end", "title": "app registration form at 1024x900", "repeat": 0, "status": "passed", "ms": 37254, "signature": null}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 188, "ms": 6394, "elapsedMs": 8899.307853999999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 189, "ms": 1165, "elapsedMs": 10067.042164999992, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Reload", "capture": null, "line": 190, "ms": 2301, "elapsedMs": 12370.075490000003, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 22, "ms": 3319, "elapsedMs": 15691.954885999992, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 192, "ms": 2806, "elapsedMs": 25935.047961999997, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 209, "ms": 25, "elapsedMs": 31068.850649999993, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 44, "elapsedMs": 31120.859050999992, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 1, "line": 140, "ms": 2200, "elapsedMs": 33369.13099599999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 426, "elapsedMs": 33813.578205, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 23, "elapsedMs": 34566.389421, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 2, "line": 140, "ms": 1859, "elapsedMs": 36450.364762, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 528, "elapsedMs": 36998.308974, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 60, "ms": 40, "elapsedMs": 39197.772425, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 86, "elapsedMs": 40106.32114700001, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 3, "line": 140, "ms": 1955, "elapsedMs": 42094.64119699999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 220, "elapsedMs": 42315.99890199999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 60, "ms": 20, "elapsedMs": 42370.491303999996, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 40, "elapsedMs": 43227.397926000005, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 4, "line": 140, "ms": 2102, "elapsedMs": 45352.67628300001, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 253, "elapsedMs": 45608.475688999984, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 245, "ms": 21, "elapsedMs": 45662.766791, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 80, "elapsedMs": 46609.878517000005, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 5, "line": 140, "ms": 1836, "elapsedMs": 48480.10427099999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 255, "elapsedMs": 48738.689778, "failed": false}
+{"run": "stress-warm-6-valid", "event": "end", "title": "app registration form at 1024x900", "repeat": 1, "status": "passed", "ms": 46539, "signature": null}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 188, "ms": 7097, "elapsedMs": 9954.714642999985, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 189, "ms": 2677, "elapsedMs": 12635.286643999978, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Reload", "capture": null, "line": 190, "ms": 2900, "elapsedMs": 15538.274157999986, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 22, "ms": 2868, "elapsedMs": 18409.344973999978, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 192, "ms": 2044, "elapsedMs": 24736.572846999974, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 209, "ms": 21, "elapsedMs": 28227.10790599999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 34, "elapsedMs": 28265.633607999975, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 1, "line": 140, "ms": 1897, "elapsedMs": 30193.65059799998, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 447, "elapsedMs": 30658.955019999994, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 41, "elapsedMs": 31295.17545099999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 2, "line": 140, "ms": 2151, "elapsedMs": 33473.336955999985, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 490, "elapsedMs": 33983.66798099998, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 60, "ms": 50, "elapsedMs": 36440.838903999975, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 109, "elapsedMs": 37431.498453999986, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 3, "line": 140, "ms": 2210, "elapsedMs": 39679.71406999999, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 251, "elapsedMs": 39933.30423399998, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 60, "ms": 20, "elapsedMs": 39990.231234999985, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 24, "elapsedMs": 40922.007817999984, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 4, "line": 140, "ms": 2410, "elapsedMs": 43351.341372999974, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 197, "elapsedMs": 43550.941383, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 245, "ms": 29, "elapsedMs": 43608.420184999995, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 35, "elapsedMs": 44212.56971399998, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 5, "line": 140, "ms": 1209, "elapsedMs": 45437.17297299998, "failed": false}
+{"run": "stress-warm-6-valid", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 213, "elapsedMs": 45651.758183, "failed": false}
+{"run": "stress-warm-6-valid", "event": "end", "title": "app registration form at 1024x900", "repeat": 2, "status": "passed", "ms": 43150, "signature": null}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 188, "ms": 20272, "elapsedMs": 21467.095983, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 189, "ms": 798, "elapsedMs": 22268.78024, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Reload", "capture": null, "line": 190, "ms": 2775, "elapsedMs": 25047.095091999996, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 22, "ms": 2951, "elapsedMs": 28004.216238, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 192, "ms": 2425, "elapsedMs": 31203.330551, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 209, "ms": 25, "elapsedMs": 31615.059174999995, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 26, "elapsedMs": 31644.854748000005, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 1, "line": 140, "ms": 381, "elapsedMs": 32036.096192000005, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 107, "elapsedMs": 32159.947479000002, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 29, "elapsedMs": 32316.429436, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 2, "line": 140, "ms": 397, "elapsedMs": 32728.242361000004, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 105, "elapsedMs": 32850.828348999996, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 60, "ms": 7, "elapsedMs": 33199.45323199999, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 21, "elapsedMs": 33356.37888899999, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 3, "line": 140, "ms": 372, "elapsedMs": 33752.559155999996, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 58, "elapsedMs": 33812.65545699999, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 60, "ms": 6, "elapsedMs": 33851.302258, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 16, "elapsedMs": 33964.48416, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 4, "line": 140, "ms": 379, "elapsedMs": 34360.274369, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 53, "elapsedMs": 34417.29317, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 245, "ms": 6, "elapsedMs": 34449.055571, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 23, "elapsedMs": 34557.051873, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 5, "line": 140, "ms": 372, "elapsedMs": 34935.112181, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 51, "elapsedMs": 34987.651481999994, "failed": false}
+{"run": "network-delay-2000", "event": "end", "title": "app registration form at 1024x900", "repeat": 0, "status": "passed", "ms": 34122, "signature": null}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 188, "ms": 2857, "elapsedMs": 3640.546252, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 189, "ms": 519, "elapsedMs": 4164.408460000006, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Reload", "capture": null, "line": 190, "ms": 2956, "elapsedMs": 7125.182525000011, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 22, "ms": 2546, "elapsedMs": 9675.051326, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 192, "ms": 2355, "elapsedMs": 12568.041544000007, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 209, "ms": 5, "elapsedMs": 12928.953559000001, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 19, "elapsedMs": 12950.399059000003, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 1, "line": 140, "ms": 313, "elapsedMs": 13272.481273000012, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 81, "elapsedMs": 13367.800377000007, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 31, "elapsedMs": 13494.655082000012, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 2, "line": 140, "ms": 333, "elapsedMs": 13834.153196, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 89, "elapsedMs": 13936.843800000002, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 60, "ms": 5, "elapsedMs": 14250.449213, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 17, "elapsedMs": 14390.123116000002, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 3, "line": 140, "ms": 342, "elapsedMs": 14745.306721, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 46, "elapsedMs": 14792.904522000012, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 60, "ms": 4, "elapsedMs": 14820.779522000012, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 22, "elapsedMs": 14934.570924, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 4, "line": 140, "ms": 349, "elapsedMs": 15300.736830000009, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 47, "elapsedMs": 15348.722730000009, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 245, "ms": 5, "elapsedMs": 15376.901431000006, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 26, "elapsedMs": 15478.220232000007, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 5, "line": 140, "ms": 321, "elapsedMs": 15805.827137, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 47, "elapsedMs": 15854.589838, "failed": false}
+{"run": "network-delay-2000", "event": "end", "title": "app registration form at 1024x900", "repeat": 1, "status": "passed", "ms": 15285, "signature": null}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 188, "ms": 2446, "elapsedMs": 3210.2781539999996, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 189, "ms": 243, "elapsedMs": 3457.9863750000077, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Reload", "capture": null, "line": 190, "ms": 2362, "elapsedMs": 5819.092484000008, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 22, "ms": 2356, "elapsedMs": 8176.708094000001, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 192, "ms": 2373, "elapsedMs": 10996.594947999998, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 209, "ms": 5, "elapsedMs": 11329.575888000007, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 15, "elapsedMs": 11347.143091000005, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 1, "line": 140, "ms": 355, "elapsedMs": 11725.996964999998, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 84, "elapsedMs": 11825.086784, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 19, "elapsedMs": 11939.166306, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 2, "line": 140, "ms": 357, "elapsedMs": 12301.392875999998, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 93, "elapsedMs": 12408.091897000006, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 60, "ms": 6, "elapsedMs": 12704.260854000007, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 28, "elapsedMs": 12850.967382000003, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 3, "line": 140, "ms": 365, "elapsedMs": 13221.338453999997, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 61, "elapsedMs": 13284.587666000007, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 60, "ms": 5, "elapsedMs": 13315.985071999996, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 17, "elapsedMs": 13426.583593999996, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 4, "line": 140, "ms": 358, "elapsedMs": 13797.546466, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 47, "elapsedMs": 13846.278675000009, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 245, "ms": 4, "elapsedMs": 13872.663280000008, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 16, "elapsedMs": 13970.8744, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 5, "line": 140, "ms": 319, "elapsedMs": 14309.098465000003, "failed": false}
+{"run": "network-delay-2000", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 50, "elapsedMs": 14360.559974999996, "failed": false}
+{"run": "network-delay-2000", "event": "end", "title": "app registration form at 1024x900", "repeat": 2, "status": "passed", "ms": 13811, "signature": null}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 100, "ms": 17383, "elapsedMs": 18330.642190000002, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 104, "ms": 40, "elapsedMs": 18974.124249999997, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 123, "ms": 221, "elapsedMs": 19343.338228000004, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 125, "ms": 30, "elapsedMs": 19921.794993, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 378, "ms": 585, "elapsedMs": 20781.410641, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 484, "ms": 80, "elapsedMs": 21260.672212, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 488, "ms": 5, "elapsedMs": 21272.943111000004, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 543, "ms": 4, "elapsedMs": 21343.425707, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 545, "ms": 6, "elapsedMs": 21351.602006999998, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 572, "ms": 5, "elapsedMs": 21523.216296000002, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 1, "line": 590, "ms": 160, "elapsedMs": 21697.151786, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 145, "ms": 227, "elapsedMs": 21954.125571, "failed": false}
+{"run": "auth-gate-green", "event": "end", "title": "gallery-loading matches its baseline at 1440x1000", "repeat": 0, "status": "passed", "ms": 1990, "signature": null}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 100, "ms": 476, "elapsedMs": 1241.3918579999954, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 104, "ms": 40, "elapsedMs": 1867.977334999996, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 123, "ms": 228, "elapsedMs": 2249.505237999998, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 125, "ms": 29, "elapsedMs": 2841.4981319999933, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 378, "ms": 566, "elapsedMs": 3659.216518999994, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 484, "ms": 97, "elapsedMs": 4125.196019999996, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 488, "ms": 25, "elapsedMs": 4152.194019999995, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 543, "ms": 5, "elapsedMs": 4227.827919999996, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 545, "ms": 6, "elapsedMs": 4235.902119999999, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 572, "ms": 5, "elapsedMs": 4364.005719999994, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 1, "line": 590, "ms": 180, "elapsedMs": 4562.5384209999975, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 145, "ms": 241, "elapsedMs": 4836.939920999997, "failed": false}
+{"run": "auth-gate-green", "event": "end", "title": "gallery-loading matches its baseline at 1440x1000", "repeat": 1, "status": "passed", "ms": 1970, "signature": null}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 100, "ms": 534, "elapsedMs": 1265.0581119999988, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 104, "ms": 57, "elapsedMs": 2124.712157999995, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 123, "ms": 242, "elapsedMs": 2531.635819000003, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 125, "ms": 8, "elapsedMs": 3177.0014590000064, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 378, "ms": 554, "elapsedMs": 4011.064480000001, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 484, "ms": 149, "elapsedMs": 4583.211227000007, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 488, "ms": 5, "elapsedMs": 4594.788526000004, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 543, "ms": 5, "elapsedMs": 4688.099417000005, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 545, "ms": 8, "elapsedMs": 4697.708715999994, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 572, "ms": 6, "elapsedMs": 4818.463805000007, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 1, "line": 590, "ms": 190, "elapsedMs": 5026.754686, "failed": false}
+{"run": "auth-gate-green", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 145, "ms": 239, "elapsedMs": 5300.453659999999, "failed": false}
+{"run": "auth-gate-green", "event": "end", "title": "gallery-loading matches its baseline at 1440x1000", "repeat": 2, "status": "passed", "ms": 2082, "signature": null}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 188, "ms": 6941, "elapsedMs": 25950.831241000004, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 189, "ms": 2703, "elapsedMs": 28655.457645, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Reload", "capture": null, "line": 190, "ms": 2845, "elapsedMs": 31501.705384999997, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 22, "ms": 3511, "elapsedMs": 35014.532938000004, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Navigate", "capture": null, "line": 192, "ms": 1959, "elapsedMs": 40485.07003300001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 209, "ms": 37, "elapsedMs": 44075.34476000001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 46, "elapsedMs": 44128.66033900001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 1, "line": 140, "ms": 1876, "elapsedMs": 46045.11627900001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 423, "elapsedMs": 46485.724579, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 26, "elapsedMs": 47030.436419000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 2, "line": 140, "ms": 1864, "elapsedMs": 48913.303165000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 454, "elapsedMs": 49380.387824000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 60, "ms": 37, "elapsedMs": 51445.737569000004, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 106, "elapsedMs": 52279.750455, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 3, "line": 140, "ms": 1913, "elapsedMs": 54226.53114200001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 240, "elapsedMs": 54469.540574, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 60, "ms": 19, "elapsedMs": 54531.678394, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 37, "elapsedMs": 55271.598885, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 4, "line": 140, "ms": 1923, "elapsedMs": 57217.117044, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 258, "elapsedMs": 57477.786204, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 245, "ms": 19, "elapsedMs": 57526.620572, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 134, "ms": 23, "elapsedMs": 58123.436547000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Screenshot", "capture": 5, "line": 140, "ms": 1772, "elapsedMs": 59912.87006, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 0, "api": "Evaluate", "capture": null, "line": 71, "ms": 233, "elapsedMs": 60147.736464, "failed": false}
+{"run": "stress-warm-8", "event": "end", "title": "app registration form at 1024x900", "repeat": 0, "status": "passed", "ms": 41472, "signature": null}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 188, "ms": 7030, "elapsedMs": 9348.023226000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 189, "ms": 1996, "elapsedMs": 11348.886035000003, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Reload", "capture": null, "line": 190, "ms": 2875, "elapsedMs": 14226.676322, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 22, "ms": 2361, "elapsedMs": 16588.812606000007, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Navigate", "capture": null, "line": 192, "ms": 2269, "elapsedMs": 25323.459944999995, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 209, "ms": 15, "elapsedMs": 28612.213869, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 40, "elapsedMs": 28654.640320000006, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 1, "line": 140, "ms": 1664, "elapsedMs": 30345.065818999996, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 433, "elapsedMs": 30791.665108999994, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 29, "elapsedMs": 31374.895210999995, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 2, "line": 140, "ms": 1825, "elapsedMs": 33223.415578, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 434, "elapsedMs": 33669.464980000004, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 60, "ms": 66, "elapsedMs": 36545.63039400001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 158, "elapsedMs": 38426.74199499999, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 3, "line": 140, "ms": 2507, "elapsedMs": 40968.68556099999, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 255, "elapsedMs": 41226.51577999999, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 60, "ms": 25, "elapsedMs": 41293.12336200001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 65, "elapsedMs": 42501.76192300001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 4, "line": 140, "ms": 1739, "elapsedMs": 44291.415913000004, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 290, "elapsedMs": 44583.069625000004, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 245, "ms": 40, "elapsedMs": 44650.76959400001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 134, "ms": 33, "elapsedMs": 45375.585989000014, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Screenshot", "capture": 5, "line": 140, "ms": 1816, "elapsedMs": 47210.21910399999, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 1, "api": "Evaluate", "capture": null, "line": 71, "ms": 252, "elapsedMs": 47464.39528900001, "failed": false}
+{"run": "stress-warm-8", "event": "end", "title": "app registration form at 1024x900", "repeat": 1, "status": "passed", "ms": 45461, "signature": null}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 188, "ms": 7004, "elapsedMs": 9330.73529500002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 189, "ms": 1559, "elapsedMs": 10892.376755000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Reload", "capture": null, "line": 190, "ms": 2867, "elapsedMs": 13761.059271000006, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 22, "ms": 2581, "elapsedMs": 16344.655211000005, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Navigate", "capture": null, "line": 192, "ms": 1972, "elapsedMs": 22541.297811000026, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 209, "ms": 21, "elapsedMs": 25506.24556000001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 29, "elapsedMs": 25539.37744900002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 1, "line": 140, "ms": 1888, "elapsedMs": 27454.26805100002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 415, "elapsedMs": 27881.044600000023, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 30, "elapsedMs": 28503.90962400002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 2, "line": 140, "ms": 2013, "elapsedMs": 30536.303461000003, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 441, "elapsedMs": 30992.35066800003, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 60, "ms": 40, "elapsedMs": 33185.38817000002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 106, "elapsedMs": 34083.20151300001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 3, "line": 140, "ms": 1878, "elapsedMs": 35992.867912000016, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 234, "elapsedMs": 36229.153756000014, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 60, "ms": 44, "elapsedMs": 36303.35874700002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 42, "elapsedMs": 37111.19270500002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 4, "line": 140, "ms": 2144, "elapsedMs": 39280.77778100001, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 243, "elapsedMs": 39525.77498000002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 245, "ms": 25, "elapsedMs": 39576.239445000014, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 134, "ms": 40, "elapsedMs": 40279.56619200003, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Screenshot", "capture": 5, "line": 140, "ms": 1585, "elapsedMs": 41897.14803900002, "failed": false}
+{"run": "stress-warm-8", "event": "step", "repeat": 2, "api": "Evaluate", "capture": null, "line": 71, "ms": 243, "elapsedMs": 42141.939553000004, "failed": false}
+{"run": "stress-warm-8", "event": "end", "title": "app registration form at 1024x900", "repeat": 2, "status": "passed", "ms": 40115, "signature": null}

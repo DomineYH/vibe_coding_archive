@@ -1,0 +1,20 @@
+{
+  "state": "gallery-query-overflow",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines/gallery-query-overflow-390x844.png",
+  "screenshot": "gallery-query-overflow-390x844.png",
+  "width": 390,
+  "height": 926,
+  "comparisonStatus": "compared",
+  "pixelComparison": "full",
+  "expectedWidth": 390,
+  "expectedHeight": 926,
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "bounds": null,
+  "changedPixelSamples": [],
+  "comparedRegion": null
+}
