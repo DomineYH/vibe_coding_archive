@@ -12,11 +12,6 @@ Triage uses the five canonical label strings unchanged. See `docs/agents/triage-
 
 Domain documentation uses the single-context layout. See `docs/agents/domain.md`.
 
-# Rules
-## routing
-
-스킬을 사용할때는 '/mattpocock_skill_routing.json' 의 라우팅 규칙을 따를 것. 명시되어 있지 않은 규칙은 현재의 default 모델로 수행을 할 것. 
-
 # Code Quality
 
 - Follow the repository's configured formatter and linter.
