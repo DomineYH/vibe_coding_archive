@@ -17,6 +17,7 @@ export default defineConfig({
     reducedMotion: "reduce",
     colorScheme: "light",
     serviceWorkers: "block",
+    trace: { mode: "retain-on-failure", screenshots: false },
     launchOptions: {
       executablePath: chromiumExecutable(),
       args: ["--force-color-profile=srgb"],
