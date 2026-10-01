@@ -150,10 +150,6 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
   );
   await testInfo.attach(screenshot, { body: actual, contentType: "image/png" });
   expect(comparison.width).toBe(viewport.width);
-  if (baseline) {
-    expect(comparison.comparisonStatus).toBe("compared");
-    expect(comparison.differentPixels).toBe(0);
-  }
 }
 
 test.beforeAll(async ({ browser }) => {

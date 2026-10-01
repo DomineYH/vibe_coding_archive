@@ -81,6 +81,7 @@ export async function capture(
   if (captureStatus !== "expected_match") {
     await expect
       .poll(async () => {
+        screenshotError = undefined;
         const previous = actual;
         try {
           actual = await page.screenshot(screenshotOptions);
