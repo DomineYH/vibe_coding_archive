@@ -380,9 +380,10 @@ def response(db, request, body, *, status=200, cookie=None, metadata=None):
 
 
 def rate_limit(db, request, purpose):
+    # Count successful prepare operations / new anonymous S issuances; rejected transactions roll back.
     timestamp = now()
     # Direct peer only. Proxy headers are untrusted until the operating gate configures them.
-    subject = digest(request.client.host)
+    subject = digest(request.client.host if request.client else "unknown-peer")
     count = (
         db.execute(
             text(

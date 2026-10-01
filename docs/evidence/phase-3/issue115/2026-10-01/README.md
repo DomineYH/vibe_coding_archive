@@ -20,7 +20,7 @@
 | 공개 독립성 | fresh 공개 목록/상세는 인증 요청 0회; 준비 실패 중에도 공개 읽기 유지 |
 
 red→green: 준비 endpoint 404, 재시작 pending 잔존, 무-S logout 503,
-16KiB 초과 422, 물리 삭제 후 늦은 쿠키 미정리, change_only 연락처 일부
+16KiB 초과 오류(최종 413 `PAYLOAD_TOO_LARGE`), 물리 삭제 후 늦은 쿠키 미정리, change_only 연락처 일부
 노출, 익명 응답 metadata 불일치 수락을 먼저 실패시킨 뒤 해당 구현을 수정했다.
 추가로 R과 유효 S 공존 시 무-S 예외로 잘못 204를 반환하는 회귀를 실패시킨 뒤
 현재 S를 독립적으로 판정하도록 수정했다. 서버의 허가/증명 응답을 mock하지 않는다.
@@ -64,6 +64,49 @@ mock 54건은 기존 기능 회귀 config의 bundled Chromium **153.0.8010.12**�
 마지막 계약 설명을 공용 ErrorEnvelope에 넣어 공개 DTO 비교 1건이 실패했다.
 설명을 인증 endpoint로 옮기고 해당 비교를 다시 통과시켰다. 검사/assertion은
 유지했고 어떤 기준 이미지도 갱신하지 않았다.
+
+## PR #122 독립 리뷰 반영
+
+리뷰 지적 1–9를 같은 브랜치에서 반영했다. 일시 잠금·AuthError·기타 정리 오류는
+준비 상태를 내리고 다음 주기를 계속 실행하며, 실제 reconcile 재검증 성공 후에만
+복구한다. RuntimeError 무결성 검증 실패는 #113에 따라 준비 실패를 유지한다.
+주입한 주기/오류와 실제 HTTP·파일 SQLite로 재시도, 공개 읽기 독립성,
+재검증 실패 후 DB를 고쳐도 준비 상태가 자동 복구되지 않는 경계를 확인했다.
+
+HTTPS PUBLIC_ORIGIN과 운영 쿠키 정책에서 S/R 발급 이름·Secure·HttpOnly·
+SameSite=Lax·Path=/·Domain/Max-Age/Expires 미지정, 삭제 Secure/Max-Age=0을
+확인했다. factory는 APP_ENV=test로 시작하고 테스트 안에서 쿠키 정책 설정만
+바꿨다. 비 loopback HTTP에서 개발용 비보안 쿠키로 낮추지 않으며 Secure R을
+보내지 않은 ready는 401이다. 실제 운영 호스트의 HTTPS 검증을 대신하지 않는다.
+
+prepare 세 경로의 성공 요청을 합산한 200회/rolling 15분 경계와 익명 S 신규
+발급의 별도 200회 경계, GET CSRF 비집계·거절 rollback·정확한 만료 시점을
+실제 요청으로 검증했다. 기존 성공 집계 의도를 코드 주석으로 고정했다.
+restart_from은 8개 쿠키 예산의 정상 복구 탐색에 맞춰 최대 8개로 제한하고
+OpenAPI maxItems도 맞췄다. peer 정보가 없으면 하나의 보수적인 제한 버킷을
+사용하며 forwarded header로 버킷을 바꾸지 않는다.
+
+쿠키 예산 오류 처리기를 동기 handler로 바꿔 Starlette의 threadpool 관례를
+사용한다. 지연된 정리 중에도 healthz가 응답하며 DB 잠금/기타 DB 오류는
+각각 503 DB_BUSY/SERVICE_UNAVAILABLE을 반환한다. migration과 seed의
+login_id_key 변환은 NFC·trim·lower로 통일하고 실제 seed 키를 확인했다.
+16KiB 초과 결과 표기는 413 PAYLOAD_TOO_LARGE로 정정했다.
+
+새 버그 테스트는 기존 구현에서 실패를 재현한 뒤 통과시켰다. 이미 맞는 쿠키/
+집계 구현은 __Host- 제거·삭제 Secure 누락·prepare 집계 분리·익명/prepare
+집계 합침의 프로세스 내 변이에서 실패하고 실제 구현에서 통과함을 확인했다.
+허용 문자 내 lower/casefold 결과는 같으므로 키 변환 통일은 동작 변경 없이
+기존 migration/seed 경계의 기대 키로 확인했다. 변이·원시 로그는 커밋하지 않는다.
+
+| 실행 위치 / 명령 | 리뷰 반영 후 결과 |
+| --- | --- |
+| backend / `APP_ENV=test uv run --frozen pytest -q` | **126 passed**, 기존 Starlette 경고 1; 신규 회귀 15개 포함 |
+| backend / `uv run --frozen ruff check .` · `uv run --frozen ruff format --check .` | 통과, 28 파일 |
+| frontend / `npm run check` | 통과, 기존 OpenAPI 경고 2 |
+| frontend / `npm run openapi:generate` | 통과, 배열 길이 제약은 TypeScript 타입에 표현되지 않아 생성 파일 변경 없음 |
+| frontend / `npm run test:e2e:api -- auth-prepare.spec.js` | **17 passed**, 기존 bundled Chromium 153.0.8010.12; 시각 합격으로 계산하지 않음 |
+
+화면·기준 이미지·테스트 skip/assertion 완화·파일 분할·T02 이후 기능 변경 없음.
 
 ## 요구·사례 연결
 
@@ -122,7 +165,7 @@ browser 회귀를 추가해 해소했다.
 ## 범위 / 남은 검증
 
 T02–T07 회원 인증·회원 권한·보호 CRUD·운영 승격은 제외한다.
-운영 HTTPS `__Host-` 쿠키, 프록시 신뢰 목록, 실기기/화면낭독기와 U01/U02
+실제 운영 호스트의 HTTPS `__Host-` 쿠키, 프록시 신뢰 목록, 실기기/화면낭독기와 U01/U02
 운영 점검은 후속 승격 조건이며 로컬 결과로 통과 처리하지 않는다.
 소스/기존 baseline을 수정하지 않으며 새 실패 화면은 `product_only` 관찰이다.
 원본 응답·쿠키 값·CSRF·DB·trace는 증거 파일에 저장하지 않는다.

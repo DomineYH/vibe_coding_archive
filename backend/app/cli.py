@@ -108,7 +108,7 @@ def _shared_password() -> str:
 
 
 def _normalized_login_id(value: str) -> str:
-    return normalize("NFC", value.strip()).casefold()
+    return normalize("NFC", value.strip()).lower()
 
 
 def seed() -> None:

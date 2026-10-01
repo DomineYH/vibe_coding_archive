@@ -263,6 +263,9 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
             "FROM members ORDER BY id"
         ).fetchall()
         assert [member[0] for member in members] == list(MEMBER_IDS)
+        assert connection.execute(
+            "SELECT login_id_key FROM members ORDER BY id"
+        ).fetchall() == [("seed-member-one",), ("seed-member-two",)]
         assert all(not member[4] and member[5] == "approved" for member in members)
         assert all(
             PasswordHash.recommended().verify(TEST_PASSWORD, member[3])

@@ -43,7 +43,8 @@ class StrictModel(BaseModel):
 
 
 class CreateFlow(StrictModel):
-    restart_from: list[UUID]
+    # Normal recovery discovers at most eight flows under the shared eight-cookie budget.
+    restart_from: list[UUID] = Field(max_length=8)
 
 
 class ExpectedRevision(StrictModel):

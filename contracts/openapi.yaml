@@ -2122,6 +2122,7 @@ components:
       properties:
         restart_from:
           type: array
+          maxItems: 8
           uniqueItems: true
           items: { type: string, format: uuid }
     AuthFlowCreated:

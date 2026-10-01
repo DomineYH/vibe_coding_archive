@@ -172,19 +172,30 @@ def create_app(
         app.state.engine = engine
         app.state.expected_head = head
         app.state.session_factory = make_session_factory(engine)
+        verification_failed = False
         try:
             reconcile(app.state.session_factory)
             sweep(app.state.session_factory)
             app.state.auth_ready = True
-        except (SQLAlchemyError, RuntimeError):
+        except RuntimeError:
+            verification_failed = True
+        except (SQLAlchemyError, AuthError):
             app.state.auth_ready = False
 
         async def maintain_auth():
+            nonlocal verification_failed
             while True:
                 await asyncio.sleep(60)
                 try:
                     await asyncio.to_thread(sweep, app.state.session_factory)
-                except (SQLAlchemyError, RuntimeError):
+                    if not app.state.auth_ready and not verification_failed:
+                        await asyncio.to_thread(reconcile, app.state.session_factory)
+                        app.state.auth_ready = True
+                except RuntimeError:
+                    # #113 latches verification failures; transient failures retry with reconciliation.
+                    verification_failed = True
+                    app.state.auth_ready = False
+                except Exception:  # noqa: BLE001 - A maintenance failure must not stop future cycles.
                     app.state.auth_ready = False
 
         maintenance = asyncio.create_task(maintain_auth())
@@ -201,18 +212,26 @@ def create_app(
     app.add_middleware(AuthBodyLimit)
 
     @app.exception_handler(AuthError)
-    async def handle_auth_error(request, error):
+    def handle_auth_error(request, error):
         result = error_response(error)
         if error.code == "AUTH_COOKIE_BUDGET_EXCEEDED":
-            with request.app.state.session_factory() as session:
-                for name in invalid_cookie_names(session, request):
-                    result.delete_cookie(
-                        name,
-                        path="/",
-                        secure=name.startswith("__Host-"),
-                        httponly=True,
-                        samesite="lax",
-                    )
+            try:
+                with request.app.state.session_factory() as session:
+                    for name in invalid_cookie_names(session, request):
+                        result.delete_cookie(
+                            name,
+                            path="/",
+                            secure=name.startswith("__Host-"),
+                            httponly=True,
+                            samesite="lax",
+                        )
+            except SQLAlchemyError as failure:
+                code = (
+                    "DB_BUSY"
+                    if "locked" in str(failure).lower()
+                    else "SERVICE_UNAVAILABLE"
+                )
+                return error_response(AuthError(code, 503))
         return result
 
     @app.exception_handler(RequestValidationError)

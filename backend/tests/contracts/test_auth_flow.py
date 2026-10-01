@@ -814,3 +814,453 @@ def test_missing_recovery_is_distinct_from_missing_s(auth_client):
         auth_client.get("/api/v1/auth/csrf", headers=headers).json()["csrf_token"]
         == issued["csrf_token"]
     )
+
+
+@pytest.fixture
+def maintenance_cycle(monkeypatch):
+    import asyncio
+    from queue import Queue
+    from types import SimpleNamespace
+
+    gates = Queue()
+
+    async def sleep(seconds):
+        assert seconds == 60
+        gate = asyncio.Event()
+        gates.put(gate)
+        await gate.wait()
+
+    monkeypatch.setattr(
+        "app.main.asyncio",
+        SimpleNamespace(
+            sleep=sleep,
+            to_thread=asyncio.to_thread,
+            create_task=asyncio.create_task,
+            CancelledError=asyncio.CancelledError,
+        ),
+    )
+
+    def step(client):
+        client.portal.call(gates.get(timeout=3).set)
+        # A new sleep means the previous maintenance cycle finished.
+        gates.put(gates.get(timeout=3))
+
+    return step
+
+
+@pytest.mark.parametrize("failure", ["locked", "auth_error", "unexpected_error"])
+def test_maintenance_retries_transient_errors_and_recovers_readiness(
+    make_test_app, tmp_path, monkeypatch, maintenance_cycle, failure
+):
+    from sqlalchemy.exc import OperationalError
+
+    from app.auth_boundary import AuthError
+    from app.auth_maintenance import sweep
+
+    with TestClient(
+        make_test_app(tmp_path / "maintenance.sqlite3", auth_testing=True)
+    ) as client:
+
+        def fail(factory):
+            if failure == "locked":
+                raise OperationalError(
+                    "BEGIN IMMEDIATE", {}, Exception("database is locked")
+                )
+            if failure == "auth_error":
+                raise AuthError("AUTH_STATE_CHANGED")
+            raise ValueError("Synthetic maintenance failure")
+
+        monkeypatch.setattr("app.main.sweep", fail)
+        maintenance_cycle(client)
+        assert client.get("/readyz").status_code == 503
+        assert client.get("/api/v1/apps").status_code == 200
+        monkeypatch.setattr("app.main.sweep", sweep)
+        maintenance_cycle(client)
+        assert client.get("/readyz").status_code == 200
+        assert (
+            client.post(
+                "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+            ).status_code
+            == 201
+        )
+
+
+def test_maintenance_recovery_revalidates_and_latches_integrity_failure(
+    make_test_app, tmp_path, monkeypatch, maintenance_cycle
+):
+    from sqlalchemy import text
+    from sqlalchemy.exc import OperationalError
+
+    from app.auth_maintenance import sweep
+
+    with TestClient(
+        make_test_app(tmp_path / "verification.sqlite3", auth_testing=True)
+    ) as client:
+        flow_id, _ = prepare(client)
+
+        def locked(factory):
+            raise OperationalError(
+                "BEGIN IMMEDIATE", {}, Exception("database is locked")
+            )
+
+        monkeypatch.setattr("app.main.sweep", locked)
+        maintenance_cycle(client)
+        assert client.get("/readyz").status_code == 503
+        with client.app.state.engine.begin() as db:
+            db.execute(
+                text("UPDATE auth_flows SET current_recovery_seq='999' WHERE id=:id"),
+                {"id": flow_id},
+            )
+        monkeypatch.setattr("app.main.sweep", sweep)
+        maintenance_cycle(client)
+        assert client.get("/readyz").status_code == 503
+        with client.app.state.engine.begin() as db:
+            db.execute(
+                text("UPDATE auth_flows SET current_recovery_seq='1' WHERE id=:id"),
+                {"id": flow_id},
+            )
+        maintenance_cycle(client)
+        assert client.get("/readyz").status_code == 503
+        assert client.get("/healthz").status_code == 200
+
+
+def test_restart_from_is_bounded_by_eight_flow_cookie_contexts(auth_client):
+    from uuid import uuid4
+
+    ids = [str(uuid4()) for _ in range(9)]
+    rejected = auth_client.post(
+        "/api/v1/auth/flows", json={"restart_from": ids}, headers=ORIGIN
+    )
+    assert rejected.status_code == 422
+    assert rejected.json()["error"]["code"] == "VALIDATION_ERROR"
+    assert (
+        auth_client.post(
+            "/api/v1/auth/flows", json={"restart_from": ids[:8]}, headers=ORIGIN
+        ).status_code
+        == 201
+    )
+
+
+def test_missing_direct_peer_does_not_trust_forwarded_headers_or_crash(
+    make_test_app, tmp_path
+):
+    with TestClient(
+        make_test_app(tmp_path / "no-peer.sqlite3", auth_testing=True), client=None
+    ) as client:
+        for peer in range(200):
+            result = client.post(
+                "/api/v1/auth/flows",
+                json={"restart_from": []},
+                headers={**ORIGIN, "X-Forwarded-For": f"198.51.100.{peer}"},
+            )
+            assert result.status_code == 201
+        result = client.post(
+            "/api/v1/auth/flows",
+            json={"restart_from": []},
+            headers={**ORIGIN, "X-Forwarded-For": "203.0.113.115"},
+        )
+        assert result.status_code == 429
+
+
+@pytest.mark.parametrize(
+    "detail, code",
+    [("database is locked", "DB_BUSY"), ("disk I/O error", "SERVICE_UNAVAILABLE")],
+)
+def test_cookie_budget_cleanup_database_failure_returns_defined_error(
+    auth_client, monkeypatch, detail, code
+):
+    from sqlalchemy.exc import OperationalError
+
+    created = auth_client.post(
+        "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+    ).json()
+    for seq in range(8):
+        auth_client.cookies.set(
+            f"eduvibe_session_dev_00000000-0000-4000-8000-000000000115_{seq}", "unknown"
+        )
+
+    def unavailable(db, request):
+        raise OperationalError("SELECT", {}, Exception(detail))
+
+    monkeypatch.setattr("app.main.invalid_cookie_names", unavailable)
+    result = auth_client.post(
+        f"/api/v1/auth/flows/{created['flow_id']}/recovery-cookie", headers=ORIGIN
+    )
+    assert result.status_code == 503
+    assert result.json()["error"]["code"] == code
+    assert detail not in result.text
+    assert "set-cookie" not in result.headers
+
+
+def test_cookie_budget_cleanup_does_not_block_public_health(auth_client, monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    from app.auth_boundary import invalid_cookie_names
+
+    created = auth_client.post(
+        "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+    ).json()
+    for seq in range(8):
+        auth_client.cookies.set(
+            f"eduvibe_session_dev_00000000-0000-4000-8000-000000000115_{seq}", "unknown"
+        )
+    entered, release = Event(), Event()
+
+    def slow_cleanup(db, request):
+        entered.set()
+        assert release.wait(5)
+        return invalid_cookie_names(db, request)
+
+    monkeypatch.setattr("app.main.invalid_cookie_names", slow_cleanup)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        cleanup = pool.submit(
+            auth_client.post,
+            f"/api/v1/auth/flows/{created['flow_id']}/recovery-cookie",
+            headers=ORIGIN,
+        )
+        try:
+            assert entered.wait(3)
+            health = pool.submit(auth_client.get, "/healthz")
+            assert health.result(timeout=2).status_code == 200
+        finally:
+            release.set()
+        assert cleanup.result(timeout=3).status_code == 409
+
+
+@pytest.mark.parametrize("app_env", ["test", "production"])
+def test_https_cookie_issuance_and_deletion_preserve_host_attributes(
+    make_test_app, tmp_path, app_env
+):
+    from http.cookies import SimpleCookie
+
+    public_origin = "https://archive.example.test"
+    with TestClient(
+        make_test_app(tmp_path / "secure.sqlite3", auth_testing=True),
+        base_url=public_origin,
+    ) as client:
+        # Keep the factory test-only while exercising the configured production cookie policy.
+        client.app.state.settings = client.app.state.settings.model_copy(
+            update={"app_env": app_env, "public_origin": public_origin}
+        )
+        origin = {"Origin": public_origin}
+        created = client.post(
+            "/api/v1/auth/flows", json={"restart_from": []}, headers=origin
+        ).json()
+        flow_id = created["flow_id"]
+        recovery = client.post(
+            f"/api/v1/auth/flows/{flow_id}/recovery-cookie", headers=origin
+        )
+        assert recovery.status_code == 201
+        headers = {
+            **origin,
+            "X-EduVibe-Flow-Id": flow_id,
+            "X-CSRF-Token": recovery.json()["recovery_csrf_token"],
+        }
+        assert (
+            client.post(
+                f"/api/v1/auth/flows/{flow_id}/ready",
+                json={"expected_revision": recovery.json()["revision"]},
+                headers=headers,
+            ).status_code
+            == 200
+        )
+        permit = admission(client, flow_id, headers)
+        issued = client.post(
+            "/api/v1/auth/anonymous-session",
+            json={"expected_revision": permit["revision"]},
+            headers={**headers, "X-EduVibe-Transition-Id": permit["transition_id"]},
+        )
+        assert issued.status_code == 201
+        for result, kind in [(recovery, "recovery"), (issued, "session")]:
+            cookie = SimpleCookie(result.headers["set-cookie"])
+            name, attributes = next(iter(cookie.items()))
+            assert name.startswith(f"__Host-eduvibe_{kind}_{flow_id}_")
+            assert attributes["secure"] and attributes["httponly"]
+            assert attributes["samesite"].lower() == "lax"
+            assert attributes["path"] == "/"
+            assert not attributes["domain"] and not attributes["max-age"]
+            assert not attributes["expires"]
+        reset = client.post(
+            f"/api/v1/auth/flows/{flow_id}/reset",
+            json={"expected_revision": issued.json()["revision"]},
+            headers=headers,
+        )
+        assert reset.status_code == 200
+        deleted = reset.headers.get_list("set-cookie")
+        assert len(deleted) == 2
+        for header in deleted:
+            name, attributes = next(iter(SimpleCookie(header).items()))
+            assert name.startswith("__Host-eduvibe_")
+            assert attributes["secure"] and attributes["httponly"]
+            assert attributes["samesite"].lower() == "lax"
+            assert attributes["path"] == "/" and not attributes["domain"]
+            assert attributes["max-age"] == "0"
+
+
+def test_non_loopback_http_never_uses_insecure_development_cookies(
+    make_test_app, tmp_path
+):
+    from http.cookies import SimpleCookie
+
+    public_origin = "http://archive.example.test"
+    with TestClient(
+        make_test_app(tmp_path / "http-boundary.sqlite3", auth_testing=True),
+        base_url=public_origin,
+    ) as client:
+        client.app.state.settings = client.app.state.settings.model_copy(
+            update={"public_origin": public_origin}
+        )
+        origin = {"Origin": public_origin}
+        created = client.post(
+            "/api/v1/auth/flows", json={"restart_from": []}, headers=origin
+        ).json()
+        flow_id = created["flow_id"]
+        issued = client.post(
+            f"/api/v1/auth/flows/{flow_id}/recovery-cookie", headers=origin
+        )
+        assert issued.status_code == 201
+        name, attributes = next(
+            iter(SimpleCookie(issued.headers["set-cookie"]).items())
+        )
+        assert name.startswith("__Host-eduvibe_recovery_") and attributes["secure"]
+        ready = client.post(
+            f"/api/v1/auth/flows/{flow_id}/ready",
+            json={"expected_revision": issued.json()["revision"]},
+            headers={**origin, "X-CSRF-Token": issued.json()["recovery_csrf_token"]},
+        )
+        assert ready.status_code == 401
+        assert ready.json()["error"]["code"] == "RECOVERY_REQUIRED"
+
+
+def test_prepare_limit_combines_flow_first_recovery_and_abandon(
+    auth_client, server_clock
+):
+    initial = [
+        auth_client.post(
+            "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+        ).json()["flow_id"]
+        for _ in range(2)
+    ]
+    for _ in range(66):
+        created = auth_client.post(
+            "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+        )
+        assert created.status_code == 201
+        flow_id = created.json()["flow_id"]
+        assert (
+            auth_client.post(
+                f"/api/v1/auth/flows/{flow_id}/recovery-cookie", headers=ORIGIN
+            ).status_code
+            == 201
+        )
+        assert (
+            auth_client.post(
+                f"/api/v1/auth/flows/{flow_id}/abandon", headers=ORIGIN
+            ).status_code
+            == 200
+        )
+    for endpoint, body in [
+        ("/api/v1/auth/flows", {"restart_from": []}),
+        (f"/api/v1/auth/flows/{initial[0]}/recovery-cookie", None),
+        (f"/api/v1/auth/flows/{initial[1]}/abandon", None),
+    ]:
+        rejected = auth_client.post(endpoint, json=body, headers=ORIGIN)
+        assert rejected.status_code == 429
+        assert rejected.json()["error"]["code"] == "RATE_LIMITED"
+        assert rejected.json()["error"]["retry_at"] == "2026-10-01T00:15:00.000000Z"
+    server_clock[0] += timedelta(seconds=900)
+    assert (
+        auth_client.post(
+            f"/api/v1/auth/flows/{initial[0]}/recovery-cookie", headers=ORIGIN
+        ).status_code
+        == 201
+    )
+
+
+def test_anonymous_limit_is_separate_counts_issuance_and_expires_at_fifteen_minutes(
+    auth_client, server_clock
+):
+    flow_id, headers = prepare(auth_client)
+    recovery = dict(auth_client.cookies)
+    auth_client.cookies.clear()
+    # Exhaust the prepare bucket without spending an anonymous-session issuance.
+    for _ in range(198):
+        assert (
+            auth_client.post(
+                "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+            ).status_code
+            == 201
+        )
+    auth_client.cookies.update(recovery)
+    for _ in range(200):
+        issued, permit = issue_anonymous(auth_client, flow_id, headers)
+        for _ in range(2):
+            assert (
+                auth_client.get("/api/v1/auth/csrf", headers=headers).status_code == 200
+            )
+        s_name = next(
+            name for name in auth_client.cookies if name.startswith("eduvibe_session_")
+        )
+        auth_client.cookies.delete(s_name)
+        discarded = auth_client.post(
+            f"/api/v1/auth/transitions/{permit['transition_id']}/discard-session",
+            json={
+                "flow_id": flow_id,
+                "expected_revision": issued["revision"],
+                "expected_session_generation": issued["session_generation"],
+            },
+            headers=headers,
+        )
+        assert discarded.status_code == 200
+    permit = admission(auth_client, flow_id, headers)
+    execution = {**headers, "X-EduVibe-Transition-Id": permit["transition_id"]}
+    for _ in range(2):
+        rejected = auth_client.post(
+            "/api/v1/auth/anonymous-session",
+            json={"expected_revision": permit["revision"]},
+            headers=execution,
+        )
+        assert rejected.status_code == 429
+        assert rejected.json()["error"]["code"] == "RATE_LIMITED"
+        assert rejected.json()["error"]["retry_at"] == "2026-10-01T00:15:00.000000Z"
+    server_clock[0] += timedelta(seconds=900)
+    assert (
+        auth_client.post(
+            f"/api/v1/auth/transitions/{permit['transition_id']}/settle",
+            json={"flow_id": flow_id, "expected_revision": permit["revision"]},
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    issue_anonymous(auth_client, flow_id, headers)
+
+
+def test_rejected_cookie_issuance_does_not_consume_success_limit(auth_client):
+    created = auth_client.post(
+        "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+    ).json()
+    for seq in range(8):
+        auth_client.cookies.set(
+            f"eduvibe_session_dev_00000000-0000-4000-8000-000000000115_{seq}", "unknown"
+        )
+    for _ in range(3):
+        result = auth_client.post(
+            f"/api/v1/auth/flows/{created['flow_id']}/recovery-cookie", headers=ORIGIN
+        )
+        assert result.status_code == 409
+        assert result.json()["error"]["code"] == "AUTH_COOKIE_BUDGET_EXCEEDED"
+    auth_client.cookies.clear()
+    for _ in range(199):
+        assert (
+            auth_client.post(
+                "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+            ).status_code
+            == 201
+        )
+    assert (
+        auth_client.post(
+            "/api/v1/auth/flows", json={"restart_from": []}, headers=ORIGIN
+        ).status_code
+        == 429
+    )
