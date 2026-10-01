@@ -220,7 +220,11 @@ export type AnonymousSessionResult = FlowRevision & {
   expiresAt: string;
 };
 export type AuthResult = { user: AuthUser; csrfToken: string };
-export type CsrfToken = { csrfToken: string; expiresAt: string };
+export type CsrfToken = {
+  csrfToken: string;
+  expiresAt: string;
+  authContext?: { flowId: string; revision: string; sessionGeneration: string };
+};
 export type RegisteredUser = {
   id: string;
   loginId: string;
@@ -491,10 +495,14 @@ export function mapSelf(value: unknown): AuthUser {
   )
     throw contractError();
   if (
-    fullSession !==
-    (Object.hasOwn(item, "email") &&
-      Object.hasOwn(item, "phone") &&
-      Object.hasOwn(item, "recent_auth_until"))
+    (fullSession &&
+      !["email", "phone", "recent_auth_until"].every((key) =>
+        Object.hasOwn(item, key),
+      )) ||
+    (!fullSession &&
+      ["email", "phone", "recent_auth_until"].some((key) =>
+        Object.hasOwn(item, key),
+      ))
   )
     throw contractError();
   const email = fullSession ? nullableString(item.email) : null;

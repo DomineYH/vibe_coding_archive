@@ -52,7 +52,7 @@ def normalize_schema():
 
 @pytest.fixture
 def make_test_app(migrate_test_database):
-    def make(database_path: Path) -> FastAPI:
+    def make(database_path: Path, *, auth_testing=False) -> FastAPI:
         migrate_test_database(database_path)
         env = {
             **os.environ,
@@ -61,6 +61,6 @@ def make_test_app(migrate_test_database):
             "PUBLIC_ORIGIN": "http://localhost:5174",
         }
         settings = Settings.from_environment(env, repo_root=ROOT)
-        return create_app(settings)
+        return create_app(settings, auth_testing=auth_testing)
 
     return make

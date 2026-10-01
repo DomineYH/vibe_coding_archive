@@ -20,6 +20,7 @@ import catalog from "../../../contracts/catalog.json";
 import { isUuid } from "../contracts/uuid";
 import { appsService } from "@services/apps";
 import { authService } from "@services/auth";
+import { prepareApiAuth, recoverApiAuth } from "../services/api/auth";
 import { healthService } from "@services/health";
 import { isSearchTooLong } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
@@ -1353,6 +1354,12 @@ export default function App() {
   const galleryReturnPosition = useRef(null);
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
+  const authMetadata = usePublicMetadata();
+  const apiAuthPath = __DATA_MODE__ === "api" ? location.pathname : null;
+  const apiAuthEnabled =
+    __DATA_MODE__ === "api" &&
+    authMetadata.meta?.capabilities.auth_login.enabled === true &&
+    !authMetadata.error;
   const authRequest = useRef(0);
   const authObservation = useRef(0);
   const authController = useRef(null);
@@ -1475,7 +1482,7 @@ export default function App() {
 
   const restoreAuth = useCallback(
     async ({ concealed = false } = {}) => {
-      if (__DATA_MODE__ !== "mock") return null;
+      if (__DATA_MODE__ === "api" && !apiAuthEnabled) return null;
       const request = ++authRequest.current;
       authController.current?.abort();
       const controller = new AbortController();
@@ -1494,9 +1501,28 @@ export default function App() {
       await cancelProtectedQueries();
       if (request !== authRequest.current) return null;
       try {
-        const observed = await authService.getCurrentAuthState({
-          signal: controller.signal,
-        });
+        let knownFlow = false;
+        if (__DATA_MODE__ === "api") {
+          try {
+            knownFlow = localStorage.getItem("eduvibe-auth-flow-v1") !== null;
+          } catch {
+            /* Public reads do not require storage. */
+          }
+        }
+        const observed =
+          __DATA_MODE__ === "api" && apiAuthPath !== "/auth" && !knownFlow
+            ? {
+                ...authSnapshot.current,
+                user: null,
+                status: "ready",
+                sessionCookiePresent: false,
+                unresolvedTransitionId: null,
+              }
+            : __DATA_MODE__ === "api" && apiAuthPath === "/auth"
+              ? await prepareApiAuth({ signal: controller.signal })
+              : await authService.getCurrentAuthState({
+                  signal: controller.signal,
+                });
         if (request !== authRequest.current || controller.signal.aborted)
           return null;
         const previousScope = authScopeIdentity(authSnapshot.current);
@@ -1526,7 +1552,12 @@ export default function App() {
         return failed;
       }
     },
-    [cancelProtectedQueries, clearChangedScopeQueries],
+    [
+      apiAuthEnabled,
+      apiAuthPath,
+      cancelProtectedQueries,
+      clearChangedScopeQueries,
+    ],
   );
 
   const refreshMockState = useCallback(async () => {
@@ -1561,7 +1592,7 @@ export default function App() {
   }, [queryClient, restoreAuth]);
 
   const beginAuthTransition = useCallback(async () => {
-    if (__DATA_MODE__ !== "mock") return;
+    if (__DATA_MODE__ === "api" && !apiAuthEnabled) return;
     ++authRequest.current;
     authController.current?.abort();
     const observationId = ++authObservation.current;
@@ -1573,7 +1604,7 @@ export default function App() {
       concealed: true,
     });
     await cancelProtectedQueries();
-  }, [cancelProtectedQueries]);
+  }, [apiAuthEnabled, cancelProtectedQueries]);
 
   const concealOnDeparture = useCallback(() => {
     if (pageAway.current) return;
@@ -1735,6 +1766,15 @@ export default function App() {
   }, [beginAuthTransition, logoutPending, navigate, restoreAuth]);
 
   const resolveAuth = useCallback(async () => {
+    if (__DATA_MODE__ === "api") {
+      try {
+        await recoverApiAuth("settle");
+      } catch (error) {
+        setToast(error.message);
+      }
+      await restoreAuth();
+      return;
+    }
     try {
       const current = authSnapshot.current;
       const transitionId = current.unresolvedTransitionId;
@@ -1752,6 +1792,15 @@ export default function App() {
   }, [restoreAuth]);
 
   const discardMissingSession = useCallback(async () => {
+    if (__DATA_MODE__ === "api") {
+      try {
+        await recoverApiAuth("discard");
+      } catch (error) {
+        setToast(error.message);
+      }
+      await restoreAuth();
+      return;
+    }
     try {
       const transitionId = authSnapshot.current.unresolvedTransitionId;
       if (!transitionId) throw new Error("No unresolved auth transition");
@@ -1773,6 +1822,15 @@ export default function App() {
   }, [restoreAuth]);
 
   const resetAuth = useCallback(async () => {
+    if (__DATA_MODE__ === "api") {
+      try {
+        await recoverApiAuth("reset");
+      } catch (error) {
+        setToast(error.message);
+      }
+      await restoreAuth();
+      return;
+    }
     try {
       const previousFlowId = authSnapshot.current.flow?.flowId;
       if (!previousFlowId) throw new Error("No auth flow to reset");
@@ -1812,8 +1870,21 @@ export default function App() {
   }, [restoreAuth]);
 
   useEffect(() => {
-    if (__DATA_MODE__ === "mock") void restoreAuth();
-  }, [restoreAuth]);
+    if (__DATA_MODE__ === "mock") {
+      void restoreAuth();
+      return;
+    }
+    if (!apiAuthEnabled) {
+      setAuth((current) => ({
+        ...current,
+        status: "unavailable",
+        user: null,
+        concealed: false,
+      }));
+      return;
+    }
+    void restoreAuth();
+  }, [apiAuthEnabled, apiAuthPath, restoreAuth]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
@@ -1838,6 +1909,9 @@ export default function App() {
   }, [location.key, navigationType, restoreAuth]);
   useEffect(() => {
     const onStorage = (event) => {
+      if (__DATA_MODE__ === "api" && event.key === "eduvibe-auth-flow-v1") {
+        void beginAuthTransition().then(() => restoreAuth({ concealed: true }));
+      }
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1") {
         reconcileMockReset(event.newValue);
         void refreshMockState();
@@ -1876,6 +1950,7 @@ export default function App() {
       window.removeEventListener("pageshow", onPageShow);
     };
   }, [
+    beginAuthTransition,
     concealOnDeparture,
     queryClient,
     refreshMockState,

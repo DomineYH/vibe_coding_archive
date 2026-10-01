@@ -339,6 +339,9 @@ describe("response mappers", () => {
       session_kind: "change_only",
       expires_at: "2026-09-22T00:27:00.000Z",
     };
+    expect(() => mapSelf({ ...changeOnly, email: null })).toThrowError(
+      expect.objectContaining({ code: "CONTRACT_ERROR" }),
+    );
     expect(mapSelf(changeOnly)).toMatchObject({
       mustChangePassword: true,
       sessionKind: "change_only",

@@ -1,7 +1,9 @@
 import { defineConfig } from "@playwright/test";
+import { chromiumExecutable } from "./playwright-browser.js";
 
 export default defineConfig({
   testDir: "./e2e-api",
+  outputDir: "test-results/api",
   fullyParallel: false,
   workers: 1,
   timeout: 30000,
@@ -13,11 +15,19 @@ export default defineConfig({
     timezoneId: "Asia/Seoul",
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
+    colorScheme: "light",
+    ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+      ? {
+          launchOptions: {
+            executablePath: chromiumExecutable(),
+            args: ["--force-color-profile=srgb", "--disable-partial-raster"],
+          },
+        }
+      : {}),
   },
   webServer: [
     {
-      command:
-        "uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000",
+      command: `uv run --frozen uvicorn ${process.env.API_E2E_AUTH_BOUNDARY === "prepared" ? "tests.auth_server" : "app.main"}:app --host 127.0.0.1 --port 8000`,
       cwd: "../backend",
       url: "http://127.0.0.1:8000/healthz",
       reuseExistingServer: false,

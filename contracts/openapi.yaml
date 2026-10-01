@@ -25,7 +25,7 @@ paths:
     get:
       operationId: getReadiness
       summary: Check database and migration readiness
-      description: Returns only whether the database matches the current migration head.
+      description: Returns only whether the database matches the current migration head and authentication reconciliation and cleanup succeeded.
       servers:
         - url: /
       security: []
@@ -45,7 +45,13 @@ paths:
   /auth/flows:
     post:
       operationId: createAuthFlow
-      summary: Allocate a new mockable authentication flow identity
+      summary: Allocate a new authentication flow identity
+      description: >-
+        Authentication parsing errors are 400 BAD_REQUEST; the 16KiB body limit
+        returns 413 PAYLOAD_TOO_LARGE; field/context validation is 422
+        VALIDATION_ERROR. Across authentication endpoints, missing current S
+        is 401 AUTH_REQUIRED; missing or invalid required R is 401
+        RECOVERY_REQUIRED and does not revoke S.
       security: []
       parameters:
         - $ref: "#/components/parameters/Origin"
@@ -63,6 +69,10 @@ paths:
         "409": { $ref: "#/components/responses/ServiceError" }
         "429": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/recovery-cookie:
     post:
       operationId: issueRecoveryCookie
@@ -82,6 +92,10 @@ paths:
         "409": { $ref: "#/components/responses/ServiceError" }
         "429": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/ready:
     post:
       operationId: confirmRecoveryCookie
@@ -106,6 +120,10 @@ paths:
         "401": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/abandon:
     post:
       operationId: abandonAuthFlow
@@ -122,6 +140,11 @@ paths:
               schema: { $ref: "#/components/schemas/RestartEligibility" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "429": { $ref: "#/components/responses/ServiceError" }
   /auth/recovery-context:
     get:
       operationId: getAuthRecoveryContext
@@ -139,6 +162,8 @@ paths:
               schema: { $ref: "#/components/schemas/RecoveryContext" }
         "401": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/recovery-csrf:
     get:
       operationId: getRecoveryCsrf
@@ -157,10 +182,12 @@ paths:
               schema: { $ref: "#/components/schemas/RecoveryCsrf" }
         "401": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/recovery-cookie/rotate:
     post:
       operationId: rotateRecoveryCookie
-      summary: Rotate recovery proof using the current full session
+      summary: Rotate recovery proof using any valid current session
       security:
         - SessionCookie: []
       parameters:
@@ -183,6 +210,10 @@ paths:
         "401": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/restart-eligibility:
     get:
       operationId: getRestartEligibility
@@ -198,6 +229,8 @@ paths:
               schema: { $ref: "#/components/schemas/RestartEligibility" }
         "404": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
   /auth/transitions:
     post:
       operationId: admitAuthTransition
@@ -226,6 +259,10 @@ paths:
         "409": { $ref: "#/components/responses/ServiceError" }
         "429": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/transitions/{transition_id}/settle:
     post:
       operationId: settleAuthTransition
@@ -252,6 +289,10 @@ paths:
         "401": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/transitions/{transition_id}/discard-session:
     post:
       operationId: discardAuthTransitionSession
@@ -278,6 +319,10 @@ paths:
         "401": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/flows/{flow_id}/reset:
     post:
       operationId: resetAuthFlow
@@ -305,6 +350,10 @@ paths:
         "401": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/anonymous-session:
     post:
       operationId: issueAnonymousSession
@@ -325,12 +374,22 @@ paths:
       responses:
         "201":
           description: Anonymous session and its current CSRF token.
+          headers:
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            Cache-Control: { schema: { type: string, const: no-store } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AnonymousSessionResult" }
         "401": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "429": { $ref: "#/components/responses/ServiceError" }
   /auth/csrf:
     get:
       operationId: getAuthCsrf
@@ -360,6 +419,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
   /auth/me:
     get:
       operationId: getAuthMe
@@ -388,6 +450,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
   /auth/flow-state:
     get:
       operationId: getAuthFlowState
@@ -421,6 +486,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
   /auth/login:
     post:
       operationId: login
@@ -443,6 +511,11 @@ paths:
       responses:
         "200":
           description: Authenticated member and rotated CSRF token.
+          headers:
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            Cache-Control: { schema: { type: string, const: no-store } }
           content:
             application/json:
               schema:
@@ -457,6 +530,9 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /auth/register:
     post:
       operationId: register
@@ -529,6 +605,11 @@ paths:
       responses:
         "200":
           description: The temporary credential is consumed and a full session is issued.
+          headers:
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            Cache-Control: { schema: { type: string, const: no-store } }
           content:
             application/json:
               schema:
@@ -541,20 +622,48 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
   /auth/logout:
     post:
       operationId: logout
       summary: Sign out the current browser session
+      description: >-
+        Without a valid current S, Origin validation alone permits 204 and
+        neither issues an anonymous session nor settles another transition.
+        With a valid current S, its CSRF, flow, revision, session generation
+        and admitted transition are required.
       security:
         - {}
         - SessionCookie: []
       parameters:
         - $ref: "#/components/parameters/Origin"
-        - $ref: "#/components/parameters/CsrfToken"
-        - $ref: "#/components/parameters/AuthFlowId"
-        - $ref: "#/components/parameters/AuthRevision"
-        - $ref: "#/components/parameters/SessionGeneration"
-        - $ref: "#/components/parameters/TransitionId"
+        - name: X-CSRF-Token
+          in: header
+          required: false
+          description: Required only when a valid current S exists.
+          schema: { type: string, minLength: 1 }
+        - name: X-EduVibe-Flow-Id
+          in: header
+          required: false
+          description: Required only when a valid current S exists.
+          schema: { type: string, format: uuid }
+        - name: X-EduVibe-Auth-Revision
+          in: header
+          required: false
+          description: Required only when a valid current S exists.
+          schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" }
+        - name: X-EduVibe-Session-Generation
+          in: header
+          required: false
+          description: Required only when a valid current S exists.
+          schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" }
+        - name: X-EduVibe-Transition-Id
+          in: header
+          required: false
+          description: Required only when a valid current S exists.
+          schema: { type: string, minLength: 1 }
       responses:
         "204":
           description: The current session was cleared or was already anonymous.
@@ -562,6 +671,10 @@ paths:
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
   /auth/reauth:
     post:
       operationId: reauthenticate
@@ -583,6 +696,11 @@ paths:
       responses:
         "200":
           description: Current administrator session and CSRF are rotated.
+          headers:
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            Cache-Control: { schema: { type: string, const: no-store } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AuthResult" }
@@ -590,6 +708,9 @@ paths:
         "403": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+        "400": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
   /meta:
     get:
       operationId: getMeta
@@ -1910,7 +2031,11 @@ components:
               session_kind: { const: change_only }
           then:
             properties:
+              approved: { const: true }
               must_change_password: { const: true }
+              email: false
+              phone: false
+              recent_auth_until: false
     AuthTransition:
       type: object
       additionalProperties: false
@@ -1997,6 +2122,7 @@ components:
       properties:
         restart_from:
           type: array
+          maxItems: 8
           uniqueItems: true
           items: { type: string, format: uuid }
     AuthFlowCreated:

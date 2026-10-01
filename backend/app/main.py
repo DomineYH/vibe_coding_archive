@@ -1,17 +1,28 @@
 from __future__ import annotations
 
+import asyncio
 import sys
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from pydantic import AnyUrl, BaseModel, ConfigDict, Field, WithJsonSchema
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
+from app.auth import router as auth_router
+from app.auth_boundary import (
+    AuthBodyLimit,
+    AuthError,
+    error_response,
+    invalid_cookie_names,
+)
+from app.auth_maintenance import reconcile, sweep
 from app.catalog import CATALOG
 from app.database import (
     current_head,
@@ -131,7 +142,9 @@ def _verify_schema(engine) -> str:
     return head
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, *, auth_testing: bool = False
+) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         engine = None
@@ -150,25 +163,110 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "Application configuration or database revision is invalid."
             ) from None
 
+        if auth_testing and resolved.app_env != "test":
+            engine.dispose()
+            raise RuntimeError("Authentication test boundary requires APP_ENV=test.")
+        app.state.settings = resolved
+        app.state.auth_testing = auth_testing
+        app.state.auth_ready = False
         app.state.engine = engine
         app.state.expected_head = head
         app.state.session_factory = make_session_factory(engine)
+        verification_failed = False
+        try:
+            reconcile(app.state.session_factory)
+            sweep(app.state.session_factory)
+            app.state.auth_ready = True
+        except RuntimeError:
+            verification_failed = True
+        except (SQLAlchemyError, AuthError):
+            app.state.auth_ready = False
+
+        async def maintain_auth():
+            nonlocal verification_failed
+            while True:
+                await asyncio.sleep(60)
+                try:
+                    await asyncio.to_thread(sweep, app.state.session_factory)
+                    if not app.state.auth_ready and not verification_failed:
+                        await asyncio.to_thread(reconcile, app.state.session_factory)
+                        app.state.auth_ready = True
+                except RuntimeError:
+                    # #113 latches verification failures; transient failures retry with reconciliation.
+                    verification_failed = True
+                    app.state.auth_ready = False
+                except Exception:  # noqa: BLE001 - A maintenance failure must not stop future cycles.
+                    app.state.auth_ready = False
+
+        maintenance = asyncio.create_task(maintain_auth())
         try:
             yield
         finally:
+            maintenance.cancel()
+            with suppress(asyncio.CancelledError):
+                await maintenance
             engine.dispose()
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
+
+    app.add_middleware(AuthBodyLimit)
+
+    @app.exception_handler(AuthError)
+    def handle_auth_error(request, error):
+        result = error_response(error)
+        if error.code == "AUTH_COOKIE_BUDGET_EXCEEDED":
+            try:
+                with request.app.state.session_factory() as session:
+                    for name in invalid_cookie_names(session, request):
+                        result.delete_cookie(
+                            name,
+                            path="/",
+                            secure=name.startswith("__Host-"),
+                            httponly=True,
+                            samesite="lax",
+                        )
+            except SQLAlchemyError as failure:
+                code = (
+                    "DB_BUSY"
+                    if "locked" in str(failure).lower()
+                    else "SERVICE_UNAVAILABLE"
+                )
+                return error_response(AuthError(code, 503))
+        return result
+
+    @app.exception_handler(RequestValidationError)
+    async def handle_validation_error(request, error):
+        if request.url.path.startswith("/api/v1/auth/"):
+            return error_response(
+                AuthError("BAD_REQUEST", 400)
+                if any(item["type"] == "json_invalid" for item in error.errors())
+                else AuthError("VALIDATION_ERROR", 422)
+            )
+        from fastapi.exception_handlers import request_validation_exception_handler
+
+        return await request_validation_exception_handler(request, error)
+
+    @app.exception_handler(HTTPException)
+    async def handle_http_error(request, error):
+        if request.url.path.startswith("/api/v1/auth/") and error.status_code == 400:
+            return error_response(AuthError("BAD_REQUEST", 400))
+        from fastapi.exception_handlers import http_exception_handler
+
+        return await http_exception_handler(request, error)
+
     api = APIRouter(prefix="/api/v1")
 
     @api.get("/meta", response_model=MetaResponse)
-    def get_meta() -> dict[str, object]:
+    def get_meta(request: Request) -> dict[str, object]:
+        capabilities = _capabilities()
+        if request.app.state.auth_testing and request.app.state.auth_ready:
+            capabilities["auth_login"] = {"enabled": True, "reasons": []}
         return {
             "subjects": CATALOG["subjects"],
             "grades": CATALOG["grades"],
             "themes": CATALOG["themes"],
             "server_time": datetime.now(UTC),
-            "capabilities": _capabilities(),
+            "capabilities": capabilities,
             "support": {
                 "email": None,
                 "service_url": None,
@@ -177,6 +275,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "initial_pending_days": 90,
         }
 
+    api.include_router(auth_router)
     api.include_router(public_apps_router)
     app.include_router(api)
 
@@ -197,7 +296,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             revision = session.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one()
-            if revision != request.app.state.expected_head:
+            if (
+                revision != request.app.state.expected_head
+                or not request.app.state.auth_ready
+            ):
                 raise RuntimeError("Migration revision does not match the head.")
         except (SQLAlchemyError, RuntimeError):
             return JSONResponse(

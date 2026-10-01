@@ -58,6 +58,18 @@ class Member(Base):
         String(16), nullable=False, default="pending"
     )
 
+    login_id_key: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    account_version: Mapped[int] = mapped_column(nullable=False, default=1)
+    created_at: Mapped[str] = mapped_column(UtcTimestampString(), nullable=False)
+    updated_at: Mapped[str] = mapped_column(UtcTimestampString(), nullable=False)
+    first_approved_at: Mapped[str | None] = mapped_column(UtcTimestampString())
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    temporary_password_expires_at: Mapped[str | None] = mapped_column(
+        UtcTimestampString()
+    )
+
     apps: Mapped[list[App]] = relationship(back_populates="owner")
 
 

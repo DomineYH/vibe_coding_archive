@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * Check database and migration readiness
-         * @description Returns only whether the database matches the current migration head.
+         * @description Returns only whether the database matches the current migration head and authentication reconciliation and cleanup succeeded.
          */
         get: operations["getReadiness"];
         put?: never;
@@ -53,7 +53,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Allocate a new mockable authentication flow identity */
+        /**
+         * Allocate a new authentication flow identity
+         * @description Authentication parsing errors are 400 BAD_REQUEST; the 16KiB body limit returns 413 PAYLOAD_TOO_LARGE; field/context validation is 422 VALIDATION_ERROR. Across authentication endpoints, missing current S is 401 AUTH_REQUIRED; missing or invalid required R is 401 RECOVERY_REQUIRED and does not revoke S.
+         */
         post: operations["createAuthFlow"];
         delete?: never;
         options?: never;
@@ -155,7 +158,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Rotate recovery proof using the current full session */
+        /** Rotate recovery proof using any valid current session */
         post: operations["rotateRecoveryCookie"];
         delete?: never;
         options?: never;
@@ -388,7 +391,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sign out the current browser session */
+        /**
+         * Sign out the current browser session
+         * @description Without a valid current S, Origin validation alone permits 204 and neither issues an anonymous session nor settles another transition. With a valid current S, its CSRF, flow, revision, session generation and admitted transition are required.
+         */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -1531,7 +1537,11 @@ export interface operations {
                     "application/json": components["schemas"]["AuthFlowCreated"];
                 };
             };
+            400: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -1559,7 +1569,11 @@ export interface operations {
                     "application/json": components["schemas"]["RecoveryCookieResult"];
                 };
             };
+            400: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -1591,8 +1605,12 @@ export interface operations {
                     "application/json": components["schemas"]["RecoveryReady"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1618,7 +1636,12 @@ export interface operations {
                     "application/json": components["schemas"]["RestartEligibility"];
                 };
             };
+            400: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1641,7 +1664,9 @@ export interface operations {
                     "application/json": components["schemas"]["RecoveryContext"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1666,7 +1691,9 @@ export interface operations {
                     "application/json": components["schemas"]["RecoveryCsrf"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1698,8 +1725,12 @@ export interface operations {
                     "application/json": components["schemas"]["RecoveryCookieResult"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1723,7 +1754,9 @@ export interface operations {
                     "application/json": components["schemas"]["RestartEligibility"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             404: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1753,8 +1786,12 @@ export interface operations {
                     "application/json": components["schemas"]["AuthTransitionPermit"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -1787,8 +1824,12 @@ export interface operations {
                     "application/json": components["schemas"]["SettledAuthTransition"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1820,8 +1861,12 @@ export interface operations {
                     "application/json": components["schemas"]["FlowRevision"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1853,8 +1898,12 @@ export interface operations {
                     "application/json": components["schemas"]["RestartEligibility"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1880,14 +1929,23 @@ export interface operations {
             /** @description Anonymous session and its current CSRF token. */
             201: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["AnonymousSessionResult"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1915,7 +1973,10 @@ export interface operations {
                     "application/json": components["schemas"]["CsrfToken"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1945,7 +2006,10 @@ export interface operations {
                     "application/json": components["schemas"]["Self"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1972,7 +2036,10 @@ export interface operations {
                     "application/json": components["schemas"]["AuthFlowState"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -1999,15 +2066,22 @@ export interface operations {
             /** @description Authenticated member and rotated CSRF token. */
             200: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResult"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -2072,14 +2146,21 @@ export interface operations {
             /** @description The temporary credential is consumed and a full session is issued. */
             200: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResult"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -2089,11 +2170,16 @@ export interface operations {
             query?: never;
             header: {
                 Origin: components["parameters"]["Origin"];
-                "X-CSRF-Token": components["parameters"]["CsrfToken"];
-                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
-                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
-                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
-                "X-EduVibe-Transition-Id": components["parameters"]["TransitionId"];
+                /** @description Required only when a valid current S exists. */
+                "X-CSRF-Token"?: string;
+                /** @description Required only when a valid current S exists. */
+                "X-EduVibe-Flow-Id"?: string;
+                /** @description Required only when a valid current S exists. */
+                "X-EduVibe-Auth-Revision"?: string;
+                /** @description Required only when a valid current S exists. */
+                "X-EduVibe-Session-Generation"?: string;
+                /** @description Required only when a valid current S exists. */
+                "X-EduVibe-Transition-Id"?: string;
             };
             path?: never;
             cookie?: never;
@@ -2107,7 +2193,11 @@ export interface operations {
                 };
                 content?: never;
             };
+            400: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -2134,15 +2224,22 @@ export interface operations {
             /** @description Current administrator session and CSRF are rotated. */
             200: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["AuthResult"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

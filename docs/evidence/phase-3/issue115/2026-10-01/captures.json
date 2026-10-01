@@ -1,0 +1,85 @@
+{
+  "renderer": "Chromium 151.0.7922.34; sRGB; partial raster disabled; Korean fontconfig",
+  "deviceScaleFactor": 1,
+  "locale": "ko-KR",
+  "timezone": "Asia/Seoul",
+  "browserClock": "2026-10-01T00:00:00Z fixed Date; native timers",
+  "animations": "disabled",
+  "captures": [
+    {
+      "file": "visual/auth-prepare-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "c20765091cf05cc33c2b2e8b5e8a0582afadd3586c9f5edd46afa05266508a9f"
+    },
+    {
+      "file": "visual/auth-prepare-390x844.png",
+      "classification": "product_only",
+      "sha256": "97fd13c8dd200acf595d5aa996c13d85b452f58db1a3144ae5044709c9bce888"
+    },
+    {
+      "file": "visual/auth-prepare-768x1024.png",
+      "classification": "product_only",
+      "sha256": "778586e0942be39713d7187b8caf173ea95a2cfec3e74d992f81a4b1215d11c0"
+    },
+    {
+      "file": "visual/auth-prepare-1024x900.png",
+      "classification": "product_only",
+      "sha256": "31fb20e8e412918d45eb357c5b0dc5dcce6ec247ed0ad51b5ba33836ae36e5bd"
+    },
+    {
+      "file": "visual/auth-prepare-360x844.png",
+      "classification": "product_only",
+      "sha256": "75e4df1429f9da75fe657635ab75a8eb04f8d2e7369b7a2489be147d01358f95"
+    },
+    {
+      "file": "visual/auth-storage-failure-1024x900.png",
+      "classification": "product_only",
+      "sha256": "b0851665218d06951921cd82972f07800801c83835a9c65128d52c4af7e1bf29"
+    },
+    {
+      "file": "visual/auth-storage-failure-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "682b3cef2959c14d776300e200208af85bbb763f0b714bac08f22db31dc7e8c2"
+    },
+    {
+      "file": "visual/auth-storage-failure-360x844.png",
+      "classification": "product_only",
+      "sha256": "c96cf2eb2ade83b922d05303c5543029d1e5e944acfe8cf1e50a2788a1ea5d3c"
+    },
+    {
+      "file": "visual/auth-storage-failure-390x844.png",
+      "classification": "product_only",
+      "sha256": "b1e87ff2328d2a61f123359b8becca53f27334671c3e3c9d011627d5c1ef79e7"
+    },
+    {
+      "file": "visual/auth-storage-failure-768x1024.png",
+      "classification": "product_only",
+      "sha256": "a7f130dfc79dcf4e6ea111a5aabfc7ac3e76e026c8981d614e3c8bccfa3d1221"
+    },
+    {
+      "file": "visual/auth-unsupported-1024x900.png",
+      "classification": "product_only",
+      "sha256": "b0851665218d06951921cd82972f07800801c83835a9c65128d52c4af7e1bf29"
+    },
+    {
+      "file": "visual/auth-unsupported-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "682b3cef2959c14d776300e200208af85bbb763f0b714bac08f22db31dc7e8c2"
+    },
+    {
+      "file": "visual/auth-unsupported-360x844.png",
+      "classification": "product_only",
+      "sha256": "c96cf2eb2ade83b922d05303c5543029d1e5e944acfe8cf1e50a2788a1ea5d3c"
+    },
+    {
+      "file": "visual/auth-unsupported-390x844.png",
+      "classification": "product_only",
+      "sha256": "b1e87ff2328d2a61f123359b8becca53f27334671c3e3c9d011627d5c1ef79e7"
+    },
+    {
+      "file": "visual/auth-unsupported-768x1024.png",
+      "classification": "product_only",
+      "sha256": "a7f130dfc79dcf4e6ea111a5aabfc7ac3e76e026c8981d614e3c8bccfa3d1221"
+    }
+  ]
+}

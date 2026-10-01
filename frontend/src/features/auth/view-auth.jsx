@@ -475,7 +475,19 @@ export function AuthView({
             }
           >
             {authStatus === "error" ? (
-              <Btn onClick={onRetry}>다시 확인</Btn>
+              <>
+                <Btn onClick={onRetry}>다시 확인</Btn>
+                {__DATA_MODE__ === "api" &&
+                [
+                  "AUTH_STATE_CHANGED",
+                  "AUTH_REQUIRED",
+                  "RECOVERY_REQUIRED",
+                ].includes(authError?.code) ? (
+                  <Btn variant="line" onClick={onResetAuth}>
+                    브라우저 인증 초기화
+                  </Btn>
+                ) : null}
+              </>
             ) : null}
           </EmptyState>
         </div>

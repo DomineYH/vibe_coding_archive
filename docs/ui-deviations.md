@@ -315,3 +315,17 @@ The [#105 evidence ledger](evidence/phase-2/issue105/2026-09-30/README.md) class
 This delegated approval resolves only #105's listed differences. Direct human, screen-reader, physical-device, cross-browser and hosted-CI inspection, and other issues' pending acceptance, are not claimed.
 
 Final capture verification on 2026-10-01 disables partial raster reuse only for app-create, with the same pinned browser/font/sRGB/viewports and strict full-PNG comparison. Ten repeated PNGs are identical; all 20 source replays and 20 diagnostic counterfactuals remain byte-identical to the preserved references. Every candidate was individually measured: 14 of the 20 new additions change only 36 pixels/max channel delta 2 on the already-required I105-L logout border; dimensions and all other pixels are identical. Six additions remain byte-identical. [The final canonical ledger](evidence/phase-2/issue105/2026-09-30/verification/canonical/approval.json) retains prior/final files, SHA-256, bounds, IDs/state/viewport, renderer setting and full 0px scope. Judge: DomineYH(위임·재확인), 2026-10-01; recorder: Codex. **HITL 권장안 채택 — DomineYH 승인(2026-09-30 위임, 2026-10-01 재확인)**, as recorded in the [coordinator-session confirmation](https://github.com/DomineYH/vibe_coding_archive/issues/105#issuecomment-5922014356), covers this existing I105-L capture scope. Earlier four-/ten-image proposals are superseded; no extra product style, submit-edge exception, tolerance, timeout or mask is adopted. Final affected checks are 30/30, with 20 exact comparisons and 50 observations.
+
+## Issue #115 T01 preparation and recovery · UI-D03/UI-D04/UI-D07
+
+The source login card remains the reference for the prepared form. T01 uses the
+existing EmptyState for unavailable browser primitives, storage failure and
+unresolved authentication; it adds an explicit “브라우저 인증 초기화” action
+when the saved flow or proof requires recovery. These required failure/recovery
+states have no corresponding source frame and are classified `product_only`.
+They do not approve a source difference or a new baseline. General API auth
+capabilities remain false; the prepared form is exercised only through the
+agreed test factory. [The T01 evidence ledger](evidence/phase-3/issue115/2026-10-01/README.md)
+records five viewport observations, existing source/product visual comparisons,
+keyboard behavior, actual HTTP/cookie/SQLite tests and remaining operating checks.
+No reference PNG, visual mask, tolerance or baseline is changed.
