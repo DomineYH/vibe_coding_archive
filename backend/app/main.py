@@ -25,6 +25,7 @@ from app.auth_boundary import (
 from app.auth_login import HashGate
 from app.auth_login import router as login_router
 from app.auth_maintenance import reconcile, sweep
+from app.auth_password import router as password_router
 from app.catalog import CATALOG
 from app.database import (
     current_head,
@@ -33,6 +34,7 @@ from app.database import (
     make_engine,
     make_session_factory,
 )
+from app.password_policy import load_blocklist
 from app.public_apps import router as public_apps_router
 from app.settings import ConfigurationError, Settings
 
@@ -171,6 +173,14 @@ def create_app(
         app.state.settings = resolved
         app.state.auth_testing = auth_testing
         app.state.auth_ready = False
+        if auth_testing:
+            try:
+                app.state.password_blocklist = load_blocklist(
+                    resolved.password_blocklist_path
+                )
+            except RuntimeError:
+                engine.dispose()
+                raise
         app.state.hash_gate = HashGate()
         app.state.engine = engine
         app.state.expected_head = head
@@ -263,9 +273,8 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         capabilities = _capabilities()
         if request.app.state.auth_testing and request.app.state.auth_ready:
-            # Login and logout are one working pair on the prepared test boundary;
-            # password change joins the bundle with T03. Ordinary runs stay off.
-            for key in ("auth_login", "auth_logout"):
+            # #113: the verified T01–T03 test bundle; ordinary runs stay off.
+            for key in ("auth_login", "auth_logout", "auth_password_change"):
                 capabilities[key] = {"enabled": True, "reasons": []}
         return {
             "subjects": CATALOG["subjects"],
@@ -283,6 +292,7 @@ def create_app(
 
     api.include_router(auth_router)
     api.include_router(login_router)
+    api.include_router(password_router)
     api.include_router(public_apps_router)
     app.include_router(api)
 

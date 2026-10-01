@@ -51,12 +51,13 @@ def normalize_schema():
 
 
 @pytest.fixture
-def make_test_app(migrate_test_database):
+def make_test_app(migrate_test_database, password_blocklist):
     def make(database_path: Path, *, auth_testing=False) -> FastAPI:
         migrate_test_database(database_path)
         env = {
             **os.environ,
             "APP_ENV": "test",
+            "PASSWORD_BLOCKLIST_PATH": str(password_blocklist),
             "DATABASE_PATH": str(database_path),
             "PUBLIC_ORIGIN": "http://localhost:5174",
         }

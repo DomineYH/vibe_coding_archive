@@ -122,6 +122,8 @@ def execution_context(db, request, kind, state):
     """Prove flow, current S, CSRF, headers and the admitted transition."""
     item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session", csrf=True)
+    if kind == "password_change" and session["kind"] != "change_only":
+        raise AuthError("SESSION_KIND_NOT_ALLOWED", 403)
     names = ("X-EduVibe-Auth-Revision", "X-EduVibe-Session-Generation")
     if any(request.headers.get(name) is None for name in names):
         raise AuthError("VALIDATION_ERROR", 422)
@@ -203,21 +205,81 @@ def find_member(db, key):
 
 
 def self_body(member, session):
-    return {
+    restricted = session["kind"] == "change_only"
+    result = {
         "id": member["id"],
         "login_id": member["login_id"],
         "nickname": member["nickname"],
         "role": "admin" if member["is_admin"] else "user",
         "approved": True,
-        "must_change_password": False,
-        "session_kind": "full",
+        "must_change_password": restricted,
+        "session_kind": session["kind"],
         "expires_at": min(session["expires_at"], session["absolute_expires_at"]),
-        "email": member["email"],
-        "phone": member["phone"],
-        # The recent-authentication window starts with the admin first change (T03)
-        # and re-authentication (Phase 5); a plain login never opens it.
-        "recent_auth_until": None,
     }
+    if not restricted:
+        result.update(
+            email=member["email"],
+            phone=member["phone"],
+            recent_auth_until=session["recent_auth_until"],
+        )
+    return result
+
+
+def issue_member_session(
+    db, request, item, session, transition, member, *, recent_auth=False
+):
+    timestamp = now()
+    restricted = bool(member["must_change_password"])
+    seq = increment(item["issued_seq"])
+    token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+    name = cookie_name(request, "session", item["id"], seq)
+    cookie_budget(request, name, token)
+    absolute = (
+        min(after(timestamp, 900), member["temporary_password_expires_at"])
+        if restricted
+        else after(timestamp, FULL_ABSOLUTE)
+    )
+    row = {
+        "hash": digest(token),
+        "flow": item["id"],
+        "seq": seq,
+        "member": member["id"],
+        "csrf": csrf,
+        "now": timestamp,
+        "kind": "change_only" if restricted else "full",
+        "expires_at": absolute if restricted else after(timestamp, FULL_IDLE),
+        "absolute_expires_at": absolute,
+        "recent_auth_until": after(timestamp, 900)
+        if recent_auth and member["is_admin"]
+        else None,
+    }
+    db.execute(
+        text("UPDATE sessions SET revoked_at=:now WHERE token_hash=:hash"),
+        {"now": timestamp, "hash": session["token_hash"]},
+    )
+    db.execute(
+        text(
+            "INSERT INTO sessions(token_hash,flow_id,issued_seq,member_id,kind,csrf_token,created_at,authenticated_at,last_activity_at,absolute_expires_at,expires_at,recent_auth_until) VALUES (:hash,:flow,:seq,:member,:kind,:csrf,:now,:now,:now,:absolute_expires_at,:expires_at,:recent_auth_until)"
+        ),
+        row,
+    )
+    item.update(issued_seq=seq, current_session_generation=seq)
+    item["last_identity_change_revision"] = increment(item["revision"])
+    advance(db, item, activity=True)
+    db.execute(
+        text(
+            "UPDATE auth_transitions SET state='succeeded', result_session_generation=:seq, terminal_at=:now WHERE transition_id=:id"
+        ),
+        {"seq": seq, "now": timestamp, "id": transition["transition_id"]},
+    )
+    return response(
+        db,
+        request,
+        {"user": self_body(member, row), "csrf_token": csrf},
+        cookie=(name, token),
+        metadata=item,
+        private=True,
+    )
 
 
 @router.post("/login")
@@ -237,7 +299,7 @@ def login(request: Request, body: LoginBody, db=Unlocked):
         refuse_expired_permit(db, item, transition)
         refuse_when_limited(db, item, transition, subjects)
         seq = increment(item["issued_seq"])
-        token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+        token = secrets.token_urlsafe(32)
         name = cookie_name(request, "session", item["id"], seq)
         cookie_budget(request, name, token)
         snapshot = find_member(db, key)
@@ -276,59 +338,12 @@ def login(request: Request, body: LoginBody, db=Unlocked):
             fail(db, item, transition, AuthError("AUTH_STATE_CHANGED"))
         if member["approval_status"] != "approved":
             fail(db, item, transition, AuthError("ACCOUNT_NOT_APPROVED", 403))
-        if member["must_change_password"]:
-            expired = (
-                member["temporary_password_expires_at"] is None
-                or member["temporary_password_expires_at"] <= timestamp
-            )
-            # Change-only sessions arrive with the first-change flow (T03).
-            code = (
-                ("TEMP_PASSWORD_EXPIRED", 403)
-                if expired
-                else ("FEATURE_UNAVAILABLE", 503)
-            )
-            fail(db, item, transition, AuthError(*code))
-        db.execute(
-            text("UPDATE sessions SET revoked_at=:now WHERE token_hash=:hash"),
-            {"now": timestamp, "hash": session["token_hash"]},
-        )
-        row = {
-            "hash": digest(token),
-            "flow": item["id"],
-            "seq": seq,
-            "member": member["id"],
-            "csrf": csrf,
-            "now": timestamp,
-            "expires_at": after(timestamp, FULL_IDLE),
-            "absolute_expires_at": after(timestamp, FULL_ABSOLUTE),
-            "authenticated_at": timestamp,
-        }
-        db.execute(
-            text(
-                "INSERT INTO sessions(token_hash,flow_id,issued_seq,member_id,kind,csrf_token,created_at,authenticated_at,last_activity_at,absolute_expires_at,expires_at) VALUES (:hash,:flow,:seq,:member,'full',:csrf,:now,:now,:now,:absolute_expires_at,:expires_at)"
-            ),
-            row,
-        )
-        item.update(issued_seq=seq, current_session_generation=seq)
-        item["last_identity_change_revision"] = increment(item["revision"])
-        advance(db, item, activity=True)
-        db.execute(
-            text(
-                "UPDATE auth_transitions SET state='succeeded', result_session_generation=:seq, terminal_at=:now WHERE transition_id=:id"
-            ),
-            {"seq": seq, "now": timestamp, "id": transition["transition_id"]},
-        )
-        return response(
-            db,
-            request,
-            {
-                "user": self_body(member, row),
-                "csrf_token": csrf,
-            },
-            cookie=(name, token),
-            metadata=item,
-            private=True,
-        )
+        if member["must_change_password"] and (
+            member["temporary_password_expires_at"] is None
+            or member["temporary_password_expires_at"] <= timestamp
+        ):
+            fail(db, item, transition, AuthError("TEMP_PASSWORD_EXPIRED", 403))
+        return issue_member_session(db, request, item, session, transition, member)
 
 
 def member_session(db, request):
@@ -346,6 +361,12 @@ def member_session(db, request):
     )
     if not member or member["approval_status"] != "approved":
         raise AuthError("AUTH_REQUIRED", 401)
+    if session["kind"] == "change_only" and (
+        not member["must_change_password"]
+        or not member["temporary_password_expires_at"]
+        or member["temporary_password_expires_at"] <= now()
+    ):
+        raise AuthError("AUTH_REQUIRED", 401)
     return item, session, member
 
 
@@ -358,8 +379,6 @@ def me(request: Request, db=Unlocked):
     check_revision(
         request, item, request.headers["X-EduVibe-Auth-Revision"], session["issued_seq"]
     )
-    if session["kind"] != "full":
-        raise AuthError("FEATURE_UNAVAILABLE", 503)
     # A read: neither the session nor the flow is extended.
     return response(
         db, request, self_body(member, session), metadata=item, private=True

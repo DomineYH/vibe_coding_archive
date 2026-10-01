@@ -346,3 +346,23 @@ session outlives the browser by design. No reference PNG, mask, tolerance or
 baseline is changed. [The T02 evidence ledger](evidence/phase-3/issue116/2026-10-01/README.md)
 records the 20 five-viewport observations (identical across two independent
 runs), the source comparison and the actual HTTP/cookie/SQLite checks.
+
+
+## Issue #117 T03 change-only and own password change · UI-D03/UI-D07
+
+The existing maximum-420px EV/password-change card, 57px header and navigation
+are reused. New-password/confirmation labels, NFC/length hint and the actual
+change-only expiry remain in the card. Server field errors survive auth
+re-observation and focus the associated first invalid field. Confirmation remains
+browser-only. The temporary-credential flow and its errors/recovery have no
+matching source frame and are `product_only` observations, not new baselines.
+
+| Difference | Product behavior | Reason and evidence |
+| --- | --- | --- |
+| Change-only expiry and own change | The existing card shows the server's actual short expiry and submits one password. No administrator feature opens before full S is observed. | #117 / R7 Q21/Q34/Q35; [T03 evidence](evidence/phase-3/issue117/2026-10-02/README.md). |
+| Server error and lost reply | Associated field error/focus survives rechecking; uncertain commit uses the existing recovery actions and never undoes the password change. | UI-D03/UI-D07; real CLI/HTTP/SQLite/cookie checks and five-viewport observations in the same evidence ledger. |
+
+No preserved reference, visual baseline, mask or tolerance is updated. Existing
+source comparisons and product-only observations are recorded separately. Local
+automation does not claim direct human, screen-reader, physical-device or operating
+release acceptance; U01/U02 remain the T07 public gate.

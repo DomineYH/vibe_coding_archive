@@ -1232,7 +1232,11 @@ function AuthRoute({
   const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
   return (
     <AuthView
-      key={mode}
+      key={
+        mode === "password-change"
+          ? `${mode}:${authScopeIdentity({ ...auth, observationGeneration: 0 })}`
+          : mode
+      }
       mode={mode}
       authUser={authUser}
       routeError={route.invalid}
@@ -1360,6 +1364,7 @@ export default function App() {
     __DATA_MODE__ === "api" &&
     authMetadata.meta?.capabilities.auth_login.enabled === true &&
     authMetadata.meta.capabilities.auth_logout.enabled === true &&
+    authMetadata.meta.capabilities.auth_password_change.enabled === true &&
     !authMetadata.error;
   const authRequest = useRef(0);
   const authObservation = useRef(0);

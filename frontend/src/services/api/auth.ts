@@ -109,6 +109,47 @@ async function recoveryToken(id: string) {
   );
 }
 
+async function memberTransition(
+  kind: "login" | "password_change",
+  path: "/auth/login" | "/auth/password",
+  body: unknown,
+) {
+  return runApiTransition(authService, kind, async (permit, state) => {
+    if (!permit || state.sessionGeneration === null) throw contractError();
+    const csrf = await authService.getCsrf();
+    const value = (await requestJson(`POST ${path}`, path, {
+      method: "POST",
+      requestBody: body,
+      headers: await memberHeaders(
+        csrf.csrfToken,
+        permit.flowId,
+        permit.revision,
+        state.sessionGeneration,
+        permit.transitionId,
+      ),
+      uncertain: true,
+      includeHeaders: true,
+    })) as { body: unknown; headers: Headers };
+    const result = checked(mapAuthResult, value.body);
+    // A committed member transition rotates S: the reply must name a newer revision and generation.
+    const revision = value.headers.get("X-EduVibe-Auth-Revision");
+    const generation = value.headers.get("X-EduVibe-Session-Generation");
+    if (
+      value.headers.get("X-EduVibe-Flow-Id") !== permit.flowId ||
+      !revision ||
+      revision === permit.revision ||
+      !generation ||
+      generation === state.sessionGeneration
+    )
+      throw new ServiceError(
+        "CONTRACT_ERROR",
+        "인증 응답의 연결 정보를 확인할 수 없어요.",
+        { outcome: "unknown" },
+      );
+    return result;
+  });
+}
+
 export const authService: AuthService = {
   getCurrentAuthState(options) {
     return observeApiAuth(authService, options);
@@ -201,7 +242,7 @@ export const authService: AuthService = {
         expected_revision: input.expectedRevision,
         expected_session_generation: input.expectedSessionGeneration,
       },
-      input.kind === "login" || input.kind === "logout"
+      ["login", "logout", "password_change"].includes(input.kind)
         ? (await authService.getCsrf()).csrfToken
         : await recoveryToken(input.flowId),
     );
@@ -333,43 +374,15 @@ export const authService: AuthService = {
     throw unavailable();
   },
   async login(input) {
-    return runApiTransition(authService, "login", async (permit, state) => {
-      if (!permit || state.sessionGeneration === null) throw contractError();
-      const csrf = await authService.getCsrf();
-      const value = (await requestJson("POST /auth/login", "/auth/login", {
-        method: "POST",
-        requestBody: { login_id: input.loginId, password: input.password },
-        headers: await memberHeaders(
-          csrf.csrfToken,
-          permit.flowId,
-          permit.revision,
-          state.sessionGeneration,
-          permit.transitionId,
-        ),
-        uncertain: true,
-        includeHeaders: true,
-      })) as { body: unknown; headers: Headers };
-      const result = checked(mapAuthResult, value.body);
-      // A committed login rotates S: the reply must name a newer revision and generation.
-      const revision = value.headers.get("X-EduVibe-Auth-Revision");
-      const generation = value.headers.get("X-EduVibe-Session-Generation");
-      if (
-        value.headers.get("X-EduVibe-Flow-Id") !== permit.flowId ||
-        !revision ||
-        revision === permit.revision ||
-        !generation ||
-        generation === state.sessionGeneration
-      )
-        throw new ServiceError(
-          "CONTRACT_ERROR",
-          "인증 응답의 연결 정보를 확인할 수 없어요.",
-          { outcome: "unknown" },
-        );
-      return result;
+    return memberTransition("login", "/auth/login", {
+      login_id: input.loginId,
+      password: input.password,
     });
   },
-  async changePassword() {
-    throw unavailable();
+  async changePassword(input) {
+    return memberTransition("password_change", "/auth/password", {
+      password: input.password,
+    });
   },
   async reauthenticate() {
     throw unavailable();

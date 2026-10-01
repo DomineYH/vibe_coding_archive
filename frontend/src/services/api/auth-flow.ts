@@ -371,13 +371,13 @@ export async function prepareApiAuthFlow(
   }, options);
 }
 /**
- * Spend one login/logout permit under the shared Web Lock. The transition ID is
+ * Spend one member transition permit under the shared Web Lock. The transition ID is
  * stored before admission; a lost reply leaves it for flow-state/settle, and
  * nothing here ever replays the write.
  */
 export async function runApiTransition<T>(
   service: AuthService,
-  kind: "login" | "logout",
+  kind: "login" | "logout" | "password_change",
   execute: (
     permit: AuthTransitionPermit | null,
     state: AuthFlowState,

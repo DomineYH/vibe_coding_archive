@@ -54,3 +54,13 @@ def member_app(make_test_app, tmp_path):  # noqa: F811
         return app, path
 
     return make
+
+
+@pytest.fixture(scope="session")
+def password_blocklist(tmp_path_factory):
+    # Test-owned preparation, separate from API startup; the fixed source is never committed.
+    from app.password_policy import prepare_blocklist
+
+    path = tmp_path_factory.mktemp("password-policy") / "ncsc.txt"
+    prepare_blocklist(path)
+    return path

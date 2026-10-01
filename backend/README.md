@@ -26,7 +26,7 @@ read twice without echo and stored as a hash.
 
 The ordinary app keeps every authentication capability disabled. Only the
 `APP_ENV=test` app factory's `auth_testing=True` boundary exercises preparation;
-it implements no mutation after T02 (see the T02 section for login/logout).
+it implements T01–T03 only (see the sections below).
 
 Migration `0003_auth_identity` preserves member/app IDs and ownership. For an
 existing database, provide `AUTH_MEMBER_BACKFILL=/absolute/path/history.json`:
@@ -56,8 +56,8 @@ local contract test uses only a temporary SQLite file, not an operating backup.
 
 On the same `APP_ENV=test` boundary, `POST /auth/login`, `GET /auth/me` and
 `POST /auth/logout` are live; the ordinary app keeps every capability off. The
-boundary advertises `auth_login` and `auth_logout` together (they are one working
-pair) and leaves `auth_password_change` off until the first-change flow (T03).
+boundary advertises `auth_login`, `auth_logout` and `auth_password_change` as the
+verified T01–T03 bundle.
 
 Passwords are verified with pwdlib's recommended Argon2id profile (RFC 9106
 low-memory: m=64 MiB, t=3, p=4) outside any write transaction, behind a gate of
@@ -71,3 +71,45 @@ minutes of inactivity; `me`, `csrf` and `flow-state` never extend it.
 Synthetic Argon2 members for tests live in `tests/support.py`
 (`populate_auth_members`); the API E2E runner inserts them once with the other
 fixtures. Their shared password is a test-only constant, never a seed default.
+
+
+## T03 administrator credentials and own password change
+
+First run the explicit migration to `0004_session_recent_auth`. Individually
+prepare the fixed R15 list in a private path outside version control:
+
+```sh
+export APP_ENV=development
+export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+uv run --frozen python -m app.cli prepare-password-blocklist
+uv run --frozen python -m app.cli bootstrap-admin
+# Only for an existing administrator:
+uv run --frozen python -m app.cli recover-admin
+```
+
+The list source/version/digest remain the fixed R15 metadata. API startup never
+fetches it; `auth_testing=True` refuses a missing or corrupt list. Tests prepare
+the fixed source once per pytest session in a test-owned temporary directory;
+the API E2E runner prepares it explicitly before startup. No list or derived
+password material is committed or packaged. Redistribution rights remain U02
+at T07. `PASSWORD_BLOCKLIST_PATH` defaults to `password-blocklist-ncsc.txt` next to
+the database; always keep both outside version control.
+
+The administrator CLI requires stdin/stdout TTY, reads/confirm passwords without
+echo, asks for explicit `YES`, and supplies no credential argument/environment
+option. Bootstrap requires zero administrators and rejects a login ID collision;
+recovery targets only an existing administrator. The credential, member version,
+recovery session revocations and minimal audit commit together; audit failure
+rolls everything back. Running these commands against operating accounts is a
+separate operator action, not authorized by the implementation ticket.
+
+A temporary credential lasts 24 hours. Login issues only `change_only`, expiring
+at the earlier of login+15 minutes or the credential deadline. Its Self omits
+contact fields and recent auth. The existing password card submits no confirmation.
+A successful own change consumes the credential, increments the member version,
+revokes all restricted sessions and issues full S only to the completing browser.
+Its 8-hour absolute/30-minute inactivity and administrator 15-minute recent-auth
+windows begin at the change; ordinary later login does not open recent auth.
+A lost reply uses the original transition and cookie observation, never replays
+the change, and discards only that unreceived result S. Ordinary auth capabilities
+stay off; administrator reauth/reset/deletion and signup stay unavailable.

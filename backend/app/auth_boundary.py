@@ -59,10 +59,11 @@ def digest(value):
 
 
 class AuthError(Exception):
-    def __init__(self, code, status=409, *, retry_at=None):
+    def __init__(self, code, status=409, *, retry_at=None, fields=None):
         self.code = code
         self.status = status
         self.retry_at = retry_at
+        self.fields = fields
 
 
 def error_response(error):
@@ -91,6 +92,7 @@ def error_response(error):
                     "DB_BUSY": "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.",
                 }.get(error.code, "인증 준비를 완료할 수 없어요. 다시 확인해 주세요."),
                 "request_id": str(uuid4()),
+                **({"fields": error.fields} if error.fields else {}),
                 **(
                     {"retry_at": error.retry_at, "server_time": now()}
                     if error.retry_at is not None
