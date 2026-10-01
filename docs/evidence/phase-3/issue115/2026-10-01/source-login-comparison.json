@@ -1,0 +1,85 @@
+{
+  "pixelTolerance": 0,
+  "results": [
+    {
+      "size": "1440x1000",
+      "source": "basic-design-runtime-20260922/reference/1440x1000/07-login.png",
+      "product": "visual/auth-prepare-1440x1000.png",
+      "actualDimensions": [
+        1440,
+        1000
+      ],
+      "sourceDimensions": [
+        1440,
+        1000
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 83574,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences, not a baseline or human acceptance"
+    },
+    {
+      "size": "1024x900",
+      "source": "basic-design-runtime-20260922/reference/1024x900/07-login.png",
+      "product": "visual/auth-prepare-1024x900.png",
+      "actualDimensions": [
+        1024,
+        900
+      ],
+      "sourceDimensions": [
+        1024,
+        959
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences, not a baseline or human acceptance"
+    },
+    {
+      "size": "768x1024",
+      "source": "basic-design-runtime-20260922/reference/768x1024/07-login.png",
+      "product": "visual/auth-prepare-768x1024.png",
+      "actualDimensions": [
+        768,
+        1024
+      ],
+      "sourceDimensions": [
+        768,
+        1024
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 82229,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences, not a baseline or human acceptance"
+    },
+    {
+      "size": "390x844",
+      "source": "basic-design-runtime-20260922/reference/390x844/07-login.png",
+      "product": "visual/auth-prepare-390x844.png",
+      "actualDimensions": [
+        390,
+        844
+      ],
+      "sourceDimensions": [
+        390,
+        977
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences, not a baseline or human acceptance"
+    },
+    {
+      "size": "360x844",
+      "source": "basic-design-runtime-20260922/reference/360x844/07-login.png",
+      "product": "visual/auth-prepare-360x844.png",
+      "actualDimensions": [
+        360,
+        844
+      ],
+      "sourceDimensions": [
+        360,
+        999
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences, not a baseline or human acceptance"
+    }
+  ]
+}

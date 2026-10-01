@@ -42,9 +42,16 @@ async function run() {
   await requireFreePort(5174, "localhost");
 
   const temporary = await mkdtemp(path.join(os.tmpdir(), "eduvibe-api-e2e-"));
+  const arguments_ = process.argv
+    .slice(2)
+    .filter((arg) => arg !== "--auth-unavailable");
+  const authPrepared =
+    !process.argv.includes("--auth-unavailable") &&
+    arguments_.some((arg) => arg.includes("auth-prepare"));
   const env = {
     ...process.env,
     APP_ENV: "test",
+    API_E2E_AUTH_BOUNDARY: authPrepared ? "prepared" : "unavailable",
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PUBLIC_ORIGIN: "http://localhost:5174",
   };
@@ -77,24 +84,38 @@ async function run() {
       return;
     }
 
-    // E2E uses isolated synthetic rows; it never calls the development seed.
-    playwright = spawn(
-      path.join(frontend, "node_modules", ".bin", "playwright"),
-      ["test", "--config=playwright.api.config.js", ...process.argv.slice(2)],
-      {
-        cwd: frontend,
-        env,
-        stdio: "inherit",
-        detached: process.platform !== "win32",
-      },
-    );
-    const result = await new Promise((resolve, reject) => {
-      playwright.once("error", reject);
-      playwright.once("exit", (code, signal) => resolve({ code, signal }));
-    });
-    process.exitCode = receivedSignal
-      ? signalExitCode()
-      : (result.code ?? (result.signal ? 1 : 0));
+    // Keep the same migrated database across the ordinary and prepared-boundary runs.
+    // Fixtures are inserted once; restarting the server cannot repair test authority.
+    const runs =
+      arguments_.length || process.argv.includes("--auth-unavailable")
+        ? [{ arguments_, prepared: authPrepared }]
+        : [
+            { arguments_, prepared: false },
+            { arguments_: ["e2e-api/auth-prepare.spec.js"], prepared: true },
+          ];
+    for (const run of runs) {
+      playwright = spawn(
+        path.join(frontend, "node_modules", ".bin", "playwright"),
+        ["test", "--config=playwright.api.config.js", ...run.arguments_],
+        {
+          cwd: frontend,
+          env: {
+            ...env,
+            API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
+          },
+          stdio: "inherit",
+          detached: process.platform !== "win32",
+        },
+      );
+      const result = await new Promise((resolve, reject) => {
+        playwright.once("error", reject);
+        playwright.once("exit", (code, signal) => resolve({ code, signal }));
+      });
+      process.exitCode = receivedSignal
+        ? signalExitCode()
+        : (result.code ?? (result.signal ? 1 : 0));
+      if (process.exitCode) break;
+    }
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }

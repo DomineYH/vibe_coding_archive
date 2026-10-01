@@ -37,3 +37,7 @@ def migrate_test_database():
 @pytest.fixture
 def seed_public_and_private_apps():
     return populate_public_and_private_apps
+
+
+# Explicit mixed file selections in pytest must retain the shared HTTP contract seams.
+from tests.contracts.conftest import make_test_app, normalize_schema  # noqa: F401

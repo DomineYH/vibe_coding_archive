@@ -516,8 +516,8 @@ def test_seed_cli_login_collision_rolls_back_every_new_row(tmp_path: Path):
     with sqlite3.connect(database_path) as connection:
         connection.execute(
             "INSERT INTO members "
-            "(id, login_id, nickname, is_admin, approval_status) "
-            "VALUES (?, 'seed-member-two', 'Existing member', 0, 'approved')",
+            "(id, login_id, nickname, is_admin, approval_status, login_id_key, created_at, updated_at, first_approved_at) "
+            "VALUES (?, 'seed-member-two', 'Existing member', 0, 'approved', 'seed-member-two', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z')",
             ("00000000-0000-0000-0000-000000000099",),
         )
         connection.commit()
@@ -543,9 +543,9 @@ def test_seed_cli_rejects_normalized_login_collision_before_prompt_or_writes(
     with sqlite3.connect(database_path) as connection:
         connection.execute(
             "INSERT INTO members "
-            "(id, login_id, nickname, is_admin, approval_status) "
-            "VALUES (?, ?, 'Existing member', 0, 'approved')",
-            (blocker_id, blocker_login),
+            "(id, login_id, nickname, is_admin, approval_status, login_id_key, created_at, updated_at, first_approved_at) "
+            "VALUES (?, ?, 'Existing member', 0, 'approved', ?, '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z')",
+            (blocker_id, blocker_login, blocker_login.strip().lower()),
         )
         connection.commit()
 
@@ -570,9 +570,9 @@ def test_seed_cli_rejects_seed_member_id_with_different_login_before_prompt_or_w
     with sqlite3.connect(database_path) as connection:
         connection.execute(
             "INSERT INTO members "
-            "(id, login_id, nickname, is_admin, approval_status) "
-            "VALUES (?, ?, 'Existing member', 0, 'approved')",
-            (MEMBER_IDS[0], blocker_login),
+            "(id, login_id, nickname, is_admin, approval_status, login_id_key, created_at, updated_at, first_approved_at) "
+            "VALUES (?, ?, 'Existing member', 0, 'approved', ?, '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z')",
+            (MEMBER_IDS[0], blocker_login, blocker_login.strip().lower()),
         )
         connection.commit()
 

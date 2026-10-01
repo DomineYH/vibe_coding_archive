@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.auth_maintenance import reconcile
 from app.database import current_head, current_revision, make_engine
 from app.models import App, AppGrade, HealthResult, Member
 from app.settings import ROOT, ConfigurationError, Settings
@@ -147,9 +148,14 @@ def seed() -> None:
                 password = _shared_password() if missing_members else None
                 hasher = PasswordHash.recommended() if password else None
                 for member in missing_members:
+                    timestamp = datetime.now(UTC)
                     session.add(
                         Member(
                             **member,
+                            login_id_key=_normalized_login_id(member["login_id"]),
+                            created_at=timestamp,
+                            updated_at=timestamp,
+                            first_approved_at=timestamp,
                             email=None,
                             phone=None,
                             password_hash=hasher.hash(password),
@@ -204,7 +210,25 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("seed", help="add missing synthetic development data")
+    subparsers.add_parser(
+        "invalidate-restored-auth",
+        help="invalidate all restored browser authority before restart",
+    )
     args = parser.parse_args()
+    if args.command == "invalidate-restored-auth":
+        settings = Settings.from_environment()
+        engine = make_engine(settings.database_path)
+        try:
+            if current_revision(engine) != current_head():
+                raise RuntimeError(
+                    "Explicit migration required before restore reconciliation."
+                )
+            from app.database import make_session_factory
+
+            reconcile(make_session_factory(engine), restored=True)
+        finally:
+            engine.dispose()
+        return 0
     if args.command == "seed":
         try:
             seed()

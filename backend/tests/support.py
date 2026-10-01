@@ -58,10 +58,19 @@ def populate_public_and_private_apps(
             """
             INSERT INTO members (
                 id, login_id, nickname, email, phone, password_hash, is_admin,
-                approval_status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                approval_status, login_id_key, created_at, updated_at, first_approved_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            members,
+            [
+                (
+                    *member,
+                    member[1].lower(),
+                    "2026-09-28T12:00:00.000000Z",
+                    "2026-09-28T12:00:00.000000Z",
+                    "2026-09-28T12:00:00.000000Z",
+                )
+                for member in members
+            ],
         )
         created_at = "2026-09-28T12:00:00.000000Z"
         apps = [

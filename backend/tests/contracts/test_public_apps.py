@@ -605,9 +605,9 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
             connection.execute(
                 text(
                     "INSERT INTO members (id, login_id, nickname, email, phone, "
-                    "password_hash, is_admin, approval_status) "
+                    "password_hash, is_admin, approval_status, login_id_key, created_at, updated_at, first_approved_at) "
                     "VALUES (:id, :login_id, :nickname, :email, :phone, "
-                    ":password_hash, :is_admin, :approval_status)"
+                    ":password_hash, :is_admin, :approval_status, 'unique-login', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z')"
                 ),
                 member,
             )
@@ -615,8 +615,8 @@ def test_file_database_constraints_reject_invalid_app_and_health_rows(
         invalid_rows = [
             (
                 (
-                    "INSERT INTO members (id, login_id, nickname, is_admin, approval_status) "
-                    "VALUES ('00000000-0000-4000-8000-000000000011', 'unique-login', 'n', 0, 'approved')"
+                    "INSERT INTO members (id, login_id, nickname, is_admin, approval_status, login_id_key, created_at, updated_at, first_approved_at) "
+                    "VALUES ('00000000-0000-4000-8000-000000000011', 'unique-login', 'n', 0, 'approved', 'unique-login', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z', '2026-09-28T12:00:00Z')"
                 ),
                 {},
             ),

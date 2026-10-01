@@ -20,6 +20,11 @@ def run_migrations_online() -> None:
     engine = make_migration_engine(settings.database_path)
     try:
         with engine.connect() as connection:
+            # SQLite must disable FK enforcement before a parent-table batch copy.
+            # The entire migration is transactional; integrity is checked before commit.
+            connection.exec_driver_sql("PRAGMA foreign_keys = OFF")
+            connection.commit()
+            connection.exec_driver_sql("BEGIN IMMEDIATE")
             context.configure(
                 connection=connection,
                 target_metadata=None,
@@ -27,6 +32,10 @@ def run_migrations_online() -> None:
             )
             with context.begin_transaction():
                 context.run_migrations()
+            if connection.exec_driver_sql("PRAGMA foreign_key_check").fetchall():
+                raise RuntimeError("Migration foreign key integrity check failed.")
+            connection.commit()
+            connection.exec_driver_sql("PRAGMA foreign_keys = ON")
     finally:
         engine.dispose()
 

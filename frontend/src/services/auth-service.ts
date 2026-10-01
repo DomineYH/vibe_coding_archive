@@ -74,13 +74,20 @@ export type AuthService = {
     input: ExpectedRevisionInput,
   ): Promise<RecoveryReady>;
   abandonFlow(flowId: string): Promise<RestartEligibility>;
-  getRecoveryContext(): Promise<RecoveryContext>;
-  getRecoveryCsrf(flowId: string): Promise<RecoveryCsrf>;
+  getRecoveryContext(options?: AuthRequestOptions): Promise<RecoveryContext>;
+  getRecoveryCsrf(
+    flowId: string,
+    options?: AuthRequestOptions,
+  ): Promise<RecoveryCsrf>;
   rotateRecoveryCookie(
     flowId: string,
     input: RotateRecoveryCookieInput,
+    options?: AuthRequestOptions,
   ): Promise<RecoveryCookieResult>;
-  getRestartEligibility(flowId: string): Promise<RestartEligibility>;
+  getRestartEligibility(
+    flowId: string,
+    options?: AuthRequestOptions,
+  ): Promise<RestartEligibility>;
   admitTransition(
     input: AuthTransitionAdmissionInput,
   ): Promise<AuthTransitionPermit>;
