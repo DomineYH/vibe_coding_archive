@@ -185,20 +185,20 @@ def test_short_expiry_uses_the_earlier_temporary_deadline_and_full_clocks_start_
 
 
 @pytest.mark.parametrize(
-    "mutation",
+    "mutation,status,code,state,failure",
     [
-        "session_expired",
-        "session_revoked",
-        "temporary_expired",
-        "member_version",
-        "member_hash",
-        "permit_expired",
-        "flow_revoked",
-        "settled",
+        ("session_expired", 401, "AUTH_REQUIRED", "executing", None),
+        ("session_revoked", 401, "AUTH_REQUIRED", "executing", None),
+        ("temporary_expired", 401, "AUTH_REQUIRED", "failed", "AUTH_REQUIRED"),
+        ("member_version", 409, "AUTH_STATE_CHANGED", "failed", "AUTH_STATE_CHANGED"),
+        ("member_hash", 409, "AUTH_STATE_CHANGED", "failed", "AUTH_STATE_CHANGED"),
+        ("permit_expired", 409, "AUTH_STATE_CHANGED", "expired", None),
+        ("flow_revoked", 401, "AUTH_REQUIRED", "executing", None),
+        ("settled", 409, "AUTH_STATE_CHANGED", "cancelled", None),
     ],
 )
 def test_final_change_commit_rechecks_live_proof_credential_member_and_permit(
-    member_app, monkeypatch, mutation
+    member_app, monkeypatch, mutation, status, code, state, failure
 ):
     import concurrent.futures
     import threading
@@ -238,14 +238,32 @@ def test_final_change_commit_rechecks_live_proof_credential_member_and_permit(
                 db.execute(statements[mutation])
             release.set()
             result = future.result(timeout=10)
-        assert result.status_code in (401, 403, 409)
+        assert result.status_code == status
+        assert result.json()["error"]["code"] == code
         with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT state,failure_code FROM auth_transitions WHERE kind='password_change'"
+            ).fetchone() == (state, failure)
             assert db.execute(
                 "SELECT must_change_password FROM members WHERE login_id='admin-user'"
             ).fetchone() == (1,)
             assert db.execute(
                 "SELECT COUNT(*) FROM sessions WHERE kind='full'"
             ).fetchone() == (0,)
+        if state == "executing" and mutation != "flow_revoked":
+            pending = browser.state()["pending_transition"]
+            settled = client.post(
+                f"{API}/transitions/{pending['transition_id']}/settle",
+                json={"flow_id": browser.flow, "expected_revision": browser.revision},
+                headers=browser.recovery_headers(),
+            )
+            assert settled.status_code == 200
+            assert settled.json()["result"]["state"] == "cancelled"
+            browser.anonymous()
+            assert browser.login(ADMIN).status_code == 200
+        elif mutation == "flow_revoked":
+            browser.prepare().anonymous()
+            assert browser.login(ADMIN).status_code == 200
 
 
 def test_auth_enabled_startup_refuses_missing_or_corrupt_blocklist(
@@ -348,3 +366,49 @@ def test_operating_cookie_attributes_apply_to_change_only_and_full(member_app):
                 assert result.headers["cache-control"] == "private, no-store"
         finally:
             ORIGIN["Origin"] = original
+
+
+def test_cookie_budget_is_rejected_before_password_work_and_execution(
+    member_app, monkeypatch
+):
+    from app import auth_login
+
+    app, path = member_app()
+    temporary_admin(path)
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        assert browser.login(ADMIN).status_code == 200
+        permit = browser.admit("password_change")
+        assert permit.status_code == 201
+        for seq in range(6):
+            client.cookies.set(
+                f"eduvibe_session_dev_00000000-0000-4000-8000-000000000115_{seq}",
+                "unknown",
+            )
+        verifications = []
+        real = auth_login.argon2_verify
+
+        def record(stored, password):
+            verifications.append(True)
+            return real(stored, password)
+
+        monkeypatch.setattr(auth_login, "argon2_verify", record)
+        result = client.post(
+            f"{API}/password",
+            json={"password": NEW_PASSWORD},
+            headers=browser.session_headers(permit.json()),
+        )
+        assert result.status_code == 409
+        assert result.json()["error"]["code"] == "AUTH_COOKIE_BUDGET_EXCEEDED"
+        assert verifications == []
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT state,failure_code FROM auth_transitions WHERE kind='password_change'"
+            ).fetchone() == ("failed", "AUTH_COOKIE_BUDGET_EXCEEDED")
+            assert db.execute(
+                "SELECT must_change_password,account_version FROM members WHERE login_id=?",
+                (ADMIN,),
+            ).fetchone() == (1, 1)
+            assert db.execute(
+                "SELECT COUNT(*) FROM sessions WHERE kind='full'"
+            ).fetchone() == (0,)

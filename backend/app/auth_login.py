@@ -196,6 +196,18 @@ def refuse_when_limited(db, item, transition, subjects):
             )
 
 
+def unchanged(member, snapshot):
+    return all(
+        member[key] == snapshot[key]
+        for key in ("id", "account_version", "password_hash")
+    )
+
+
+def temporary_valid(member, at):
+    expiry = member["temporary_password_expires_at"]
+    return expiry is not None and expiry > at
+
+
 def find_member(db, key):
     return (
         db.execute(text("SELECT * FROM members WHERE login_id_key=:key"), {"key": key})
@@ -329,25 +341,22 @@ def login(request: Request, body: LoginBody, db=Unlocked):
                 AuthError("INVALID_CREDENTIALS", 401),
                 events=subjects,
             )
-        if (
-            member["id"] != snapshot["id"]
-            or member["account_version"] != snapshot["account_version"]
-            or member["password_hash"] != snapshot["password_hash"]
-        ):
+        if not unchanged(member, snapshot):
             # Approval or credential changed mid-hash: never sign in on the past state.
             fail(db, item, transition, AuthError("AUTH_STATE_CHANGED"))
         if member["approval_status"] != "approved":
             fail(db, item, transition, AuthError("ACCOUNT_NOT_APPROVED", 403))
-        if member["must_change_password"] and (
-            member["temporary_password_expires_at"] is None
-            or member["temporary_password_expires_at"] <= timestamp
-        ):
+        if member["must_change_password"] and not temporary_valid(member, timestamp):
             fail(db, item, transition, AuthError("TEMP_PASSWORD_EXPIRED", 403))
         return issue_member_session(db, request, item, session, transition, member)
 
 
 def member_session(db, request):
-    """The current full member session, re-checked against the member row."""
+    """Current full or change_only member session, checked against the member row.
+
+    Protected operations must additionally require kind == 'full'; change_only
+    grants only restricted Self, logout and the member's own password change.
+    """
     item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session")
     if session["member_id"] is None:
@@ -362,9 +371,7 @@ def member_session(db, request):
     if not member or member["approval_status"] != "approved":
         raise AuthError("AUTH_REQUIRED", 401)
     if session["kind"] == "change_only" and (
-        not member["must_change_password"]
-        or not member["temporary_password_expires_at"]
-        or member["temporary_password_expires_at"] <= now()
+        not member["must_change_password"] or not temporary_valid(member, now())
     ):
         raise AuthError("AUTH_REQUIRED", 401)
     return item, session, member

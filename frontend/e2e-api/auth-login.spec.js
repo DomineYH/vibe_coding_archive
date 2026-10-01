@@ -2,7 +2,11 @@ import { expect, test } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { blockExternalRequests, prepareViewportCapture } from "./helpers.js";
+import {
+  blockExternalRequests,
+  prepareViewportCapture,
+  query,
+} from "./helpers.js";
 
 // Real HTTP, a test-owned file SQLite and real browser cookies. The prepared
 // server is only started by the API E2E runner (APP_ENV=test).
@@ -28,23 +32,6 @@ function sql(statement) {
     { cwd: backend, env: process.env, encoding: "utf8" },
   );
   if (result.status !== 0) throw new Error("test database update failed");
-}
-
-function query(statement) {
-  const result = spawnSync(
-    "uv",
-    [
-      "run",
-      "--frozen",
-      "python",
-      "-c",
-      "import json, os, sqlite3, sys; c = sqlite3.connect(os.environ['DATABASE_PATH']); print(json.dumps(c.execute(sys.argv[1]).fetchall()))",
-      statement,
-    ],
-    { cwd: backend, env: process.env, encoding: "utf8" },
-  );
-  if (result.status !== 0) throw new Error("test database query failed");
-  return JSON.parse(result.stdout);
 }
 
 async function login(page, loginId, password = PASSWORD) {

@@ -58,9 +58,17 @@ def member_app(make_test_app, tmp_path):  # noqa: F811
 
 @pytest.fixture(scope="session")
 def password_blocklist(tmp_path_factory):
-    # Test-owned preparation, separate from API startup; the fixed source is never committed.
-    from app.password_policy import prepare_blocklist
+    # Acquisition is an explicit setup command, never an implicit test dependency.
+    from app.password_policy import decode_blocklist
 
+    source = os.environ.get("PASSWORD_BLOCKLIST_PATH")
+    if not source:
+        raise pytest.UsageError(
+            "Set PASSWORD_BLOCKLIST_PATH to the explicitly prepared R15 source."
+        )
+    raw = Path(source).read_bytes()
+    decode_blocklist(raw)
     path = tmp_path_factory.mktemp("password-policy") / "ncsc.txt"
-    prepare_blocklist(path)
+    path.write_bytes(raw)
+    path.chmod(0o600)
     return path

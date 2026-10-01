@@ -3,7 +3,9 @@
 범위: #113 T03, US-21~25/42/52~55의 관리자 자격증명 부분. T01(#122)/T02(#123)의
 실제 흐름·허가·세대 쿠키·Argon2 게이트·rolling 제한·결과 복구를 재사용한다.
 자동 승인 seam은 제품 화면→서비스/mapper→HTTP→시험 소유 파일 SQLite/브라우저 쿠키,
-관리 CLI→파일 SQLite, 지연 HTTP→commit→미수령 결과 확인이다. mock 합격을 실제 인증으로
+관리 CLI→파일 SQLite, 지연 HTTP→commit→미수령 결과 확인이다.
+backend 경합 보완 seam은 TestClient의 ASGI HTTP와 실제 파일 SQLite다. uvicorn/브라우저
+경합 검증으로 계산하지 않으며, 실제 uvicorn/브라우저의 지연 HTTP는 응답 유실 사례다. mock 합격을 실제 인증으로
 계산하지 않는다. 운영 계정·배포·baseline 변경은 실행하지 않았다.
 
 ## 구현과 공통 영향 평가
@@ -33,7 +35,7 @@
 | R15 bootstrap/recovery·TTY·비출력·원자 감사 | `tests/test_admin_bootstrap.py`: 실제 PTY 최초 생성, 기존 관리자/일반 회원/없는 대상/정규화 충돌 거부, 재확인 불일치, 비대화형 거부, 로그인 상태 복구 폐기, DB 감사 trigger 실패에 회원/세션 rollback | 합격 |
 | 임시 24h·짧은 change_only·제한 Self | CLI 실제 저장 자료, `test_auth_password.py` 제한 DTO/me, 더 이른 임시 만료 경계, full 시작 시계·재시작 유지; T02 임시 만료 로그인/비집계 회귀 | 합격 |
 | 비밀번호 정책·브라우저 확인·full 거절 | HTTP 길이/같은 값/실제 목록 차단·공백/대소문자 보존, 직접 full API 403 SESSION_KIND_NOT_ALLOWED, API E2E 불일치 확인 요청 0회·본문 password만 | 합격 |
-| 최종 commit 재검사·한 번 소모·완료 브라우저 full | 실제 HTTP 동안 실제 Argon2의 반환만 지연; 파일 DB에서 S 만료/폐기·임시 만료·회원 버전/해시·허가 만료·흐름 폐기·settle 8변형 및 두 브라우저 동시 소모, 다른 제한 세션 401 | 합격 |
+| 최종 commit 재검사·한 번 소모·완료 브라우저 full | backend 보완 seam(ASGI HTTP)에서 실제 Argon2의 반환만 지연; 파일 DB에서 S 만료/폐기·임시 만료·회원 버전/해시·허가 만료·흐름 폐기·settle 8변형 및 두 브라우저 동시 소모, 다른 제한 세션 401 | 합격 |
 | 서버 commit 후 응답/S 미수령 | E2E 서버에 실제 POST를 전달해 200 commit 후 browser 응답을 중단. 원래 결과 확인·해당 full만 discard, 새 비밀번호로 다른 브라우저 로그인/refresh 유지, 원 브라우저 재로그인. password change 재실행/rollback 없음 | 합격 |
 | 실제 TTY→파일 DB→제품 로그인→첫 변경→full 재관측 | API runner가 빈 시험 DB에서 실제 CLI bootstrap한 first-admin을 브라우저에서 첫 변경/reload; 기존 synthetic admin은 실제 CLI recover 후 연결 | 합격 |
 | 운영 쿠키 회귀·공개/seed/mock 영향 | HTTP HTTPS 운영 속성: __Host-/Secure/HttpOnly/Path=/·SameSite=Lax, Domain/Expires/Max-Age 없음; 관련 이전 계약과 최종 회귀 명령 | 합격 |
@@ -122,3 +124,40 @@ R23 §4의 같은 흐름·회원·현재 권한·마지막 전환 이력 조건�
 T03 이외 누락/잘못된 동작/범위 확장 지적은 없었다. 최종 실행과 증거 집계는 구현 워커가 확인했다.
 
 두 축 최종 합계: Standards 0 / Spec 0. 사람의 시각 수락·운영 공개 gate 판정은 포함하지 않는다.
+
+
+## PR #124 독립 리뷰 minor 반영
+
+opus 5.5 r1 판정 APPROVE(blocker/major 0)의 minor 1~8을 같은 브랜치에서 반영했다.
+9번은 위 seam 구분에 기록만 했으며 경합 E2E를 추가하지 않았다.
+
+| 항목 | 처리·검증 |
+| --- | --- |
+| 1 | 최종 실행 proof 확인 뒤 회원 검증 실패를 `failed`/failure_code로 commit. 임시 만료 경합이 executing/None으로 남는 red → failed/AUTH_REQUIRED green. 실행 proof 자체가 실패하면 리뷰 제안대로 R settle에 맡긴다. S 만료·폐기는 settle/cancelled 뒤 새 익명 S·재로그인, 폐기 flow는 새 flow·재로그인을 단언한다. |
+| 2 | 기능 검사는 움직이는 서버 시계, 5개 카드 캡처는 별도 고정 시계 서버. 혼합 spec 인자의 flow-state 시계 진행 검사가 red → green. 인자 없는 기본 실행도 이 분리를 사용한다. 명시적 grep 선택은 움직이는 시계로 보존한다. |
+| 3 | 8개 경합 변형별 정확한 HTTP status/error code/state/failure_code와 미변경·full 미발급을 단언한다. |
+| 4 | 실제 commit·응답/쿠키 abort 뒤 flow-state의 원래 succeeded/result_session_generation 확인. SQLite에서 정확한 결과 full 세대의 미폐기→폐기와 다른 브라우저 full 미폐기를 단언한다. T02 조회 helper를 공유한다. |
+| 5 | member_session은 full 또는 change_only이며 보호 기능은 별도로 full을 요구해야 한다는 docstring으로 교정. 후속 보호 API를 구현하지 않는다. |
+| 6 | 다음 세대 쿠키 예산을 executing commit·해싱 전에 확인하고 초과는 failed/AUTH_COOKIE_BUDGET_EXCEEDED. 검증 호출 없음·회원 무변경·full 미발급을 단언한다(red → green). |
+| 7 | 공개 fixture는 목록을 요구하지 않는다. 인증 시험·API 러너는 명시적으로 준비한 PASSWORD_BLOCKLIST_PATH를 사본으로 사용하며 자동 다운로드 없음. 외부 접속 차단 공개/인증 pytest를 각각 red → green. R15 원본 전체 SHA-256·크기·행 수 검사를 유지하고 누락/오염 거절도 유지한다. CI의 개별 취득은 테스트 전 명시적 setup이다. 원문·파생 목록 커밋/패키징 없음. |
+| 8 | unchanged(ID/account_version/hash), temporary_valid(expiry > at) 술어만 공유. 회원 재대조와 임시 만료 기준은 그대로다. |
+| 9 | ASGI·파일 DB의 backend 보완 seam과 실제 uvicorn·브라우저의 응답 유실 seam 구분 기록. 추가 구현 없음. |
+
+반영 diff의 code-review 재검토: Standards hard violation 0 / judgement call 0, Spec 0.
+아래 결과는 이 반영 diff에서 다시 실제 실행한 결과다. 전체 backend는 이번에 모두 green이다.
+인증 검증에는 명시적으로 준비한 R15 원본 경로를 설정했으며, 일반 API e2e는 Python 외부
+접속을 거부하는 시험 환경에서도 완료했다(루프백 HTTP만 허용).
+
+| 위치 / 명령 | 결과 |
+| --- | --- |
+| backend / `uv run pytest tests/contracts/test_auth_password.py tests/contracts/test_auth_login.py -q` | 55 passed, 68.36s |
+| backend / `uv run pytest tests/test_password_test_provisioning.py -q` | 네트워크 접속 차단 공개·인증 자식 pytest 모두 완료, 2 passed, 5.04s |
+| backend / `uv run pytest` | **197 passed**, 328.98s; 실패·skip 0 |
+| backend / `uv run ruff check .` · `uv run ruff format --check .` | 통과 / 41 files formatted |
+| frontend / `npm run check` · `npm test` | 통과(기존 OpenAPI 경고 2) / 32 files, 828 passed |
+| frontend / `npx playwright test e2e/auth.spec.js e2e/auth-recovery.spec.js e2e/admin.spec.js` | 45 passed, 1.3m; mock 회귀 |
+| frontend / `npm run test:e2e:api -- auth-password.spec.js` | 기능 5 passed, 26.9s + 별도 고정 시계 캡처 5 passed, 27.3s |
+| frontend / 인자 없는 `npm run test:e2e:api` (외부 네트워크 차단, pinned Chromium) | 일반/auth off 49 passed / 22 조건부 제외, 2.3m + 준비된 기능 36 passed, 2.0m + 별도 고정 시계 캡처 5 passed, 34.1s. off의 제외는 별도 준비 경계에서 검사 |
+
+공유 API 계약·화면·기준 이미지는 이 리뷰 반영에서 변경하지 않았다. 과거 Phase 2 관찰 PNG
+62개의 러너 재생성분은 원래 내용으로 복원했으며 커밋하지 않았다.

@@ -10,6 +10,10 @@ APP_ENV=development uv run --frozen python -m app.cli seed
 APP_ENV=development uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
+# One-time, explicit R15 acquisition outside version control (network required):
+export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist
+# Tests below reuse that verified source offline:
 APP_ENV=test uv run --frozen pytest
 ```
 
@@ -88,9 +92,13 @@ uv run --frozen python -m app.cli recover-admin
 ```
 
 The list source/version/digest remain the fixed R15 metadata. API startup never
-fetches it; `auth_testing=True` refuses a missing or corrupt list. Tests prepare
-the fixed source once per pytest session in a test-owned temporary directory;
-the API E2E runner prepares it explicitly before startup. No list or derived
+fetches it; `auth_testing=True` refuses a missing or corrupt list. Tests and the
+API E2E runner require an explicitly prepared
+`PASSWORD_BLOCKLIST_PATH`, validate the unchanged full source and copy it into
+private test-owned temporary files. They never acquire it from the network.
+Public backend contracts do not require the list. CI provisions it in a separate
+setup step before tests; local runs use the one-time command above. Export the
+same path before frontend `npm run test:e2e:api`. No list or derived
 password material is committed or packaged. Redistribution rights remain U02
 at T07. `PASSWORD_BLOCKLIST_PATH` defaults to `password-blocklist-ncsc.txt` next to
 the database; always keep both outside version control.

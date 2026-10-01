@@ -1,10 +1,12 @@
 """Consume a temporary credential once on the existing permit/commit boundary."""
 
+import secrets
+
 from fastapi import APIRouter, Request
 from sqlalchemy import text
 
 from app.auth import StrictModel, Unlocked
-from app.auth_boundary import AuthError, now
+from app.auth_boundary import AuthError, cookie_budget, cookie_name, increment, now
 from app.auth_login import (
     HASHER,
     check_password,
@@ -13,6 +15,7 @@ from app.auth_login import (
     issue_member_session,
     member_session,
     refuse_expired_permit,
+    unchanged,
 )
 from app.password_policy import new_password
 
@@ -33,6 +36,13 @@ def change_password(request: Request, body: PasswordBody, db=Unlocked):
         )
         refuse_expired_permit(db, item, transition)
         try:
+            cookie_budget(
+                request,
+                cookie_name(
+                    request, "session", item["id"], increment(item["issued_seq"])
+                ),
+                secrets.token_urlsafe(32),
+            )
             password = new_password(body.password, request.app.state.password_blocklist)
         except AuthError as error:
             fail(db, item, transition, error)
@@ -51,11 +61,11 @@ def change_password(request: Request, body: PasswordBody, db=Unlocked):
             db, request, "password_change", "executing"
         )
         refuse_expired_permit(db, item, transition)
-        _, _, member = member_session(db, request)
-        if any(
-            member[key] != snapshot[key]
-            for key in ("id", "account_version", "password_hash")
-        ):
+        try:
+            _, _, member = member_session(db, request)
+        except AuthError as error:
+            fail(db, item, transition, error)
+        if not unchanged(member, snapshot):
             fail(db, item, transition, AuthError("AUTH_STATE_CHANGED"))
         if same:
             fail(

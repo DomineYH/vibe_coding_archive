@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import {
   blockExternalRequests,
   prepareViewportCapture,
+  query,
   viewports,
 } from "./helpers.js";
 
@@ -151,6 +152,7 @@ test.describe("administrator own password change over real HTTP and cookies", ()
     ).toBeVisible();
     // Send to the actual server; neither response nor Set-Cookie reaches this browser.
     let committed = false;
+    let lost;
     await page.route("**/api/v1/auth/password", async (route) => {
       const request = route.request();
       const headers = await request.allHeaders();
@@ -162,12 +164,32 @@ test.describe("administrator own password change over real HTTP and cookies", ()
         body: request.postData(),
       });
       expect(reply.status).toBe(200);
+      lost = {
+        flowId: headers["x-eduvibe-flow-id"],
+        transitionId: headers["x-eduvibe-transition-id"],
+        generation: reply.headers.get("x-eduvibe-session-generation"),
+      };
       committed = true;
       await route.abort("failed");
     });
     await change(page);
     await expect(page.getByText("인증 결과를 확인할 수 없어요")).toBeVisible();
     expect(committed).toBe(true);
+    const state = await page.request.get("/api/v1/auth/flow-state", {
+      params: { transition_id: lost.transitionId },
+      headers: { "X-EduVibe-Flow-Id": lost.flowId },
+    });
+    expect(state.status()).toBe(200);
+    expect((await state.json()).requested_transition).toMatchObject({
+      availability: "available",
+      state: "succeeded",
+      result_session_generation: lost.generation,
+    });
+    const sessions = (flowId) =>
+      query(
+        `SELECT issued_seq, revoked_at IS NOT NULL FROM sessions WHERE flow_id='${flowId}' AND kind='full' ORDER BY rowid`,
+      );
+    expect(sessions(lost.flowId)).toEqual([[lost.generation, 0]]);
     const other = await browser.newContext();
     await blockExternalRequests(other);
     const second = await other.newPage();
@@ -175,8 +197,19 @@ test.describe("administrator own password change over real HTTP and cookies", ()
     await expect(
       second.getByRole("banner").getByText("관리 담당", { exact: true }),
     ).toBeVisible();
+    const otherFlow = await second.evaluate(
+      () => JSON.parse(localStorage.getItem("eduvibe-auth-flow-v1")).flowId,
+    );
+    const otherSessions = sessions(otherFlow);
+    expect(otherSessions).toHaveLength(1);
+    expect(otherSessions[0][1]).toBe(0);
     await page.unroute("**/api/v1/auth/password");
     await page.getByRole("button", { name: "받지 못한 세션 버리기" }).click();
+    await expect(
+      page.getByRole("link", { name: "로그인 화면으로" }),
+    ).toBeVisible();
+    expect(sessions(lost.flowId)).toEqual([[lost.generation, 1]]);
+    expect(sessions(otherFlow)).toEqual(otherSessions);
     await page.getByRole("link", { name: "로그인 화면으로" }).click();
     await expect(page.locator("#login-id")).toBeVisible();
     await second.reload();
