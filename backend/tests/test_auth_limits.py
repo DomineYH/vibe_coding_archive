@@ -32,15 +32,10 @@ def fast_hasher(monkeypatch):
     """Rate-limit tests drive hundreds of attempts; hashing itself is tested elsewhere."""
     from app import auth_login
 
-    real = auth_login.HASHER.verify
     monkeypatch.setattr(
-        auth_login.HASHER,
-        "verify",
-        lambda password, hashed: (
-            password == AUTH_PASSWORD
-            if hashed.startswith("$argon2id$") and real is not None
-            else False
-        ),
+        auth_login,
+        "argon2_verify",
+        lambda hashed, password: password == AUTH_PASSWORD,
     )
 
 

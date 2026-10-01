@@ -30,6 +30,23 @@ function sql(statement) {
   if (result.status !== 0) throw new Error("test database update failed");
 }
 
+function query(statement) {
+  const result = spawnSync(
+    "uv",
+    [
+      "run",
+      "--frozen",
+      "python",
+      "-c",
+      "import json, os, sqlite3, sys; c = sqlite3.connect(os.environ['DATABASE_PATH']); print(json.dumps(c.execute(sys.argv[1]).fetchall()))",
+      statement,
+    ],
+    { cwd: backend, env: process.env, encoding: "utf8" },
+  );
+  if (result.status !== 0) throw new Error("test database query failed");
+  return JSON.parse(result.stdout);
+}
+
 async function login(page, loginId, password = PASSWORD) {
   const form = page.locator("form");
   await form.getByLabel("로그인 아이디", { exact: true }).fill(loginId);
@@ -169,6 +186,66 @@ test("a lost login reply stays unresolved until the user checks it, then login w
   await expect(
     page.getByRole("banner").getByText("승인 회원", { exact: true }),
   ).toBeVisible();
+});
+
+test("a committed login whose reply never arrives discards exactly that session and signs in again", async ({
+  page,
+  context,
+}) => {
+  await openLogin(page);
+  const received = [];
+  page.on("response", (response) => {
+    if (response.url().endsWith("/api/v1/auth/login"))
+      received.push(response.status());
+  });
+  // The server runs and commits the login; the browser never sees the reply or its Set-Cookie.
+  await page.route("**/api/v1/auth/login", async (route) => {
+    const request = route.request();
+    const headers = await request.allHeaders();
+    for (const name of ["host", "content-length", "connection"])
+      delete headers[name];
+    const reply = await fetch(request.url(), {
+      method: "POST",
+      headers,
+      body: request.postData(),
+    });
+    expect(reply.status).toBe(200);
+    await route.abort("failed");
+  });
+  await login(page, "member-a");
+  await expect(page.getByText("인증 결과를 확인할 수 없어요")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "받지 못한 세션 버리기" }),
+  ).toBeVisible();
+  expect(received).toEqual([]);
+  // The revoked anonymous S is cleaned up and the new S was never received.
+  expect((await authCookies(context)).map((c) => c.name.split("_")[1])).toEqual(
+    ["recovery"],
+  );
+  const sessions = () =>
+    query(
+      "SELECT issued_seq, revoked_at IS NOT NULL FROM sessions WHERE member_id = '00000000-0000-4000-8000-000000000100' ORDER BY rowid",
+    );
+  const committed = sessions();
+  expect(committed.length).toBeGreaterThanOrEqual(1);
+  const lost = committed.at(-1);
+  expect(lost[1]).toBe(0);
+
+  await page.unroute("**/api/v1/auth/login");
+  await page.getByRole("button", { name: "받지 못한 세션 버리기" }).click();
+  await expect(page.locator("#login-id")).toBeVisible();
+  // Only that result session is revoked; nothing else is touched.
+  expect(sessions().at(-1)).toEqual([lost[0], 1]);
+  expect(sessions()).toHaveLength(committed.length);
+
+  await login(page, "member-a");
+  await expect(
+    page.getByRole("banner").getByText("승인 회원", { exact: true }),
+  ).toBeVisible();
+  const after = sessions();
+  expect(after.length).toBe(committed.length + 1);
+  expect(after.at(-1)[0]).not.toBe(lost[0]);
+  expect(after.at(-1)[1]).toBe(0);
 });
 
 test("an expired session is anonymous after refresh and the server refuses it", async ({

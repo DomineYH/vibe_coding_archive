@@ -33,6 +33,8 @@ function loginFailureMessage(error) {
         ? `로그인 시도가 너무 많아요. ${koreanClock(retryAt)} 이후에 다시 시도해 주세요.`
         : "로그인 시도가 너무 많아요. 잠시 뒤에 다시 시도해 주세요.";
     }
+    case "AUTH_STATE_CHANGED":
+      return "계정 상태가 바뀌었어요. 다시 로그인해 주세요.";
     case "AUTH_BUSY":
     case "DB_BUSY":
       return "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.";

@@ -50,6 +50,10 @@ describe("login failure messages", () => {
       new ServiceError("RATE_LIMITED", "x"),
       /로그인 시도가 너무 많아요\. 잠시 뒤에 다시 시도해 주세요\./,
     ],
+    [
+      new ServiceError("AUTH_STATE_CHANGED", "x"),
+      /계정 상태가 바뀌었어요\. 다시 로그인해 주세요\./,
+    ],
     [new ServiceError("AUTH_BUSY", "x"), /서버가 바빠요/],
     [new ServiceError("DB_BUSY", "x"), /서버가 바빠요/],
     [new ServiceError("NETWORK_ERROR", "x"), /로그인하지 못했어요/],

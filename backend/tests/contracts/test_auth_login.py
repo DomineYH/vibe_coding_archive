@@ -180,11 +180,11 @@ def test_unknown_wrong_and_unusable_credentials_are_one_identical_response(
     verified = []
     from app import auth_login
 
-    real = auth_login.HASHER.verify
+    real = auth_login.argon2_verify
     monkeypatch.setattr(
-        auth_login.HASHER,
-        "verify",
-        lambda password, hashed: verified.append(hashed) or real(password, hashed),
+        auth_login,
+        "argon2_verify",
+        lambda hashed, password: verified.append(hashed) or real(hashed, password),
     )
     seen = []
     for login_id, password in [
@@ -198,8 +198,10 @@ def test_unknown_wrong_and_unusable_credentials_are_one_identical_response(
         error = result.json()["error"]
         seen.append((result.status_code, error["code"], error["message"]))
     assert len(set(seen)) == 1 and seen[0][:2] == (401, "INVALID_CREDENTIALS")
-    # Every miss still pays for one Argon2 verification against a real hash.
-    assert len(verified) == 3 and all(v.startswith("$argon2id$") for v in verified)
+    # Every miss still pays for one verdict-giving Argon2 run against a real hash;
+    # the unusable stored value is attempted first, then answered with the dummy.
+    assert len([v for v in verified if v.startswith("$argon2id$")]) == 3
+    assert verified.count("unusable") == 1
 
 
 def test_a_rejected_login_keeps_the_anonymous_session_and_allows_another_attempt(
@@ -342,15 +344,15 @@ def change_during_hash(monkeypatch):
     """Run a database change after the permit is spent but before the commit."""
     from app import auth_login
 
-    real = auth_login.HASHER.verify
+    real = auth_login.argon2_verify
     action = {}
 
-    def verify(password, hashed):
+    def verify(hashed, password):
         if action:
             action.pop("run")()
-        return real(password, hashed)
+        return real(hashed, password)
 
-    monkeypatch.setattr(auth_login.HASHER, "verify", verify)
+    monkeypatch.setattr(auth_login, "argon2_verify", verify)
     return action
 
 
@@ -362,13 +364,18 @@ def write(path, sql, *args):
 @pytest.mark.parametrize(
     ("sql", "status", "code"),
     [
+        # Any approval change bumps account_version: the late request must not sign in.
         (
             "UPDATE members SET approval_status='revoked', account_version=2",
-            403,
-            "ACCOUNT_NOT_APPROVED",
+            409,
+            "AUTH_STATE_CHANGED",
         ),
-        ("UPDATE members SET password_hash='unusable'", 401, "INVALID_CREDENTIALS"),
-        ("UPDATE members SET password_hash=NULL", 401, "INVALID_CREDENTIALS"),
+        # Revoke then re-approve: approval and hash are back, the version is not.
+        ("UPDATE members SET account_version=3", 409, "AUTH_STATE_CHANGED"),
+        ("UPDATE members SET password_hash='unusable'", 409, "AUTH_STATE_CHANGED"),
+        ("UPDATE members SET password_hash=NULL", 409, "AUTH_STATE_CHANGED"),
+        # Without a version bump the decision still follows the current row.
+        ("UPDATE members SET approval_status='revoked'", 403, "ACCOUNT_NOT_APPROVED"),
         ("DELETE FROM members", 401, "INVALID_CREDENTIALS"),
     ],
 )
@@ -385,6 +392,39 @@ def test_a_member_change_during_hashing_never_signs_in_with_the_past_state(
         assert (result.status_code, result.json()["error"]["code"]) == (status, code)
         assert not rows(path, "SELECT 1 FROM sessions WHERE member_id IS NOT NULL")
         assert browser.state()["session_generation"] == browser.generation
+        if code == "AUTH_STATE_CHANGED":
+            # A changed account is not a wrong guess: nothing is counted against it.
+            assert not rows(
+                path, "SELECT 1 FROM rate_limit_events WHERE purpose LIKE 'login_%'"
+            )
+            failed = rows(path, "SELECT state, failure_code FROM auth_transitions")
+            assert failed[-1] == {"state": "failed", "failure_code": code}
+
+
+def test_a_different_member_row_for_the_same_login_id_cannot_inherit_the_login(
+    member_app, change_during_hash
+):
+    app, path = member_app()
+
+    def replace_member():
+        with sqlite3.connect(path) as db:
+            db.execute("DELETE FROM members WHERE login_id='member-a'")
+            db.execute(
+                "INSERT INTO members (id, login_id, nickname, password_hash, is_admin, approval_status, login_id_key, created_at, updated_at, first_approved_at) "
+                "VALUES ('00000000-0000-4000-8000-0000000009ff', 'member-a', '다른 회원', "
+                "(SELECT password_hash FROM members WHERE login_id='pending-user'), 0, 'approved', 'member-a', "
+                "'2026-09-28T12:00:00.000000Z', '2026-09-28T12:00:00.000000Z', '2026-09-28T12:00:00.000000Z')"
+            )
+
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        change_during_hash["run"] = replace_member
+        result = browser.login(APPROVED)
+        assert (result.status_code, result.json()["error"]["code"]) == (
+            409,
+            "AUTH_STATE_CHANGED",
+        )
+        assert not rows(path, "SELECT 1 FROM sessions WHERE member_id IS NOT NULL")
 
 
 def test_a_settlement_during_hashing_blocks_the_late_execution(
@@ -455,3 +495,158 @@ def test_a_login_never_opens_the_recent_authentication_window(member_app):
     with TestClient(app) as client:
         user = signed_in(client, "admin").me().json()
         assert user["role"] == "admin" and user["recent_auth_until"] is None
+
+
+@pytest.fixture
+def argon2_calls(monkeypatch):
+    """Record each real Argon2 verification and whether it paid the hashing cost."""
+    from app import auth_login
+
+    real = auth_login.argon2_verify
+    calls = []
+
+    def verify(stored, password):
+        try:
+            result = real(stored, password)
+        except Exception as error:
+            calls.append((stored, type(error).__name__))
+            raise
+        calls.append((stored, result))
+        return result
+
+    monkeypatch.setattr(auth_login, "argon2_verify", verify)
+    return calls
+
+
+def test_a_stored_hash_that_cannot_be_verified_still_pays_a_real_verification(
+    member_app, argon2_calls
+):
+    app, path = member_app()
+    # Passes migration's parameter parsing but cannot be decoded for verification.
+    broken = "$argon2id$v=19$m=65536,t=3,p=4$!!notbase64!!$!!notbase64!!"
+    write(path, "UPDATE members SET password_hash=? WHERE login_id='member-a'", broken)
+    with TestClient(app) as client:
+        result = Browser(client).prepare().anonymous().login(APPROVED)
+    assert (result.status_code, result.json()["error"]["code"]) == (
+        401,
+        "INVALID_CREDENTIALS",
+    )
+    # The unusable value fails fast, then a real verification against the dummy hash runs.
+    assert argon2_calls[0][0] == broken
+    assert isinstance(argon2_calls[0][1], str)  # the error type: no verdict was reached
+    assert argon2_calls[-1][0].startswith("$argon2id$") and argon2_calls[-1][1] is False
+
+
+def test_logout_permit_expires_at_exactly_sixty_seconds(member_app, server_clock):
+    app, path = member_app()
+    with TestClient(app) as client:
+        browser = signed_in(client)
+        permit = browser.admit("logout").json()
+        server_clock[0] += timedelta(seconds=60)
+        late = client.post(f"{API}/logout", headers=browser.session_headers(permit))
+        assert (late.status_code, late.json()["error"]["code"]) == (
+            409,
+            "AUTH_STATE_CHANGED",
+        )
+        assert rows(path, "SELECT state FROM auth_transitions WHERE kind='logout'") == [
+            {"state": "expired"}
+        ]
+        # The refused logout leaves the session intact.
+        browser.revision = browser.state()["revision"]
+        assert browser.me().status_code == 200
+
+
+def test_logout_permit_is_still_valid_one_microsecond_before_expiry(
+    member_app, server_clock
+):
+    app, _ = member_app()
+    with TestClient(app) as client:
+        browser = signed_in(client)
+        permit = browser.admit("logout").json()
+        server_clock[0] += timedelta(seconds=60) - timedelta(microseconds=1)
+        done = client.post(f"{API}/logout", headers=browser.session_headers(permit))
+        assert done.status_code == 204
+
+
+def test_a_login_permit_that_expired_before_execution_is_refused_before_hashing(
+    member_app, server_clock, argon2_calls
+):
+    app, _ = member_app()
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        permit = browser.admit("login").json()
+        server_clock[0] += timedelta(seconds=60)
+        late = browser.execute_login(permit, APPROVED)
+        assert late.json()["error"]["code"] == "AUTH_STATE_CHANGED"
+        assert argon2_calls == []
+
+
+def test_concurrent_wrong_guesses_cannot_push_the_account_window_past_ten(
+    member_app, change_during_hash
+):
+    from app.auth_boundary import digest
+
+    app, path = member_app()
+    subject = digest("member-a\n" + digest("testclient"))
+    with sqlite3.connect(path) as db:
+        for _ in range(9):
+            db.execute(
+                "INSERT INTO rate_limit_events(purpose, subject_hash, occurred_at, expires_at) "
+                "VALUES ('login_account', ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now','+900 seconds'))",
+                (subject,),
+            )
+    with TestClient(app) as first, TestClient(app) as second:
+        slow = Browser(first).prepare().anonymous()
+        quick = Browser(second).prepare().anonymous()
+
+        def other_request_finishes_first():
+            # Passed its initial check at nine failures, then records the tenth.
+            assert quick.login(APPROVED, "wrong password 12345").status_code == 401
+
+        change_during_hash["run"] = other_request_finishes_first
+        result = slow.login(APPROVED, "wrong password 12345")
+        assert (result.status_code, result.json()["error"]["code"]) == (
+            429,
+            "RATE_LIMITED",
+        )
+        count = rows(
+            path,
+            "SELECT count(*) AS n FROM rate_limit_events WHERE purpose='login_account'",
+        )
+        assert count == [{"n": 10}]
+
+
+def test_a_member_session_whose_cookie_was_never_received_is_discarded_exactly(
+    member_app,
+):
+    app, path = member_app()
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        result = browser.login(APPROVED)
+        assert result.status_code == 200
+        state = browser.state()
+        generation, transition_id = state["session_generation"], f"{browser.flow}.4"
+        # The reply was lost: drop the new S cookie as the browser never saw it.
+        for name in [n for n in client.cookies if n.startswith("eduvibe_session_")]:
+            del client.cookies[name]
+        lost = browser.state(transition_id=transition_id)
+        assert lost["session_cookie_present"] is False
+        assert lost["requested_transition"]["result_session_generation"] == generation
+        discarded = client.post(
+            f"{API}/transitions/{transition_id}/discard-session",
+            json={
+                "flow_id": browser.flow,
+                "expected_revision": lost["revision"],
+                "expected_session_generation": generation,
+            },
+            headers=browser.recovery_headers(),
+        )
+        assert discarded.status_code == 200
+        assert rows(
+            path,
+            "SELECT issued_seq, revoked_at IS NOT NULL AS gone FROM sessions WHERE member_id IS NOT NULL",
+        ) == [{"issued_seq": generation, "gone": 1}]
+        assert browser.state()["session_generation"] is None
+        # A fresh anonymous session and login work again.
+        browser.anonymous()
+        assert browser.login(APPROVED).status_code == 200

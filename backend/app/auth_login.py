@@ -11,10 +11,11 @@ import unicodedata
 from functools import cache
 from typing import Annotated
 
-from argon2.exceptions import InvalidHashError
+from argon2 import Type
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
+from argon2.low_level import verify_secret
 from fastapi import APIRouter, Request
 from pwdlib import PasswordHash
-from pwdlib.exceptions import UnknownHashError
 from pydantic import BeforeValidator, Field
 from sqlalchemy import text
 
@@ -96,16 +97,25 @@ class LoginBody(StrictModel):
     password: Annotated[str, Field(min_length=1)]
 
 
+def argon2_verify(stored, password):
+    """True/False once Argon2 really ran; raises when `stored` cannot be verified."""
+    try:
+        return verify_secret(stored.encode(), password.encode(), Type.ID)
+    except VerifyMismatchError:
+        return False
+
+
 def check_password(password, stored):
     """Verify against the stored hash, or a real dummy hash so a miss costs the same."""
     password = unicodedata.normalize("NFC", password)
-    usable = bool(stored) and stored.startswith("$argon2id$")
     try:
-        ok = HASHER.verify(password, stored if usable else dummy_hash())
-    except (UnknownHashError, InvalidHashError):
-        HASHER.verify(password, dummy_hash())
+        if not stored:
+            raise ValueError("no stored hash")
+        return argon2_verify(stored, password)
+    except (InvalidHashError, VerificationError, ValueError):
+        # No hashing cost was paid: spend it on the dummy so the miss is not visible.
+        argon2_verify(dummy_hash(), password)
         return False
-    return ok and usable
 
 
 def execution_context(db, request, kind, state):
@@ -158,6 +168,32 @@ def fail(db, item, transition, error, events=()):
     raise error
 
 
+def refuse_expired_permit(db, item, transition):
+    """A permit is a 60 s start window: record the expiry, then refuse."""
+    if transition["permit_expires_at"] > now():
+        return
+    db.execute(
+        text(
+            "UPDATE auth_transitions SET state='expired', terminal_at=:now WHERE transition_id=:id"
+        ),
+        {"now": now(), "id": transition["transition_id"]},
+    )
+    advance(db, item, activity=True)
+    db.commit()
+    raise AuthError("AUTH_STATE_CHANGED")
+
+
+def refuse_when_limited(db, item, transition, subjects):
+    """Rolling failure windows; a blocked attempt records nothing and extends nothing."""
+    for (purpose, subject), limit in zip(
+        subjects, (ACCOUNT_FAILURES, IP_FAILURES), strict=True
+    ):
+        if retry_at := rate_limit_window(db, purpose, subject, limit, WINDOW):
+            fail(
+                db, item, transition, AuthError("RATE_LIMITED", 429, retry_at=retry_at)
+            )
+
+
 def find_member(db, key):
     return (
         db.execute(text("SELECT * FROM members WHERE login_id_key=:key"), {"key": key})
@@ -198,16 +234,8 @@ def login(request: Request, body: LoginBody, db=Unlocked):
         item, session, transition = execution_context(db, request, "login", "admitted")
         if session["kind"] != "anonymous":
             raise AuthError("ALREADY_AUTHENTICATED")
-        for (purpose, subject), limit in zip(
-            subjects, (ACCOUNT_FAILURES, IP_FAILURES), strict=True
-        ):
-            if retry_at := rate_limit_window(db, purpose, subject, limit, WINDOW):
-                fail(
-                    db,
-                    item,
-                    transition,
-                    AuthError("RATE_LIMITED", 429, retry_at=retry_at),
-                )
+        refuse_expired_permit(db, item, transition)
+        refuse_when_limited(db, item, transition, subjects)
         seq = increment(item["issued_seq"])
         token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
         name = cookie_name(request, "session", item["id"], seq)
@@ -225,24 +253,13 @@ def login(request: Request, body: LoginBody, db=Unlocked):
         )
         db.execute(text("BEGIN IMMEDIATE"))
         item, session, transition = execution_context(db, request, "login", "executing")
+        refuse_expired_permit(db, item, transition)
         timestamp = now()
-        if transition["permit_expires_at"] <= timestamp:
-            db.execute(
-                text(
-                    "UPDATE auth_transitions SET state='expired', terminal_at=:now WHERE transition_id=:id"
-                ),
-                {"now": timestamp, "id": transition["transition_id"]},
-            )
-            advance(db, item, activity=True)
-            db.commit()
-            raise AuthError("AUTH_STATE_CHANGED")
-        # Decide on the row as it is now, never on the pre-hash snapshot.
+        # Concurrent attempts may have filled the windows while this one was hashing.
+        refuse_when_limited(db, item, transition, subjects)
+        # Decide on the row as it is now, but only for the very account that was verified.
         member = find_member(db, key)
-        if (
-            not verified
-            or not member
-            or member["password_hash"] != snapshot["password_hash"]
-        ):
+        if not verified or not member:
             fail(
                 db,
                 item,
@@ -250,6 +267,13 @@ def login(request: Request, body: LoginBody, db=Unlocked):
                 AuthError("INVALID_CREDENTIALS", 401),
                 events=subjects,
             )
+        if (
+            member["id"] != snapshot["id"]
+            or member["account_version"] != snapshot["account_version"]
+            or member["password_hash"] != snapshot["password_hash"]
+        ):
+            # Approval or credential changed mid-hash: never sign in on the past state.
+            fail(db, item, transition, AuthError("AUTH_STATE_CHANGED"))
         if member["approval_status"] != "approved":
             fail(db, item, transition, AuthError("ACCOUNT_NOT_APPROVED", 403))
         if member["must_change_password"]:
@@ -356,6 +380,7 @@ def logout(request: Request, db=Db):
         db.commit()
         return response(db, request, None, status=204)
     item, session, transition = execution_context(db, request, "logout", "admitted")
+    refuse_expired_permit(db, item, transition)
     timestamp = now()
     db.execute(
         text("UPDATE sessions SET revoked_at=:now WHERE token_hash=:hash"),
