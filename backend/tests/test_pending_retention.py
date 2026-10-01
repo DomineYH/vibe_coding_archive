@@ -5,6 +5,7 @@ import sys
 from datetime import UTC, datetime, timedelta
 from threading import Event
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import event
 
@@ -13,9 +14,23 @@ from tests.auth_client import Browser
 from tests.support import AUTH_MEMBERS
 
 
-def maintenance(path, command="sweep-pending"):
+def maintenance(path, command="sweep-pending", *, clock=None):
+    args = [sys.executable, "-m", "app.cli", command]
+    if clock is not None:
+        script = """import sys
+from datetime import datetime
+from app import auth_boundary
+from app.cli import main
+fixed = sys.argv.pop()
+class Clock(datetime):
+    @classmethod
+    def now(cls, tz=None): return datetime.fromisoformat(fixed)
+auth_boundary.datetime = Clock
+raise SystemExit(main())
+"""
+        args = [sys.executable, "-c", script, command, clock]
     return subprocess.run(
-        [sys.executable, "-m", "app.cli", command],
+        args,
         env={
             **os.environ,
             "APP_ENV": "test",
@@ -241,29 +256,7 @@ def test_exact_ninetieth_day_is_deleted_and_one_microsecond_before_is_retained(
         )
 
     def at(clock):
-        script = """import sys
-from datetime import datetime
-from app import auth_boundary
-from app.cli import main
-fixed = sys.argv.pop()
-class Clock(datetime):
-    @classmethod
-    def now(cls, tz=None): return datetime.fromisoformat(fixed)
-auth_boundary.datetime = Clock
-raise SystemExit(main())
-"""
-        return subprocess.run(
-            [sys.executable, "-c", script, "sweep-pending", clock],
-            env={
-                **os.environ,
-                "APP_ENV": "test",
-                "DATABASE_PATH": str(path),
-                "PUBLIC_ORIGIN": "http://localhost:5174",
-            },
-            check=False,
-            capture_output=True,
-            text=True,
-        )
+        return maintenance(path, clock=clock)
 
     assert at("2026-10-01T23:59:59.999999Z").returncode == 0
     with sqlite3.connect(path) as db:
@@ -369,3 +362,232 @@ def test_failed_cli_intent_is_cancelled_when_approval_commits_before_replay(memb
             row[0]
             for row in ledger.execute("SELECT cancelled_at FROM deletion_cancellations")
         )
+
+
+def test_cancelled_intent_is_replaced_after_restoring_expired_pending_backup(
+    member_app,
+):
+    app, path = member_app()
+    with TestClient(app):
+        pass
+    id_ = make_expired(path)
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "INSERT INTO apps(id,owner_id,name,url,prompt,description,subject,is_public,theme_id,version,url_version,created_at,updated_at) VALUES ('restored-app',?,'합성 앱','https://example.test','합성 prompt','합성 description','수학',1,'cloudDancer',1,1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+            (id_,),
+        )
+        db.execute(
+            "CREATE TRIGGER fail_delete BEFORE DELETE ON members BEGIN SELECT RAISE(ABORT,'controlled failure'); END"
+        )
+    assert maintenance(path).returncode != 0
+    with sqlite3.connect(path) as db:
+        db.execute("DROP TRIGGER fail_delete")
+        db.commit()
+        backup = path.with_name("pre-approval.sqlite3")
+        with sqlite3.connect(backup) as copy:
+            db.backup(copy)
+        db.execute(
+            "UPDATE members SET approval_status='approved',first_approved_at=? WHERE id=?",
+            (datetime.now(UTC).isoformat().replace("+00:00", "Z"), id_),
+        )
+    assert maintenance(path).returncode == 0
+    with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+        history = ledger.execute(
+            "SELECT kind,target_id,cancelled_at,reason FROM deletion_cancellations ORDER BY kind"
+        ).fetchall()
+        assert [(row[0], row[3]) for row in history] == [
+            ("app", "OWNER_NOT_INITIAL_PENDING_EXPIRED"),
+            ("member", "APPROVAL_COMMITTED"),
+        ]
+        # Restore the previous release's private audit schema; startup must
+        # upgrade its unique-per-target records without discarding their history.
+        ledger.execute("ALTER TABLE deletion_cancellations RENAME TO new_cancellations")
+        ledger.execute(
+            "CREATE TABLE deletion_cancellations(kind TEXT NOT NULL CHECK(kind IN ('member','app')), target_id TEXT NOT NULL, cancelled_at TEXT NOT NULL, reason TEXT NOT NULL, PRIMARY KEY(kind,target_id))"
+        )
+        ledger.execute(
+            "INSERT INTO deletion_cancellations SELECT * FROM new_cancellations"
+        )
+        ledger.execute("DROP TABLE new_cancellations")
+        # The actual r1 schema also retained cancelled active intents.
+        ledger.execute(
+            "INSERT INTO member_deletions VALUES (?,?)",
+            (id_, "2026-09-01T00:00:00.000000Z"),
+        )
+        ledger.execute(
+            "INSERT INTO app_deletions VALUES ('restored-app',?)",
+            ("2026-09-01T00:00:00.000000Z",),
+        )
+    # Exact reviewer sequence: restore only the expired, pre-approval DB.
+    with sqlite3.connect(backup) as copy, sqlite3.connect(path) as db:
+        copy.backup(db)
+    fresh = "2026-10-03T00:00:00.000000Z"
+    assert maintenance(path, "invalidate-restored-auth", clock=fresh).returncode == 0
+    assert maintenance(path, clock=fresh).returncode == 0
+    with sqlite3.connect(path) as db:
+        assert (
+            db.execute("SELECT id FROM members WHERE id=?", (id_,)).fetchone() is None
+        )
+        assert (
+            db.execute("SELECT id FROM apps WHERE id='restored-app'").fetchone() is None
+        )
+        assert db.execute("SELECT member_id FROM member_deletions").fetchall() == [
+            (id_,)
+        ]
+        assert db.execute("SELECT app_id FROM app_deletions").fetchall() == [
+            ("restored-app",)
+        ]
+    with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+        assert (
+            ledger.execute(
+                "SELECT kind,target_id,cancelled_at,reason FROM deletion_cancellations ORDER BY kind"
+            ).fetchall()
+            == history
+        )
+        assert ledger.execute("SELECT member_id FROM member_deletions").fetchall() == [
+            (id_,)
+        ]
+        assert ledger.execute("SELECT app_id FROM app_deletions").fetchall() == [
+            ("restored-app",)
+        ]
+        assert ledger.execute("SELECT deleted_at FROM member_deletions").fetchall() == [
+            (fresh,)
+        ]
+        assert ledger.execute("SELECT deleted_at FROM app_deletions").fetchall() == [
+            (fresh,)
+        ]
+    with sqlite3.connect(path) as db:
+        assert db.execute("SELECT deleted_at FROM member_deletions").fetchall() == [
+            (fresh,)
+        ]
+        assert db.execute("SELECT deleted_at FROM app_deletions").fetchall() == [
+            (fresh,)
+        ]
+
+
+def test_clock_rollback_cancellation_does_not_exempt_later_expiry_or_erase_history(
+    member_app,
+):
+    app, path = member_app()
+    with TestClient(app):
+        pass
+    id_ = AUTH_MEMBERS["pending"][0]
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET created_at='2026-07-04T00:00:00.000000Z' WHERE id=?",
+            (id_,),
+        )
+        db.execute(
+            "CREATE TRIGGER fail_delete BEFORE DELETE ON members BEGIN SELECT RAISE(ABORT,'controlled failure'); END"
+        )
+    # Even identical clock values must allow separate cancellation audit events.
+    for _ in range(2):
+        assert maintenance(path, clock="2026-10-02T00:00:00Z").returncode != 0
+        assert maintenance(path, clock="2026-10-01T23:59:59.999999Z").returncode == 0
+        with sqlite3.connect(path) as db:
+            assert db.execute("SELECT id FROM members WHERE id=?", (id_,)).fetchone()
+            assert db.execute("SELECT member_id FROM member_deletions").fetchall() == []
+    with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+        assert ledger.execute("SELECT member_id FROM member_deletions").fetchall() == []
+        assert ledger.execute(
+            "SELECT reason FROM deletion_cancellations WHERE target_id=?", (id_,)
+        ).fetchall() == [
+            ("NOT_INITIAL_PENDING_EXPIRED",),
+            ("NOT_INITIAL_PENDING_EXPIRED",),
+        ]
+    with sqlite3.connect(path) as db:
+        db.execute("DROP TRIGGER fail_delete")
+    assert maintenance(path, clock="2026-10-02T00:00:00Z").returncode == 0
+    with sqlite3.connect(path) as db:
+        assert (
+            db.execute("SELECT id FROM members WHERE id=?", (id_,)).fetchone() is None
+        )
+        assert db.execute("SELECT member_id FROM member_deletions").fetchall() == [
+            (id_,)
+        ]
+    with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+        assert ledger.execute(
+            "SELECT count(*) FROM deletion_cancellations WHERE target_id=?", (id_,)
+        ).fetchone() == (2,)
+
+
+@pytest.mark.parametrize("acknowledgement_fails", [False, True])
+def test_completed_deletion_replays_after_restore_even_when_clock_precedes_expiry(
+    member_app,
+    acknowledgement_fails,
+):
+    app, path = member_app()
+    with TestClient(app):
+        pass
+    id_ = AUTH_MEMBERS["pending"][0]
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET created_at='2026-07-04T00:00:00.000000Z' WHERE id=?",
+            (id_,),
+        )
+        db.execute(
+            "INSERT INTO apps(id,owner_id,name,url,prompt,description,subject,is_public,theme_id,version,url_version,created_at,updated_at) VALUES ('completed-app',?,'합성 앱','https://example.test','합성 prompt','합성 description','수학',1,'cloudDancer',1,1,'2026-07-04T00:00:00Z','2026-07-04T00:00:00Z')",
+            (id_,),
+        )
+        db.commit()
+        backup = path.with_name("before-completed-deletion.sqlite3")
+        with sqlite3.connect(backup) as copy:
+            db.backup(copy)
+    ledger_path = path.with_suffix(".deletions.sqlite3")
+    if acknowledgement_fails:
+        with sqlite3.connect(ledger_path) as ledger:
+            ledger.execute(
+                "CREATE TRIGGER fail_completion BEFORE INSERT ON completed_deletions BEGIN SELECT RAISE(ABORT,'controlled failure'); END"
+            )
+    result = maintenance(path, clock="2026-10-02T00:00:00Z")
+    assert (result.returncode != 0) is acknowledgement_fails
+    with sqlite3.connect(path) as db:
+        assert (
+            db.execute("SELECT id FROM members WHERE id=?", (id_,)).fetchone() is None
+        )
+        assert (
+            db.execute("SELECT id FROM apps WHERE id='completed-app'").fetchone()
+            is None
+        )
+        assert db.execute("SELECT member_id FROM member_deletions").fetchall() == [
+            (id_,)
+        ]
+    if acknowledgement_fails:
+        with sqlite3.connect(ledger_path) as ledger:
+            assert ledger.execute("SELECT * FROM completed_deletions").fetchall() == []
+            ledger.execute("DROP TRIGGER fail_completion")
+        # The command reported failure despite operational commit. Its mirrors
+        # recover the independent acknowledgement before any restore is accepted.
+        assert maintenance(path, clock="2026-10-01T23:59:59.999999Z").returncode == 0
+    with sqlite3.connect(ledger_path) as ledger:
+        assert ledger.execute(
+            "SELECT kind,target_id FROM completed_deletions ORDER BY kind"
+        ).fetchall() == [("app", "completed-app"), ("member", id_)]
+    with sqlite3.connect(backup) as copy, sqlite3.connect(path) as db:
+        copy.backup(db)
+    result = maintenance(
+        path, "invalidate-restored-auth", clock="2026-10-01T23:59:59.999999Z"
+    )
+    assert result.returncode == 0, result.stderr
+    with sqlite3.connect(path) as db:
+        assert (
+            db.execute("SELECT id FROM members WHERE id=?", (id_,)).fetchone() is None
+        )
+        assert (
+            db.execute("SELECT id FROM apps WHERE id='completed-app'").fetchone()
+            is None
+        )
+        assert db.execute("SELECT member_id FROM member_deletions").fetchall() == [
+            (id_,)
+        ]
+        assert db.execute("SELECT app_id FROM app_deletions").fetchall() == [
+            ("completed-app",)
+        ]
+    with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+        assert ledger.execute("SELECT member_id FROM member_deletions").fetchall() == [
+            (id_,)
+        ]
+        assert ledger.execute("SELECT app_id FROM app_deletions").fetchall() == [
+            ("completed-app",)
+        ]
+        assert ledger.execute("SELECT * FROM deletion_cancellations").fetchall() == []

@@ -38,7 +38,9 @@ E2E/visual 및 build/dist/reference를 최종 검증한다. 일반 실행 auth_r
 실제 삭제와 매 replay의 최종 운영 write lock 안에서 최초 승인 이력·pending·가입 기한을
 재확인한다(R9 Q16/Q38, R24 §8). 운영 반영 실패 뒤 승인 선확정이면 삭제를 취소하고
 회원·앱·세션·흐름·작업키를 보존한다. 원장에 종류·ID·취소 시각·안전한 사유만 남기며
-운영 삭제 mirror에는 성공을 기록하지 않는다. 취소는 이후 replay에서도 유지한다.
+취소 당시 운영 삭제 mirror에는 성공을 기록하지 않는다. 취소 감사 이력은 보존하되
+해당 활성 intent만 제거한다. 매 sweep은 현재 자격을 다시 평가해, 복원·시계 역행 후
+다시 최초 대기 만료이면 새 intent로 삭제한다. 완료된 삭제 기록은 유지한다(R9 Q16/Q40).
 서비스 유지관리 실패는 readiness를 거부하지만 별도 CLI 실패는 실행 중 서비스의
 ready 값을 자동 변경하지 않으므로 최종 상태 재확인이 필수다.
 운영 DB와 함께 원장까지 되돌리는 복원은 허용하지 않는다. 원장 정리는 전체 사본 목록과
@@ -194,3 +196,62 @@ possible Duplicated Code인 짧은 최초 대기 SQL 두 곳은 저장소 단순
 경합 관측, 연락처 미전송과 직접 HTTP 방어, 유실 후 요청·DB 단언을 확인했다.
 합계: Standards 규칙 위반 0 / Spec 미해결 0. 외부 리뷰어의 재승인·사람 수락·운영
 공개는 이 내부 자동 재리뷰 결과로 대신하지 않는다.
+
+
+## PR #125 독립 리뷰 r2 반영
+
+- minor 1: 리뷰어 프로브의 intent commit 후 CLI 실패→승인 전 백업→승인→취소→
+  운영 DB만 복원→invalidate-restored-auth→sweep 순서를 그대로 실행했다.
+  기존 코드에서는 만료 회원이 남아 **1 failed**, 3.66s였다. 취소 감사와 활성 intent를
+  분리하고 취소 시 해당 활성 행만 제거한다. 현재 만료 자격은 감사 이력과 별도로
+  매 write lock 안에서 평가하며 다시 자격이 되면 새 intent를 기록한다.
+  회원·앱 삭제와 기존 취소 이력 보존을 검증했다. 구형 PK 감사와 취소된 활성 행이
+  함께 남은 실제 r1 형태에서도 과거 intent 시각 재사용을 red(**1 failed**, 4.33s)로
+  확인했다. 운영 완료 mirror 증명 이후 감사 전환과 미완료 취소 intent 제거를 독립
+  원장의 같은 트랜잭션에서 처리하며, 새 sweep 시각을 독립·운영 원장 모두 단언한다.
+  시계 역행의 NOT_INITIAL_PENDING_EXPIRED도 동일 ID·동일 시각으로 두 번 취소한
+  이력을 모두 보존하고 이후 정확한 90일에 새 intent로 삭제한다. r1의 승인 선확정
+  회원·앱·세션/flow 보존 및 실제 삭제·백업 재삭제 회귀도 유지한다.
+  Spec 자체 리뷰에서 완료 삭제→운영 백업 복원→90일 직전 시계 역행에 완료 기록까지
+  취소되는 경계를 발견해 별도 red(**1 failed**, 2.47s)를 먼저 확인했다.
+  독립 completed_deletions의 최소 종류·ID로 실제 운영 commit 완료를 구분한다.
+  완료 기록은 취소하지 않고 복원 시 재적용한다(R9 Q38/Q40). 완료 증명 저장 실패는
+  CLI 실패와 실제 운영 삭제/mirror를 함께 단언하고, 복원 전 sweep 재시도의 mirror 기반
+  완료 증명 복구도 검증했다. 최종 유지관리 대상 **13 passed**, 44.43s.
+- nit 1: 서버 strip 후 NFC 계약은 그대로 둔다. 클라이언트 normalized-empty 판정은
+  Python 공백 집합(Unicode White_Space + U+001C~001F, FEFF 제외)을 사용한다.
+  NFC는 비어 있지 않은 stripped 문자열을 빈 문자열로 바꾸지 않으므로 이 집합 판정이
+  같은 결과를 낸다. U+001C~001F·U+0085의 빈 값 수락/본문 생략과 U+FEFF의
+  요청 없는 필드 오류를 양쪽 필드 단위로 고정했다. 기존 판정에서 **9 failed / 5 passed**
+  red 뒤 **23 passed** 대상 green이다. 현재 Python/Node에서 모든 Unicode codepoint를
+  대조해 공백 29개가 일치했다. 서버 코드·OpenAPI·기준 이미지·화면 PNG는 변경하지 않는다.
+
+### r2 최종 실행
+
+| 위치 / 명령 | r2 최종 결과 |
+| --- | --- |
+| backend / `PASSWORD_BLOCKLIST_PATH=<준비한 R15 사본> uv run pytest` | **234 passed**, 492.81s. 실패·skip 0, 기존 Starlette 경고 1개 |
+| backend / `uv run ruff check .`, `uv run ruff format --check .` | 통과 / 46 files already formatted |
+| frontend / `npm run check`, `npm test` | 통과 / **33 files, 844 passed**, 21.72s. 기존 OpenAPI 경고 2개 |
+| frontend / `npm run test:e2e:api -- auth-register.spec.js` | 기능 **3 passed**, 16.3s + 고정 시계 캡처 **5 passed**, 20.0s |
+| frontend / 인자 없는 `npm run test:e2e:api` | **일반 50 passed / 29 조건부 제외**, 2.9m; **prepared 기능 39 passed**, 2.7m; **고정 시계 10 passed**, 56.9s. 제외 사례는 prepared에서 검사 |
+| frontend / `node scripts/check-registration-evidence.mjs` + `cmp` | **15/15 PNG 바이트 일치**, 출력 JSON도 커밋된 captures.json과 일치. 기준 이미지·PNG 변경 없음 |
+
+전체 runner가 다시 쓴 Phase 2 관찰 PNG 62개는 원본으로 복원해 diff에서 제외했다.
+
+
+전체 API runner가 test-results를 초기화한 동안 증거 검사 한 번은 캡처 부재로 실패했다.
+원장·화면·기준 이미지를 바꾸지 않고 runner 완료 뒤 같은 read-only 검사를 재실행해 통과했다.
+
+### r2 code-review
+
+#### Standards
+
+규칙 위반 0건, 추가 수정 요청 0건. 운영 lock→완료 mirror backfill→독립 원장 전환의
+순서와 감사 보존·미완료 intent 제거의 원자성, 새 시각의 양쪽 DB 단언을 확인했다.
+완료 증명 저장 실패와 복원 전 재시도 설명도 실제 실패 경로와 일치한다.
+
+#### Spec
+
+완료 삭제를 취소하는 복원·시계 역행 경계와 구형 원장의 과거 시각 재사용을 red→green으로
+반영했다. 완료 삭제 복원 probe도 PASS다. 최종 재검토 잔여 0건, 범위 확장 0건.

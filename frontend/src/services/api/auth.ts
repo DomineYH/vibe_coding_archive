@@ -374,8 +374,17 @@ export const authService: AuthService = {
   async register(input) {
     const fields: Record<string, string> = {};
     for (const key of ["email", "phone"] as const) {
-      if (input[key]?.normalize("NFC").trim())
+      // Empty after Python strip + NFC: Unicode White_Space plus U+001C–001F,
+      // excluding U+FEFF. NFC cannot turn a nonempty stripped string into empty.
+      for (const char of input[key] ?? "") {
+        if (
+          /\p{White_Space}/u.test(char) ||
+          (char >= "\u001c" && char <= "\u001f")
+        )
+          continue;
         fields[key] = "현재 선택 정보는 수집하지 않습니다. 비워 주세요.";
+        break;
+      }
     }
     if (Object.keys(fields).length)
       throw new ServiceError("VALIDATION_ERROR", "입력을 확인해 주세요.", {

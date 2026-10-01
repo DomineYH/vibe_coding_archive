@@ -147,17 +147,26 @@ uv run --frozen python -m app.cli sweep-pending
 재삭제 원장은 운영 DB와 분리된 `<DATABASE_PATH stem>.deletions.sqlite3`(0600)다.
 운영 DB write lock을 잡은 동안 독립 SQLite FULL commit으로 회원/앱 식별자와 intent
 시각을 먼저 기록한다. intent만으로 삭제 성공이나 삭제 권한 확정을 선언하지 않는다
-(R9 Q38, R24 §8). 매 replay도 같은 최종 lock 안에서 현재 최초 승인 이력·pending·
+(R9 Q38, R24 §8). 미완료 intent replay도 같은 최종 lock 안에서 현재 최초 승인 이력·pending·
 가입 기한·일반 회원 자격을 재확인한다. 승인 선확정 등으로 자격을 잃었으면 회원·앱·
 세션/흐름/작업키를 건드리지 않고 원장 deletion_cancellations에 종류·ID·취소 시각·
-안전한 사유 코드(APPROVAL_COMMITTED 등)만 기록한다. 취소된 intent는 재실행하지 않고
-운영 member_deletions/app_deletions에도 삭제 성공으로 기록하지 않는다. 앱은 현재
-소유자가 같은 삭제 자격을 갖추거나 이미 없는 경우만 삭제한다.
+안전한 사유 코드(APPROVAL_COMMITTED 등)만 감사 이력으로 기록하고 해당 활성 intent를
+제거한다. 취소를 회원/앱의 영구 면제로 사용하지 않는다. 이후 sweep의 현재 상태가 다시
+최초 대기 만료 자격이면 새 intent를 기록해 삭제한다(R9 Q16/Q40). 같은 ID의 반복 취소도
+개별 감사 행으로 남기며 기존 고유 키 원장은 이력을 보존한 채 원자적으로 전환한다.
+취소 당시 운영 member_deletions/app_deletions에는 삭제 성공을 기록하지 않고, 실제
+완료된 삭제 원장과 mirror는 보존한다. 미완료 앱 intent는 현재 소유자가 같은 삭제 자격을
+갖추거나 이미 없는 경우만 적용한다. 실제 운영 commit 이후 독립 completed_deletions에
+최소 종류·ID만 완료 증명으로 기록하며, 둘 다 확정돼야 성공을 보고한다(R9 Q38).
+완료 증명이 있는 회원·앱은 복원 시 현재 시계·만료 자격과 무관하게 재삭제한다(R9 Q40).
 
 서비스와 운영자 CLI가 동시에 실행될 수 있다. 운영 DB 반영 실패 시 서비스 유지관리는
 readiness를 거절하지만 별도 CLI 실패가 실행 중 서비스의 readiness를 자동 변경하지는
-않는다. 따라서 이후 승인 commit을 포함한 현재 상태 재확인이 필수다. 원장 기록/취소
-기록 실패는 운영 삭제 전에 실패한다. 연락처·원문·비밀번호·토큰은 기록하지 않는다.
+않는다. 따라서 이후 승인 commit을 포함한 현재 상태 재확인이 필수다. intent/취소
+기록 실패는 운영 삭제 전에 실패한다. 완료 증명 기록 실패는 운영 commit 이후에도
+가능하므로 CLI 실패여도 실제 삭제는 끝났을 수 있다. 이 경우 운영 DB를 복원하기 전에
+현재 DB에서 sweep을 재실행한다. 운영 삭제 mirror로 완료 증명을 복구하며, 성공을
+확인한 뒤에만 복원한다. 연락처·원문·비밀번호·토큰은 기록하지 않는다.
 
 백업 복원은 운영 DB만 복원하고 **현재 독립 원장을 복원하거나 덮어쓰지 않는다**.
 서비스를 중지한 상태에서 기존 `invalidate-restored-auth` 명령을 실행한다. 현재 원장이

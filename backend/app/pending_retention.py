@@ -31,8 +31,10 @@ def _sweep_pending(factory, *, restored=False):
             "CREATE TABLE IF NOT EXISTS app_deletions(app_id TEXT PRIMARY KEY, deleted_at TEXT NOT NULL)"
         )
         ledger.execute(
-            "CREATE TABLE IF NOT EXISTS deletion_cancellations(kind TEXT NOT NULL CHECK(kind IN ('member','app')), target_id TEXT NOT NULL, cancelled_at TEXT NOT NULL, reason TEXT NOT NULL, PRIMARY KEY(kind,target_id))"
+            "CREATE TABLE IF NOT EXISTS completed_deletions(kind TEXT NOT NULL CHECK(kind IN ('member','app')), target_id TEXT NOT NULL, PRIMARY KEY(kind,target_id))"
         )
+        cancellation_schema = "CREATE TABLE IF NOT EXISTS deletion_cancellations(kind TEXT NOT NULL CHECK(kind IN ('member','app')), target_id TEXT NOT NULL, cancelled_at TEXT NOT NULL, reason TEXT NOT NULL)"
+        ledger.execute(cancellation_schema)
         ledger.commit()
         db.execute(text("BEGIN IMMEDIATE"))
         # Missing durable intents must never be recreated from a rolled-back backup.
@@ -50,10 +52,48 @@ def _sweep_pending(factory, *, restored=False):
             for row in db.execute(text("SELECT app_id FROM app_deletions"))
         ):
             raise RuntimeError("The independent deletion ledger is incomplete.")
-        stamp = now()
-        cancelled = set(
-            ledger.execute("SELECT kind,target_id FROM deletion_cancellations")
+        # Operational mirrors prove a previous commit, including recovery after
+        # an interrupted independent completion acknowledgement.
+        with ledger:
+            for kind, table, column in (
+                ("member", "member_deletions", "member_id"),
+                ("app", "app_deletions", "app_id"),
+            ):
+                ledger.executemany(
+                    "INSERT OR IGNORE INTO completed_deletions VALUES (?,?)",
+                    [
+                        (kind, row[0])
+                        for row in db.execute(text(f"SELECT {column} FROM {table}"))
+                    ],
+                )
+        if any(
+            row[5]
+            for row in ledger.execute("PRAGMA table_info(deletion_cancellations)")
+        ):
+            # Upgrade the private ledger atomically, preserving earlier audit rows.
+            ledger.execute("BEGIN IMMEDIATE")
+            with ledger:
+                ledger.execute(
+                    "ALTER TABLE deletion_cancellations RENAME TO old_cancellations"
+                )
+                ledger.execute(cancellation_schema)
+                ledger.execute(
+                    "INSERT INTO deletion_cancellations SELECT * FROM old_cancellations"
+                )
+                for kind, table, column in (
+                    ("member", "member_deletions", "member_id"),
+                    ("app", "app_deletions", "app_id"),
+                ):
+                    # r1 kept cancelled intents; retire only uncompleted ones.
+                    ledger.execute(
+                        f"DELETE FROM {table} WHERE {column} IN (SELECT target_id FROM old_cancellations WHERE kind=?) AND {column} NOT IN (SELECT target_id FROM completed_deletions WHERE kind=?)",
+                        (kind, kind),
+                    )
+                ledger.execute("DROP TABLE old_cancellations")
+        completed = set(
+            ledger.execute("SELECT kind,target_id FROM completed_deletions")
         )
+        stamp = now()
         candidates = (
             db.execute(
                 text(
@@ -64,9 +104,9 @@ def _sweep_pending(factory, *, restored=False):
             .scalars()
             .all()
         )
-        candidates = {id_ for id_ in candidates if ("member", id_) not in cancelled}
+        candidates = set(candidates)
         # Durable intent alone is not a completed deletion (R9 Q38/R24 §8).
-        # Every replay checks current eligibility under this operational write lock.
+        # Uncompleted replay checks eligibility under this operational write lock.
         apps = db.execute(
             text(
                 "SELECT id,owner_id FROM apps WHERE owner_id IN (SELECT id FROM members WHERE approval_status='pending' AND first_approved_at IS NULL AND is_admin=0 AND created_at<=:cutoff)"
@@ -76,11 +116,7 @@ def _sweep_pending(factory, *, restored=False):
         with ledger:
             ledger.executemany(
                 "INSERT OR IGNORE INTO app_deletions VALUES (?,?)",
-                [
-                    (id_, stamp)
-                    for id_, owner in apps
-                    if owner in candidates and ("app", id_) not in cancelled
-                ],
+                [(id_, stamp) for id_, owner in apps if owner in candidates],
             )
             ledger.executemany(
                 "INSERT OR IGNORE INTO member_deletions VALUES (?,?)",
@@ -89,14 +125,15 @@ def _sweep_pending(factory, *, restored=False):
         intents = ledger.execute(
             "SELECT member_id,deleted_at FROM member_deletions"
         ).fetchall()
-        for id_, _ in intents:
+        active_intents = []
+        for id_, deleted_at in intents:
             member = db.execute(
                 text(
                     "SELECT approval_status,first_approved_at FROM members WHERE id=:id"
                 ),
                 {"id": id_},
             ).first()
-            if member and id_ not in candidates and ("member", id_) not in cancelled:
+            if member and id_ not in candidates and ("member", id_) not in completed:
                 reason = (
                     "APPROVAL_COMMITTED"
                     if member.first_approved_at is not None
@@ -107,12 +144,15 @@ def _sweep_pending(factory, *, restored=False):
                         "INSERT INTO deletion_cancellations VALUES ('member',?,?,?)",
                         (id_, stamp, reason),
                     )
-                cancelled.add(("member", id_))
+                    ledger.execute(
+                        "DELETE FROM member_deletions WHERE member_id=?", (id_,)
+                    )
+                continue
+            active_intents.append((id_, deleted_at))
+        applied_apps = []
         for id_, deleted_at in ledger.execute(
             "SELECT app_id,deleted_at FROM app_deletions"
-        ):
-            if ("app", id_) in cancelled:
-                continue
+        ).fetchall():
             app = db.execute(
                 text("SELECT owner_id FROM apps WHERE id=:id"), {"id": id_}
             ).first()
@@ -120,14 +160,21 @@ def _sweep_pending(factory, *, restored=False):
                 owner_exists = db.execute(
                     text("SELECT id FROM members WHERE id=:id"), {"id": app.owner_id}
                 ).first()
-                if owner_exists and app.owner_id not in candidates:
+                if (
+                    owner_exists
+                    and app.owner_id not in candidates
+                    and ("app", id_) not in completed
+                ):
                     with ledger:
                         ledger.execute(
                             "INSERT INTO deletion_cancellations VALUES ('app',?,?,?)",
                             (id_, stamp, "OWNER_NOT_INITIAL_PENDING_EXPIRED"),
                         )
-                    cancelled.add(("app", id_))
+                        ledger.execute(
+                            "DELETE FROM app_deletions WHERE app_id=?", (id_,)
+                        )
                     continue
+            applied_apps.append(id_)
             db.execute(text("DELETE FROM apps WHERE id=:id"), {"id": id_})
             db.execute(
                 text("INSERT OR IGNORE INTO app_deletions VALUES (:id,:at)"),
@@ -135,9 +182,7 @@ def _sweep_pending(factory, *, restored=False):
             )
         # ponytail: replay scans retained intents every minute; add an applied cursor
         # only if the operating copy inventory makes this scan measurably expensive.
-        for id_, deleted_at in intents:
-            if ("member", id_) in cancelled:
-                continue
+        for id_, deleted_at in active_intents:
             db.execute(
                 text(
                     "UPDATE auth_flows SET current_session_generation=NULL,revoked_at=:at WHERE id IN (SELECT flow_id FROM sessions WHERE member_id=:id)"
@@ -159,6 +204,14 @@ def _sweep_pending(factory, *, restored=False):
         # R9: retain minimal intents until a complete copy inventory proves expiry
         # plus seven days. No such operating evidence exists; never guess/prune.
         db.commit()
+        # A durable intent becomes a permanent tombstone only after actual commit.
+        # Do not report success until both operational and independent records exist.
+        with ledger:
+            ledger.executemany(
+                "INSERT OR IGNORE INTO completed_deletions VALUES (?,?)",
+                [("member", id_) for id_, _ in active_intents]
+                + [("app", id_) for id_ in applied_apps],
+            )
 
 
 def sweep_pending(factory, *, restored=False):

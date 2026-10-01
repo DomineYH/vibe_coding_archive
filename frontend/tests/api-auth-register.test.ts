@@ -7,76 +7,86 @@ afterEach(() => {
   localStorage.clear();
 });
 
-it("registers with current anonymous S headers, without sending confirmation or admitting a transition", async () => {
-  localStorage.setItem(
-    "eduvibe-auth-flow-v1",
-    JSON.stringify({ flowId, revision: "4" }),
-  );
-  const writes: { body: unknown; headers: Headers }[] = [];
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (url: string, init: RequestInit) => {
-      if (url.endsWith("/csrf"))
+it.each(["　 \t ", "\u001c", "\u001d", "\u001e", "\u001f", "\u0085", null])(
+  "registers normalized-empty contact %j with current anonymous S headers, without confirmation or a transition",
+  async (contact) => {
+    localStorage.setItem(
+      "eduvibe-auth-flow-v1",
+      JSON.stringify({ flowId, revision: "4" }),
+    );
+    const writes: { body: unknown; headers: Headers }[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        if (url.endsWith("/csrf"))
+          return new Response(
+            JSON.stringify({
+              csrf_token: "fixture-csrf",
+              expires_at: "2026-10-01T00:15:00Z",
+            }),
+            {
+              headers: {
+                "X-EduVibe-Flow-Id": flowId,
+                "X-EduVibe-Auth-Revision": "4",
+                "X-EduVibe-Session-Generation": "2",
+              },
+            },
+          );
+        expect(url).toBe("/api/v1/auth/register");
+        writes.push({
+          body: JSON.parse(String(init.body)),
+          headers: new Headers(init.headers),
+        });
         return new Response(
           JSON.stringify({
-            csrf_token: "fixture-csrf",
-            expires_at: "2026-10-01T00:15:00Z",
+            id: flowId,
+            login_id: "teacher",
+            nickname: "교사",
+            approved: false,
+            pending_expires_at: "2026-12-30T00:00:00Z",
           }),
-          {
-            headers: {
-              "X-EduVibe-Flow-Id": flowId,
-              "X-EduVibe-Auth-Revision": "4",
-              "X-EduVibe-Session-Generation": "2",
-            },
-          },
+          { status: 201 },
         );
-      expect(url).toBe("/api/v1/auth/register");
-      writes.push({
-        body: JSON.parse(String(init.body)),
-        headers: new Headers(init.headers),
-      });
-      return new Response(
-        JSON.stringify({
-          id: flowId,
-          login_id: "teacher",
-          nickname: "교사",
-          approved: false,
-          pending_expires_at: "2026-12-30T00:00:00Z",
-        }),
-        { status: 201 },
-      );
-    }),
-  );
-  const result = await authService.register({
-    loginId: "teacher",
-    password: "synthetic password 1234",
-    nickname: "교사",
-    email: "　 \t ",
-    phone: null,
-  });
-  expect(result).toMatchObject({
-    loginId: "teacher",
-    approved: false,
-    pendingExpiresAt: "2026-12-30T00:00:00Z",
-  });
-  expect(writes).toHaveLength(1);
-  expect(writes[0].body).toEqual({
-    login_id: "teacher",
-    password: "synthetic password 1234",
-    nickname: "교사",
-  });
-  expect(Object.fromEntries(writes[0].headers)).toMatchObject({
-    "x-csrf-token": "fixture-csrf",
-    "x-eduvibe-flow-id": flowId,
-    "x-eduvibe-auth-revision": "4",
-    "x-eduvibe-session-generation": "2",
-  });
-  expect(writes[0].headers.has("X-EduVibe-Transition-Id")).toBe(false);
-});
+      }),
+    );
+    const result = await authService.register({
+      loginId: "teacher",
+      password: "synthetic password 1234",
+      nickname: "교사",
+      email: contact,
+      phone: contact,
+    });
+    expect(result).toMatchObject({
+      loginId: "teacher",
+      approved: false,
+      pendingExpiresAt: "2026-12-30T00:00:00Z",
+    });
+    expect(writes).toHaveLength(1);
+    expect(writes[0].body).toEqual({
+      login_id: "teacher",
+      password: "synthetic password 1234",
+      nickname: "교사",
+    });
+    expect(Object.fromEntries(writes[0].headers)).toMatchObject({
+      "x-csrf-token": "fixture-csrf",
+      "x-eduvibe-flow-id": flowId,
+      "x-eduvibe-auth-revision": "4",
+      "x-eduvibe-session-generation": "2",
+    });
+    expect(writes[0].headers.has("X-EduVibe-Transition-Id")).toBe(false);
+  },
+);
 
-it.each(["email", "phone"] as const)(
-  "rejects nonempty disabled %s locally with the server field contract and no network request",
-  async (field) => {
+it.each(
+  (["email", "phone"] as const).flatMap((field) =>
+    [" synthetic private value ", "\ufeff", " \ufeff "].map((value) => ({
+      field,
+      value,
+    })),
+  ),
+)(
+  "rejects nonempty disabled $field=$value locally with the server field contract and no network request",
+  async ({ field, value }) => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
     await expect(
@@ -84,7 +94,7 @@ it.each(["email", "phone"] as const)(
         loginId: "teacher",
         password: "synthetic password 1234",
         nickname: "교사",
-        [field]: " synthetic private value ",
+        [field]: value,
       }),
     ).rejects.toMatchObject({
       code: "VALIDATION_ERROR",
