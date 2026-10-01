@@ -4,7 +4,6 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { capture as captureImage } from "./app-create-capture.js";
-import { chromiumExecutable } from "../playwright-browser.js";
 
 // Scoped I105-L/P/V/A/N/H approval; preserved references remain unchanged.
 const referenceRoot = path.resolve(
@@ -76,14 +75,6 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
     results,
   });
 }
-
-// Partial tile reuse can vary rounded edges by 1–2 channel values between captures.
-test.use({
-  launchOptions: {
-    executablePath: chromiumExecutable(),
-    args: ["--force-color-profile=srgb", "--disable-partial-raster"],
-  },
-});
 
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");

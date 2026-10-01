@@ -312,6 +312,7 @@ async function captureAndCompare(
   baselinePath,
   testInfo,
   componentSelector,
+  repeatCaptures = 0,
 ) {
   await page.setViewportSize(viewport);
   const captureTime = new Date("2026-09-22T00:12:00.000Z");
@@ -599,6 +600,21 @@ async function captureAndCompare(
     await expect(galleryLoadingStatus(page)).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
+  if (repeatCaptures) {
+    for (let index = 1; index < repeatCaptures; index += 1) {
+      const repeated = await page.screenshot({
+        fullPage: true,
+        animations: "disabled",
+        caret: "hide",
+      });
+      const comparison = await compareInPage(page, repeated, actual);
+      expect(
+        comparison.differentPixels,
+        `capture ${index + 1} differs from capture 1: ${JSON.stringify({ maxChannelDelta: comparison.maxChannelDelta, bounds: comparison.bounds })}`,
+      ).toBe(0);
+    }
+    return;
+  }
   if (
     process.env.VISUAL_BASELINE_CAPTURE === "1" &&
     addedStates.includes(state) &&
@@ -796,6 +812,20 @@ for (const state of addedStates) {
     });
   }
 }
+
+test("gallery-loading consecutive captures are identical at 1024x900", async ({
+  page,
+}, testInfo) => {
+  await captureAndCompare(
+    page,
+    "gallery-loading",
+    { width: 1024, height: 900 },
+    null,
+    testInfo,
+    undefined,
+    5,
+  );
+});
 
 for (const item of components) {
   test(`${item.screen} key component matches its original capture`, async ({
