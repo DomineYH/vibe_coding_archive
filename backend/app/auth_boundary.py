@@ -59,11 +59,12 @@ def digest(value):
 
 
 class AuthError(Exception):
-    def __init__(self, code, status=409, *, retry_at=None, fields=None):
+    def __init__(self, code, status=409, *, retry_at=None, fields=None, message=None):
         self.code = code
         self.status = status
         self.retry_at = retry_at
         self.fields = fields
+        self.message = message
 
 
 def error_response(error):
@@ -71,7 +72,8 @@ def error_response(error):
         {
             "error": {
                 "code": error.code,
-                "message": {
+                "message": error.message
+                or {
                     "FEATURE_UNAVAILABLE": "인증 기능을 아직 사용할 수 없어요.",
                     "AUTH_REQUIRED": "인증 흐름의 유효한 증명이 필요해요.",
                     "RECOVERY_REQUIRED": "인증 흐름의 복구 증명이 필요해요.",

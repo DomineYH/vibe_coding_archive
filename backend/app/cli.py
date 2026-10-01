@@ -208,6 +208,9 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("seed", help="add missing synthetic development data")
     subparsers.add_parser(
+        "sweep-pending", help="delete expired initial pending members"
+    )
+    subparsers.add_parser(
         "invalidate-restored-auth",
         help="invalidate all restored browser authority before restart",
     )
@@ -239,7 +242,7 @@ def main() -> int:
             )
             return 1
         return 0
-    if args.command == "invalidate-restored-auth":
+    if args.command in ("invalidate-restored-auth", "sweep-pending"):
         settings = Settings.from_environment()
         engine = make_engine(settings.database_path)
         try:
@@ -249,7 +252,18 @@ def main() -> int:
                 )
             from app.database import make_session_factory
 
-            reconcile(make_session_factory(engine), restored=True)
+            if args.command == "invalidate-restored-auth":
+                reconcile(make_session_factory(engine), restored=True)
+            else:
+                from app.pending_retention import sweep_pending
+
+                sweep_pending(make_session_factory(engine))
+        except (RuntimeError, SQLAlchemyError, OSError):
+            print(
+                "Pending maintenance or restore verification failed; service must remain unavailable.",
+                file=sys.stderr,
+            )
+            return 1
         finally:
             engine.dispose()
         return 0

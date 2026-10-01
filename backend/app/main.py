@@ -26,6 +26,7 @@ from app.auth_login import HashGate
 from app.auth_login import router as login_router
 from app.auth_maintenance import reconcile, sweep
 from app.auth_password import router as password_router
+from app.auth_register import router as register_router
 from app.catalog import CATALOG
 from app.database import (
     current_head,
@@ -273,8 +274,13 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         capabilities = _capabilities()
         if request.app.state.auth_testing and request.app.state.auth_ready:
-            # #113: the verified T01–T03 test bundle; ordinary runs stay off.
-            for key in ("auth_login", "auth_logout", "auth_password_change"):
+            # #113: the verified T01–T04 test bundle; ordinary runs stay off.
+            for key in (
+                "auth_login",
+                "auth_logout",
+                "auth_password_change",
+                "auth_register",
+            ):
                 capabilities[key] = {"enabled": True, "reasons": []}
         return {
             "subjects": CATALOG["subjects"],
@@ -293,6 +299,7 @@ def create_app(
     api.include_router(auth_router)
     api.include_router(login_router)
     api.include_router(password_router)
+    api.include_router(register_router)
     api.include_router(public_apps_router)
     app.include_router(api)
 

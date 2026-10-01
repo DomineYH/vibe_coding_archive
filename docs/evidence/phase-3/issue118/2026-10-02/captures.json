@@ -1,0 +1,181 @@
+{
+  "pixelTolerance": 0,
+  "baselineUpdated": false,
+  "results": [
+    {
+      "state": "signup",
+      "size": "1440x1000",
+      "sha256": "289589047bfe8cfc373c5db702cd37740db7392cb1ddbe29f3a9fd0c1eb5e5b7",
+      "dimensions": [
+        1440,
+        1291
+      ],
+      "scope": "source_observation",
+      "sourceDimensions": [
+        1440,
+        1075
+      ],
+      "differentPixels": null
+    },
+    {
+      "state": "collection-error",
+      "size": "1440x1000",
+      "sha256": "05e322a97ef74251e351f17f94f30742181b5655469afa0b96ad56c00c027d1d",
+      "dimensions": [
+        1440,
+        1313
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "pending",
+      "size": "1440x1000",
+      "sha256": "755cb7f4b4251e81804267179b348e69bffdc0eec64863c7aff96496a3816f5a",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "signup",
+      "size": "1024x900",
+      "sha256": "07ee86971ec2ba93472b80c11617ff61a1db2946f3882649ea3074ee0be96c30",
+      "dimensions": [
+        1024,
+        1291
+      ],
+      "scope": "source_observation",
+      "sourceDimensions": [
+        1024,
+        1075
+      ],
+      "differentPixels": null
+    },
+    {
+      "state": "collection-error",
+      "size": "1024x900",
+      "sha256": "8ab01fe2ac8d8f59514d6d6aa77b8ce326219e6eeb7abe6f6957459383fc81f5",
+      "dimensions": [
+        1024,
+        1313
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "pending",
+      "size": "1024x900",
+      "sha256": "f5832e5014ef41351f32b950887b52c1ff1379f3159badb75977da2a0b87ee85",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "signup",
+      "size": "768x1024",
+      "sha256": "cd3de0678d47e3109e52e38f3b09363d833b279ba4c20f3f483ac27523670f9e",
+      "dimensions": [
+        768,
+        1291
+      ],
+      "scope": "source_observation",
+      "sourceDimensions": [
+        768,
+        1075
+      ],
+      "differentPixels": null
+    },
+    {
+      "state": "collection-error",
+      "size": "768x1024",
+      "sha256": "d0d20c8a443279b07a7296b8e0c1c3323cac666badb39f0e9d66150725ce7e44",
+      "dimensions": [
+        768,
+        1313
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "pending",
+      "size": "768x1024",
+      "sha256": "66e963bc5fac3a9617e3d4882e666c00f88e49ba329d5d5223682b10374ff81a",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "signup",
+      "size": "390x844",
+      "sha256": "02317abe7c5642bd6c6f94e15a7cab4576360062fee802da0b6bf373bd284ed3",
+      "dimensions": [
+        390,
+        1309
+      ],
+      "scope": "source_observation",
+      "sourceDimensions": [
+        390,
+        1115
+      ],
+      "differentPixels": null
+    },
+    {
+      "state": "collection-error",
+      "size": "390x844",
+      "sha256": "5cac44daffc8d24ac5d3fc5f63b71b8318bb4bbac7966d6d28470f3b51666b02",
+      "dimensions": [
+        390,
+        1331
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "pending",
+      "size": "390x844",
+      "sha256": "b936d3a0a65160b538863ae8a0053cea3c902682576ffe10be6a3a9b156c2135",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "signup",
+      "size": "360x844",
+      "sha256": "de90f70397d7ac2d284feac6d9b8afdd8b41640d13c9689a463df29537b51d07",
+      "dimensions": [
+        360,
+        1309
+      ],
+      "scope": "source_observation",
+      "sourceDimensions": [
+        360,
+        1133
+      ],
+      "differentPixels": null
+    },
+    {
+      "state": "collection-error",
+      "size": "360x844",
+      "sha256": "7e696cb4b55e7a149f43beea9c543e539e4bc02635403fb847323f798648585b",
+      "dimensions": [
+        360,
+        1331
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "pending",
+      "size": "360x844",
+      "sha256": "5ff22871ae2953613f3def2eff7949d472a3b0230d458ac0a18cfd4a935ee45f",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    }
+  ]
+}

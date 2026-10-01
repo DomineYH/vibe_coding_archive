@@ -12,6 +12,7 @@ import {
   mapRecoveryReady,
   mapRestartEligibility,
   mapSelf,
+  mapRegisteredUser,
   mapSettledAuthTransition,
 } from "../../contracts/mappers";
 import { isUuid } from "../../contracts/uuid";
@@ -370,8 +371,26 @@ export const authService: AuthService = {
       throw contractError();
     return mapSelf(value.body);
   },
-  async register() {
-    throw unavailable();
+  async register(input) {
+    const csrf = await authService.getCsrf();
+    if (!csrf.authContext) throw contractError();
+    const value = await write(
+      "/auth/register",
+      {
+        login_id: input.loginId,
+        password: input.password,
+        nickname: input.nickname,
+        ...(input.email !== undefined ? { email: input.email } : {}),
+        ...(input.phone !== undefined ? { phone: input.phone } : {}),
+      },
+      csrf.csrfToken,
+      {
+        "X-EduVibe-Flow-Id": csrf.authContext.flowId,
+        "X-EduVibe-Auth-Revision": csrf.authContext.revision,
+        "X-EduVibe-Session-Generation": csrf.authContext.sessionGeneration,
+      },
+    );
+    return checked(mapRegisteredUser, value);
   },
   async login(input) {
     return memberTransition("login", "/auth/login", {

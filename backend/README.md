@@ -121,3 +121,38 @@ windows begin at the change; ordinary later login does not open recent auth.
 A lost reply uses the original transition and cookie observation, never replays
 the change, and discards only that unreceived result S. Ordinary auth capabilities
 stay off; administrator reauth/reset/deletion and signup stay unavailable.
+
+### T04 가입과 최초 승인 대기 정리
+
+가입 API는 T05 전까지 일반 실행에서 비활성이다. `APP_ENV=test`의 기존
+prepared factory만 `auth_register`를 켜며 선택 이메일·연락처는 저장하지 않는다.
+가입은 현재 익명 S/CSRF·흐름/순번/세대를 최종 commit에서 재검사하고 S를 유지한다.
+실행권/인증 전환을 새로 만들지 않는다. Origin/CSRF를 통과한 요청은 필드 오류·중복도
+포함해 IP당 rolling 100/시간 슬롯을 write lock에서 예약한다. 차단은 집계하지 않는다.
+
+`0005_member_approval`은 이미 적용한 T03의 `0004_session_recent_auth` 뒤에 추가한다.
+기존 회원/아카이브 앱/가입일/승인 이력은 고치지 않는다. 승인 작업키 schema만 준비하며
+작업키 API·승인 실행·관리자 화면은 T05 범위다.
+
+```sh
+uv run --frozen alembic upgrade head
+uv run --frozen python -m app.cli sweep-pending
+```
+
+정상 시작과 매 60초 유지관리에서도 같은 정리를 실행한다. 가입일부터 90달력일의
+경계(UTC 가입 시각 + 90일)부터, 현재 pending·최초 승인 이력 없음·일반 회원만 삭제한다.
+최종 `BEGIN IMMEDIATE` 안에서 후보를 읽으므로 승인 선확정은 보존한다. 승인 해제 회원은
+최초 대기 삭제 대상이 아니다. 기한 도달 후 정리 전 로그인도 INVALID_CREDENTIALS다.
+
+재삭제 원장은 운영 DB와 분리된 `<DATABASE_PATH stem>.deletions.sqlite3`(0600)다.
+운영 DB write lock을 잡은 동안 독립 SQLite FULL commit으로 회원/앱 식별자와 삭제 시각만
+먼저 확정한다. 이것이 삭제 권한의 확정점이다. 운영 DB 반영 실패 시 readiness는 거절되며
+다음 유지관리에서 원장의 확정된 삭제를 재적용한다. 뒤늦은 승인이 삭제를 취소하지 않는다.
+원장 저장 실패는 운영 DB 삭제 전에 실패한다. 연락처·원문·비밀번호·토큰은 기록하지 않는다.
+
+백업 복원은 운영 DB만 복원하고 **현재 독립 원장을 복원하거나 덮어쓰지 않는다**.
+서비스를 중지한 상태에서 기존 `invalidate-restored-auth` 명령을 실행한다. 현재 원장이
+없거나 검증 불능이면 거절한다. 재삭제를 적용한 후 모든 과거 인증 권한/허가를 폐기하고,
+가입/세션의 원래 시계를 유지한다. 공급자 사본 전체 목록·30일 만료 증거가 확인된 뒤
+7일을 계산하는 운영 절차는 T07 공개 gate다. 현재 증거가 없으므로 최소 재삭제 기록은
+자동 제거하지 않는다. 운영 DB와 함께 원장까지 과거로 되돌리는 복원은 지원하지 않는다.

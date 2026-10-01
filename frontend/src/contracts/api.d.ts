@@ -356,7 +356,7 @@ export interface paths {
         put?: never;
         /**
          * Submit a member registration for manual approval
-         * @description Creates an unapproved user and never signs the user in. The password_confirm field is not accepted. While contact collection is disabled, omitted, null, or normalized-empty email/phone values are accepted and non-empty values receive field validation errors. No partial account is created on validation failure.
+         * @description Creates an unapproved user and never signs the user in. The password_confirm field is not accepted. While contact collection is disabled, omitted, null, or normalized-empty email/phone values are accepted and non-empty values receive field validation errors. No partial account is created on validation failure. T04 is enabled only in the APP_ENV=test prepared boundary until T05 completes. Requires the current anonymous S and matching flow/revision/generation; full and change_only receive ALREADY_AUTHENTICATED. Registration does not admit an identity transition, rotate S, or sign in. Origin/CSRF-valid attempts, including field errors and duplicates, reserve one of 100 IP slots per rolling hour atomically before hashing. Blocked requests do not extend the window. Final commit rechecks the current anonymous context.
          */
         post: operations["register"];
         delete?: never;
@@ -741,7 +741,7 @@ export interface components {
         ChangePasswordInput: {
             password: string;
         };
-        /** @description login_id and nickname are trimmed and normalized to NFC; password is normalized to NFC without trimming. Lengths count Unicode code points. Password length is 15-128. The production contract checks the full normalized value against the versioned local common-password blocklist; the Phase 1 mock does not apply the check while list redistribution rights remain unresolved. email and phone are optional synthetic Phase 1 inputs; password_confirm is never part of this request. */
+        /** @description login_id and nickname are trimmed and normalized to NFC; password is normalized to NFC without trimming. Lengths count Unicode code points. Password length is 15-128. The production contract checks the full normalized value against the versioned local common-password blocklist; the Phase 1 mock does not apply the check while list redistribution rights remain unresolved. T04 uses individually prepared integrity-verified R15 data. Real email/phone collection remains disabled: only omitted, null or normalized-empty values are accepted. password_confirm is never part of this request. */
         RegisterInput: {
             login_id: string;
             password: string;
@@ -2117,9 +2117,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Unapproved account and calculated pending expiry. */
+            /** @description Unapproved account and calculated pending expiry; the anonymous S is unchanged. */
             201: {
                 headers: {
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2127,6 +2131,7 @@ export interface operations {
                 };
             };
             400: components["responses"]["ServiceError"];
+            401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
             413: components["responses"]["ServiceError"];
