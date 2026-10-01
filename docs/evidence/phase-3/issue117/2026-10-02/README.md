@@ -161,3 +161,9 @@ opus 5.5 r1 판정 APPROVE(blocker/major 0)의 minor 1~8을 같은 브랜치에�
 
 공유 API 계약·화면·기준 이미지는 이 리뷰 반영에서 변경하지 않았다. 과거 Phase 2 관찰 PNG
 62개의 러너 재생성분은 원래 내용으로 복원했으며 커밋하지 않았다.
+
+
+CI 첫 실행(186d381)의 backend 준비 단계는 RUNNER_TEMP가 `/tmp` 바깥이라 test DB
+경로 정책에서 거절됐다. 목록 취득만 하는 명시적 준비 CLI를 development 환경으로 수정했다.
+같은 `/tmp` 바깥 DB 설정으로 실제 prepare-password-blocklist CLI를 실행해 성공했고,
+R15 전체 SHA-256·835538 bytes를 다시 확인했다. 테스트 환경과 DB 경로 정책은 변경하지 않았다.

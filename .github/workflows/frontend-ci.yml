@@ -19,7 +19,7 @@ jobs:
       - name: Provision the fixed R15 password blocklist explicitly
         working-directory: backend
         run: |
-          export APP_ENV=test DATABASE_PATH="$RUNNER_TEMP/provisioning.sqlite3" PUBLIC_ORIGIN=http://localhost:5174
+          export APP_ENV=development DATABASE_PATH="$RUNNER_TEMP/provisioning.sqlite3" PUBLIC_ORIGIN=http://localhost:5174
           export PASSWORD_BLOCKLIST_PATH="$RUNNER_TEMP/password-blocklist-ncsc.txt"
           uv run --frozen python -m app.cli prepare-password-blocklist
           echo "PASSWORD_BLOCKLIST_PATH=$PASSWORD_BLOCKLIST_PATH" >> "$GITHUB_ENV"
