@@ -22,6 +22,8 @@ from app.auth_boundary import (
     error_response,
     invalid_cookie_names,
 )
+from app.auth_login import HashGate
+from app.auth_login import router as login_router
 from app.auth_maintenance import reconcile, sweep
 from app.catalog import CATALOG
 from app.database import (
@@ -169,6 +171,7 @@ def create_app(
         app.state.settings = resolved
         app.state.auth_testing = auth_testing
         app.state.auth_ready = False
+        app.state.hash_gate = HashGate()
         app.state.engine = engine
         app.state.expected_head = head
         app.state.session_factory = make_session_factory(engine)
@@ -260,7 +263,10 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         capabilities = _capabilities()
         if request.app.state.auth_testing and request.app.state.auth_ready:
-            capabilities["auth_login"] = {"enabled": True, "reasons": []}
+            # Login and logout are one working pair on the prepared test boundary;
+            # password change joins the bundle with T03. Ordinary runs stay off.
+            for key in ("auth_login", "auth_logout"):
+                capabilities[key] = {"enabled": True, "reasons": []}
         return {
             "subjects": CATALOG["subjects"],
             "grades": CATALOG["grades"],
@@ -276,6 +282,7 @@ def create_app(
         }
 
     api.include_router(auth_router)
+    api.include_router(login_router)
     api.include_router(public_apps_router)
     app.include_router(api)
 

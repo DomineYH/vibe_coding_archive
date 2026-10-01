@@ -1,4 +1,4 @@
-"""T01 preparation and recovery HTTP boundary; member execution stays disabled."""
+"""T01 preparation and recovery HTTP boundary; login/logout/me live in auth_login."""
 
 import secrets
 from typing import Annotated, Literal
@@ -8,7 +8,6 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from starlette.responses import Response
 
 from app.auth_boundary import (
     AuthError,
@@ -76,14 +75,15 @@ class Discard(Settle):
     expected_session_generation: Seq
 
 
-def auth_session(request: Request):
+def open_session(request: Request, *, immediate: bool):
     if not request.app.state.auth_testing or not request.app.state.auth_ready:
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     with request.app.state.session_factory() as db:
         try:
             if request.method == "POST":
                 origin(request)
-                db.execute(text("BEGIN IMMEDIATE"))
+                if immediate:
+                    db.execute(text("BEGIN IMMEDIATE"))
             yield db
         except SQLAlchemyError as error:
             db.rollback()
@@ -92,7 +92,17 @@ def auth_session(request: Request):
             raise AuthError("SERVICE_UNAVAILABLE", 503) from None
 
 
+def auth_session(request: Request):
+    yield from open_session(request, immediate=True)
+
+
+def unlocked_session(request: Request):
+    # Login hashes outside any write transaction and opens its own phases.
+    yield from open_session(request, immediate=False)
+
+
 Db = Depends(auth_session)
+Unlocked = Depends(unlocked_session)
 
 
 def recovery_body(item, row):
@@ -272,28 +282,14 @@ def flow_state(request: Request, transition_id: str | None = None, db=Db):
     )
 
 
-@router.post("/transitions")
-def admit(request: Request, body: Admission, db=Db):
-    item = flow(db, str(body.flow_id), proof_kind="recovery")
-    if body.kind != "anonymous_session":
-        raise AuthError("FEATURE_UNAVAILABLE", 503)
-    credential(db, request, item, "recovery", csrf=True)
-    check_revision(
-        request, item, body.expected_revision, body.expected_session_generation
-    )
-    if not item["recovery_ready"]:
-        raise AuthError("AUTH_STATE_CHANGED")
-    if pending(db, item):
-        raise AuthError("AUTH_TRANSITION_PENDING")
-    if current_session(db, item) or body.expected_session_generation is not None:
-        raise AuthError("AUTH_STATE_CHANGED")
-    if body.transition_id != f"{item['id']}.{item['revision']}":
-        raise AuthError("AUTH_STATE_CHANGED")
+def insert_transition(db, item, body, source):
     previous = item["revision"]
     advance(db, item)
     row = {
         "id": body.transition_id,
         "flow": item["id"],
+        "kind": body.kind,
+        "source": source,
         "before": previous,
         "revision": item["revision"],
         "now": now(),
@@ -301,10 +297,49 @@ def admit(request: Request, body: Admission, db=Db):
     row["permit"] = min(after(row["now"], 60), item["expires_at"])
     db.execute(
         text(
-            "INSERT INTO auth_transitions(transition_id,flow_id,kind,before_revision,admitted_revision,permit_expires_at,state,admitted_at) VALUES (:id,:flow,'anonymous_session',:before,:revision,:permit,'admitted',:now)"
+            "INSERT INTO auth_transitions(transition_id,flow_id,kind,source_session_generation,before_revision,admitted_revision,permit_expires_at,state,admitted_at) VALUES (:id,:flow,:kind,:source,:before,:revision,:permit,'admitted',:now)"
         ),
         row,
     )
+    return row
+
+
+@router.post("/transitions")
+def admit(request: Request, body: Admission, db=Db):
+    item = flow(
+        db,
+        str(body.flow_id),
+        proof_kind="recovery" if body.kind == "anonymous_session" else None,
+    )
+    if body.kind in ("password_change", "reauthenticate"):
+        raise AuthError("FEATURE_UNAVAILABLE", 503)
+    member_kind = body.kind in ("login", "logout")
+    session = None
+    if member_kind:
+        # Member operations spend the current S and its CSRF, not R.
+        session = credential(db, request, item, "session", csrf=True)
+        if (
+            body.expected_session_generation is None
+            or session["issued_seq"] != body.expected_session_generation
+        ):
+            raise AuthError("AUTH_STATE_CHANGED")
+    else:
+        credential(db, request, item, "recovery", csrf=True)
+    check_revision(
+        request, item, body.expected_revision, body.expected_session_generation
+    )
+    if not item["recovery_ready"]:
+        raise AuthError("AUTH_STATE_CHANGED")
+    if pending(db, item):
+        raise AuthError("AUTH_TRANSITION_PENDING")
+    if member_kind:
+        if body.kind == "login" and session["kind"] != "anonymous":
+            raise AuthError("ALREADY_AUTHENTICATED")
+    elif current_session(db, item) or body.expected_session_generation is not None:
+        raise AuthError("AUTH_STATE_CHANGED")
+    if body.transition_id != f"{item['id']}.{item['revision']}":
+        raise AuthError("AUTH_STATE_CHANGED")
+    row = insert_transition(db, item, body, session["issued_seq"] if session else None)
     return response(
         db,
         request,
@@ -547,26 +582,8 @@ def reset(flow_id: str, request: Request, body: ResetFlow, db=Db):
     return response(db, request, {"restart_eligible": True})
 
 
-@router.get("/me")
-def me(db=Db):
-    raise AuthError("FEATURE_UNAVAILABLE", 503)
-
-
-@router.post("/login")
 @router.post("/register")
 @router.post("/password")
 @router.post("/reauth")
 def member_execution(db=Db):
     raise AuthError("FEATURE_UNAVAILABLE", 503)
-
-
-@router.post("/logout")
-def logout(request: Request, db=Db):
-    if any(
-        credential(db, request, flow(db, item["flow_id"]), "session", required=False)
-        for item in proof_context(db, request)
-    ):
-        raise AuthError("FEATURE_UNAVAILABLE", 503)
-    # The no-S exception neither issues credentials nor settles another transition.
-    db.commit()
-    return Response(status_code=204, headers={"Cache-Control": "no-store"})

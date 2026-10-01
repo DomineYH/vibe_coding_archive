@@ -5,11 +5,12 @@ import ipaddress
 import re
 import secrets
 from datetime import UTC, datetime, timedelta
+from unicodedata import normalize
 from urllib.parse import urlsplit
 from uuid import UUID, uuid4
 
 from sqlalchemy import text
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
 PENDING = ("admitted", "executing")
 SEQUENCE = re.compile(r"^(0|[1-9][0-9]*)$")
@@ -48,6 +49,11 @@ def older(left, right):
     return (len(left), left) < (len(right), right)
 
 
+def normalized_login_id(value):
+    """The one login_id_key rule shared by seed, login and admin tooling."""
+    return normalize("NFC", value.strip()).lower()
+
+
 def digest(value):
     return hashlib.sha256(value.encode()).hexdigest()
 
@@ -77,6 +83,12 @@ def error_response(error):
                     "AUTH_COOKIE_BUDGET_EXCEEDED": "쿠키 공간을 확보한 뒤 다시 확인해 주세요.",
                     "RATE_LIMITED": "요청이 많아요. 잠시 후 다시 확인해 주세요.",
                     "VALIDATION_ERROR": "요청 형식을 확인해 주세요.",
+                    "INVALID_CREDENTIALS": "아이디 또는 비밀번호를 확인해 주세요.",
+                    "ACCOUNT_NOT_APPROVED": "승인 대기 중인 계정입니다. 관리자 승인 후 로그인해 주세요.",
+                    "TEMP_PASSWORD_EXPIRED": "임시 비밀번호가 만료되었어요. 관리자에게 다시 요청해 주세요.",
+                    "ALREADY_AUTHENTICATED": "다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.",
+                    "AUTH_BUSY": "요청이 몰려 있어요. 잠시 뒤에 다시 시도해 주세요.",
+                    "DB_BUSY": "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.",
                 }.get(error.code, "인증 준비를 완료할 수 없어요. 다시 확인해 주세요."),
                 "request_id": str(uuid4()),
                 **(
@@ -87,7 +99,10 @@ def error_response(error):
             }
         },
         status_code=error.status,
-        headers={"Cache-Control": "no-store"},
+        headers={
+            "Cache-Control": "no-store",
+            **({"Retry-After": "1"} if error.code == "AUTH_BUSY" else {}),
+        },
     )
 
 
@@ -346,11 +361,16 @@ def cookie_budget(request, name, token):
         raise AuthError("AUTH_COOKIE_BUDGET_EXCEEDED")
 
 
-def response(db, request, body, *, status=200, cookie=None, metadata=None):
+def response(
+    db, request, body, *, status=200, cookie=None, metadata=None, private=False
+):
     invalid = invalid_cookie_names(db, request)
     db.commit()
-    result = JSONResponse(
-        body, status_code=status, headers={"Cache-Control": "no-store"}
+    headers = {"Cache-Control": "private, no-store" if private else "no-store"}
+    result = (
+        Response(status_code=204, headers=headers)
+        if status == 204
+        else JSONResponse(body, status_code=status, headers=headers)
     )
     for name in invalid:
         result.delete_cookie(
@@ -379,11 +399,34 @@ def response(db, request, body, *, status=200, cookie=None, metadata=None):
     return result
 
 
+def client_subject(request):
+    # Direct peer only. Proxy headers are untrusted until the operating gate configures them.
+    return digest(request.client.host if request.client else "unknown-peer")
+
+
+def rate_limit_window(db, purpose, subject, limit, seconds):
+    """retry_at once `limit` events sit in the rolling window, else None."""
+    times = (
+        db.execute(
+            text(
+                "SELECT occurred_at FROM rate_limit_events WHERE purpose=:purpose AND subject_hash=:subject AND occurred_at>:since ORDER BY occurred_at"
+            ),
+            {
+                "purpose": purpose,
+                "subject": subject,
+                "since": after(now(), -seconds),
+            },
+        )
+        .scalars()
+        .all()
+    )
+    return after(times[len(times) - limit], seconds) if len(times) >= limit else None
+
+
 def rate_limit(db, request, purpose):
     # Count successful prepare operations / new anonymous S issuances; rejected transactions roll back.
     timestamp = now()
-    # Direct peer only. Proxy headers are untrusted until the operating gate configures them.
-    subject = digest(request.client.host if request.client else "unknown-peer")
+    subject = client_subject(request)
     count = (
         db.execute(
             text(

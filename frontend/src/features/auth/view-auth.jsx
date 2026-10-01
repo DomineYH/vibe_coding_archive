@@ -11,6 +11,36 @@ const registrationErrorFields = {
   phone: "phone",
 };
 
+// Korea has no DST, so a fixed +9h shift is exact and independent of host ICU data.
+function koreanClock(date) {
+  const seoul = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  return `${seoul.getUTCHours()}시 ${String(seoul.getUTCMinutes()).padStart(2, "0")}분`;
+}
+
+function loginFailureMessage(error) {
+  if (!(error instanceof ServiceError))
+    return "로그인하지 못했어요. 연결을 확인해 주세요.";
+  switch (error.code) {
+    case "INVALID_CREDENTIALS":
+      return "로그인 아이디 또는 비밀번호를 확인해 주세요.";
+    case "TEMP_PASSWORD_EXPIRED":
+    case "ACCOUNT_NOT_APPROVED":
+    case "ALREADY_AUTHENTICATED":
+      return error.message;
+    case "RATE_LIMITED": {
+      const retryAt = error.retryAt ? new Date(error.retryAt) : null;
+      return retryAt && !Number.isNaN(retryAt.getTime())
+        ? `로그인 시도가 너무 많아요. ${koreanClock(retryAt)} 이후에 다시 시도해 주세요.`
+        : "로그인 시도가 너무 많아요. 잠시 뒤에 다시 시도해 주세요.";
+    }
+    case "AUTH_BUSY":
+    case "DB_BUSY":
+      return "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.";
+    default:
+      return "로그인하지 못했어요. 연결을 확인해 주세요.";
+  }
+}
+
 function getRegistrationFieldErrors(error) {
   if (!(error instanceof ServiceError)) return {};
   const fields = {};
@@ -677,20 +707,7 @@ export function AuthView({
     try {
       await onLogin({ loginId: normalizedLoginId, password });
     } catch (error) {
-      const text =
-        error instanceof ServiceError && error.code === "TEMP_PASSWORD_EXPIRED"
-          ? error.message
-          : error instanceof ServiceError &&
-              error.code === "INVALID_CREDENTIALS"
-            ? "로그인 아이디 또는 비밀번호를 확인해 주세요."
-            : error instanceof ServiceError &&
-                error.code === "ACCOUNT_NOT_APPROVED"
-              ? error.message
-              : error instanceof ServiceError &&
-                  error.code === "ALREADY_AUTHENTICATED"
-                ? error.message
-                : "로그인하지 못했어요. 연결을 확인해 주세요.";
-      setMessage(text);
+      setMessage(loginFailureMessage(error));
     } finally {
       submitting.current = false;
       setPending(false);

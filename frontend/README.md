@@ -39,3 +39,13 @@ For fixed-renderer evidence, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to the same
 Chromium 151.0.7922.34 headless shell used by the visual suite and set
 `FONTCONFIG_FILE` to `visual/fontconfig.conf`. New preparation/failure captures
 are observations, not new or regenerated visual baselines.
+
+### T02 member login boundary
+
+`npm run test:e2e:api -- e2e-api/auth-login.spec.js` drives real login,
+refresh, logout, rate limiting, lost-reply recovery, session expiry and
+multi-device isolation through the product screen, real HTTP, a test-owned
+SQLite file and browser cookies on the prepared boundary (its synthetic members
+come from `backend/tests/support.py`). The default full run executes it after
+`auth-prepare.spec.js`. The `login states at …` captures are `product_only`
+observations; they neither create nor update a visual baseline.

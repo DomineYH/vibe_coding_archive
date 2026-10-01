@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.support import populate_public_and_private_apps
+from tests.support import populate_auth_members, populate_public_and_private_apps
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
@@ -41,3 +41,16 @@ def seed_public_and_private_apps():
 
 # Explicit mixed file selections in pytest must retain the shared HTTP contract seams.
 from tests.contracts.conftest import make_test_app, normalize_schema  # noqa: F401
+
+
+@pytest.fixture
+def member_app(make_test_app, tmp_path):  # noqa: F811
+    """Prepared-boundary app over a migrated DB holding synthetic Argon2 members."""
+
+    def make(name="members.sqlite3"):
+        path = tmp_path / name
+        app = make_test_app(path, auth_testing=True)
+        populate_auth_members(path)
+        return app, path
+
+    return make

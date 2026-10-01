@@ -441,7 +441,7 @@ paths:
               { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
             X-EduVibe-Session-Generation:
               { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
           content:
             application/json:
               schema:
@@ -493,6 +493,12 @@ paths:
     post:
       operationId: login
       summary: Sign in an approved member
+      description: >-
+        Verifies the existing credential after a login permit. The response
+        alone never opens a protected screen; clients confirm flow-state, then
+        read /auth/me. A wrong, unknown or deleted account is one
+        INVALID_CREDENTIALS response; only the exact password learns
+        ACCOUNT_NOT_APPROVED or TEMP_PASSWORD_EXPIRED.
       security:
         - SessionCookie: []
       parameters:
@@ -515,7 +521,7 @@ paths:
             X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
             X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
             X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
           content:
             application/json:
               schema:
@@ -529,7 +535,15 @@ paths:
         "429":
           $ref: "#/components/responses/ServiceError"
         "503":
-          $ref: "#/components/responses/ServiceError"
+          description: >-
+            A controlled outage. AUTH_BUSY (hashing saturated) carries
+            Retry-After: 1; DB_BUSY follows the five-second lock cap.
+          headers:
+            Retry-After: { schema: { type: string } }
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
         "400": { $ref: "#/components/responses/ServiceError" }
         "422": { $ref: "#/components/responses/ServiceError" }
         "413": { $ref: "#/components/responses/ServiceError" }

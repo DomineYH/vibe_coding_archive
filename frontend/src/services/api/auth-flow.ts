@@ -1,4 +1,7 @@
-import type { AuthFlowState } from "../../contracts/mappers";
+import type {
+  AuthFlowState,
+  AuthTransitionPermit,
+} from "../../contracts/mappers";
 import { isUuid } from "../../contracts/uuid";
 import type {
   AuthService,
@@ -254,6 +257,13 @@ async function observe(
           "AUTH_STATE_CHANGED",
           "현재 세션을 다시 확인해 주세요.",
         );
+      // The member always comes from the server; an anonymous S is simply no member.
+      try {
+        result.user = await service.getMe(options);
+      } catch (error) {
+        if (!(error instanceof ServiceError) || error.code !== "AUTH_REQUIRED")
+          throw error;
+      }
     }
     save({ flowId: state.flowId, revision: state.revision });
   }
@@ -358,6 +368,73 @@ export async function prepareApiAuthFlow(
         options,
       );
     return observed;
+  }, options);
+}
+/**
+ * Spend one login/logout permit under the shared Web Lock. The transition ID is
+ * stored before admission; a lost reply leaves it for flow-state/settle, and
+ * nothing here ever replays the write.
+ */
+export async function runApiTransition<T>(
+  service: AuthService,
+  kind: "login" | "logout",
+  execute: (
+    permit: AuthTransitionPermit | null,
+    state: AuthFlowState,
+  ) => Promise<T>,
+  options?: AuthRequestOptions,
+): Promise<T> {
+  return locked(async () => {
+    const record = readRecord();
+    if (!record?.flowId || record.resetTargets)
+      throw new ServiceError(
+        "FEATURE_UNAVAILABLE",
+        "인증 흐름을 먼저 준비해 주세요.",
+      );
+    const state = await service.getFlowState(undefined, options);
+    if (state.flowId !== record.flowId)
+      throw new ServiceError(
+        "CONTRACT_ERROR",
+        "요청한 인증 흐름을 확인할 수 없어요.",
+      );
+    // Without any S, logout is the Origin-only 204 that settles nothing.
+    if (kind === "logout" && state.sessionGeneration === null)
+      return execute(null, state);
+    if (
+      !state.recoveryReady ||
+      !state.nextTransitionId ||
+      state.pendingTransition ||
+      state.sessionGeneration === null ||
+      !state.sessionCookiePresent
+    )
+      throw new ServiceError(
+        "AUTH_STATE_CHANGED",
+        "인증 상태를 다시 확인해 주세요.",
+      );
+    const executing: Record = {
+      flowId: state.flowId,
+      revision: state.revision,
+      transitionId: state.nextTransitionId,
+      progress: "executing",
+    };
+    save(executing);
+    let permit: AuthTransitionPermit;
+    try {
+      permit = await service.admitTransition({
+        flowId: state.flowId,
+        transitionId: state.nextTransitionId,
+        kind,
+        expectedRevision: state.revision,
+        expectedSessionGeneration: state.sessionGeneration,
+      });
+    } catch (error) {
+      // A definite refusal created no transition, so the stored ID blocks nothing.
+      if (error instanceof ServiceError && error.outcome === "rejected")
+        save({ flowId: state.flowId, revision: state.revision });
+      throw error;
+    }
+    save({ ...executing, revision: permit.revision });
+    return execute(permit, state);
   }, options);
 }
 export async function recoverApiAuthFlow(

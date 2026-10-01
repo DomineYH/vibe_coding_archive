@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from functools import cache
 from pathlib import Path
+
+from pwdlib import PasswordHash
 
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
@@ -243,4 +246,48 @@ def prepare_issue83_detail_fixture(database_path: Path) -> None:
                 "2026-09-28T12:00:00.000000Z",
                 "00000000-0000-4000-8000-000000000001",
             ),
+        )
+
+
+# Synthetic test-only credential; it never appears in production fixtures.
+AUTH_PASSWORD = "합성 로그인 비밀번호 1234"
+AUTH_MEMBERS = {
+    "approved": ("00000000-0000-4000-8000-000000000100", "member-a", "승인 회원"),
+    "pending": ("00000000-0000-4000-8000-000000000101", "pending-user", "대기 회원"),
+    "revoked": ("00000000-0000-4000-8000-000000000102", "revoked-user", "해제 회원"),
+    "admin": ("00000000-0000-4000-8000-000000000103", "admin-user", "관리 담당"),
+    "hangul": ("00000000-0000-4000-8000-000000000104", "한글교사", "한글 교사"),
+    "limited": ("00000000-0000-4000-8000-000000000105", "limit-user", "제한 회원"),
+}
+
+
+@cache
+def _auth_hash() -> str:
+    return PasswordHash.recommended().hash(AUTH_PASSWORD)
+
+
+def populate_auth_members(database_path: Path) -> None:
+    """Insert synthetic members whose passwords are real Argon2id hashes."""
+    stamp = "2026-09-28T12:00:00.000000Z"
+    rows = [
+        (
+            *AUTH_MEMBERS[name],
+            _auth_hash(),
+            int(name == "admin"),
+            "pending"
+            if name == "pending"
+            else "revoked"
+            if name == "revoked"
+            else "approved",
+            AUTH_MEMBERS[name][1].lower(),
+            None if name == "pending" else stamp,
+        )
+        for name in AUTH_MEMBERS
+    ]
+    with sqlite3.connect(database_path) as connection:
+        connection.executemany(
+            "INSERT INTO members (id, login_id, nickname, password_hash, is_admin, "
+            "approval_status, login_id_key, created_at, updated_at, first_approved_at) "
+            f"VALUES (?, ?, ?, ?, ?, ?, ?, '{stamp}', '{stamp}', ?)",
+            rows,
         )

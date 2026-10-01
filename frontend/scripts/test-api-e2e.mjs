@@ -47,7 +47,7 @@ async function run() {
     .filter((arg) => arg !== "--auth-unavailable");
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
-    arguments_.some((arg) => arg.includes("auth-prepare"));
+    arguments_.some((arg) => /auth-(prepare|login)/.test(arg));
   const env = {
     ...process.env,
     APP_ENV: "test",
@@ -72,7 +72,7 @@ async function run() {
         "--frozen",
         "python",
         "-c",
-        "import os; from pathlib import Path; from tests.support import populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path)",
+        "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path)",
       ],
       { cwd: backend, env, stdio: "inherit" },
     );
@@ -91,7 +91,13 @@ async function run() {
         ? [{ arguments_, prepared: authPrepared }]
         : [
             { arguments_, prepared: false },
-            { arguments_: ["e2e-api/auth-prepare.spec.js"], prepared: true },
+            {
+              arguments_: [
+                "e2e-api/auth-prepare.spec.js",
+                "e2e-api/auth-login.spec.js",
+              ],
+              prepared: true,
+            },
           ];
     for (const run of runs) {
       playwright = spawn(
