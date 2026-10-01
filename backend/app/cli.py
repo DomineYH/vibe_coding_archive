@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.auth_boundary import normalized_login_id as _normalized_login_id
 from app.auth_maintenance import reconcile
 from app.database import current_head, current_revision, make_engine
 from app.models import App, AppGrade, HealthResult, Member
@@ -105,10 +106,6 @@ def _shared_password() -> str:
     if not 15 <= len(password) <= 128:
         raise SeedError("Password must contain 15 to 128 Unicode characters.")
     return password
-
-
-def _normalized_login_id(value: str) -> str:
-    return normalize("NFC", value.strip()).lower()
 
 
 def seed() -> None:

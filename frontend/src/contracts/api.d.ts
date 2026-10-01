@@ -334,7 +334,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Sign in an approved member */
+        /**
+         * Sign in an approved member
+         * @description Verifies the existing credential after a login permit. The response alone never opens a protected screen; clients confirm flow-state, then read /auth/me. A wrong, unknown or deleted account is one INVALID_CREDENTIALS response; only the exact password learns ACCOUNT_NOT_APPROVED or TEMP_PASSWORD_EXPIRED.
+         */
         post: operations["login"];
         delete?: never;
         options?: never;
@@ -1999,7 +2002,7 @@ export interface operations {
                     "X-EduVibe-Flow-Id"?: string;
                     "X-EduVibe-Auth-Revision"?: string;
                     "X-EduVibe-Session-Generation"?: string;
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2069,7 +2072,7 @@ export interface operations {
                     "X-EduVibe-Flow-Id"?: string;
                     "X-EduVibe-Auth-Revision"?: string;
                     "X-EduVibe-Session-Generation"?: string;
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2083,7 +2086,16 @@ export interface operations {
             413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
-            503: components["responses"]["ServiceError"];
+            /** @description A controlled outage. AUTH_BUSY (hashing saturated) carries Retry-After: 1; DB_BUSY follows the five-second lock cap. */
+            503: {
+                headers: {
+                    "Retry-After"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     register: {

@@ -1,0 +1,110 @@
+{
+  "renderer": "Chromium 151.0.7922.34 (Chrome for Testing headless shell); sRGB; partial raster disabled; Korean fontconfig",
+  "deviceScaleFactor": 1,
+  "locale": "ko-KR",
+  "timezone": "Asia/Seoul",
+  "browserClock": "2026-10-01T00:00:00Z fixed Date; native timers",
+  "animations": "disabled",
+  "captures": [
+    {
+      "file": "visual/login-ready-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "02d220e88b5a5126504b2a31c0b49c7dcd2715130e483d1e048f7d988a31c223"
+    },
+    {
+      "file": "visual/login-ready-1024x900.png",
+      "classification": "product_only",
+      "sha256": "8787f6f3f4e59dbed11d6e55a4a3109571d2a497964a84cf94baef7f18370fd3"
+    },
+    {
+      "file": "visual/login-ready-768x1024.png",
+      "classification": "product_only",
+      "sha256": "9dcc377da2c5c12f51434c13be5c1da82857d5cf709b313d83839d4422a6f980"
+    },
+    {
+      "file": "visual/login-ready-390x844.png",
+      "classification": "product_only",
+      "sha256": "723fee4db0795cd85ffba134697fc72cd5676a4401d134f6df8ddfc29aff58b3"
+    },
+    {
+      "file": "visual/login-ready-360x844.png",
+      "classification": "product_only",
+      "sha256": "599ef4f0a278271b56e2da5586bdeef42acef972e740a730d3ab010c213831f9"
+    },
+    {
+      "file": "visual/login-invalid-credentials-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "7446d556ef259e4be85fe1b03218a992619f89d0196cae4215642ae663801b4e"
+    },
+    {
+      "file": "visual/login-invalid-credentials-1024x900.png",
+      "classification": "product_only",
+      "sha256": "1e0d4077def35f5891741538d25952fc298ac07a3778856d47b6d017bd9ccb47"
+    },
+    {
+      "file": "visual/login-invalid-credentials-768x1024.png",
+      "classification": "product_only",
+      "sha256": "e21a1c0e5ef0ef800e7784262abdf7d040eeec71c8cbab6dee0d4023e3bae895"
+    },
+    {
+      "file": "visual/login-invalid-credentials-390x844.png",
+      "classification": "product_only",
+      "sha256": "dd9d587a36ec2b31d7cfad8c66a060d9d7af7b59725923bb3009705ef94adbc0"
+    },
+    {
+      "file": "visual/login-invalid-credentials-360x844.png",
+      "classification": "product_only",
+      "sha256": "2067297772a66bea8876d7d4fbaf4b533c4a16788ee61751864c5f3a422380ef"
+    },
+    {
+      "file": "visual/login-not-approved-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "728c8345bdb1d79d9f174038e5b65f5a588e3cf591fcf66e83fe3e79b5ae306c"
+    },
+    {
+      "file": "visual/login-not-approved-1024x900.png",
+      "classification": "product_only",
+      "sha256": "d5fdf5eb14af678dcefbfb90e35f7d5c19b8d4b23dd24d884022de6d5f1dadd7"
+    },
+    {
+      "file": "visual/login-not-approved-768x1024.png",
+      "classification": "product_only",
+      "sha256": "df548915792e239b1dba847385511a2578f2a64841eccc67fcf35ab21a52b46e"
+    },
+    {
+      "file": "visual/login-not-approved-390x844.png",
+      "classification": "product_only",
+      "sha256": "5fbe556237e9846828ae08a05ec8523cde1d5c524c920bcdfb26d1dcda1c9f71"
+    },
+    {
+      "file": "visual/login-not-approved-360x844.png",
+      "classification": "product_only",
+      "sha256": "57cab08564bf8c659f56ecbd5dd67050a4a3e3c0ba65a713b16dbaad955d92f0"
+    },
+    {
+      "file": "visual/login-signed-in-1440x1000.png",
+      "classification": "product_only",
+      "sha256": "f96e49c5ecb01898ff8ee627e8943fddcfdda70c3793c772bde589fc08942b3b"
+    },
+    {
+      "file": "visual/login-signed-in-1024x900.png",
+      "classification": "product_only",
+      "sha256": "b40f863855dd6b51831ca30929f3910d6985616acc6764cb601e899c410d026a"
+    },
+    {
+      "file": "visual/login-signed-in-768x1024.png",
+      "classification": "product_only",
+      "sha256": "c8ea37ce451cd625281426a81d925ad6edeb4b253a7727a5c2d5002f62402f3e"
+    },
+    {
+      "file": "visual/login-signed-in-390x844.png",
+      "classification": "product_only",
+      "sha256": "667d18c4d431737affdf041b40e076a5dd72f6bdac2247107fac7e7810808406"
+    },
+    {
+      "file": "visual/login-signed-in-360x844.png",
+      "classification": "product_only",
+      "sha256": "0946f8ac071c92b311e87fc59a19ddc1fdee99d375e34725202bdc88e9913c03"
+    }
+  ]
+}

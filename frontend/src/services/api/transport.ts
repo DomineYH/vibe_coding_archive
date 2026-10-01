@@ -668,7 +668,19 @@ function mapApiError(
     AUTH_COOKIE_BUDGET_EXCEEDED: 409,
     VALIDATION_ERROR: 422,
     RATE_LIMITED: 429,
+    INVALID_CREDENTIALS: 401,
+    ACCOUNT_NOT_APPROVED: 403,
+    TEMP_PASSWORD_EXPIRED: 403,
+    ALREADY_AUTHENTICATED: 409,
   };
+  // The server recorded these as failed attempts: the write definitely did not apply.
+  const definitive = [
+    "INVALID_CREDENTIALS",
+    "ACCOUNT_NOT_APPROVED",
+    "TEMP_PASSWORD_EXPIRED",
+    "ALREADY_AUTHENTICATED",
+    "RATE_LIMITED",
+  ].includes(authCode);
   const accepted =
     allowed ??
     (endpoint.includes(" /auth/") &&
@@ -692,6 +704,7 @@ function mapApiError(
   const resultLookup = endpoint === "GET /write-operations/{key}";
   const retryMayBeUnresolved =
     uncertain &&
+    !definitive &&
     (httpStatus === 401 ||
       httpStatus === 403 ||
       httpStatus === 410 ||
@@ -699,15 +712,16 @@ function mapApiError(
       accepted.code === "AUTH_TRANSITION_PENDING");
   return new ServiceError(accepted.code, message, {
     httpStatus,
-    outcome:
-      resultLookup ||
-      retryMayBeUnresolved ||
-      ((endpoint === "POST /apps" ||
-        endpoint === "PATCH /apps/{id}" ||
-        endpoint === "DELETE /apps/{id}") &&
-        accepted.code === "OPERATION_ALREADY_RESOLVED") ||
-      accepted.code === "DELETION_CONFIRMATION_PENDING" ||
-      (uncertain && httpStatus >= 500)
+    outcome: definitive
+      ? "rejected"
+      : resultLookup ||
+          retryMayBeUnresolved ||
+          ((endpoint === "POST /apps" ||
+            endpoint === "PATCH /apps/{id}" ||
+            endpoint === "DELETE /apps/{id}") &&
+            accepted.code === "OPERATION_ALREADY_RESOLVED") ||
+          accepted.code === "DELETION_CONFIRMATION_PENDING" ||
+          (uncertain && httpStatus >= 500)
         ? "unknown"
         : httpStatus === 404 || httpStatus === 409 || httpStatus === 410
           ? "rejected"

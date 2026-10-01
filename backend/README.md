@@ -26,7 +26,7 @@ read twice without echo and stored as a hash.
 
 The ordinary app keeps every authentication capability disabled. Only the
 `APP_ENV=test` app factory's `auth_testing=True` boundary exercises preparation;
-it does not implement member login or any T02–T07 mutation.
+it implements no mutation after T02 (see the T02 section for login/logout).
 
 Migration `0003_auth_identity` preserves member/app IDs and ownership. For an
 existing database, provide `AUTH_MEMBER_BACKFILL=/absolute/path/history.json`:
@@ -51,3 +51,23 @@ This revokes every restored S/R/flow and cancels pending permits before readines
 it neither replays transitions nor extends successful-session clocks. Reapply
 subsequent member deletions according to the operating backup procedure. The
 local contract test uses only a temporary SQLite file, not an operating backup.
+
+## T02 member login, session restore and logout
+
+On the same `APP_ENV=test` boundary, `POST /auth/login`, `GET /auth/me` and
+`POST /auth/logout` are live; the ordinary app keeps every capability off. The
+boundary advertises `auth_login` and `auth_logout` together (they are one working
+pair) and leaves `auth_password_change` off until the first-change flow (T03).
+
+Passwords are verified with pwdlib's recommended Argon2id profile (RFC 9106
+low-memory: m=64 MiB, t=3, p=4) outside any write transaction, behind a gate of
+2 concurrent and 4 queued hashes with a 1 s queue wait (saturation is
+`503 AUTH_BUSY` + `Retry-After: 1`). These values are test candidates; real-host
+timing is measured at the T07 operating gate, not assumed. Login failures are
+counted per account+IP (10) and per IP (200) over a rolling 15 minutes in SQLite;
+blocked requests add no events. A full session lasts at most 8 hours and 30
+minutes of inactivity; `me`, `csrf` and `flow-state` never extend it.
+
+Synthetic Argon2 members for tests live in `tests/support.py`
+(`populate_auth_members`); the API E2E runner inserts them once with the other
+fixtures. Their shared password is a test-only constant, never a seed default.

@@ -329,3 +329,20 @@ agreed test factory. [The T01 evidence ledger](evidence/phase-3/issue115/2026-10
 records five viewport observations, existing source/product visual comparisons,
 keyboard behavior, actual HTTP/cookie/SQLite tests and remaining operating checks.
 No reference PNG, visual mask, tolerance or baseline is changed.
+
+## Issue #116 T02 member login, restore and logout · UI-D02/UI-D03/UI-D07
+
+The source login card remains the reference: the 420px card, EV badge, title,
+login/signup segments, inputs, inline error block and primary button are
+unchanged. T02 connects the existing form to the real login and shows the member's
+nickname (never the login ID) in the existing 57px header with the existing logout
+control. Existing messages are reused for invalid credentials, awaiting approval,
+expired temporary password and "log out first". The only new copy is for a rate
+limit (with the server's retry time, shown in Korea time) and a busy server; both
+appear in the existing inline error block and have no source frame, so they are
+`product_only`. An unknown login reply keeps the existing "인증 결과를 확인할 수
+없어요" recovery card. No browser-close or logout promise is made: the server
+session outlives the browser by design. No reference PNG, mask, tolerance or
+baseline is changed. [The T02 evidence ledger](evidence/phase-3/issue116/2026-10-01/README.md)
+records the 20 five-viewport observations (identical across two independent
+runs), the source comparison and the actual HTTP/cookie/SQLite checks.

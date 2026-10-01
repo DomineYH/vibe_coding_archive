@@ -1359,6 +1359,7 @@ export default function App() {
   const apiAuthEnabled =
     __DATA_MODE__ === "api" &&
     authMetadata.meta?.capabilities.auth_login.enabled === true &&
+    authMetadata.meta.capabilities.auth_logout.enabled === true &&
     !authMetadata.error;
   const authRequest = useRef(0);
   const authObservation = useRef(0);

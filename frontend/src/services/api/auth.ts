@@ -1,6 +1,7 @@
 import {
   mapAnonymousSessionResult,
   mapAuthFlowCreated,
+  mapAuthResult,
   mapAuthFlowState,
   mapAuthTransitionPermit,
   mapCsrfToken,
@@ -10,6 +11,7 @@ import {
   mapRecoveryCsrf,
   mapRecoveryReady,
   mapRestartEligibility,
+  mapSelf,
   mapSettledAuthTransition,
 } from "../../contracts/mappers";
 import { isUuid } from "../../contracts/uuid";
@@ -20,6 +22,7 @@ import {
   observeApiAuth,
   prepareApiAuthFlow,
   recoverApiAuthFlow,
+  runApiTransition,
 } from "./auth-flow";
 import { requestJson } from "./transport";
 
@@ -81,6 +84,22 @@ async function write(
     requestBody: body,
     headers,
     uncertain: true,
+  });
+}
+// Member operations are bound to the current S, its CSRF and the spent permit.
+async function memberHeaders(
+  csrf: string,
+  flow: string,
+  revision: string,
+  generation: string,
+  transitionId: string,
+) {
+  return new Headers({
+    "X-CSRF-Token": csrf,
+    "X-EduVibe-Flow-Id": flow,
+    "X-EduVibe-Auth-Revision": revision,
+    "X-EduVibe-Session-Generation": generation,
+    "X-EduVibe-Transition-Id": transitionId,
   });
 }
 async function recoveryToken(id: string) {
@@ -182,7 +201,9 @@ export const authService: AuthService = {
         expected_revision: input.expectedRevision,
         expected_session_generation: input.expectedSessionGeneration,
       },
-      await recoveryToken(input.flowId),
+      input.kind === "login" || input.kind === "logout"
+        ? (await authService.getCsrf()).csrfToken
+        : await recoveryToken(input.flowId),
     );
     return checked(mapAuthTransitionPermit, result);
   },
@@ -287,14 +308,65 @@ export const authService: AuthService = {
       authContext: { flowId: id, revision, sessionGeneration },
     };
   },
-  async getMe() {
-    throw unavailable();
+  async getMe(options) {
+    const context = (await authService.getCsrf(options)).authContext;
+    if (!context) throw contractError();
+    const value = (await requestJson("GET /auth/me", "/auth/me", {
+      ...options,
+      headers: new Headers({
+        "X-EduVibe-Flow-Id": context.flowId,
+        "X-EduVibe-Auth-Revision": context.revision,
+        "X-EduVibe-Session-Generation": context.sessionGeneration,
+      }),
+      includeHeaders: true,
+    })) as { body: unknown; headers: Headers };
+    if (
+      value.headers.get("X-EduVibe-Flow-Id") !== context.flowId ||
+      value.headers.get("X-EduVibe-Auth-Revision") !== context.revision ||
+      value.headers.get("X-EduVibe-Session-Generation") !==
+        context.sessionGeneration
+    )
+      throw contractError();
+    return mapSelf(value.body);
   },
   async register() {
     throw unavailable();
   },
-  async login() {
-    throw unavailable();
+  async login(input) {
+    return runApiTransition(authService, "login", async (permit, state) => {
+      if (!permit || state.sessionGeneration === null) throw contractError();
+      const csrf = await authService.getCsrf();
+      const value = (await requestJson("POST /auth/login", "/auth/login", {
+        method: "POST",
+        requestBody: { login_id: input.loginId, password: input.password },
+        headers: await memberHeaders(
+          csrf.csrfToken,
+          permit.flowId,
+          permit.revision,
+          state.sessionGeneration,
+          permit.transitionId,
+        ),
+        uncertain: true,
+        includeHeaders: true,
+      })) as { body: unknown; headers: Headers };
+      const result = checked(mapAuthResult, value.body);
+      // A committed login rotates S: the reply must name a newer revision and generation.
+      const revision = value.headers.get("X-EduVibe-Auth-Revision");
+      const generation = value.headers.get("X-EduVibe-Session-Generation");
+      if (
+        value.headers.get("X-EduVibe-Flow-Id") !== permit.flowId ||
+        !revision ||
+        revision === permit.revision ||
+        !generation ||
+        generation === state.sessionGeneration
+      )
+        throw new ServiceError(
+          "CONTRACT_ERROR",
+          "인증 응답의 연결 정보를 확인할 수 없어요.",
+          { outcome: "unknown" },
+        );
+      return result;
+    });
   },
   async changePassword() {
     throw unavailable();
@@ -303,7 +375,24 @@ export const authService: AuthService = {
     throw unavailable();
   },
   async logout() {
-    throw unavailable();
+    return runApiTransition(authService, "logout", async (permit, state) => {
+      const headers =
+        permit && state.sessionGeneration !== null
+          ? await memberHeaders(
+              (await authService.getCsrf()).csrfToken,
+              permit.flowId,
+              permit.revision,
+              state.sessionGeneration,
+              permit.transitionId,
+            )
+          : new Headers();
+      await requestJson("POST /auth/logout", "/auth/logout", {
+        method: "POST",
+        headers,
+        noContent: true,
+        uncertain: true,
+      });
+    });
   },
 };
 

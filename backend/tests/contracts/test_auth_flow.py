@@ -680,7 +680,12 @@ def test_auth_reconciliation_failure_is_not_readiness_and_public_reading_survive
 def test_logout_with_recovery_and_valid_s_is_not_the_no_s_exception(auth_client):
     flow_id, headers = prepare(auth_client)
     issue_anonymous(auth_client, flow_id, headers)
-    assert auth_client.post("/api/v1/auth/logout", headers=ORIGIN).status_code == 503
+    # A live S demands its flow context, CSRF and permit; Origin alone is not enough.
+    refused = auth_client.post("/api/v1/auth/logout", headers=ORIGIN)
+    assert (refused.status_code, refused.json()["error"]["code"]) == (
+        422,
+        "VALIDATION_ERROR",
+    )
 
 
 def test_sequences_above_machine_integer_and_concurrent_execution_remain_atomic(

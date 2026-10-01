@@ -1,0 +1,175 @@
+{
+  "pixelTolerance": 0,
+  "results": [
+    {
+      "state": "ready",
+      "size": "1440x1000",
+      "source": "basic-design-runtime-20260922/reference/1440x1000/07-login.png",
+      "product": "visual/login-ready-1440x1000.png",
+      "sourceDimensions": [
+        1440,
+        1000
+      ],
+      "actualDimensions": [
+        1440,
+        1000
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 85643,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "ready",
+      "size": "1024x900",
+      "source": "basic-design-runtime-20260922/reference/1024x900/07-login.png",
+      "product": "visual/login-ready-1024x900.png",
+      "sourceDimensions": [
+        1024,
+        959
+      ],
+      "actualDimensions": [
+        1024,
+        900
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "ready",
+      "size": "768x1024",
+      "source": "basic-design-runtime-20260922/reference/768x1024/07-login.png",
+      "product": "visual/login-ready-768x1024.png",
+      "sourceDimensions": [
+        768,
+        1024
+      ],
+      "actualDimensions": [
+        768,
+        1024
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 84298,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "ready",
+      "size": "390x844",
+      "source": "basic-design-runtime-20260922/reference/390x844/07-login.png",
+      "product": "visual/login-ready-390x844.png",
+      "sourceDimensions": [
+        390,
+        977
+      ],
+      "actualDimensions": [
+        390,
+        844
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "ready",
+      "size": "360x844",
+      "source": "basic-design-runtime-20260922/reference/360x844/07-login.png",
+      "product": "visual/login-ready-360x844.png",
+      "sourceDimensions": [
+        360,
+        999
+      ],
+      "actualDimensions": [
+        360,
+        844
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "invalid-credentials",
+      "size": "1440x1000",
+      "source": "basic-design-runtime-20260922/reference/1440x1000/08-login-error.png",
+      "product": "visual/login-invalid-credentials-1440x1000.png",
+      "sourceDimensions": [
+        1440,
+        1016
+      ],
+      "actualDimensions": [
+        1440,
+        1000
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "invalid-credentials",
+      "size": "1024x900",
+      "source": "basic-design-runtime-20260922/reference/1024x900/08-login-error.png",
+      "product": "visual/login-invalid-credentials-1024x900.png",
+      "sourceDimensions": [
+        1024,
+        1016
+      ],
+      "actualDimensions": [
+        1024,
+        900
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "invalid-credentials",
+      "size": "768x1024",
+      "source": "basic-design-runtime-20260922/reference/768x1024/08-login-error.png",
+      "product": "visual/login-invalid-credentials-768x1024.png",
+      "sourceDimensions": [
+        768,
+        1024
+      ],
+      "actualDimensions": [
+        768,
+        1024
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 87610,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "invalid-credentials",
+      "size": "390x844",
+      "source": "basic-design-runtime-20260922/reference/390x844/08-login-error.png",
+      "product": "visual/login-invalid-credentials-390x844.png",
+      "sourceDimensions": [
+        390,
+        1034
+      ],
+      "actualDimensions": [
+        390,
+        866
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    },
+    {
+      "state": "invalid-credentials",
+      "size": "360x844",
+      "source": "basic-design-runtime-20260922/reference/360x844/08-login-error.png",
+      "product": "visual/login-invalid-credentials-360x844.png",
+      "sourceDimensions": [
+        360,
+        1056
+      ],
+      "actualDimensions": [
+        360,
+        866
+      ],
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "scope": "Full source observation; UI-D03/UI-D04 inherited differences (no demo account block, product error/recovery states), not a baseline or human acceptance"
+    }
+  ]
+}
