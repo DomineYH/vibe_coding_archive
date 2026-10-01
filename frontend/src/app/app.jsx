@@ -1914,7 +1914,11 @@ export default function App() {
   const active =
     location.pathname === "/apps/new" ||
     /^\/apps\/[^/]+\/edit$/.test(location.pathname)
-      ? "submit"
+      ? auth.status === "ready" &&
+        auth.user?.role === "admin" &&
+        location.pathname.endsWith("/edit")
+        ? "admin"
+        : "submit"
       : location.pathname.startsWith("/apps/")
         ? "detail"
         : location.pathname === "/admin"

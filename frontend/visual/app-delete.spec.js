@@ -136,12 +136,24 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
       )
     : null;
   const comparison = await compare(page, actual, expected);
-  expect(comparison.width).toBe(viewport.width);
   const screenshot = `${state}-${viewport.width}x${viewport.height}.png`;
   mkdirSync(outputRoot, { recursive: true });
   writeFileSync(path.join(outputRoot, screenshot), actual);
   results.push({ state, viewport, baseline, screenshot, ...comparison });
-  testInfo.attach(screenshot, { body: actual, contentType: "image/png" });
+  writeFileSync(
+    path.join(outputRoot, screenshot.replace(/\.png$/, ".json")),
+    `${JSON.stringify(results.at(-1), null, 2)}\n`,
+  );
+  writeFileSync(
+    path.join(outputRoot, "visual-comparison.json"),
+    `${JSON.stringify({ thresholdPixels: 0, results }, null, 2)}\n`,
+  );
+  await testInfo.attach(screenshot, { body: actual, contentType: "image/png" });
+  expect(comparison.width).toBe(viewport.width);
+  if (baseline) {
+    expect(comparison.comparisonStatus).toBe("compared");
+    expect(comparison.differentPixels).toBe(0);
+  }
 }
 
 test.beforeAll(async ({ browser }) => {

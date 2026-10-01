@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { capture } from "./app-create-capture.js";
+import { PNG } from "pngjs";
 
 // The production capture path owns comparison, evidence persistence and verdict.
 for (const scenario of [
@@ -125,6 +126,75 @@ for (const scenario of [
     expect(
       testInfo.attachments.some(
         (attachment) => attachment.contentType === "image/png",
+      ),
+    ).toBe(true);
+  });
+}
+
+for (const scenario of ["never-stabilizes", "screenshot-error"]) {
+  test(`polling failure retains cause and evidence: ${scenario}`, async ({
+    page,
+  }, testInfo) => {
+    const viewport = { width: 8, height: 8 };
+    await page.setViewportSize(viewport);
+    await page.setContent(
+      "<style>html,body{margin:0;background:white}</style>",
+    );
+    const first = await page.screenshot();
+    const changed = PNG.sync.read(first);
+    changed.data[0] = 0;
+    const second = PNG.sync.write(changed);
+    const screenshotError = new Error("page.screenshot: Target page closed");
+    let calls = 0;
+    let last = first;
+    const fakePage = {
+      evaluate: (...args) => page.evaluate(...args),
+      mouse: page.mouse,
+      screenshot: async () => {
+        calls += 1;
+        if (calls > 1 && scenario === "screenshot-error") throw screenshotError;
+        last = calls % 2 ? first : second;
+        return last;
+      },
+    };
+    const outputRoot = testInfo.outputPath("captures");
+    const results = [];
+    let failure;
+    try {
+      await capture(fakePage, scenario, viewport, testInfo, null, {
+        referenceRoot: testInfo.outputPath("references"),
+        outputRoot,
+        results,
+      });
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure?.message).toContain(
+      scenario === "screenshot-error"
+        ? "screenshot/page error"
+        : "never stabilized",
+    );
+    if (scenario === "screenshot-error")
+      expect(failure.cause).toBe(screenshotError);
+    else expect(failure.cause).toBeInstanceOf(Error);
+    expect(calls).toBeGreaterThan(1);
+    expect(results[0].captureStatus).toBe("unstable");
+    expect(readFileSync(path.join(outputRoot, `${scenario}-8x8.png`))).toEqual(
+      last,
+    );
+    expect(
+      JSON.parse(
+        readFileSync(path.join(outputRoot, `${scenario}-8x8.json`), "utf8"),
+      ),
+    ).toEqual(results[0]);
+    expect(
+      JSON.parse(
+        readFileSync(path.join(outputRoot, "visual-comparison.json"), "utf8"),
+      ),
+    ).toEqual({ thresholdPixels: 0, results });
+    expect(
+      testInfo.attachments.some(
+        (attachment) => attachment.name === `${scenario}-8x8.png`,
       ),
     ).toBe(true);
   });

@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test";
-import { PNG } from "playwright-core/lib/utilsBundle";
+import { PNG } from "pngjs";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-// Reuse the pinned runner's PNG decoder; comparison must not repaint the page.
+// Decode without repainting the page.
 export function compare(actual, expected) {
   const actualImage = PNG.sync.read(actual);
   const result = {
@@ -75,18 +75,27 @@ export async function capture(
     comparison.differentPixels === 0
       ? "expected_match"
       : "unstable";
+  let pollingError;
+  let screenshotError;
   // Match the runner: accept an exact first frame, otherwise settle before verdict.
   if (captureStatus !== "expected_match") {
     await expect
       .poll(async () => {
         const previous = actual;
-        actual = await page.screenshot(screenshotOptions);
+        try {
+          actual = await page.screenshot(screenshotOptions);
+        } catch (error) {
+          screenshotError = error;
+          throw error;
+        }
         if (actual.equals(previous)) captureStatus = "stable";
         return captureStatus === "stable";
       })
       .toBe(true)
       // Preserve the last PNG/metrics before the explicit verdict rejects it.
-      .catch(() => {});
+      .catch((error) => {
+        pollingError = error;
+      });
     comparison = compare(actual, expected);
   }
   const screenshot = `${state}-${viewport.width}x${viewport.height}.png`;
@@ -110,7 +119,14 @@ export async function capture(
     `${JSON.stringify({ thresholdPixels: 0, results }, null, 2)}\n`,
   );
   await testInfo.attach(screenshot, { body: actual, contentType: "image/png" });
-  expect(captureStatus, "Full-page PNG did not stabilize").not.toBe("unstable");
+  if (pollingError)
+    throw new Error(
+      screenshotError
+        ? "Full-page PNG screenshot/page error during polling"
+        : "Full-page PNG never stabilized",
+      { cause: screenshotError ?? pollingError },
+    );
+  expect(captureStatus, "Full-page PNG never stabilized").not.toBe("unstable");
   expect(comparison.width).toBe(viewport.width);
   if (baseline) {
     expect(comparison.width).toBe(comparison.expectedWidth);

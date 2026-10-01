@@ -134,10 +134,31 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
         readFileSync(path.join(referenceRoot, tag, baseline)),
       )
     : { comparisonStatus: "product_only" };
-  expect(comparison.width ?? viewport.width).toBe(viewport.width);
   const record = { state, viewport, baseline, screenshot: name, ...comparison };
   comparisons.push(record);
-  testInfo.attach(name, { body: image, contentType: "image/png" });
+  writeFileSync(
+    path.join(outputRoot, name.replace(/\.png$/, ".json")),
+    `${JSON.stringify(record, null, 2)}\n`,
+  );
+  writeFileSync(
+    path.join(outputRoot, "visual-comparison.json"),
+    `${JSON.stringify(
+      {
+        pixelTolerance: 0,
+        comparisonEnforced: true,
+        review: "Human UI-D approval pending",
+        results: comparisons,
+      },
+      null,
+      2,
+    )}\n`,
+  );
+  await testInfo.attach(name, { body: image, contentType: "image/png" });
+  expect(comparison.width ?? viewport.width).toBe(viewport.width);
+  if (baseline) {
+    expect(comparison.comparisonStatus).toBe("compared");
+    expect(comparison.differentPixels).toBe(0);
+  }
 }
 
 test.beforeAll(async ({ browser }) => {
@@ -151,7 +172,7 @@ test.afterAll(() => {
     `${JSON.stringify(
       {
         pixelTolerance: 0,
-        comparisonEnforced: false,
+        comparisonEnforced: true,
         review: "Human UI-D approval pending",
         results: comparisons,
       },
