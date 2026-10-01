@@ -1,0 +1,95 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js visual/issue105-deterministic.tmp.spec.js --retries=0 --workers=1 --output=test-results/issue105-full-raster
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:197857) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:197899) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+1 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+2 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+3 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+4 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+5 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+6 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+7 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+8 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+9 {
+  width: 1440,
+  height: 1528,
+  expectedWidth: 1440,
+  expectedHeight: 1528,
+  comparisonStatus: 'compared',
+  differentPixels: 0,
+  maxChannelDelta: 0
+}
+  ✓  1 visual/issue105-deterministic.tmp.spec.js:5:1 › deterministic rendering (21.2s)
+
+  1 passed (38.3s)

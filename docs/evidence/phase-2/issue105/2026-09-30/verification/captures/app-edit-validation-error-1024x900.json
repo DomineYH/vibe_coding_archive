@@ -1,0 +1,19 @@
+{
+  "state": "app-edit-validation-error",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": null,
+  "screenshot": "app-edit-validation-error-1024x900.png",
+  "captureStatus": "stable",
+  "width": 1024,
+  "height": 1618,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "verification/captures/app-edit-validation-error-1024x900.png",
+  "actualSha256": "a2060b5ec4b1a32a30f2e5a24ed35869a845c2e2f9532ad031bc9c499c196cfd"
+}

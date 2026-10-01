@@ -1,0 +1,16 @@
+{
+  "state": "app-edit-validation-error",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-edit-validation-error-360x844.png",
+  "width": 360,
+  "height": 2591,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

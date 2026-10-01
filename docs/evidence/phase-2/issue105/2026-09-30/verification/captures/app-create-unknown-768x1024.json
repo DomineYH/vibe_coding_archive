@@ -1,0 +1,19 @@
+{
+  "state": "app-create-unknown",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": null,
+  "screenshot": "app-create-unknown-768x1024.png",
+  "captureStatus": "stable",
+  "width": 768,
+  "height": 2824,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "verification/captures/app-create-unknown-768x1024.png",
+  "actualSha256": "a06d02d2817f8c4f666d41198584a570d96906963509645bf813b900a156fd3d"
+}

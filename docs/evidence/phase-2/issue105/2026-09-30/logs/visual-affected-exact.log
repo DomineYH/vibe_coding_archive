@@ -1,0 +1,253 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js visual/app-create.spec.js visual/app-create-capture.spec.js --retries=0 --workers=1 --output=test-results/issue105-exact
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:183247) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 30 tests using 1 worker
+
+(node:183275) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: height (15.1s)
+  ✓   2 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: width (14.4s)
+  ✓   3 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: one-pixel (14.4s)
+  ✓   4 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: identical (251ms)
+  ✓   5 visual/app-create-capture.spec.js:54:3 › capture verdict and retained evidence: product-only (262ms)
+  ✘   6 visual/app-create.spec.js:101:3 › app registration form at 1440x1000 (16.9s)
+(node:183587) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   7 visual/app-create.spec.js:188:3 › app edit form at 1440x1000 (12.7s)
+  ✓   8 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1440x1000 (3.2s)
+  ✓   9 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1440x1000 (3.3s)
+  ✘  10 visual/app-create.spec.js:379:3 › private app detail after owner update at 1440x1000 (19.5s)
+(node:183923) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  11 visual/app-create.spec.js:101:3 › app registration form at 1024x900 (16.5s)
+(node:184030) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  12 visual/app-create.spec.js:188:3 › app edit form at 1024x900 (11.8s)
+  ✓  13 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1024x900 (3.9s)
+  ✓  14 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1024x900 (3.4s)
+  ✘  15 visual/app-create.spec.js:379:3 › private app detail after owner update at 1024x900 (17.1s)
+(node:184343) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  16 visual/app-create.spec.js:101:3 › app registration form at 768x1024 (17.9s)
+(node:184456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  17 visual/app-create.spec.js:188:3 › app edit form at 768x1024 (16.7s)
+(node:184604) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  18 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 768x1024 (2.8s)
+  ✓  19 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 768x1024 (2.7s)
+  ✘  20 visual/app-create.spec.js:379:3 › private app detail after owner update at 768x1024 (17.7s)
+(node:184803) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  21 visual/app-create.spec.js:101:3 › app registration form at 390x844 (4.6s)
+  ✓  22 visual/app-create.spec.js:188:3 › app edit form at 390x844 (5.9s)
+  ✓  23 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 390x844 (2.1s)
+  ✓  24 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 390x844 (2.5s)
+  ✓  25 visual/app-create.spec.js:379:3 › private app detail after owner update at 390x844 (2.8s)
+  ✘  26 visual/app-create.spec.js:101:3 › app registration form at 360x844 (17.2s)
+(node:185079) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  27 visual/app-create.spec.js:188:3 › app edit form at 360x844 (7.1s)
+  ✓  28 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 360x844 (2.6s)
+  ✓  29 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 360x844 (2.7s)
+  ✓  30 visual/app-create.spec.js:379:3 › private app detail after owner update at 360x844 (2.4s)
+
+
+  1) visual/app-create.spec.js:101:3 › app registration form at 1440x1000 ──────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-1440x1000/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-1440x1000/error-context.md
+
+  2) visual/app-create.spec.js:379:3 › private app detail after owner update at 1440x1000 ──────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:397:5
+
+    Error Context: test-results/issue105-exact/app-create-private-app-det-e0454-r-owner-update-at-1440x1000/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-private-app-det-e0454-r-owner-update-at-1440x1000/error-context.md
+
+  3) visual/app-create.spec.js:101:3 › app registration form at 1024x900 ───────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-1024x900/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-1024x900/error-context.md
+
+  4) visual/app-create.spec.js:379:3 › private app detail after owner update at 1024x900 ───────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:397:5
+
+    Error Context: test-results/issue105-exact/app-create-private-app-detail-after-owner-update-at-1024x900/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-private-app-detail-after-owner-update-at-1024x900/error-context.md
+
+  5) visual/app-create.spec.js:101:3 › app registration form at 768x1024 ───────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-768x1024/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-768x1024/error-context.md
+
+  6) visual/app-create.spec.js:188:3 › app edit form at 768x1024 ───────────────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:217:5
+
+    Error Context: test-results/issue105-exact/app-create-app-edit-form-at-768x1024/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-app-edit-form-at-768x1024/error-context.md
+
+  7) visual/app-create.spec.js:379:3 › private app detail after owner update at 768x1024 ───────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:397:5
+
+    Error Context: test-results/issue105-exact/app-create-private-app-detail-after-owner-update-at-768x1024/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-private-app-detail-after-owner-update-at-768x1024/error-context.md
+
+  8) visual/app-create.spec.js:101:3 › app registration form at 360x844 ────────────────────────────
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 0
+    Received: 36
+
+       at app-create-capture.js:143
+
+      141 |     expect(comparison.height).toBe(comparison.expectedHeight);
+      142 |     expect(comparison.comparisonStatus).toBe("compared");
+    > 143 |     expect(comparison.differentPixels).toBe(0);
+          |                                        ^
+      144 |   } else {
+      145 |     expect(comparison.comparisonStatus).toBe("product_only");
+      146 |     expect(comparison.differentPixels).toBeNull();
+        at capture (<worktree>/frontend/visual/app-create-capture.js:143:40)
+        at <worktree>/frontend/visual/app-create.spec.js:127:5
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-360x844/error-context.md
+
+    Error Context: test-results/issue105-exact/app-create-app-registration-form-at-360x844/error-context.md
+
+  8 failed
+    visual/app-create.spec.js:101:3 › app registration form at 1440x1000 ───────────────────────────
+    visual/app-create.spec.js:379:3 › private app detail after owner update at 1440x1000 ───────────
+    visual/app-create.spec.js:101:3 › app registration form at 1024x900 ────────────────────────────
+    visual/app-create.spec.js:379:3 › private app detail after owner update at 1024x900 ────────────
+    visual/app-create.spec.js:101:3 › app registration form at 768x1024 ────────────────────────────
+    visual/app-create.spec.js:188:3 › app edit form at 768x1024 ────────────────────────────────────
+    visual/app-create.spec.js:379:3 › private app detail after owner update at 768x1024 ────────────
+    visual/app-create.spec.js:101:3 › app registration form at 360x844 ─────────────────────────────
+  22 passed (5.0m)

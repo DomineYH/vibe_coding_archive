@@ -1,0 +1,19 @@
+{
+  "state": "app-edit-latest-unavailable",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-edit-latest-unavailable-360x844.png",
+  "captureStatus": "stable",
+  "width": 360,
+  "height": 2736,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "verification/captures/app-edit-latest-unavailable-360x844.png",
+  "actualSha256": "fb9b278224f7dfd5ad1cc30ac148921fcada245e942621b5ae4b48e1778ee8a3"
+}

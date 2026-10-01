@@ -1,0 +1,16 @@
+{
+  "state": "app-detail-private",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": "12-detail-private.png",
+  "screenshot": "app-detail-private-1024x900.png",
+  "width": 1024,
+  "height": 1549,
+  "expectedWidth": 1024,
+  "expectedHeight": 1341,
+  "comparisonStatus": "dimensions_mismatch",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

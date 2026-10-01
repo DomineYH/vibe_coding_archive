@@ -1,0 +1,270 @@
+{
+  "thresholdPixels": 0,
+  "scope": "diagnostic full PNG only; not acceptance or baseline; required differences reverted in DOM",
+  "rendererArgs": [
+    "--force-color-profile=srgb",
+    "--disable-partial-raster"
+  ],
+  "results": [
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "actualSha256": "9d5b91893a478ed80303e24855a97d465110d1a83bc456e598dd1b9ee8d9949a",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/16-submit.png",
+      "originalSha256": "9d5b91893a478ed80303e24855a97d465110d1a83bc456e598dd1b9ee8d9949a",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/16-submit.png"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "actualSha256": "fc0e7ed16049689d6a97971aa4a03b6730de364860002f78a33644531290ff03",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/17-submit-error.png",
+      "originalSha256": "fc0e7ed16049689d6a97971aa4a03b6730de364860002f78a33644531290ff03",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/17-submit-error.png"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "actualSha256": "5a85b4b06c364de059c13be520e9aaf927db81e56013b7f10e45b7bef613cb4b",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/12-detail-private.png",
+      "originalSha256": "5a85b4b06c364de059c13be520e9aaf927db81e56013b7f10e45b7bef613cb4b",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/12-detail-private.png"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "actualSha256": "295b1c280ed25bcb09c9298dd9895a0c64b2ccf25a7b5786e98d92046392e489",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/13-edit.png",
+      "originalSha256": "295b1c280ed25bcb09c9298dd9895a0c64b2ccf25a7b5786e98d92046392e489",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/13-edit.png"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "actualSha256": "3d02c5241dac6d146cff77ccded18b279228744f399518656a366000748fe7a0",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/16-submit.png",
+      "originalSha256": "3d02c5241dac6d146cff77ccded18b279228744f399518656a366000748fe7a0",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/16-submit.png"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "actualSha256": "135454aad31ca80c0c3d640f5aa8c92714a8db0e8f4148409081992c0c0dbea4",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/17-submit-error.png",
+      "originalSha256": "135454aad31ca80c0c3d640f5aa8c92714a8db0e8f4148409081992c0c0dbea4",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/17-submit-error.png"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "actualSha256": "926cf5112931075dedbb32f479c43d9b75f50b9fd3c551ca1af34d3d64d349cd",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/12-detail-private.png",
+      "originalSha256": "926cf5112931075dedbb32f479c43d9b75f50b9fd3c551ca1af34d3d64d349cd",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/12-detail-private.png"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "actualSha256": "a62c2439cea9b3d0d95641be30475e5cd118ae2a58b59dcf11f59542ea01d3b9",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/13-edit.png",
+      "originalSha256": "a62c2439cea9b3d0d95641be30475e5cd118ae2a58b59dcf11f59542ea01d3b9",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/13-edit.png"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "actualSha256": "e61e333df36250e75c21b751b1a68e936853d72ee6c08b5bcc7944b9ec53b6dd",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/16-submit.png",
+      "originalSha256": "e61e333df36250e75c21b751b1a68e936853d72ee6c08b5bcc7944b9ec53b6dd",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/16-submit.png"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "actualSha256": "6b940bb547fdaa42b7d45e1a3d10fb0020d5cfd338b462981be8ed1c5730b7e3",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/17-submit-error.png",
+      "originalSha256": "6b940bb547fdaa42b7d45e1a3d10fb0020d5cfd338b462981be8ed1c5730b7e3",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/17-submit-error.png"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "actualSha256": "e50ec559d2f9886843653e5ff0d096dc425f3d1e38861e83959519fc4bcede30",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/12-detail-private.png",
+      "originalSha256": "e50ec559d2f9886843653e5ff0d096dc425f3d1e38861e83959519fc4bcede30",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/12-detail-private.png"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "actualSha256": "3cae1cdb27ec9144a855b6ec404f87d68febd42b1f46a274b7ad776e0db30739",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/13-edit.png",
+      "originalSha256": "3cae1cdb27ec9144a855b6ec404f87d68febd42b1f46a274b7ad776e0db30739",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/13-edit.png"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualSha256": "67117caf123a89bdfe27e00afbe826278dd47f5700528e0174c0b91cf3a19a33",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/390x844/16-submit.png",
+      "originalSha256": "67117caf123a89bdfe27e00afbe826278dd47f5700528e0174c0b91cf3a19a33",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/390x844/16-submit.png"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualSha256": "ca72613e2d6206d95d2f80e968cbcaeec60a414e5655b11ef5f9a56b94c4b250",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/390x844/17-submit-error.png",
+      "originalSha256": "ca72613e2d6206d95d2f80e968cbcaeec60a414e5655b11ef5f9a56b94c4b250",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/390x844/17-submit-error.png"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualSha256": "f029b09d7076dca9fd2bf410d4665f91a306611ef45ba5af6e226be3f66461c5",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/390x844/12-detail-private.png",
+      "originalSha256": "f029b09d7076dca9fd2bf410d4665f91a306611ef45ba5af6e226be3f66461c5",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/390x844/12-detail-private.png"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "actualSha256": "4b4be3c7ee8f2b4ea5450f22c14585b899aeddbb128a1f79dd8bee618d94d139",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/390x844/13-edit.png",
+      "originalSha256": "4b4be3c7ee8f2b4ea5450f22c14585b899aeddbb128a1f79dd8bee618d94d139",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/390x844/13-edit.png"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "actualSha256": "c438a94631e992ed5912b25f7977931f0f3d5ea5cf4aa116b4b0de469ffc1a58",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/360x844/16-submit.png",
+      "originalSha256": "c438a94631e992ed5912b25f7977931f0f3d5ea5cf4aa116b4b0de469ffc1a58",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/360x844/16-submit.png"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "actualSha256": "a1c04d87cf50bdfeeb69f33ef01db7782acdf412378bdb21e373dbcd4aea535a",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/360x844/17-submit-error.png",
+      "originalSha256": "a1c04d87cf50bdfeeb69f33ef01db7782acdf412378bdb21e373dbcd4aea535a",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/360x844/17-submit-error.png"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "actualSha256": "e5e05f952d747e76c5b9d58307e8262888d9e18439e9f21e8ac87b8a0d556aca",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/360x844/12-detail-private.png",
+      "originalSha256": "e5e05f952d747e76c5b9d58307e8262888d9e18439e9f21e8ac87b8a0d556aca",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/360x844/12-detail-private.png"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "actualSha256": "b12ffc9b3ac694a4d5653b53a744683c4bd2ae27cd4d98c263a175a76b3576db",
+      "original": "docs/evidence/basic-design-runtime-20260922/reference/360x844/13-edit.png",
+      "originalSha256": "b12ffc9b3ac694a4d5653b53a744683c4bd2ae27cd4d98c263a175a76b3576db",
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "actualArtifact": "docs/evidence/basic-design-runtime-20260922/reference/360x844/13-edit.png"
+    }
+  ]
+}

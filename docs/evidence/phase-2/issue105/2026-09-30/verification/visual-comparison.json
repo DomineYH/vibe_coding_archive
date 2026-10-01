@@ -1,0 +1,1339 @@
+{
+  "thresholdPixels": 0,
+  "rendererArgs": [
+    "--force-color-profile=srgb",
+    "--disable-partial-raster"
+  ],
+  "results": [
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-1024x900.png",
+      "captureStatus": "expected_match",
+      "width": 1024,
+      "height": 1528,
+      "expectedWidth": 1024,
+      "expectedHeight": 1528,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1024x900/16-submit.png",
+      "actualSha256": "23fe58695f8bf540e86ab109bae42fd7c0c89188187885d4c5b3d93fc85183bc"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-1440x1000.png",
+      "captureStatus": "expected_match",
+      "width": 1440,
+      "height": 1528,
+      "expectedWidth": 1440,
+      "expectedHeight": 1528,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1440x1000/16-submit.png",
+      "actualSha256": "c7038731a506efdc3edd95f9566988299d766640c1eceff6ce152cb9247f4d91"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-360x844.png",
+      "captureStatus": "expected_match",
+      "width": 360,
+      "height": 2501,
+      "expectedWidth": 360,
+      "expectedHeight": 2501,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/360x844/16-submit.png",
+      "actualSha256": "ed22739ef188a1b9c19479b328883c4dd01923ade721f2e275d3d249e07b0cbd"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-390x844.png",
+      "captureStatus": "expected_match",
+      "width": 390,
+      "height": 2535,
+      "expectedWidth": 390,
+      "expectedHeight": 2535,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/390x844/16-submit.png",
+      "actualSha256": "22bc4293675a5d559d0b6a26f273b64bc75386b3975f5736e5aa501415df6f3c"
+    },
+    {
+      "state": "app-create",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "16-submit.png",
+      "screenshot": "app-create-768x1024.png",
+      "captureStatus": "expected_match",
+      "width": 768,
+      "height": 2600,
+      "expectedWidth": 768,
+      "expectedHeight": 2600,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/768x1024/16-submit.png",
+      "actualSha256": "0449b065cf876c9abc3bde4ce3d8bffd8a6fbce81c80d151d9b47f6717198c37"
+    },
+    {
+      "state": "app-create-auth-concealed",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-auth-concealed-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 900,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-auth-concealed-1024x900.png",
+      "actualSha256": "97c7b9a325a8b401ecfd9c0e8272ad120e6166042b3954a7ae708e71d98f2e66"
+    },
+    {
+      "state": "app-create-auth-concealed",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-auth-concealed-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1000,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-auth-concealed-1440x1000.png",
+      "actualSha256": "61b8b46b9c574cb9bb481174d98fdb0cc375636f346014562b9d3ebaa8c7fc98"
+    },
+    {
+      "state": "app-create-auth-concealed",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-auth-concealed-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 844,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-auth-concealed-360x844.png",
+      "actualSha256": "ab50be3e3fcd14e9b61cb46b629fc3166dc131321878b1c0bd868341ba60734f"
+    },
+    {
+      "state": "app-create-auth-concealed",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-auth-concealed-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 844,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-auth-concealed-390x844.png",
+      "actualSha256": "7c4608bc3bfbfa9778d80038791cd16326ec626e6724a1effa874f223150aafe"
+    },
+    {
+      "state": "app-create-auth-concealed",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-auth-concealed-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 1024,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-auth-concealed-768x1024.png",
+      "actualSha256": "9790ea7e57f3635de8456d473a6849b4bcc9f36e8f0a8cea71b865ce613236cd"
+    },
+    {
+      "state": "app-create-expired",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-expired-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-expired-1024x900.png",
+      "actualSha256": "de36a62529e4da223d3b200539ed5bc28b6a987e459c2c1dfb0a3fe8a7c672fe"
+    },
+    {
+      "state": "app-create-expired",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-expired-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-expired-1440x1000.png",
+      "actualSha256": "96ce319180a518ef5d0282a4d8fd847f4fb633ef3856dd037f7262f7efc32167"
+    },
+    {
+      "state": "app-create-expired",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-expired-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2669,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-expired-360x844.png",
+      "actualSha256": "81b7ee985c3e711ee12df2678bfbbcb29ab7bc31b66717c23afeb95df44688df"
+    },
+    {
+      "state": "app-create-expired",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-expired-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2703,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-expired-390x844.png",
+      "actualSha256": "07ce8ce00391c8cd96b80b671cad40789cfc3471fbe36ed87b55487966ec37bb"
+    },
+    {
+      "state": "app-create-expired",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-expired-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2728,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-expired-768x1024.png",
+      "actualSha256": "fc2926eddf8f00615be85168f0851044bcbe36b431902fa16ae785a57e013a42"
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-rejected-1024x900.png",
+      "actualSha256": "5296be5a9f23d1075015c5b3663498de39e5c84347a529c1b37fb0209f096b2b"
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-rejected-1440x1000.png",
+      "actualSha256": "b181d5a6e673f3b21f956f13ddd6713b5e1a9aac59f76d40101554c15485ea86"
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2567,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-rejected-360x844.png",
+      "actualSha256": "426bc63e6c6ea791f94cd92771240219ba00097481a885a0720cea43feb38671"
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2600,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-rejected-390x844.png",
+      "actualSha256": "2cd1330cd50bcb86f0efc9910a7b3ba5b9532b569fdf4954d2d78596913eede2"
+    },
+    {
+      "state": "app-create-rejected",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-rejected-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2665,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-rejected-768x1024.png",
+      "actualSha256": "200601c3d19e766eb84170dee0509c5a551ffe5f9f3a7c1e8928c5b7ad82f814"
+    },
+    {
+      "state": "app-create-target-missing",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-target-missing-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 900,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-target-missing-1024x900.png",
+      "actualSha256": "e1a8582c4a473396b95e974fccb5d47c0c440aa8f78af50cc1caa640265c915c"
+    },
+    {
+      "state": "app-create-target-missing",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-target-missing-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1000,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-target-missing-1440x1000.png",
+      "actualSha256": "912ae3858a129423f77e6454d4201c65dd2d446fbc25c1f07a95376257e9f060"
+    },
+    {
+      "state": "app-create-target-missing",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-target-missing-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 844,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-target-missing-360x844.png",
+      "actualSha256": "e8c5f5aee355ea0f4fff44fa2d2cd5575c8b39478ce9467821231242831ff3f9"
+    },
+    {
+      "state": "app-create-target-missing",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-target-missing-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 844,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-target-missing-390x844.png",
+      "actualSha256": "903e11828976fc3ae771c27cac607b04793bbb12c571d9c21115eb0079bc9035"
+    },
+    {
+      "state": "app-create-target-missing",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-target-missing-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 1024,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-target-missing-768x1024.png",
+      "actualSha256": "5171dc7910043ac6b295f567deb4eace8891dd862bb1d8979d54fe6a2f52082d"
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-unknown-1024x900.png",
+      "actualSha256": "ea607e3edc717226a147f01bb3d7737161c945f31a2ac4ecaadf552ec2786681"
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-unknown-1440x1000.png",
+      "actualSha256": "6ca34a0a1afc285396356f48643e4e8675b3ef1d2b6ae21a43b99623a2e954ee"
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2765,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-unknown-360x844.png",
+      "actualSha256": "0c4cc7c21317841c8ae27baa1eb882f35baed6058282f9bb14549e3af56d2af0"
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2759,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-create-unknown-390x844.png",
+      "actualSha256": "fdafe4b3fdbcf2da3dad39afe5450e66811e175ef00929888f3a0ec00660c937"
+    },
+    {
+      "state": "app-create-unknown",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-create-unknown-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2824,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-create-unknown-768x1024.png",
+      "actualSha256": "a06d02d2817f8c4f666d41198584a570d96906963509645bf813b900a156fd3d"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-1024x900.png",
+      "captureStatus": "expected_match",
+      "width": 1024,
+      "height": 1738,
+      "expectedWidth": 1024,
+      "expectedHeight": 1738,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1024x900/17-submit-error.png",
+      "actualSha256": "5935a2e239ba6d3fb792098887ff38c4dbdef3e36120238dab68057c82525552"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-1440x1000.png",
+      "captureStatus": "expected_match",
+      "width": 1440,
+      "height": 1738,
+      "expectedWidth": 1440,
+      "expectedHeight": 1738,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1440x1000/17-submit-error.png",
+      "actualSha256": "0169aced25a0bae8fb5a6b3d221b6787ee5c7ea8d3c581de7bdee7db59a61ed5"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-360x844.png",
+      "captureStatus": "expected_match",
+      "width": 360,
+      "height": 2711,
+      "expectedWidth": 360,
+      "expectedHeight": 2711,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/360x844/17-submit-error.png",
+      "actualSha256": "e0f0b84ef5089c63167b1ec2dafafe4aca889b85068bc6c77ca1e0c0ce11c9a1"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-390x844.png",
+      "captureStatus": "expected_match",
+      "width": 390,
+      "height": 2744,
+      "expectedWidth": 390,
+      "expectedHeight": 2744,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/390x844/17-submit-error.png",
+      "actualSha256": "9d03bfaf4c55e79c79a4a938a061834574797cba5f1598401832687bff90bca9"
+    },
+    {
+      "state": "app-create-validation-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "17-submit-error.png",
+      "screenshot": "app-create-validation-error-768x1024.png",
+      "captureStatus": "expected_match",
+      "width": 768,
+      "height": 2809,
+      "expectedWidth": 768,
+      "expectedHeight": 2809,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/768x1024/17-submit-error.png",
+      "actualSha256": "e464ce041314d4753bcf6b478f3e96181118da7628d144cca13745ff2c3b8f26"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "12-detail-private.png",
+      "screenshot": "app-detail-private-1024x900.png",
+      "captureStatus": "expected_match",
+      "width": 1024,
+      "height": 1549,
+      "expectedWidth": 1024,
+      "expectedHeight": 1549,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1024x900/12-detail-private.png",
+      "actualSha256": "3baae289061e1de025373e7bd631253ad4d78dc54cab6f42b04d2c67c29480a2"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "12-detail-private.png",
+      "screenshot": "app-detail-private-1440x1000.png",
+      "captureStatus": "expected_match",
+      "width": 1440,
+      "height": 1569,
+      "expectedWidth": 1440,
+      "expectedHeight": 1569,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1440x1000/12-detail-private.png",
+      "actualSha256": "b914a285064a754c2ede2dd912a63ccce91bdb6f6b1e8ef190e025e91744859f"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "12-detail-private.png",
+      "screenshot": "app-detail-private-360x844.png",
+      "captureStatus": "expected_match",
+      "width": 360,
+      "height": 2166,
+      "expectedWidth": 360,
+      "expectedHeight": 2166,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/360x844/12-detail-private.png",
+      "actualSha256": "d928d221d7314eea516b6dc22e2296c277090228f960a41d893e5567e23b49d0"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "12-detail-private.png",
+      "screenshot": "app-detail-private-390x844.png",
+      "captureStatus": "expected_match",
+      "width": 390,
+      "height": 2052,
+      "expectedWidth": 390,
+      "expectedHeight": 2052,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/390x844/12-detail-private.png",
+      "actualSha256": "8c46cd684fd2f95f097fe98c76b1e354aa6d656a927395237dbb2bcce2912ae6"
+    },
+    {
+      "state": "app-detail-private",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "12-detail-private.png",
+      "screenshot": "app-detail-private-768x1024.png",
+      "captureStatus": "expected_match",
+      "width": 768,
+      "height": 1941,
+      "expectedWidth": 768,
+      "expectedHeight": 1941,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/768x1024/12-detail-private.png",
+      "actualSha256": "37fe8577913d58f3e842c67e48e5359e64366c5075d7d9b490a235fe26597cd5"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": "13-edit.png",
+      "screenshot": "app-edit-1024x900.png",
+      "captureStatus": "expected_match",
+      "width": 1024,
+      "height": 1528,
+      "expectedWidth": 1024,
+      "expectedHeight": 1528,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1024x900/13-edit.png",
+      "actualSha256": "04a6c7a78443fcb6d37aaf10f5aff1e5f9f1c7c26038386d5631515a3a32c34f"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "13-edit.png",
+      "screenshot": "app-edit-1440x1000.png",
+      "captureStatus": "expected_match",
+      "width": 1440,
+      "height": 1528,
+      "expectedWidth": 1440,
+      "expectedHeight": 1528,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/1440x1000/13-edit.png",
+      "actualSha256": "69073a6c79ef0eca1c40f690a8349ccea0993b918b5025b5311327a8e8c350a9"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "13-edit.png",
+      "screenshot": "app-edit-360x844.png",
+      "captureStatus": "expected_match",
+      "width": 360,
+      "height": 2501,
+      "expectedWidth": 360,
+      "expectedHeight": 2501,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/360x844/13-edit.png",
+      "actualSha256": "614bd989b4b7d386d915462d17a0e84553e6f3158b45788d1ea38e19c0b86f8f"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "13-edit.png",
+      "screenshot": "app-edit-390x844.png",
+      "captureStatus": "expected_match",
+      "width": 390,
+      "height": 2535,
+      "expectedWidth": 390,
+      "expectedHeight": 2535,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/390x844/13-edit.png",
+      "actualSha256": "b288e289213b0b53d81f25fc1e65168982dfb7ef05453acbd399f290c6afa6ac"
+    },
+    {
+      "state": "app-edit",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": "13-edit.png",
+      "screenshot": "app-edit-768x1024.png",
+      "captureStatus": "expected_match",
+      "width": 768,
+      "height": 2600,
+      "expectedWidth": 768,
+      "expectedHeight": 2600,
+      "comparisonStatus": "compared",
+      "differentPixels": 0,
+      "maxChannelDelta": 0,
+      "actualArtifact": "visual-state-baselines/768x1024/13-edit.png",
+      "actualSha256": "7ba644de685b2b4cfe3d462c3296c728c92fa4977c3b5907066fbff418f6a0be"
+    },
+    {
+      "state": "app-edit-latest-unavailable",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-edit-latest-unavailable-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-latest-unavailable-1024x900.png",
+      "actualSha256": "342915c626cf736213b3ed5e6958e563cff29877667db59066546b238cd7a08c"
+    },
+    {
+      "state": "app-edit-latest-unavailable",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-edit-latest-unavailable-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-latest-unavailable-1440x1000.png",
+      "actualSha256": "4fe25d97c9aaa5e18ee466ccfc7d33c2d79551b80cb6be292954d5b833dfec32"
+    },
+    {
+      "state": "app-edit-latest-unavailable",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-latest-unavailable-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2736,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-latest-unavailable-360x844.png",
+      "actualSha256": "fb9b278224f7dfd5ad1cc30ac148921fcada245e942621b5ae4b48e1778ee8a3"
+    },
+    {
+      "state": "app-edit-latest-unavailable",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-latest-unavailable-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2751,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-latest-unavailable-390x844.png",
+      "actualSha256": "370681dd583fd99f5812004692ad5f3db64ce7a6e2f8109656ceac12327e9895"
+    },
+    {
+      "state": "app-edit-latest-unavailable",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-edit-latest-unavailable-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2776,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-latest-unavailable-768x1024.png",
+      "actualSha256": "5350348e3f1da831aace7a8878702c156aeb2d8909957da81155b161c0624628"
+    },
+    {
+      "state": "app-edit-rejected",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-edit-rejected-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-rejected-1024x900.png",
+      "actualSha256": "c86d0d9addfb6564ca746866fad8e6eecf7b44e04c2057c6e689dda1c2531743"
+    },
+    {
+      "state": "app-edit-rejected",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-edit-rejected-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-rejected-1440x1000.png",
+      "actualSha256": "f1ffaa8d6a0ddc8993cd80359f4553e795758fdd900f98a7f5af9bf6eae995a0"
+    },
+    {
+      "state": "app-edit-rejected",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-rejected-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2567,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-edit-rejected-360x844.png",
+      "actualSha256": "6d672c86ff1c88b318e8a700e7baa0c95a3f7fe439b116cc9e0c786b7a78074e"
+    },
+    {
+      "state": "app-edit-rejected",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-rejected-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2600,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-rejected-390x844.png",
+      "actualSha256": "6ef3a4124ac3573b02438c18f0aa8b69b1803a0e97c36e91f132fe61462845b5"
+    },
+    {
+      "state": "app-edit-rejected",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-edit-rejected-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2665,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-rejected-768x1024.png",
+      "actualSha256": "dc8ad775ababdd2fa1d457e33426881418067c4830fe427e5178e968fcce1d57"
+    },
+    {
+      "state": "app-edit-unknown",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-edit-unknown-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-unknown-1024x900.png",
+      "actualSha256": "70a7896f85366108dec5e46ad6f4b727f751c2115b4326333496006918c4990e"
+    },
+    {
+      "state": "app-edit-unknown",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-edit-unknown-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-unknown-1440x1000.png",
+      "actualSha256": "05a2495281ed736c9da400d5ec781339b26aff26b61416ae2ca0a1dbf73b124c"
+    },
+    {
+      "state": "app-edit-unknown",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-unknown-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2765,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-edit-unknown-360x844.png",
+      "actualSha256": "2f1c94d903794336aad45f8c7a70ee26cabc6f0c6a00e0a638ee8dc8284ae660"
+    },
+    {
+      "state": "app-edit-unknown",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-unknown-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2759,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-unknown-390x844.png",
+      "actualSha256": "d08b5f12f38793f45002be75e559ebe1f65abb09aaeb11f1de62bdf971b61b16"
+    },
+    {
+      "state": "app-edit-unknown",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-edit-unknown-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2824,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-edit-unknown-768x1024.png",
+      "actualSha256": "1428c3a0842df29f4af6fa8a1b115782be7c187857e7631653182f2a8a0e6737"
+    },
+    {
+      "state": "app-edit-validation-error",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-edit-validation-error-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1618,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-validation-error-1024x900.png",
+      "actualSha256": "a2060b5ec4b1a32a30f2e5a24ed35869a845c2e2f9532ad031bc9c499c196cfd"
+    },
+    {
+      "state": "app-edit-validation-error",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-edit-validation-error-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1618,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-validation-error-1440x1000.png",
+      "actualSha256": "4247f0474358f1bd68b285099e2579d40039b362b03881d3aae21df6a75de31f"
+    },
+    {
+      "state": "app-edit-validation-error",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-validation-error-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2591,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-edit-validation-error-360x844.png",
+      "actualSha256": "65017b940cb37fbea085ae4594807b00422d5f4cd6813729b747702959887c7e"
+    },
+    {
+      "state": "app-edit-validation-error",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-validation-error-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2624,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-validation-error-390x844.png",
+      "actualSha256": "b64d696bab525dad6c747415dc823ad62de91516e0c8f0d487eb7e9a54ba4e38"
+    },
+    {
+      "state": "app-edit-validation-error",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-edit-validation-error-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2689,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-validation-error-768x1024.png",
+      "actualSha256": "3277b29a3d538df167bb4245f4b2f54940cd0667bdb355c908c91ac072a957ab"
+    },
+    {
+      "state": "app-edit-version-conflict",
+      "viewport": {
+        "width": 1024,
+        "height": 900
+      },
+      "baseline": null,
+      "screenshot": "app-edit-version-conflict-1024x900.png",
+      "captureStatus": "stable",
+      "width": 1024,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-version-conflict-1024x900.png",
+      "actualSha256": "5383c7e9ce51b20da6a18bf025dd2e4b8ffeb2dea74a49d26d1074f05205597a"
+    },
+    {
+      "state": "app-edit-version-conflict",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": null,
+      "screenshot": "app-edit-version-conflict-1440x1000.png",
+      "captureStatus": "stable",
+      "width": 1440,
+      "height": 1594,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-version-conflict-1440x1000.png",
+      "actualSha256": "7152a5522a36f2f0c7e0872705a18ecc946e55c1c74861c71885e8e1825588fc"
+    },
+    {
+      "state": "app-edit-version-conflict",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-version-conflict-360x844.png",
+      "captureStatus": "stable",
+      "width": 360,
+      "height": 2717,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-version-conflict-360x844.png",
+      "actualSha256": "3ca066a3494f6839cf079f015b0cfd1faf1568bf4458fb0c874ca2baa2f5682f"
+    },
+    {
+      "state": "app-edit-version-conflict",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": null,
+      "screenshot": "app-edit-version-conflict-390x844.png",
+      "captureStatus": "stable",
+      "width": 390,
+      "height": 2731,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "verification/captures/app-edit-version-conflict-390x844.png",
+      "actualSha256": "1747961f7e451c79be0a702102eba34dc3875a73a2f207a58902c8cf8d01aeb5"
+    },
+    {
+      "state": "app-edit-version-conflict",
+      "viewport": {
+        "width": 768,
+        "height": 1024
+      },
+      "baseline": null,
+      "screenshot": "app-edit-version-conflict-768x1024.png",
+      "captureStatus": "stable",
+      "width": 768,
+      "height": 2776,
+      "expectedWidth": null,
+      "expectedHeight": null,
+      "comparisonStatus": "product_only",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "actualArtifact": "after-test/app-edit-version-conflict-768x1024.png",
+      "actualSha256": "c4a87441301567f7fd6be608d69915c845ae584359f5cd6e672de86ce8bc4cb8"
+    }
+  ]
+}

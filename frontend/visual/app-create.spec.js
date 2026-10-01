@@ -3,9 +3,12 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { capture as captureImage } from "./app-create-capture.js";
+import { chromiumExecutable } from "../playwright-browser.js";
 
+// Scoped I105-L/P/V/A/N/H approval; preserved references remain unchanged.
 const referenceRoot = path.resolve(
-  "../docs/evidence/basic-design-runtime-20260922/reference",
+  "../docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines",
 );
 const outputRoot = path.resolve("test-results/visual/app-create");
 const viewports = [
@@ -66,98 +69,21 @@ async function setScenario(page, scenario) {
   );
 }
 
-async function compare(page, actual, expected) {
-  return page.evaluate(
-    async ({ actualData, expectedData }) => {
-      const decode = async (data) => {
-        const image = new Image();
-        image.src = `data:image/png;base64,${data}`;
-        await image.decode();
-        return image;
-      };
-      const actualImage = await decode(actualData);
-      const result = {
-        width: actualImage.width,
-        height: actualImage.height,
-        expectedWidth: null,
-        expectedHeight: null,
-        comparisonStatus: expectedData ? "compared" : "product_only",
-        differentPixels: null,
-        maxChannelDelta: null,
-      };
-      if (!expectedData) return result;
-      const expectedImage = await decode(expectedData);
-      result.expectedWidth = expectedImage.width;
-      result.expectedHeight = expectedImage.height;
-      if (
-        actualImage.width !== expectedImage.width ||
-        actualImage.height !== expectedImage.height
-      ) {
-        result.comparisonStatus = "dimensions_mismatch";
-        return result;
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = actualImage.width;
-      canvas.height = actualImage.height;
-      const context = canvas.getContext("2d", { willReadFrequently: true });
-      if (!context) throw new Error("Canvas 2D is unavailable");
-      const read = (image) => {
-        context.drawImage(image, 0, 0);
-        return context.getImageData(0, 0, canvas.width, canvas.height).data;
-      };
-      const actualPixels = read(actualImage);
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      const expectedPixels = read(expectedImage);
-      let differentPixels = 0;
-      let maxChannelDelta = 0;
-      for (let offset = 0; offset < actualPixels.length; offset += 4) {
-        const delta = Math.max(
-          Math.abs(actualPixels[offset] - expectedPixels[offset]),
-          Math.abs(actualPixels[offset + 1] - expectedPixels[offset + 1]),
-          Math.abs(actualPixels[offset + 2] - expectedPixels[offset + 2]),
-          Math.abs(actualPixels[offset + 3] - expectedPixels[offset + 3]),
-        );
-        if (delta) differentPixels += 1;
-        maxChannelDelta = Math.max(maxChannelDelta, delta);
-      }
-      return { ...result, differentPixels, maxChannelDelta };
-    },
-    {
-      actualData: actual.toString("base64"),
-      expectedData: expected?.toString("base64") ?? null,
-    },
-  );
+async function capture(page, state, viewport, testInfo, baseline = null) {
+  return captureImage(page, state, viewport, testInfo, baseline, {
+    referenceRoot,
+    outputRoot,
+    results,
+  });
 }
 
-async function capture(page, state, viewport, testInfo, baseline = null) {
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    await new Promise(requestAnimationFrame);
-    await new Promise(requestAnimationFrame);
-  });
-  await page.mouse.move(0, 0);
-  const actual = await page.screenshot({
-    fullPage: true,
-    animations: "disabled",
-    caret: "hide",
-  });
-  const expected = baseline
-    ? readFileSync(
-        path.join(
-          referenceRoot,
-          `${viewport.width}x${viewport.height}`,
-          baseline,
-        ),
-      )
-    : null;
-  const comparison = await compare(page, actual, expected);
-  expect(comparison.width).toBe(viewport.width);
-  const screenshot = `${state}-${viewport.width}x${viewport.height}.png`;
-  mkdirSync(outputRoot, { recursive: true });
-  writeFileSync(path.join(outputRoot, screenshot), actual);
-  results.push({ state, viewport, baseline, screenshot, ...comparison });
-  testInfo.attach(screenshot, { body: actual, contentType: "image/png" });
-}
+// Partial tile reuse can vary rounded edges by 1–2 channel values between captures.
+test.use({
+  launchOptions: {
+    executablePath: chromiumExecutable(),
+    args: ["--force-color-profile=srgb", "--disable-partial-raster"],
+  },
+});
 
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
@@ -472,7 +398,7 @@ for (const viewport of viewports) {
     const detail = page.locator('[data-screen-label="비공개 앱 상세"]');
     await expect(detail).toBeVisible();
     await expect(
-      detail.getByRole("link", { name: "앱 수정", exact: true }),
+      detail.getByRole("link", { name: "앱 편집", exact: true }),
     ).toBeVisible();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.scrollWidth))

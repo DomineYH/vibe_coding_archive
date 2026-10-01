@@ -1,0 +1,42 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test --config=issue105.e2e.config.js e2e/app-create.spec.js e2e/app-edit.spec.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:143537) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 29 tests using 1 worker
+
+(node:143633) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/app-create.spec.js:84:1 › protects direct access to the registration route (13.3s)
+  ✓   2 e2e/app-create.spec.js:93:1 › approved member registers, refreshes, and returns to the updated gallery (3.9s)
+  ✓   3 e2e/app-create.spec.js:128:1 › keeps over-limit and invalid URL values for correction (2.2s)
+  ✓   4 e2e/app-create.spec.js:164:1 › supports keyboard selection for categories, theme, and visibility (2.1s)
+  ✓   5 e2e/app-create.spec.js:201:1 › locks the form on an unknown result and only retries the same request after an explicit choice (3.0s)
+  ✓   6 e2e/app-create.spec.js:260:1 › waits for a delayed save before taking a blocked navigation to the created detail (3.3s)
+  ✓   7 e2e/app-create.spec.js:283:1 › reads a committed result after the create response is lost (2.5s)
+  ✓   8 e2e/app-create.spec.js:307:1 › keeps confirmed create success distinct when the app is later unavailable (2.4s)
+  ✓   9 e2e/app-create.spec.js:363:1 › keeps an expired write locked after its result can no longer be checked (2.2s)
+  ✓  10 e2e/app-create.spec.js:396:1 › hides an unresolved draft during repeated auth failures and restores it only after recheck (2.2s)
+  ✓  11 e2e/app-create.spec.js:441:1 › discards the in-tab draft after logout even when the same member returns (2.9s)
+  ✓  12 e2e/app-create.spec.js:461:1 › discards old drafts across an A to B to A member switch (3.8s)
+  ✓  13 e2e/app-create.spec.js:496:1 › shows a rejected save without clearing the draft (1.9s)
+  ✓  14 e2e/app-create.spec.js:516:1 › defers internal navigation until a dirty draft is kept or discarded (1.9s)
+  ✓  15 e2e/app-edit.spec.js:86:1 › owner edits an app, changes visibility, and the gallery no longer lists it (2.4s)
+  ✓  16 e2e/app-edit.spec.js:119:1 › private app content stays hidden from non-owner members (4.7s)
+  ✓  17 e2e/app-edit.spec.js:174:1 › locks a delayed edit and waits before leaving for the confirmed detail (3.5s)
+  ✓  18 e2e/app-edit.spec.js:206:1 › version conflict preserves the draft until the author confirms loading latest content (3.7s)
+  ✓  19 e2e/app-edit.spec.js:259:1 › unknown update outcome requires an explicit result check before completion (2.5s)
+  ✓  20 e2e/app-edit.spec.js:289:1 › hides and restores an unresolved edit draft around failed auth checks (2.4s)
+  ✓  21 e2e/app-edit.spec.js:336:1 › unresolved update can only be retried with the original request (2.7s)
+  ✓  22 e2e/app-edit.spec.js:376:1 › confirmed rejection keeps the form values available for correction (2.3s)
+  ✓  23 e2e/app-edit.spec.js:397:1 › keyboard privacy control and field errors have accessible state (2.4s)
+  ✓  24 e2e/app-edit.spec.js:427:1 › owner cancels the inline delete prompt without changing the app (2.5s)
+  ✓  25 e2e/app-edit.spec.js:449:1 › a different approved member can view a public app but cannot delete it (4.0s)
+  ✓  26 e2e/app-edit.spec.js:463:1 › owner confirms a delayed delete once and returns to a refreshed gallery (3.5s)
+  ✓  27 e2e/app-edit.spec.js:494:1 › unknown delete result stays on detail until the issued key confirms success (2.8s)
+  ✓  28 e2e/app-edit.spec.js:531:1 › keeps an expired deletion unknown and never repeats it with a new key (2.7s)
+  ✓  29 e2e/app-edit.spec.js:568:1 › unresolved deletion warns before refresh and keeps its key when the author stays (2.9s)
+
+  29 passed (1.9m)

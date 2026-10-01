@@ -1,0 +1,34 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test --config=playwright.visual.config.js visual/app-create-capture.spec.js --retries=0 --workers=1
+[WebServer] npm notice run eduvibe-archive-frontend@1.0.0 dev
+[WebServer] npm notice run VITE_DATA_MODE=mock vite --host localhost --port 5173 --strictPort
+[WebServer] (node:138257) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:138287) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 visual/app-create-capture.spec.js:7:1 › capture rejects a full-page height mismatch and retains evidence (710ms)
+
+
+  1) visual/app-create-capture.spec.js:7:1 › capture rejects a full-page height mismatch and retains evidence
+
+    Error: expect(received).rejects.toThrow()
+
+    Received promise resolved instead of rejected
+    Resolved to value: undefined
+
+      18 |   await expect(capture(page, "height", viewport, testInfo, "expected.png", {
+      19 |     referenceRoot, outputRoot, results,
+    > 20 |   })).rejects.toThrow();
+         |               ^
+      21 |   expect(results).toMatchObject([{ width: 8, height: 9, expectedWidth: 8, expectedHeight: 8, comparisonStatus: "dimensions_mismatch", differentPixels: null }]);
+      22 |   expect(readFileSync(path.join(outputRoot, "height-8x8.png")).length).toBeGreaterThan(0);
+      23 | });
+        at <worktree>/frontend/visual/app-create-capture.spec.js:20:15
+
+    Error Context: test-results/visual/app-create-capture-capture-c5209-smatch-and-retains-evidence/error-context.md
+
+  1 failed
+    visual/app-create-capture.spec.js:7:1 › capture rejects a full-page height mismatch and retains evidence

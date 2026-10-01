@@ -1,0 +1,19 @@
+{
+  "state": "app-create-expired",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-create-expired-360x844.png",
+  "captureStatus": "stable",
+  "width": 360,
+  "height": 2669,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "actualArtifact": "after-test/app-create-expired-360x844.png",
+  "actualSha256": "81b7ee985c3e711ee12df2678bfbbcb29ab7bc31b66717c23afeb95df44688df"
+}

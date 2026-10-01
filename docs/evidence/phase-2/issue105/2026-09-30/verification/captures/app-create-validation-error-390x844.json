@@ -1,0 +1,19 @@
+{
+  "state": "app-create-validation-error",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": "17-submit-error.png",
+  "screenshot": "app-create-validation-error-390x844.png",
+  "captureStatus": "expected_match",
+  "width": 390,
+  "height": 2744,
+  "expectedWidth": 390,
+  "expectedHeight": 2744,
+  "comparisonStatus": "compared",
+  "differentPixels": 0,
+  "maxChannelDelta": 0,
+  "actualArtifact": "visual-state-baselines/390x844/17-submit-error.png",
+  "actualSha256": "9d03bfaf4c55e79c79a4a938a061834574797cba5f1598401832687bff90bca9"
+}

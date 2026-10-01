@@ -1,0 +1,16 @@
+{
+  "state": "app-create-unknown",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-create-unknown-390x844.png",
+  "width": 390,
+  "height": 2759,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

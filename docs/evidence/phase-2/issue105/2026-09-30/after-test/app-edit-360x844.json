@@ -1,0 +1,16 @@
+{
+  "state": "app-edit",
+  "viewport": {
+    "width": 360,
+    "height": 844
+  },
+  "baseline": "13-edit.png",
+  "screenshot": "app-edit-360x844.png",
+  "width": 360,
+  "height": 2501,
+  "expectedWidth": 360,
+  "expectedHeight": 2478,
+  "comparisonStatus": "dimensions_mismatch",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

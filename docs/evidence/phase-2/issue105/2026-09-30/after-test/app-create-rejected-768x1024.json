@@ -1,0 +1,16 @@
+{
+  "state": "app-create-rejected",
+  "viewport": {
+    "width": 768,
+    "height": 1024
+  },
+  "baseline": null,
+  "screenshot": "app-create-rejected-768x1024.png",
+  "width": 768,
+  "height": 2665,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}

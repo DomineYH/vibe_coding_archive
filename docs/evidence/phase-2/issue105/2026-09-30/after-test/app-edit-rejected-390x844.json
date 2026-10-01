@@ -1,0 +1,16 @@
+{
+  "state": "app-edit-rejected",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": null,
+  "screenshot": "app-edit-rejected-390x844.png",
+  "width": 390,
+  "height": 2600,
+  "expectedWidth": null,
+  "expectedHeight": null,
+  "comparisonStatus": "product_only",
+  "differentPixels": null,
+  "maxChannelDelta": null
+}
