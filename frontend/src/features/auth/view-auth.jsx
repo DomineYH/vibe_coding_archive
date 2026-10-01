@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Btn, Chip, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
@@ -63,52 +63,17 @@ function formatPendingExpiry(value) {
   }).format(new Date(value));
 }
 
-function PasswordChangeCard({ expiresAt, onChangePassword }) {
-  const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
-  const [fieldErrors, setFieldErrors] = useState({});
-  const [message, setMessage] = useState("");
-  const [pending, setPending] = useState(false);
-  const submitting = useRef(false);
-
-  async function submit(event) {
-    event.preventDefault();
-    if (submitting.current || pending) return;
-    const nextPassword = password.normalize("NFC");
-    const confirmation = passwordConfirm.normalize("NFC");
-    const errors = {};
-    const length = Array.from(nextPassword).length;
-    if (length < 15 || length > 128)
-      errors.password = "비밀번호는 15~128자로 입력해 주세요.";
-    if (!confirmation)
-      errors.passwordConfirm = "비밀번호를 한 번 더 입력해 주세요.";
-    else if (nextPassword !== confirmation)
-      errors.passwordConfirm = "비밀번호 확인이 일치하지 않습니다.";
-    setFieldErrors(errors);
-    setMessage("");
-    if (Object.keys(errors).length) return;
-
-    submitting.current = true;
-    setPending(true);
-    try {
-      await onChangePassword({ password });
-    } catch (error) {
-      const passwordError =
-        error instanceof ServiceError ? error.fields?.password : null;
-      setFieldErrors(passwordError ? { password: passwordError } : {});
-      setMessage(
-        passwordError
-          ? ""
-          : error instanceof ServiceError
-            ? error.message
-            : "비밀번호를 변경하지 못했어요. 다시 시도해 주세요.",
-      );
-    } finally {
-      submitting.current = false;
-      setPending(false);
-    }
-  }
-
+function PasswordChangeCard({
+  expiresAt,
+  password,
+  passwordConfirm,
+  fieldErrors,
+  message,
+  pending,
+  setPassword,
+  setPasswordConfirm,
+  onSubmit,
+}) {
   return (
     <main
       className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
@@ -131,7 +96,7 @@ function PasswordChangeCard({ expiresAt, onChangePassword }) {
         변경 전용 로그인은 {formatPendingExpiry(expiresAt)}까지 유효합니다.
       </p>
       <form
-        onSubmit={submit}
+        onSubmit={onSubmit}
         aria-busy={pending}
         className="mt-5 flex w-full flex-col gap-3.5 rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.08)]"
       >
@@ -440,6 +405,55 @@ export function AuthView({
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
 
+  useEffect(() => {
+    if (mode === "password-change" && authStatus === "ready") {
+      const id = fieldErrors.password
+        ? "new-password"
+        : fieldErrors.passwordConfirm
+          ? "new-password-confirm"
+          : null;
+      if (id) document.getElementById(id)?.focus();
+    }
+  }, [fieldErrors, mode, authStatus]);
+
+  async function submitPasswordChange(event) {
+    event.preventDefault();
+    if (submitting.current || pending) return;
+    const nextPassword = password.normalize("NFC");
+    const confirmation = passwordConfirm.normalize("NFC");
+    const errors = {};
+    const length = Array.from(nextPassword).length;
+    if (length < 15 || length > 128)
+      errors.password = "비밀번호는 15~128자로 입력해 주세요.";
+    if (!confirmation)
+      errors.passwordConfirm = "비밀번호를 한 번 더 입력해 주세요.";
+    else if (nextPassword !== confirmation)
+      errors.passwordConfirm = "비밀번호 확인이 일치하지 않습니다.";
+    setFieldErrors(errors);
+    setMessage("");
+    if (Object.keys(errors).length) return;
+
+    submitting.current = true;
+    setPending(true);
+    try {
+      await onChangePassword({ password });
+    } catch (error) {
+      const passwordError =
+        error instanceof ServiceError ? error.fields?.password : null;
+      setFieldErrors(passwordError ? { password: passwordError } : {});
+      setMessage(
+        passwordError
+          ? ""
+          : error instanceof ServiceError
+            ? error.message
+            : "비밀번호를 변경하지 못했어요. 다시 시도해 주세요.",
+      );
+    } finally {
+      submitting.current = false;
+      setPending(false);
+    }
+  }
+
   if (routeError) {
     return (
       <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
@@ -575,7 +589,14 @@ export function AuthView({
       <PasswordChangeCard
         key={authUser.id}
         expiresAt={authUser.expiresAt}
-        onChangePassword={onChangePassword}
+        password={password}
+        passwordConfirm={passwordConfirm}
+        fieldErrors={fieldErrors}
+        message={message}
+        pending={pending}
+        setPassword={setPassword}
+        setPasswordConfirm={setPasswordConfirm}
+        onSubmit={submitPasswordChange}
       />
     );
   }

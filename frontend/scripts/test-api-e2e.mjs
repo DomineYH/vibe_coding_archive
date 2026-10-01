@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtemp, rm } from "node:fs/promises";
+import { chmod, copyFile, mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -47,12 +47,13 @@ async function run() {
     .filter((arg) => arg !== "--auth-unavailable");
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
-    arguments_.some((arg) => /auth-(prepare|login)/.test(arg));
+    arguments_.some((arg) => /auth-(prepare|login|password)/.test(arg));
   const env = {
     ...process.env,
     APP_ENV: "test",
     API_E2E_AUTH_BOUNDARY: authPrepared ? "prepared" : "unavailable",
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
+    PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
     PUBLIC_ORIGIN: "http://localhost:5174",
   };
 
@@ -65,6 +66,36 @@ async function run() {
     if (migration.error) throw migration.error;
     if (migration.status !== 0)
       throw new Error("The isolated API E2E database migration failed.");
+    if (!process.env.PASSWORD_BLOCKLIST_PATH)
+      throw new Error(
+        "Set PASSWORD_BLOCKLIST_PATH to the explicitly prepared R15 source.",
+      );
+    await copyFile(
+      process.env.PASSWORD_BLOCKLIST_PATH,
+      env.PASSWORD_BLOCKLIST_PATH,
+    );
+    await chmod(env.PASSWORD_BLOCKLIST_PATH, 0o600);
+    // The real CLI and prepared server both verify the complete R15 source.
+
+    const bootstrap = spawnSync(
+      "uv",
+      [
+        "run",
+        "--frozen",
+        "python",
+        "-c",
+        `import os
+from tests.admin_cli import run_admin_cli
+from tests.support import AUTH_PASSWORD
+answers = [('Login ID: ', 'first-admin'), ('Nickname: ', '첫 관리자'), ('Temporary password: ', AUTH_PASSWORD), ('Confirm temporary password: ', AUTH_PASSWORD), ('Type YES to confirm: ', 'YES')]
+status, output = run_admin_cli('bootstrap-admin', os.environ['DATABASE_PATH'], os.environ['PASSWORD_BLOCKLIST_PATH'], answers)
+assert AUTH_PASSWORD not in output
+raise SystemExit(status)`,
+      ],
+      { cwd: backend, env, stdio: "pipe" },
+    );
+    if (bootstrap.error || bootstrap.status !== 0)
+      throw new Error("Test-owned administrator bootstrap failed.");
     const fixtures = spawnSync(
       "uv",
       [
@@ -95,11 +126,36 @@ async function run() {
               arguments_: [
                 "e2e-api/auth-prepare.spec.js",
                 "e2e-api/auth-login.spec.js",
+                "e2e-api/auth-password.spec.js",
               ],
               prepared: true,
             },
           ];
-    for (const run of runs) {
+    // Functional contracts always use a moving clock. Only the card captures
+    // get a separate server with a fixed clock, including the default CI run.
+    const capture = "change-only card and field errors";
+    const separated = runs.flatMap((run) => {
+      if (
+        !run.prepared ||
+        !run.arguments_.some((arg) => /auth-password/.test(arg))
+      )
+        return [run];
+      // Preserve explicitly selected cases; they run with the ordinary moving clock.
+      if (run.arguments_.some((arg) => /^--grep/.test(arg))) return [run];
+      const functional = {
+        ...run,
+        arguments_: [...run.arguments_, "--grep-invert", capture],
+      };
+      return [
+        functional,
+        {
+          arguments_: ["e2e-api/auth-password.spec.js", "--grep", capture],
+          prepared: true,
+          capture: true,
+        },
+      ];
+    });
+    for (const run of separated) {
       playwright = spawn(
         path.join(frontend, "node_modules", ".bin", "playwright"),
         ["test", "--config=playwright.api.config.js", ...run.arguments_],
@@ -108,6 +164,7 @@ async function run() {
           env: {
             ...env,
             API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
+            API_E2E_CLOCK: run.capture ? "2026-10-01T00:00:00Z" : "",
           },
           stdio: "inherit",
           detached: process.platform !== "win32",

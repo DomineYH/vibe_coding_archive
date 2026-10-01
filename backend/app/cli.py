@@ -211,7 +211,34 @@ def main() -> int:
         "invalidate-restored-auth",
         help="invalidate all restored browser authority before restart",
     )
+    for command in ("bootstrap-admin", "recover-admin", "prepare-password-blocklist"):
+        subparsers.add_parser(command)
     args = parser.parse_args()
+    if args.command in (
+        "bootstrap-admin",
+        "recover-admin",
+        "prepare-password-blocklist",
+    ):
+        try:
+            if args.command == "prepare-password-blocklist":
+                from app.password_policy import prepare_blocklist
+
+                prepare_blocklist(Settings.from_environment().password_blocklist_path)
+                print("Fixed password blocklist verified and prepared.")
+            else:
+                from app.admin_credentials import admin_credentials
+
+                admin_credentials(args.command)
+        except (ValueError, RuntimeError, SQLAlchemyError, OSError, EOFError) as error:
+            # SQL errors can embed bound hashes; report no raw exception or parameters.
+            print(
+                str(error)
+                if isinstance(error, ValueError)
+                else "Administrator credential operation failed; no changes saved.",
+                file=sys.stderr,
+            )
+            return 1
+        return 0
     if args.command == "invalidate-restored-auth":
         settings = Settings.from_environment()
         engine = make_engine(settings.database_path)

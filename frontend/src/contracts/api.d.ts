@@ -376,7 +376,7 @@ export interface paths {
         put?: never;
         /**
          * Replace the temporary password in a change-only session
-         * @description Requires a valid change-only session. The password is normalized to NFC without trimming; confirmation stays in the browser and is not sent. The request is rejected when the temporary credential or session has expired, including at the exact expiry boundary.
+         * @description Requires a valid change-only session. The password is normalized to NFC without trimming; confirmation stays in the browser and is not sent. The request is rejected when the temporary credential or session has expired, including at the exact expiry boundary. The full session is rejected with SESSION_KIND_NOT_ALLOWED. Final commit rechecks the temporary credential, member version, current session, flow and permit. A successful change consumes the temporary credential and revokes other change-only sessions; only this browser receives a new full session. A lost reply is recovered through the original transition result, never by replaying the password change.
          */
         post: operations["changePassword"];
         delete?: never;
@@ -737,7 +737,7 @@ export interface components {
             login_id: string;
             password: string;
         };
-        /** @description A new password of 15-128 Unicode code points. Normalize to NFC without trimming or truncation; compare the full normalized value against the versioned local common-password blocklist. Do not send it to an external service. The Phase 1 mock does not apply this check while list redistribution rights remain unresolved. The browser confirmation is never sent. */
+        /** @description A new password of 15-128 Unicode code points. Normalize to NFC without trimming or truncation; compare the full normalized value against the versioned local common-password blocklist. Do not send it to an external service. The Phase 1 mock does not apply this check while list redistribution rights remain unresolved. T03 uses individually prepared, integrity-verified R15 data in the test environment. The browser confirmation is never sent. */
         ChangePasswordInput: {
             password: string;
         };

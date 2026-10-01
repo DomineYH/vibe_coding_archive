@@ -600,7 +600,13 @@ paths:
         Requires a valid change-only session. The password is normalized to NFC
         without trimming; confirmation stays in the browser and is not sent.
         The request is rejected when the temporary credential or session has
-        expired, including at the exact expiry boundary.
+        expired, including at the exact expiry boundary. The full session is
+        rejected with SESSION_KIND_NOT_ALLOWED. Final commit rechecks the
+        temporary credential, member version, current session, flow and permit.
+        A successful change consumes the temporary credential and revokes other
+        change-only sessions; only this browser receives a new full session.
+        A lost reply is recovered through the original transition result, never
+        by replaying the password change.
       security:
         - SessionCookie: []
       parameters:
@@ -1541,7 +1547,8 @@ components:
         trimming or truncation; compare the full normalized value against the
         versioned local common-password blocklist. Do not send it to an external
         service. The Phase 1 mock does not apply this check while list
-        redistribution rights remain unresolved. The browser confirmation is
+        redistribution rights remain unresolved. T03 uses individually prepared,
+        integrity-verified R15 data in the test environment. The browser confirmation is
         never sent.
       properties:
         password:

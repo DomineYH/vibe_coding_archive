@@ -1,0 +1,140 @@
+{
+  "pixelTolerance": 0,
+  "captures": [
+    {
+      "file": "visual/change-only-1024x900.png",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "sha256": "5a2decb017cf4f238f87a9a4f8d150120205982ec59f1c5301815421e1d4fe8e",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/change-only-1440x1000.png",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "sha256": "c28870132db137f07bbaca84fce42fce0cbc2fc34a883b64c650ff4f9bddacdc",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/change-only-360x844.png",
+      "dimensions": [
+        360,
+        855
+      ],
+      "sha256": "a524e8d0f69feb0f865bea9fceafcadf1d69500ca0b3bf01c961d6231a261861",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/change-only-390x844.png",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "2fa9918edb90344811f542c93592053c79b8b059d4bb63c04d064c472c5cb002",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/change-only-768x1024.png",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "sha256": "bddd5dbb5d51842379bfc00701509c7be9488b2c01d628267c37fd16f9f2b009",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/login-ready-1024x900.png",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "sha256": "8787f6f3f4e59dbed11d6e55a4a3109571d2a497964a84cf94baef7f18370fd3",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/login-ready-1440x1000.png",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "sha256": "02d220e88b5a5126504b2a31c0b49c7dcd2715130e483d1e048f7d988a31c223",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/login-ready-360x844.png",
+      "dimensions": [
+        360,
+        844
+      ],
+      "sha256": "599ef4f0a278271b56e2da5586bdeef42acef972e740a730d3ab010c213831f9",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/login-ready-390x844.png",
+      "dimensions": [
+        390,
+        844
+      ],
+      "sha256": "723fee4db0795cd85ffba134697fc72cd5676a4401d134f6df8ddfc29aff58b3",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/login-ready-768x1024.png",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "sha256": "9dcc377da2c5c12f51434c13be5c1da82857d5cf709b313d83839d4422a6f980",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/same-password-1024x900.png",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "sha256": "b2f28ec2f1d7438f477cb10c17e48e765a94947fbbec322c690bffae80166798",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/same-password-1440x1000.png",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "sha256": "00215f1ee25805684d657d76b9555ed9ad2815cc4a0bc03cc9a394c0f9683a01",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/same-password-360x844.png",
+      "dimensions": [
+        360,
+        877
+      ],
+      "sha256": "f12b4f642ea93b24a7f35210adb2ae7c8c24bdd6396252646675f5a4efba4263",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/same-password-390x844.png",
+      "dimensions": [
+        390,
+        858
+      ],
+      "sha256": "970b8f22954429fc3543bc694a96c20605a767358a92b324decd7910b7983ace",
+      "classification": "product_only observation; no new baseline"
+    },
+    {
+      "file": "visual/same-password-768x1024.png",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "sha256": "348119427ea4592de8a8b4472168c17733f2fa15543abc2d477f1fe6e6b34ee4",
+      "classification": "product_only observation; no new baseline"
+    }
+  ]
+}

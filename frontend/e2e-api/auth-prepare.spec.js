@@ -199,6 +199,26 @@ test("unsupported Web Locks keeps public reading and denies preparation", async 
 });
 
 if (prepared) {
+  test("functional server clock advances between flow reads", async ({
+    page,
+  }) => {
+    await page.goto("/auth?mode=login");
+    await expect(page.locator("#login-id")).toBeVisible();
+    const flowId = await page.evaluate(
+      (key) => JSON.parse(localStorage.getItem(key)).flowId,
+      key,
+    );
+    const readClock = async () => {
+      const response = await page.request.get("/api/v1/auth/flow-state", {
+        headers: { "X-EduVibe-Flow-Id": flowId },
+      });
+      expect(response.status()).toBe(200);
+      return Date.parse((await response.json()).server_time);
+    };
+    const before = await readClock();
+    await expect.poll(readClock, { timeout: 1500 }).toBeGreaterThan(before);
+  });
+
   test("lost R rotates using actual S without changing S or its expiry", async ({
     page,
     context,

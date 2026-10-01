@@ -1,0 +1,88 @@
+{
+  "renderer": "Chromium 151.0.7922.34; DPR 1; sRGB; ko-KR; Asia/Seoul; partial-raster off",
+  "independent": "new temporary file SQLite, freshly migrated; fixed source prepared; actual CLI; new server and browser contexts",
+  "clock": "2026-10-01T00:00:00Z server issuance/browser; CLI real wall clock",
+  "pixel_tolerance": 0,
+  "results": [
+    {
+      "capture": "change-only-768x1024.png",
+      "first_sha256": "bddd5dbb5d51842379bfc00701509c7be9488b2c01d628267c37fd16f9f2b009",
+      "independent_sha256": "bddd5dbb5d51842379bfc00701509c7be9488b2c01d628267c37fd16f9f2b009",
+      "identical": true,
+      "final_review_sha256": "bddd5dbb5d51842379bfc00701509c7be9488b2c01d628267c37fd16f9f2b009",
+      "final_review_identical": true
+    },
+    {
+      "capture": "same-password-768x1024.png",
+      "first_sha256": "348119427ea4592de8a8b4472168c17733f2fa15543abc2d477f1fe6e6b34ee4",
+      "independent_sha256": "348119427ea4592de8a8b4472168c17733f2fa15543abc2d477f1fe6e6b34ee4",
+      "identical": true,
+      "final_review_sha256": "348119427ea4592de8a8b4472168c17733f2fa15543abc2d477f1fe6e6b34ee4",
+      "final_review_identical": true
+    },
+    {
+      "capture": "change-only-360x844.png",
+      "first_sha256": "a524e8d0f69feb0f865bea9fceafcadf1d69500ca0b3bf01c961d6231a261861",
+      "independent_sha256": "a524e8d0f69feb0f865bea9fceafcadf1d69500ca0b3bf01c961d6231a261861",
+      "identical": true,
+      "final_review_sha256": "a524e8d0f69feb0f865bea9fceafcadf1d69500ca0b3bf01c961d6231a261861",
+      "final_review_identical": true
+    },
+    {
+      "capture": "same-password-360x844.png",
+      "first_sha256": "f12b4f642ea93b24a7f35210adb2ae7c8c24bdd6396252646675f5a4efba4263",
+      "independent_sha256": "f12b4f642ea93b24a7f35210adb2ae7c8c24bdd6396252646675f5a4efba4263",
+      "identical": true,
+      "final_review_sha256": "f12b4f642ea93b24a7f35210adb2ae7c8c24bdd6396252646675f5a4efba4263",
+      "final_review_identical": true
+    },
+    {
+      "capture": "change-only-390x844.png",
+      "first_sha256": "2fa9918edb90344811f542c93592053c79b8b059d4bb63c04d064c472c5cb002",
+      "independent_sha256": "2fa9918edb90344811f542c93592053c79b8b059d4bb63c04d064c472c5cb002",
+      "identical": true,
+      "final_review_sha256": "2fa9918edb90344811f542c93592053c79b8b059d4bb63c04d064c472c5cb002",
+      "final_review_identical": true
+    },
+    {
+      "capture": "same-password-390x844.png",
+      "first_sha256": "970b8f22954429fc3543bc694a96c20605a767358a92b324decd7910b7983ace",
+      "independent_sha256": "970b8f22954429fc3543bc694a96c20605a767358a92b324decd7910b7983ace",
+      "identical": true,
+      "final_review_sha256": "970b8f22954429fc3543bc694a96c20605a767358a92b324decd7910b7983ace",
+      "final_review_identical": true
+    },
+    {
+      "capture": "change-only-1024x900.png",
+      "first_sha256": "5a2decb017cf4f238f87a9a4f8d150120205982ec59f1c5301815421e1d4fe8e",
+      "independent_sha256": "5a2decb017cf4f238f87a9a4f8d150120205982ec59f1c5301815421e1d4fe8e",
+      "identical": true,
+      "final_review_sha256": "5a2decb017cf4f238f87a9a4f8d150120205982ec59f1c5301815421e1d4fe8e",
+      "final_review_identical": true
+    },
+    {
+      "capture": "same-password-1024x900.png",
+      "first_sha256": "b2f28ec2f1d7438f477cb10c17e48e765a94947fbbec322c690bffae80166798",
+      "independent_sha256": "b2f28ec2f1d7438f477cb10c17e48e765a94947fbbec322c690bffae80166798",
+      "identical": true,
+      "final_review_sha256": "b2f28ec2f1d7438f477cb10c17e48e765a94947fbbec322c690bffae80166798",
+      "final_review_identical": true
+    },
+    {
+      "capture": "change-only-1440x1000.png",
+      "first_sha256": "c28870132db137f07bbaca84fce42fce0cbc2fc34a883b64c650ff4f9bddacdc",
+      "independent_sha256": "c28870132db137f07bbaca84fce42fce0cbc2fc34a883b64c650ff4f9bddacdc",
+      "identical": true,
+      "final_review_sha256": "c28870132db137f07bbaca84fce42fce0cbc2fc34a883b64c650ff4f9bddacdc",
+      "final_review_identical": true
+    },
+    {
+      "capture": "same-password-1440x1000.png",
+      "first_sha256": "00215f1ee25805684d657d76b9555ed9ad2815cc4a0bc03cc9a394c0f9683a01",
+      "independent_sha256": "00215f1ee25805684d657d76b9555ed9ad2815cc4a0bc03cc9a394c0f9683a01",
+      "identical": true,
+      "final_review_sha256": "00215f1ee25805684d657d76b9555ed9ad2815cc4a0bc03cc9a394c0f9683a01",
+      "final_review_identical": true
+    }
+  ]
+}

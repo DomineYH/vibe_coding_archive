@@ -1,0 +1,90 @@
+{
+  "pixelTolerance": 0,
+  "results": [
+    {
+      "state": "prepared login",
+      "size": "1024x900",
+      "source": "docs/evidence/basic-design-runtime-20260922/reference/1024x900/07-login.png",
+      "product": "visual/login-ready-1024x900.png",
+      "sourceDimensions": [
+        1024,
+        959
+      ],
+      "actualDimensions": [
+        1024,
+        900
+      ],
+      "comparisonStatus": "size_mismatch",
+      "differentPixels": null,
+      "scope": "full source observation; inherited UI-D03/UI-D04; no tolerance/baseline changes or human acceptance"
+    },
+    {
+      "state": "prepared login",
+      "size": "1440x1000",
+      "source": "docs/evidence/basic-design-runtime-20260922/reference/1440x1000/07-login.png",
+      "product": "visual/login-ready-1440x1000.png",
+      "sourceDimensions": [
+        1440,
+        1000
+      ],
+      "actualDimensions": [
+        1440,
+        1000
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 85910,
+      "scope": "full source observation; inherited UI-D03/UI-D04; no tolerance/baseline changes or human acceptance"
+    },
+    {
+      "state": "prepared login",
+      "size": "360x844",
+      "source": "docs/evidence/basic-design-runtime-20260922/reference/360x844/07-login.png",
+      "product": "visual/login-ready-360x844.png",
+      "sourceDimensions": [
+        360,
+        999
+      ],
+      "actualDimensions": [
+        360,
+        844
+      ],
+      "comparisonStatus": "size_mismatch",
+      "differentPixels": null,
+      "scope": "full source observation; inherited UI-D03/UI-D04; no tolerance/baseline changes or human acceptance"
+    },
+    {
+      "state": "prepared login",
+      "size": "390x844",
+      "source": "docs/evidence/basic-design-runtime-20260922/reference/390x844/07-login.png",
+      "product": "visual/login-ready-390x844.png",
+      "sourceDimensions": [
+        390,
+        977
+      ],
+      "actualDimensions": [
+        390,
+        844
+      ],
+      "comparisonStatus": "size_mismatch",
+      "differentPixels": null,
+      "scope": "full source observation; inherited UI-D03/UI-D04; no tolerance/baseline changes or human acceptance"
+    },
+    {
+      "state": "prepared login",
+      "size": "768x1024",
+      "source": "docs/evidence/basic-design-runtime-20260922/reference/768x1024/07-login.png",
+      "product": "visual/login-ready-768x1024.png",
+      "sourceDimensions": [
+        768,
+        1024
+      ],
+      "actualDimensions": [
+        768,
+        1024
+      ],
+      "comparisonStatus": "compared",
+      "differentPixels": 84565,
+      "scope": "full source observation; inherited UI-D03/UI-D04; no tolerance/baseline changes or human acceptance"
+    }
+  ]
+}
