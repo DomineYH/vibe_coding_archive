@@ -162,7 +162,6 @@ async function capture(
       expectedData: expected?.toString("base64") ?? null,
     },
   );
-  expect(comparison.width).toBe(viewport.width);
   const result = {
     state,
     viewport,
@@ -171,7 +170,16 @@ async function capture(
     ...comparison,
   };
   results.push(result);
-  testInfo.attach(name, { body: actual, contentType: "image/png" });
+  writeFileSync(
+    path.join(outputRoot, name.replace(/\.png$/, ".json")),
+    `${JSON.stringify(result, null, 2)}\n`,
+  );
+  writeFileSync(
+    path.join(outputRoot, "visual-comparison.json"),
+    `${JSON.stringify({ thresholdPixels: 0, results }, null, 2)}\n`,
+  );
+  await testInfo.attach(name, { body: actual, contentType: "image/png" });
+  expect(comparison.width).toBe(viewport.width);
 }
 
 test.beforeAll(async ({ browser }) => {
