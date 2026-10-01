@@ -45,7 +45,7 @@ router = APIRouter(prefix="/auth")
 # Production timing on the real host is measured at T07, not assumed here.
 HASHER = PasswordHash.recommended()
 ACCOUNT_FAILURES, IP_FAILURES, WINDOW = 10, 200, 900
-FULL_ABSOLUTE, FULL_IDLE, RECENT_AUTH = 8 * 3600, 30 * 60, 15 * 60
+FULL_ABSOLUTE, FULL_IDLE = 8 * 3600, 30 * 60
 
 
 @cache
@@ -178,10 +178,9 @@ def self_body(member, session):
         "expires_at": min(session["expires_at"], session["absolute_expires_at"]),
         "email": member["email"],
         "phone": member["phone"],
-        # Recent authentication gates admin-only sensitive actions (Phase 5).
-        "recent_auth_until": after(session["authenticated_at"], RECENT_AUTH)
-        if member["is_admin"]
-        else None,
+        # The recent-authentication window starts with the admin first change (T03)
+        # and re-authentication (Phase 5); a plain login never opens it.
+        "recent_auth_until": None,
     }
 
 

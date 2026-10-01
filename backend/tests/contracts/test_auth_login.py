@@ -450,12 +450,8 @@ def test_the_recorded_hash_profile_is_the_installed_argon2id_recommendation():
     assert parameters.parallelism == 4
 
 
-def test_only_an_admin_login_carries_a_recent_authentication_window(
-    member_app, server_clock
-):
+def test_a_login_never_opens_the_recent_authentication_window(member_app):
     app, _ = member_app()
     with TestClient(app) as client:
-        browser = signed_in(client, "admin")
-        user = browser.me().json()
-        assert user["role"] == "admin"
-        assert user["recent_auth_until"] == "2026-10-01T00:15:00.000000Z"
+        user = signed_in(client, "admin").me().json()
+        assert user["role"] == "admin" and user["recent_auth_until"] is None
