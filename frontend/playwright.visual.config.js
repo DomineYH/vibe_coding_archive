@@ -20,7 +20,8 @@ export default defineConfig({
     trace: { mode: "retain-on-failure", screenshots: false },
     launchOptions: {
       executablePath: chromiumExecutable(),
-      args: ["--force-color-profile=srgb"],
+      // Partial tile reuse can vary rounded edges by 1–2 channel values between captures.
+      args: ["--force-color-profile=srgb", "--disable-partial-raster"],
     },
   },
   webServer: {
