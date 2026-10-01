@@ -383,3 +383,21 @@ a lost reply asks the user to check the same credentials through login.
 
 No source reference, product baseline, mask or tolerance changes. Local automated
 behavior/capture checks do not claim human visual acceptance or operating release.
+
+## Issue #119 T05 actual administrator approval · UI-D09
+
+The existing user tab, four statistics cards, member rows and inline approval
+panel connect to the current full administrator's real HTTP session. The default
+list excludes contacts; “정상 가동” counts only fresh healthy 연결 결과 and unchecked
+아카이브 앱 contribute zero. No summary endpoint or new dashboard is added.
+
+| Difference | Product behavior | Reason and evidence |
+| --- | --- | --- |
+| API approval and future controls | Existing latest-target confirmation, explicit approval value and separate work key; password reset, deletion and Health Monitor controls stay disabled while their capabilities are false. Mock controls retain their existing behavior. | #119 / #113 T05 and UI-D09; [T05 ledger](evidence/phase-3/issue119/2026-10-02/README.md). |
+| Unknown reply and page movement | Result lookup, identical resubmission and explicit cancellation remain inline. A selected target moving outside the loaded page after approval retains its same result panel above the list. Current approval alone never proves an unknown result. | Actual server commit/lost response/SQLite checks and five-viewport product-only observations in the same ledger. |
+
+The preserved source and existing visual baselines are unchanged. API inline
+confirmation/unknown/cancelled observations are product-only evidence; existing
+mock source comparisons are reported separately. Automated keyboard/focus/name
+checks do not claim direct human visual or screen-reader acceptance. Operating
+release and physical-device evidence remain the T07 U01/U02 gate.

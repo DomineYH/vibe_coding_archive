@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
+from app.admin_approval import router as admin_approval_router
 from app.auth import router as auth_router
 from app.auth_boundary import (
     AuthBodyLimit,
@@ -250,7 +251,9 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(request, error):
-        if request.url.path.startswith("/api/v1/auth/"):
+        if request.url.path.startswith(
+            ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
+        ):
             return error_response(
                 AuthError("BAD_REQUEST", 400)
                 if any(item["type"] == "json_invalid" for item in error.errors())
@@ -262,7 +265,12 @@ def create_app(
 
     @app.exception_handler(HTTPException)
     async def handle_http_error(request, error):
-        if request.url.path.startswith("/api/v1/auth/") and error.status_code == 400:
+        if (
+            request.url.path.startswith(
+                ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
+            )
+            and error.status_code == 400
+        ):
             return error_response(AuthError("BAD_REQUEST", 400))
         from fastapi.exception_handlers import http_exception_handler
 
@@ -274,12 +282,15 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         capabilities = _capabilities()
         if request.app.state.auth_testing and request.app.state.auth_ready:
-            # #113: the verified T01–T04 test bundle; ordinary runs stay off.
+            # #113: the T01–T05 bundle; operating release remains behind T07.
             for key in (
                 "auth_login",
                 "auth_logout",
                 "auth_password_change",
                 "auth_register",
+                "admin_users_read",
+                "admin_approval",
+                "admin_summary",
             ):
                 capabilities[key] = {"enabled": True, "reasons": []}
         return {
@@ -300,6 +311,7 @@ def create_app(
     api.include_router(login_router)
     api.include_router(password_router)
     api.include_router(register_router)
+    api.include_router(admin_approval_router)
     api.include_router(public_apps_router)
     app.include_router(api)
 

@@ -39,6 +39,8 @@ def reconcile(factory, *, restored=False):
                 advance(db, item)
         if restored:
             timestamp = now()
+            # Restored business keys must never regain execution or result authority.
+            db.execute(text("DELETE FROM write_operations"))
             for table in ("auth_flows", "sessions", "recovery_credentials"):
                 db.execute(
                     text(
@@ -60,6 +62,10 @@ def sweep(factory):
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))
         timestamp = now()
+        db.execute(
+            text("DELETE FROM write_operations WHERE expires_at<=:now"),
+            {"now": timestamp},
+        )
         expired = (
             db.execute(
                 text(

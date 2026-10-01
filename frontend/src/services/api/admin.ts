@@ -52,7 +52,7 @@ const KEY_READ_ERRORS: ErrorCodesByStatus = {
 };
 const ISSUE_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
-  400: ["VALIDATION_ERROR"],
+  400: ["BAD_REQUEST", "VALIDATION_ERROR"],
   403: [
     "FORBIDDEN",
     "PASSWORD_CHANGE_REQUIRED",
@@ -69,6 +69,7 @@ const ISSUE_ERRORS: ErrorCodesByStatus = {
     "AUTH_STATE_CHANGED",
     "AUTH_TRANSITION_PENDING",
   ],
+  413: ["PAYLOAD_TOO_LARGE"],
   422: ["VALIDATION_ERROR"],
 };
 const EXECUTE_ERRORS: ErrorCodesByStatus = {
@@ -109,6 +110,8 @@ const USER_DELETE_ERRORS: ErrorCodesByStatus = {
 };
 const CANCEL_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
+  400: ["BAD_REQUEST"],
+  413: ["PAYLOAD_TOO_LARGE"],
   403: [
     "FORBIDDEN",
     "PASSWORD_CHANGE_REQUIRED",
@@ -158,6 +161,19 @@ async function requestHeaders(write: boolean, signal?: AbortSignal) {
   });
   if (write) {
     const csrf = await authService.getCsrf({ signal });
+    if (
+      csrf.authContext?.flowId !== auth.flow.flowId ||
+      csrf.authContext.revision !== auth.flow.revision ||
+      csrf.authContext.sessionGeneration !== auth.flow.sessionGeneration
+    )
+      throw new ServiceError(
+        "AUTH_STATE_CHANGED",
+        "인증 상태가 바뀌었어요. 다시 확인해 주세요.",
+        {
+          httpStatus: 409,
+          outcome: "rejected",
+        },
+      );
     headers.set("X-CSRF-Token", csrf.csrfToken);
   }
   return headers;
@@ -284,6 +300,14 @@ async function request(
       throw contractError(response.status, uncertain);
     }
     throw mapApiError(endpoint, errorBody, response.status, uncertain);
+  }
+  for (const name of [
+    "X-EduVibe-Flow-Id",
+    "X-EduVibe-Auth-Revision",
+    "X-EduVibe-Session-Generation",
+  ]) {
+    if (response.headers.get(name) !== headers.get(name))
+      throw contractError(response.status, uncertain);
   }
   if (noContent) {
     if (response.status !== 204)

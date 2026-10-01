@@ -43,7 +43,7 @@ test("registration stays off in ordinary runs and on only in the prepared bounda
     service_url: null,
     announcement_url: null,
   });
-  expect(meta.capabilities.admin_approval.enabled).toBe(false);
+  expect(meta.capabilities.admin_approval.enabled).toBe(prepared);
 });
 
 test.describe("real pending registration", () => {

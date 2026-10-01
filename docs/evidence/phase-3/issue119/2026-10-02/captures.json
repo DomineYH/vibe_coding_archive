@@ -1,0 +1,157 @@
+{
+  "renderer": "Chromium 151.0.7922.34",
+  "pixelTolerance": 0,
+  "baselineUpdated": false,
+  "results": [
+    {
+      "state": "confirmation",
+      "size": "1440x1000",
+      "sha256": "96128ca5ae60e2987e4d66eabbd9c911d288316a35a1ea7918434941535a7252",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "unknown",
+      "size": "1440x1000",
+      "sha256": "6b2da056af97256144a469b78cb8a664af4e82a7ad9a9398632d7a106468d50f",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "cancelled",
+      "size": "1440x1000",
+      "sha256": "cd25449d3ff4ec9f97bb88d131f2c617c679593d8aabe4cf5b8e97c09e1d9a8f",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "confirmation",
+      "size": "1024x900",
+      "sha256": "9dd01f893615994a6fd03eca729d04979392db62123a22493abe4d7d3833a0a2",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "unknown",
+      "size": "1024x900",
+      "sha256": "f4b80953a1674a790436bb6c1580cdfc620ca31edaff295e06656158e72600fa",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "cancelled",
+      "size": "1024x900",
+      "sha256": "ceeacd5eadc45a39fbebb1654340080f39ffd2f87b354f597df4cb362c062a80",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "confirmation",
+      "size": "768x1024",
+      "sha256": "f701166a6c83cc718ed8c641de74c3111515a500ffdc4a079dfd73e1868781d2",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "unknown",
+      "size": "768x1024",
+      "sha256": "b4954c67aec07c188f2ec862bc2a49792d7046ce0d1bc7696086828277b2f8b8",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "cancelled",
+      "size": "768x1024",
+      "sha256": "3144c6c8160a58a7f2b573d13f5fd652d531578ca84b16ebc0557ec2459eefd1",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "confirmation",
+      "size": "390x844",
+      "sha256": "cf33239ab5f2691baf5036219065cac8da8c32565f0496f332d487fe44a60525",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "unknown",
+      "size": "390x844",
+      "sha256": "faae124a08772437f004c0ba040fdc240ee4b86bc00a04d094c445b354522181",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "cancelled",
+      "size": "390x844",
+      "sha256": "68956603365e19e3ebea0ecda1b7fa04aeb1e11f369f2ddf49fadb85601f5c6f",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "confirmation",
+      "size": "360x844",
+      "sha256": "c3f2c21a7881e139ac047463b7ef9fa0d48b2beebfc4563feffa05efd515a07c",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "unknown",
+      "size": "360x844",
+      "sha256": "a1f17407026d63c25b88051673333865cfaca849851151b329aec45b32822174",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "cancelled",
+      "size": "360x844",
+      "sha256": "70ec1c7d34e2bc665ecfc8975d3971807863aeec85e6bea5066ccd73c48288ce",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    }
+  ]
+}
