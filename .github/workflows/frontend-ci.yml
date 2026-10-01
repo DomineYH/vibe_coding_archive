@@ -98,3 +98,11 @@ jobs:
         env:
           FONTCONFIG_FILE: ${{ github.workspace }}/frontend/visual/fontconfig.conf
         run: npm run test:visual
+      - name: Upload visual failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-test-results
+          path: frontend/test-results/visual
+          retention-days: 7
+          if-no-files-found: ignore
