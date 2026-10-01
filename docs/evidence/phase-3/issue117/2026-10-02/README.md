@@ -70,7 +70,7 @@ backend 경합 보완 seam은 TestClient의 ASGI HTTP와 실제 파일 SQLite다
 | frontend / `npm test` (전체 한 번) | **32 files / 828 passed** |
 | frontend / `npx playwright test e2e/auth.spec.js e2e/auth-recovery.spec.js e2e/admin.spec.js` | **45 passed**, 1.5m; mock 회귀이며 실제 인증으로 계산하지 않음 |
 | frontend / `npm run test:e2e:api` (전체 한 번, pinned Chromium) | 일반/auth off **49 passed / 21 conditional skipped**, 3.8m; 준비된 실제 인증 **39 passed**, 3.0m (T01 17 + T02 13 + T03 9). off에서 인증 실행 사례는 환경상 제외하고 별도 준비 실행에서 모두 검사 |
-| frontend / `npm run test:e2e:api -- auth-password.spec.js --grep 'card and field'` (독립 pinned 재현) | **5 passed**, 32.4s; 새 DB/서버/browser의 10 PNG 모두 첫 실행과 SHA-256 동일 |
+| frontend / `npm run test:e2e:api -- auth-password.spec.js` (r2 정정·독립 pinned 재현) | 기능 **5 passed**, 24.2s + 별도 고정 시계 캡처 **5 passed**, 23.8s; 커밋된 change-only/same-password 10 PNG 모두 SHA-256 동일 |
 | frontend / `npm run test:visual -- visual/auth.spec.js visual/admin.spec.js` | **9 passed / 1 harness ENOENT**, 5.6m; 아래 1건 재검사 포함 모든 10 화면 검사 통과 |
 | frontend / `npm run test:visual -- visual/admin.spec.js --grep 768x1024` | **1 passed**, 23.6s; 기준 이미지 변경 없음 |
 | frontend / `npm run build:mock` · `npm run build` · `npm run check:dist` · `npm run check:reference` | 모두 통과; 기존 Vite 큰 chunk 안내 유지 |
@@ -102,6 +102,23 @@ backend 경합 보완 seam은 TestClient의 ASGI HTTP와 실제 파일 SQLite다
 폰트 `visual/fontconfig.conf`, 시험 서버/브라우저 시계 2026-10-01T00:00:00Z,
 animation off로 두 독립 DB/서버/browser 실행을 비교한다. CLI의 실제 시계는 동작하며,
 화면 관찰의 짧은 세션 발급 시계만 시험 서버 seam에서 고정한다.
+
+r2 minor-1에 따라 재현 명령을 정정했다. `--grep` 없는 아래 명령이 기능 검사 뒤 별도
+서버에서 고정 시계 캡처를 실행한다. 명시적 `--grep` 선택은 움직이는 시계를 사용한다.
+명시적으로 준비한 R15 원본과 Chromium 151.0.7922.34 실행 파일의 절대 경로를 설정한다.
+
+```sh
+cd frontend
+export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/absolute/path/chrome-headless-shell-linux64/chrome-headless-shell
+export FONTCONFIG_FILE="$PWD/visual/fontconfig.conf"
+npm run test:e2e:api -- auth-password.spec.js
+```
+
+위 명령을 직접 실행한 뒤 `test-results/api/*/change-only.png`와 `same-password.png`를
+5개 viewport별로 `git show HEAD:docs/evidence/phase-3/issue117/2026-10-02/visual/<파일명>`의
+커밋된 PNG 바이트와 비교했다. SHA-256 **10/10 일치**이며 기존 재현 비교 JSON의 해시와도
+일치했다. 코드·기준 이미지·커밋된 관찰 PNG는 변경하지 않았다.
 
 가입/승인·사용자 탭(T04/T05), 비공개 보호 요청·활동 연장(T06), 전체 응답 경합/실기기·실제
 운영 호스트 성능·브라우저/백업/정리·사람의 시각/보조기술 수락(T07)은 이 티켓의 실행 합격으로
