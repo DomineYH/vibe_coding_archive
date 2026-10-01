@@ -62,3 +62,50 @@ describe("login failure messages", () => {
     expect(await screen.findByText(expected)).toBeInTheDocument();
   });
 });
+
+it("announces initial pending retention before a registration request", () => {
+  render(
+    <MemoryRouter>
+      <AuthView mode="signup" authStatus="ready" authUser={null} />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByText(/최초 승인 없이 가입일부터 90일이 지나면/),
+  ).toHaveTextContent("자동 삭제");
+});
+
+it("announces the registration retry time from the server rolling limit", async () => {
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter>
+      <AuthView
+        mode="signup"
+        authStatus="ready"
+        authUser={null}
+        onRegister={() =>
+          Promise.reject(
+            new ServiceError("RATE_LIMITED", "x", {
+              retryAt: "2026-10-01T00:15:00Z",
+            }),
+          )
+        }
+      />
+    </MemoryRouter>,
+  );
+  await user.type(screen.getByLabelText("로그인 아이디 (필수)"), "teacher");
+  await user.type(
+    screen.getByLabelText("비밀번호 (필수)"),
+    "synthetic password",
+  );
+  await user.type(
+    screen.getByLabelText("비밀번호 확인 (필수)"),
+    "synthetic password",
+  );
+  await user.type(screen.getByLabelText("별명 (필수)"), "교사");
+  await user.click(screen.getByRole("button", { name: "가입 신청하기" }));
+  expect(
+    await screen.findByText(
+      "가입 시도가 너무 많아요. 9시 15분 이후에 다시 시도해 주세요.",
+    ),
+  ).toBeInTheDocument();
+});

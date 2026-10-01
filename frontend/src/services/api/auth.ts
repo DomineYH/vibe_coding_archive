@@ -12,6 +12,7 @@ import {
   mapRecoveryReady,
   mapRestartEligibility,
   mapSelf,
+  mapRegisteredUser,
   mapSettledAuthTransition,
 } from "../../contracts/mappers";
 import { isUuid } from "../../contracts/uuid";
@@ -370,8 +371,43 @@ export const authService: AuthService = {
       throw contractError();
     return mapSelf(value.body);
   },
-  async register() {
-    throw unavailable();
+  async register(input) {
+    const fields: Record<string, string> = {};
+    for (const key of ["email", "phone"] as const) {
+      // Empty after Python strip + NFC: Unicode White_Space plus U+001C–001F,
+      // excluding U+FEFF. NFC cannot turn a nonempty stripped string into empty.
+      for (const char of input[key] ?? "") {
+        if (
+          /\p{White_Space}/u.test(char) ||
+          (char >= "\u001c" && char <= "\u001f")
+        )
+          continue;
+        fields[key] = "현재 선택 정보는 수집하지 않습니다. 비워 주세요.";
+        break;
+      }
+    }
+    if (Object.keys(fields).length)
+      throw new ServiceError("VALIDATION_ERROR", "입력을 확인해 주세요.", {
+        outcome: "rejected",
+        fields,
+      });
+    const csrf = await authService.getCsrf();
+    if (!csrf.authContext) throw contractError();
+    const value = await write(
+      "/auth/register",
+      {
+        login_id: input.loginId,
+        password: input.password,
+        nickname: input.nickname,
+      },
+      csrf.csrfToken,
+      {
+        "X-EduVibe-Flow-Id": csrf.authContext.flowId,
+        "X-EduVibe-Auth-Revision": csrf.authContext.revision,
+        "X-EduVibe-Session-Generation": csrf.authContext.sessionGeneration,
+      },
+    );
+    return checked(mapRegisteredUser, value);
   },
   async login(input) {
     return memberTransition("login", "/auth/login", {

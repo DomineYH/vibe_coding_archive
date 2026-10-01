@@ -3,9 +3,11 @@
 from sqlalchemy import text
 
 from app.auth_boundary import SEQUENCE, advance, after, digest, flow, now, terminalize
+from app.pending_retention import sweep_pending
 
 
 def reconcile(factory, *, restored=False):
+    sweep_pending(factory, restored=restored)
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))
         if db.execute(text("PRAGMA foreign_key_check")).all():
@@ -54,6 +56,7 @@ def reconcile(factory, *, restored=False):
 
 
 def sweep(factory):
+    sweep_pending(factory)
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))
         timestamp = now()

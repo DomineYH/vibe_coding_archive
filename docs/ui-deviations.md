@@ -366,3 +366,20 @@ No preserved reference, visual baseline, mask or tolerance is updated. Existing
 source comparisons and product-only observations are recorded separately. Local
 automation does not claim direct human, screen-reader, physical-device or operating
 release acceptance; U01/U02 remain the T07 public gate.
+
+## Issue #118 T04 registration and initial pending expiry · UI-D01/UI-D03/UI-D08
+
+The existing 420px EV card, login/signup segments, 57px header and footer are
+reused. The existing signup fields remain in login ID/password/confirmation/
+nickname/optional email/optional phone order; confirmation stays in the browser. API field
+errors focus their associated first input. Duplicate IDs remain field errors;
+a lost reply asks the user to check the same credentials through login.
+
+| Difference | Product behavior | Reason and evidence |
+| --- | --- | --- |
+| Signup fields and disabled collection | Existing required/optional labels, separate nickname and browser-only confirmation; nonempty contact input is rejected locally without a network request; empty contact fields are omitted. Direct HTTP requests retain the server field-error contract. | UI-D01/UI-D08 and #118; [T04 ledger](evidence/phase-3/issue118/2026-10-02/README.md). |
+| Initial pending deadline and revocation | Existing pending card announces 90-day automatic deletion before submission and shows the server's actual deadline after submission, no automatic login and support-not-configured notice. Correct-credential login distinguishes initial pending from prior approval revocation. | R9 Q16/Q35; the same ledger separates source signup observations from product-only pending/error evidence. |
+| Uncertain registration response | Existing inline error block preserves input and asks for a login check; no automatic resubmission or member cookie. | Actual server commit/DB/cookie loss test, UI-D03; same ledger. |
+
+No source reference, product baseline, mask or tolerance changes. Local automated
+behavior/capture checks do not claim human visual acceptance or operating release.

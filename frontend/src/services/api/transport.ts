@@ -672,6 +672,7 @@ function mapApiError(
     ACCOUNT_NOT_APPROVED: 403,
     TEMP_PASSWORD_EXPIRED: 403,
     ALREADY_AUTHENTICATED: 409,
+    LOGIN_ID_TAKEN: 409,
   };
   // The server recorded these as failed attempts: the write definitely did not apply.
   const definitive = [
@@ -679,6 +680,7 @@ function mapApiError(
     "ACCOUNT_NOT_APPROVED",
     "TEMP_PASSWORD_EXPIRED",
     "ALREADY_AUTHENTICATED",
+    "LOGIN_ID_TAKEN",
     "RATE_LIMITED",
   ].includes(authCode);
   const accepted =

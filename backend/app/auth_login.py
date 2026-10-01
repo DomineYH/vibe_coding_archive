@@ -8,6 +8,7 @@ and member row in the committing transaction so no past state can sign in.
 import secrets
 import threading
 import unicodedata
+from datetime import datetime, timedelta, timezone
 from functools import cache
 from typing import Annotated
 
@@ -345,7 +346,35 @@ def login(request: Request, body: LoginBody, db=Unlocked):
             # Approval or credential changed mid-hash: never sign in on the past state.
             fail(db, item, transition, AuthError("AUTH_STATE_CHANGED"))
         if member["approval_status"] != "approved":
-            fail(db, item, transition, AuthError("ACCOUNT_NOT_APPROVED", 403))
+            initial = (
+                member["approval_status"] == "pending"
+                and member["first_approved_at"] is None
+            )
+            expiry = after(member["created_at"], 90 * 86400)
+            if initial and expiry <= timestamp:
+                fail(
+                    db,
+                    item,
+                    transition,
+                    AuthError("INVALID_CREDENTIALS", 401),
+                    events=subjects,
+                )
+            message = "이전에 받은 승인이 해제된 계정입니다. 운영자에게 문의해 주세요."
+            if initial:
+                kst = datetime.fromisoformat(expiry).astimezone(
+                    timezone(timedelta(hours=9))
+                )
+                display = (
+                    f"{kst.year}년 {kst.month}월 {kst.day}일 "
+                    f"{'오전' if kst.hour < 12 else '오후'} {kst.hour % 12 or 12}:{kst.minute:02d} (KST)"
+                )
+                message = f"승인 대기 중인 계정입니다. 최초 승인 대기는 가입일부터 90일이며 {display}에 만료됩니다. 관리자 승인 후 로그인해 주세요."
+            fail(
+                db,
+                item,
+                transition,
+                AuthError("ACCOUNT_NOT_APPROVED", 403, message=message),
+            )
         if member["must_change_password"] and not temporary_valid(member, timestamp):
             fail(db, item, transition, AuthError("TEMP_PASSWORD_EXPIRED", 403))
         return issue_member_session(db, request, item, session, transition, member)

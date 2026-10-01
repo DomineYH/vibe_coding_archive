@@ -584,7 +584,6 @@ def reset(flow_id: str, request: Request, body: ResetFlow, db=Db):
     return response(db, request, {"restart_eligible": True})
 
 
-@router.post("/register")
 @router.post("/reauth")
 def member_execution(db=Db):
     raise AuthError("FEATURE_UNAVAILABLE", 503)

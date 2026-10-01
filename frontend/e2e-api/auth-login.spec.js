@@ -130,7 +130,9 @@ test("pending, revoked and wrong credentials are told apart on the product scree
   await login(page, "pending-user");
   await expect(page.getByText("승인 대기 중인 계정입니다.")).toBeVisible();
   await login(page, "revoked-user");
-  await expect(page.getByText("승인 대기 중인 계정입니다.")).toBeVisible();
+  await expect(
+    page.getByText("이전에 받은 승인이 해제된 계정입니다."),
+  ).toBeVisible();
   await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
   // The failed attempts left a usable anonymous session: a correct login still works.
   await login(page, "member-a");

@@ -47,7 +47,9 @@ async function run() {
     .filter((arg) => arg !== "--auth-unavailable");
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
-    arguments_.some((arg) => /auth-(prepare|login|password)/.test(arg));
+    arguments_.some((arg) =>
+      /auth-(prepare|login|password|register)/.test(arg),
+    );
   const env = {
     ...process.env,
     APP_ENV: "test",
@@ -127,17 +129,18 @@ raise SystemExit(status)`,
                 "e2e-api/auth-prepare.spec.js",
                 "e2e-api/auth-login.spec.js",
                 "e2e-api/auth-password.spec.js",
+                "e2e-api/auth-register.spec.js",
               ],
               prepared: true,
             },
           ];
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
-    const capture = "change-only card and field errors";
+    const capture = "change-only card and field errors|registration cards";
     const separated = runs.flatMap((run) => {
       if (
         !run.prepared ||
-        !run.arguments_.some((arg) => /auth-password/.test(arg))
+        !run.arguments_.some((arg) => /auth-(password|register)/.test(arg))
       )
         return [run];
       // Preserve explicitly selected cases; they run with the ordinary moving clock.
@@ -149,7 +152,13 @@ raise SystemExit(status)`,
       return [
         functional,
         {
-          arguments_: ["e2e-api/auth-password.spec.js", "--grep", capture],
+          arguments_: [
+            ...run.arguments_.filter((arg) =>
+              /auth-(password|register)/.test(arg),
+            ),
+            "--grep",
+            capture,
+          ],
           prepared: true,
           capture: true,
         },

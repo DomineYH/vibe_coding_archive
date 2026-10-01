@@ -1,0 +1,257 @@
+# #118 / T04 가입·최초 승인 대기·만료 정리 검수 원장
+
+범위: #113 T04 / US-03~13, US-51~55 중 가입·최초 대기. 선행 T01~T03
+(PR #122/#123/#124)의 실제 흐름·쿠키·CSRF·Argon2 게이트·차단 목록·로그인
+최종 대조·CLI를 재사용한다. 새 repository/mock 계층이나 승인 실행 API는 없다.
+
+## seam과 영향 평가
+
+자동 승인 seam: 제품 화면→authService/공통 mapper→실제 uvicorn HTTP→시험 소유
+임시 파일 SQLite/브라우저 쿠키. 보완 seam은 ASGI HTTP→파일 SQLite와 실제 유지관리
+CLI→운영 DB/독립 재삭제 원장이다. backend 해싱 지연·write lock 경합은 ASGI/DB
+보완 증거이며 실제 브라우저 Set-Cookie 경합으로 계산하지 않는다.
+
+회원/공유 API/새 migration·유지관리와 공통 오류 mapper를 변경하므로 공개 읽기·seed·
+기존 mock 인증/관리자와 전체 backend, frontend 단위, 실제 API 전체, 관련 mock
+E2E/visual 및 build/dist/reference를 최종 검증한다. 일반 실행 auth_register는 off,
+기존 APP_ENV=test prepared factory에서만 on이며 관리자 승인은 계속 off다.
+0004는 T03가 이미 적용했으므로 원래 계획 이름의 책임을 0005_member_approval에
+추가했다. 적용한 migration은 수정하지 않는다. 회원 ID/앱 소유권/가입일/승인 이력은 유지한다.
+
+## 요구·사례·기대 결과
+
+| 요구 | 실행 증거 | 판정 |
+| --- | --- | --- |
+| R7 trim/NFC/code point/별명 중복·원 입력 control/bidi 거절 | test_auth_register.py: Hangul 조합/NFC emoji 별명, 동일 정규화 키 중복, 제어/bidi/비가시·길이 경계, 중복 별명 | 합격 |
+| 새 암호 15~128·공백/대소문자·고정 목록 | 실제 R15 목록을 외부 다운로드 없이 명시적 사본으로 검증; 가입 후 정확한 원 비밀번호/불일치 로그인, 전체 문자열 차단 | 합격 |
+| 선택 수집·확인/권한 입력 거절·부분 회원 없음 | HTTP 비허용 role/approved/password_confirm·선택 nonempty 거절; null/빈 값 수락. API 브라우저 확인 불일치 요청 0, 실제 본문 확인 | 합격 |
+| 동시 같은 키 한 건·S 유지·회원 S 없음 | HTTP 동시 201/409 LOGIN_ID_TAKEN·정확히 1 회원·미종결 전환 없음, 브라우저 실제 쿠키 전후 일치와 SQLite 회원 세션 0 | 합격 |
+| full 가입 거절·본문/해싱 제한·최종 현재 S | ALREADY_AUTHENTICATED, 413 PAYLOAD_TOO_LARGE, 503 AUTH_BUSY/Retry-After 1, 해싱 중 S 폐기 후 401 AUTH_REQUIRED/회원 없음 | 합격 |
+| rolling 100/시간 | BEGIN IMMEDIATE에서 요청 슬롯 먼저 예약; 99건 뒤 동시 요청 정확히 422/429와 코드, 차단 후 100 유지·Origin/CSRF 실패 미집계·창 경계 | 합격 |
+| 정확한 비밀번호만 최초 대기·해제 경위·90일 기한 | HTTP/브라우저 wrong/missing INVALID_CREDENTIALS, correct ACCOUNT_NOT_APPROVED. 최초 대기 날짜/90일 안내, 해제 안내에 최초 만료 없음; 만료 도달 후 정리 전 로그인도 INVALID_CREDENTIALS/failed 기록 | 합격 |
+| 최초 90일 정리·원 가입일 유지·양방향 승인 경합 | 실제 CLI/파일 DB: 정확한 90일과 1µs 전, 승인 선확정 보존/삭제 선확정 늦은 approval UPDATE 0, 과거 승인 해제 보존 | 합격 |
+| R9 내구성·백업 재삭제 | 독립 FULL commit 원장 실패 시 삭제 없음/readiness 503, 운영 삭제 rollback 뒤 intent 재적용, 운영 DB만 백업 복원 뒤 같은 ID 재삭제, 원장 없으면 restore CLI 거절, 앱 ID만 기록 | 합격 |
+| 응답 미수령·중복 클릭 | 서버 실제 POST→201 commit 뒤 browser abort. pending DB/회원 세션 0·원 익명 쿠키 유지, 요청 1건, 안내 후 동일 자격증명 로그인 대기 관찰 | 합격 |
+| 다섯 viewport·키보드/오류 연결·원본 구분 | 실제 API signup/수집 오류/pending 15 PNG; tab 순서·필수/선택 접근 이름·aria-invalid/describedby·첫 오류 focus. 원본 전체 비교와 product_only 구분 | 합격 |
+
+독립 원장의 FULL commit은 삭제 intent 기록이며 삭제 성공/권한 확정점이 아니다.
+실제 삭제와 매 replay의 최종 운영 write lock 안에서 최초 승인 이력·pending·가입 기한을
+재확인한다(R9 Q16/Q38, R24 §8). 운영 반영 실패 뒤 승인 선확정이면 삭제를 취소하고
+회원·앱·세션·흐름·작업키를 보존한다. 원장에 종류·ID·취소 시각·안전한 사유만 남기며
+취소 당시 운영 삭제 mirror에는 성공을 기록하지 않는다. 취소 감사 이력은 보존하되
+해당 활성 intent만 제거한다. 매 sweep은 현재 자격을 다시 평가해, 복원·시계 역행 후
+다시 최초 대기 만료이면 새 intent로 삭제한다. 완료된 삭제 기록은 유지한다(R9 Q16/Q40).
+서비스 유지관리 실패는 readiness를 거부하지만 별도 CLI 실패는 실행 중 서비스의
+ready 값을 자동 변경하지 않으므로 최종 상태 재확인이 필수다.
+운영 DB와 함께 원장까지 되돌리는 복원은 허용하지 않는다. 원장 정리는 전체 사본 목록과
+만료 증거 +7일이 필요하다. 운영 증거가 없으므로 삭제 시각만으로 원장을 지우지 않는다.
+
+## 최초 실패→수정→재검증
+
+- 준비한 목록 경로를 빠뜨린 첫 실행은 fixture 설정에서 실패했다. 기존 검증된 R15 사본을
+  명시적으로 지정한 다음 미구현 register 503 red를 확인하고 S 유지 가입을 green으로 구현했다.
+- 입력 계약 16건 red→정규화/차단/임의 필드·선택 수집 거절 및 카운트 green.
+- sweep-pending CLI 미구현 red→원장/최종 원자 재검사/재삭제 green.
+- API 어댑터 미구현 red→현재 익명 S 헤더/기존 mapper green.
+- 실제 브라우저 중복 아이디가 unknown 안내로 표시됐다. 공통 전송 계층의 LOGIN_ID_TAKEN
+  누락을 단위 red로 확인하고 공통 오류 계약에 추가해 필드/409 rejected green.
+- 최초 대기 날짜·승인 해제 경위 red→정확한 암호 검증 뒤 별도 안내·90일 경계 green.
+- Spec 리뷰가 사전 90일 고지/retryAt 시각/OpenAPI 성공·401 선언 누락을 발견했다.
+  단위에서 고지/시각 red→green, 계약·생성 타입 갱신 뒤 check와 재리뷰를 통과했다.
+- 초기에 E2E 버튼 이름을 잘못 선택했고 pinned가 아닌 Chromium으로 시작했다. 실제 제품의
+  '가입 신청하기' 이름과 Chromium 151.0.7922.34로 교정한 독립 실행만 최종 증거로 계산한다.
+
+## 최초 구현 최종 실행
+
+목록 취득은 시험 실행과 분리했다. 아래 인증 명령에는 명시적으로 준비한
+PASSWORD_BLOCKLIST_PATH를 지정했고 browser 검사에는 Chromium 151.0.7922.34 및
+FONTCONFIG_FILE을 지정했다. 외부 송신은 기존 loopback-only 브라우저 guard와
+backend 네트워크 차단 provisioning 회귀로 확인한다. 로그 전체·원문 DB·암호·쿠키·
+CSRF·연락처나 목록 원문/파생 목록은 첨부·커밋·패키징하지 않는다.
+
+| 위치 / 명령 | 실제 결과 |
+| --- | --- |
+| backend / `APP_ENV=test uv run --frozen pytest` 첫 통합 실행 | 226 passed / 1 failed, 658.33s. 기존 T03-only 시험 capability exact-set 기대를 T04에 맞춰 보정했다. 실패를 숨기지 않으며 아래 마지막 전체 green으로 확인한다 |
+| backend / `APP_ENV=test uv run --frozen pytest` 마지막 전체 실행 | **228 passed / 실패·skip 0**, 293.52s. 기존 Starlette 사용 중단 경고 1개 유지 |
+| backend / `uv run --frozen pytest tests/contracts/test_auth_register.py tests/test_pending_retention.py -q` | 29 passed, 33.62s; 이후 앱 ID 기록 1건과 change_only 종류 1건 추가를 각각 8/8 및 2/2 대상 검증했다. 마지막 전체에 모두 포함 |
+| backend / `uv run --frozen pytest tests/contracts/test_auth_login.py -q -k meta` | 1 passed / 36 deselected, 4.37s; 정확한 허용 집합에 auth_register만 추가, 관리자 capability 차단 유지 |
+| backend / `uv run --frozen ruff check .` · `uv run --frozen ruff format --check .` | 통과, 46 files already formatted |
+| frontend / `npm run check` | 통과. 기존 healthz/readyz OpenAPI 경고 2개만 유지; 생성 타입 일치 |
+| frontend / `npm test` | 최종 **33 files / 832 passed**, 33.74s. 리뷰 전 830 passed 뒤 사전 고지/retryAt red→green을 추가했다 |
+| frontend / `npm test -- tests/auth-view.test.jsx tests/api-auth-register.test.ts` | 리뷰 수정 후 **2 files / 11 passed**, 7.16s |
+| frontend / `npx playwright test e2e/auth.spec.js e2e/auth-recovery.spec.js e2e/admin.spec.js` | **45 passed**, 2.9m; mock 회귀, 실제 인증 증거와 구분 |
+| frontend / 인자 없는 `npm run test:e2e:api` | 일반/auth off **50 passed / 29 조건부 제외**, 3.9m; 준비된 실제 기능 **39 passed**, 3.2m; 별도 고정 시계 화면 **10 passed**, 1.5m. off의 제외 사례는 prepared 단계에서 실행 |
+| frontend / `npm run test:e2e:api -- auth-register.spec.js` | 최종 독립 재현 기능 **3 passed**, 30.1s + 고정 시계 **5 passed**, 26.1s. 아래 read-only 원장 검사 **15/15 PNG 바이트 일치** |
+| frontend / `npm run test:visual -- visual/auth.spec.js visual/admin.spec.js` | **9 passed / 1 timeout**, 6.4m. 390×844 auth가 테스트 전체 60초 제한을 넘었다. 기준 이미지·비교 범위·timeout 변경 없이 아래 같은 case 재실행 |
+| frontend / `npm run test:visual -- visual/auth.spec.js --grep 390x844` | **1 passed**, 40.3s. 전체 대상 10개 각각 통과; 첫 timeout 기록 유지 |
+| frontend / `npm run build` · `npm run check:dist` · `npm run check:reference` | 최종 통과. API dist 96 files/mock·reference·source map 비포함, 보존본 11개 SHA-256/바이트 일치. 기존 큰 chunk 안내 유지 |
+| frontend / `npm run openapi:generate` | register 401/201 메타데이터 설명·헤더 보정과 생성 타입 반영; check에서 일치 |
+
+기존 API runner가 다시 쓴 Phase 2 관찰 PNG는 경로별로 원래 추적 내용에
+복원했다. 이 PR은 해당 파일·source reference·baseline을 수정하지 않는다.
+
+## 독립 재현과 시각 경계
+
+signup 정상은 보존본 09-signup과 전체 PNG 치수/픽셀을 비교한다. 기존 UI-D01의 추가
+필드/길이 힌트·UI-D04의 데모 표시 제거 때문에 source와 픽셀 일치로 세지 않는다.
+수집 비활성 오류와 최초 pending 성공 카드는 대응 원본 frame이 없어 product_only다.
+[캡처 목록과 source 비교](captures.json)에서 세 상태와 두 검증 분류를 구분한다. reference/baseline/
+mask/tolerance는 변경하지 않는다. Chromium 151.0.7922.34/sRGB/partial-raster off,
+DPR1/ko-KR/Asia-Seoul/Pretendard, 서버와 브라우저 2026-10-01T00:00:00Z,
+animation off를 고정한다. 독립 DB/서버/browser 두 번 실행의 15 PNG 바이트를 확인한다.
+
+```sh
+cd frontend
+export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+export PLAYWRIGHT_CHROMIUM_EXECUTABLE=/absolute/path/chrome-headless-shell-linux64/chrome-headless-shell
+export FONTCONFIG_FILE="$PWD/visual/fontconfig.conf"
+npm run test:e2e:api -- auth-register.spec.js
+node scripts/check-registration-evidence.mjs
+```
+
+`--grep` 없는 runner가 기능 검사 뒤 별도 고정 시계 서버에서 캡처한다. 두 번째 명령은
+실제 test-results/api의 15 PNG를 커밋된 visual 파일과 직접 바이트 비교하며 불일치면 실패한다.
+현재 UI 소스·시각 baseline·증거를 변경하지 않는 read-only 재현 명령이다.
+
+## 미실행·제외
+
+T05 관리자 승인 API/화면·가입→승인 완주, T06 비공개 보호 요청, T07 전체 지연 쿠키·
+실기기/호스트/proxy/운영 백업 사본 만료·원장 정리·사람 시각/보조기술 수락은 본 티켓
+합격으로 계산하지 않는다. U01 실제 지원 주소·운영 준비·실기기와 U02 목록 재배포 권리는
+T07 공개 gate다. support null을 유지하며 주소/수락을 발명하지 않는다.
+
+
+## Standards
+
+독립 1차: 문서화된 규칙 위반 0건. 후보/앱 조회의 같은 최초 대기 조건은 possible
+Duplicated Code 판단 사항 1건이지만 동일 write lock의 각 대상 조회에 필요하며,
+단일 사용 추상화를 추가할 근거가 없으므로 수정 요청으로 세지 않았다.
+추가 code/contract/test 재리뷰도 위반 0건. 지적된 기존 Phase 2 PNG 재생성분은 복원했다.
+
+## Spec
+
+독립 1차 지적 3건: 가입 전 90일 자동 삭제 고지, 가입 RATE_LIMITED의 서버 retryAt 시각,
+register OpenAPI 201 실제 메타데이터와 401 선언. 모두 반영했다. 최종 재검토는
+**잔여 Spec 지적 0건**이며 독립 원장·최종 S/rolling 경계·T05/T07 제외 구분도 확인했다.
+최종 합계: Standards 규칙 위반 0 / Spec 미해결 0. 사람 시각 수락/운영 공개는 포함하지 않는다.
+
+
+## PR #125 독립 리뷰 r1 반영
+
+- major 1: 리뷰어 프로브 그대로 실행 중 서비스 ready=200, CLI intent commit 뒤
+  BEFORE DELETE 실패, 승인 commit, 재실행의 회원·앱·세션/흐름 보존을 검증했다.
+  기존 코드에서 승인 회원 SELECT=None으로 **1 failed**(3.15s) red였다.
+  매 replay의 원자 자격 재확인과 삭제 취소·사유 종결을 적용했다. R9 Q38은
+  intent만으로 성공을 선언하지 않으며 R24 §8은 실제 삭제 트랜잭션의 승인 선확정을
+  우선한다. 취소 기록은 최소 대상 ID/종류/시각/코드만 보관한다.
+- minor 2: UTC 20:00 가입을 KST 다음 날짜로 표시하는 exact message red→green.
+  서버가 가입 완료 카드와 같은 한국어 KST 날짜/시각을 반환하며 ISO 원문은 표시하지 않는다.
+- minor 3: 삭제 작업이 BEGIN IMMEDIATE에 도달한 신호 후 승인 commit을 한다.
+  후보 SELECT의 실제 SQLite transaction 여부도 단언한다. 동시 가입은 두 요청의
+  해싱 완료 barrier 후 최종 commit에 들어간다.
+- minor 4: nonempty email/phone을 API 어댑터에서 로컬 필드 오류로 거절해 CSRF/POST
+  요청 0건을 단언한다. 빈 값도 전송하지 않는다. 직접 HTTP 입력은 서버가 여전히
+  422 VALIDATION_ERROR와 동일 필드 메시지로 거절한다. 원래 시각 캡처와 분리했다.
+- minor 5: 응답 유실 안내 뒤 network idle에서 POST 수를 재확인하고 서버 register
+  제한 이벤트 증가 1건·회원 1건을 단언한다.
+- nit 1: 3601초 사례 주석을 실제 조건에 맞췄다. nit 2: 원장/sidecar의 별도 저장소·
+  백업/복원 분리·권한 검증을 T07 운영 gate로 명시했다. nit 3: 계약 줄바꿈은
+  configured formatter 결과이며 변경하지 않았다. nit 4: 일반 실행 POST의 직접
+  503 FEATURE_UNAVAILABLE/회원 0 회귀를 추가했다. nit 5: 기존 runner 출력 경로
+  변경은 범위 밖이며 검사 후 Phase 2 관찰 파일만 원래 내용으로 복원한다.
+
+### 리뷰 반영 최종 실행
+
+| 위치 / 명령 | 리뷰 반영 최종 결과 |
+| --- | --- |
+| backend / `PASSWORD_BLOCKLIST_PATH=<준비한 R15 사본> APP_ENV=test uv run --frozen pytest` | **230 passed**, 468.73s. 실패·skip 0 / 기존 Starlette 경고 1개 |
+| backend / `uv run --frozen ruff check .`, `uv run --frozen ruff format --check .` | 통과 / 46 files already formatted |
+| frontend / `npm run check`, `npm test` | 통과 / **33 files, 834 passed**, 13.94s. 기존 healthz/readyz 경고 2개 |
+| frontend / `npm run test:e2e:api -- auth-register.spec.js` | 기능 **3 passed**, 17.2s + 고정 시계 화면 **5 passed**, 20.7s |
+| frontend / 인자 없는 `npm run test:e2e:api` | 마지막 전체 **일반 50 passed / 29 조건부 제외**, 2.9m; **prepared 기능 39 passed**, 2.1m; **고정 시계 10 passed**, 42.4s. 제외 29건 모두 prepared에서 실행 |
+| frontend / `node scripts/check-registration-evidence.mjs` + `cmp` | 대상/마지막 전체의 독립 두 실행 모두 **15/15 PNG 바이트 일치**, 출력 JSON도 기존 captures.json과 일치. PNG·기준 이미지 재생성 없음 |
+| frontend / `npm run build`, `npm run check:dist`, `npm run check:reference` | 통과 / API dist 96 files, 보존본 11개 SHA-256·바이트 일치 |
+
+첫 API 전체 실행은 기존 gallery-query의 load-more 클릭 중 요소 교체 timeout으로
+49 passed / 1 failed / 29 조건부 제외였다. 코드·timeout·기준 이미지를 바꾸지 않고
+`npm run test:e2e:api -- gallery-query.spec.js --grep 'searches actual public names'`를
+재검사해 1 passed(16.1s), 인자 없는 마지막 전체 실행을 다시 green으로 확인했다.
+
+
+이번 전체 검사에서 다시 쓴 Phase 2 관찰 PNG 62개를 경로별로 복원했다.
+리뷰어의 63개 관측에 따라 이전 62개 기재를 정정한다. 원본/reference/시각 baseline/
+T04 PNG는 변경하지 않는다.
+
+## Standards (r1 수정 재리뷰)
+
+문서화된 위반 0건, 추가 수정 요청 0건. 취소 원장·경합 관측·해싱 barrier·
+로컬 연락처 거절·문서 정정은 독립 리뷰의 지적에 직접 대응하며 범위 확장이 없다.
+possible Duplicated Code인 짧은 최초 대기 SQL 두 곳은 저장소 단순성·수술적 변경
+지침에 따라 추출을 요구하지 않았다.
+
+## Spec (r1 수정 재리뷰)
+
+잔여 Spec 지적 0건. major 1·minor 4건 모두 반영됐고 기존 백업 재삭제도 유지한다.
+최종 lock 자격 재확인/내구성 있는 취소 사유/회원·앱·권한 보존, KST 안내, 실제
+경합 관측, 연락처 미전송과 직접 HTTP 방어, 유실 후 요청·DB 단언을 확인했다.
+합계: Standards 규칙 위반 0 / Spec 미해결 0. 외부 리뷰어의 재승인·사람 수락·운영
+공개는 이 내부 자동 재리뷰 결과로 대신하지 않는다.
+
+
+## PR #125 독립 리뷰 r2 반영
+
+- minor 1: 리뷰어 프로브의 intent commit 후 CLI 실패→승인 전 백업→승인→취소→
+  운영 DB만 복원→invalidate-restored-auth→sweep 순서를 그대로 실행했다.
+  기존 코드에서는 만료 회원이 남아 **1 failed**, 3.66s였다. 취소 감사와 활성 intent를
+  분리하고 취소 시 해당 활성 행만 제거한다. 현재 만료 자격은 감사 이력과 별도로
+  매 write lock 안에서 평가하며 다시 자격이 되면 새 intent를 기록한다.
+  회원·앱 삭제와 기존 취소 이력 보존을 검증했다. 구형 PK 감사와 취소된 활성 행이
+  함께 남은 실제 r1 형태에서도 과거 intent 시각 재사용을 red(**1 failed**, 4.33s)로
+  확인했다. 운영 완료 mirror 증명 이후 감사 전환과 미완료 취소 intent 제거를 독립
+  원장의 같은 트랜잭션에서 처리하며, 새 sweep 시각을 독립·운영 원장 모두 단언한다.
+  시계 역행의 NOT_INITIAL_PENDING_EXPIRED도 동일 ID·동일 시각으로 두 번 취소한
+  이력을 모두 보존하고 이후 정확한 90일에 새 intent로 삭제한다. r1의 승인 선확정
+  회원·앱·세션/flow 보존 및 실제 삭제·백업 재삭제 회귀도 유지한다.
+  Spec 자체 리뷰에서 완료 삭제→운영 백업 복원→90일 직전 시계 역행에 완료 기록까지
+  취소되는 경계를 발견해 별도 red(**1 failed**, 2.47s)를 먼저 확인했다.
+  독립 completed_deletions의 최소 종류·ID로 실제 운영 commit 완료를 구분한다.
+  완료 기록은 취소하지 않고 복원 시 재적용한다(R9 Q38/Q40). 완료 증명 저장 실패는
+  CLI 실패와 실제 운영 삭제/mirror를 함께 단언하고, 복원 전 sweep 재시도의 mirror 기반
+  완료 증명 복구도 검증했다. 최종 유지관리 대상 **13 passed**, 44.43s.
+- nit 1: 서버 strip 후 NFC 계약은 그대로 둔다. 클라이언트 normalized-empty 판정은
+  Python 공백 집합(Unicode White_Space + U+001C~001F, FEFF 제외)을 사용한다.
+  NFC는 비어 있지 않은 stripped 문자열을 빈 문자열로 바꾸지 않으므로 이 집합 판정이
+  같은 결과를 낸다. U+001C~001F·U+0085의 빈 값 수락/본문 생략과 U+FEFF의
+  요청 없는 필드 오류를 양쪽 필드 단위로 고정했다. 기존 판정에서 **9 failed / 5 passed**
+  red 뒤 **23 passed** 대상 green이다. 현재 Python/Node에서 모든 Unicode codepoint를
+  대조해 공백 29개가 일치했다. 서버 코드·OpenAPI·기준 이미지·화면 PNG는 변경하지 않는다.
+
+### r2 최종 실행
+
+| 위치 / 명령 | r2 최종 결과 |
+| --- | --- |
+| backend / `PASSWORD_BLOCKLIST_PATH=<준비한 R15 사본> uv run pytest` | **234 passed**, 492.81s. 실패·skip 0, 기존 Starlette 경고 1개 |
+| backend / `uv run ruff check .`, `uv run ruff format --check .` | 통과 / 46 files already formatted |
+| frontend / `npm run check`, `npm test` | 통과 / **33 files, 844 passed**, 21.72s. 기존 OpenAPI 경고 2개 |
+| frontend / `npm run test:e2e:api -- auth-register.spec.js` | 기능 **3 passed**, 16.3s + 고정 시계 캡처 **5 passed**, 20.0s |
+| frontend / 인자 없는 `npm run test:e2e:api` | **일반 50 passed / 29 조건부 제외**, 2.9m; **prepared 기능 39 passed**, 2.7m; **고정 시계 10 passed**, 56.9s. 제외 사례는 prepared에서 검사 |
+| frontend / `node scripts/check-registration-evidence.mjs` + `cmp` | **15/15 PNG 바이트 일치**, 출력 JSON도 커밋된 captures.json과 일치. 기준 이미지·PNG 변경 없음 |
+
+전체 runner가 다시 쓴 Phase 2 관찰 PNG 62개는 원본으로 복원해 diff에서 제외했다.
+
+
+전체 API runner가 test-results를 초기화한 동안 증거 검사 한 번은 캡처 부재로 실패했다.
+원장·화면·기준 이미지를 바꾸지 않고 runner 완료 뒤 같은 read-only 검사를 재실행해 통과했다.
+
+### r2 code-review
+
+#### Standards
+
+규칙 위반 0건, 추가 수정 요청 0건. 운영 lock→완료 mirror backfill→독립 원장 전환의
+순서와 감사 보존·미완료 intent 제거의 원자성, 새 시각의 양쪽 DB 단언을 확인했다.
+완료 증명 저장 실패와 복원 전 재시도 설명도 실제 실패 경로와 일치한다.
+
+#### Spec
+
+완료 삭제를 취소하는 복원·시계 역행 경계와 구형 원장의 과거 시각 재사용을 red→green으로
+반영했다. 완료 삭제 복원 probe도 PASS다. 최종 재검토 잔여 0건, 범위 확장 0건.

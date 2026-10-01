@@ -17,6 +17,13 @@ function koreanClock(date) {
   return `${seoul.getUTCHours()}시 ${String(seoul.getUTCMinutes()).padStart(2, "0")}분`;
 }
 
+function rateLimitMessage(error, action) {
+  const retryAt = error.retryAt ? new Date(error.retryAt) : null;
+  return retryAt && !Number.isNaN(retryAt.getTime())
+    ? `${action} 시도가 너무 많아요. ${koreanClock(retryAt)} 이후에 다시 시도해 주세요.`
+    : `${action} 시도가 너무 많아요. 잠시 뒤에 다시 시도해 주세요.`;
+}
+
 function loginFailureMessage(error) {
   if (!(error instanceof ServiceError))
     return "로그인하지 못했어요. 연결을 확인해 주세요.";
@@ -27,12 +34,8 @@ function loginFailureMessage(error) {
     case "ACCOUNT_NOT_APPROVED":
     case "ALREADY_AUTHENTICATED":
       return error.message;
-    case "RATE_LIMITED": {
-      const retryAt = error.retryAt ? new Date(error.retryAt) : null;
-      return retryAt && !Number.isNaN(retryAt.getTime())
-        ? `로그인 시도가 너무 많아요. ${koreanClock(retryAt)} 이후에 다시 시도해 주세요.`
-        : "로그인 시도가 너무 많아요. 잠시 뒤에 다시 시도해 주세요.";
-    }
+    case "RATE_LIMITED":
+      return rateLimitMessage(error, "로그인");
     case "AUTH_STATE_CHANGED":
       return "계정 상태가 바뀌었어요. 다시 로그인해 주세요.";
     case "AUTH_BUSY":
@@ -406,6 +409,18 @@ export function AuthView({
   const submitting = useRef(false);
 
   useEffect(() => {
+    if (mode === "signup" && authStatus === "ready" && !pending) {
+      const ids = {
+        loginId: "login-id",
+        password: "login-password",
+        passwordConfirm: "password-confirm",
+        nickname: "nickname",
+        email: "email",
+        phone: "phone",
+      };
+      const first = Object.keys(ids).find((key) => fieldErrors[key]);
+      if (first) document.getElementById(ids[first])?.focus();
+    }
     if (mode === "password-change" && authStatus === "ready") {
       const id = fieldErrors.password
         ? "new-password"
@@ -414,7 +429,7 @@ export function AuthView({
           : null;
       if (id) document.getElementById(id)?.focus();
     }
-  }, [fieldErrors, mode, authStatus]);
+  }, [fieldErrors, mode, authStatus, pending]);
 
   async function submitPasswordChange(event) {
     event.preventDefault();
@@ -702,7 +717,11 @@ export function AuthView({
             : error instanceof ServiceError &&
                 error.code === "ALREADY_AUTHENTICATED"
               ? error.message
-              : "가입 신청을 보내지 못했어요. 입력을 보존했으니 연결을 확인하고 다시 시도해 주세요.",
+              : error instanceof ServiceError && error.code === "RATE_LIMITED"
+                ? rateLimitMessage(error, "가입")
+                : error instanceof ServiceError && error.outcome === "unknown"
+                  ? "가입 결과를 확인할 수 없어요. 같은 아이디와 비밀번호로 로그인해 승인 대기 여부를 확인해 주세요."
+                  : "가입 신청을 보내지 못했어요. 입력을 보존했으니 연결을 확인하고 다시 시도해 주세요.",
         );
       } finally {
         submitting.current = false;
@@ -1011,7 +1030,9 @@ export function AuthView({
         </Btn>
         {mode === "signup" ? (
           <p className="text-center text-[11.5px] leading-relaxed text-neutral-400">
-            가입 즉시 로그인되지 않으며, 관리자 승인 후 이용할 수 있습니다.
+            가입 즉시 로그인되지 않으며, 관리자 승인 후 이용할 수 있습니다. 최초
+            승인 없이 가입일부터 90일이 지나면 신청이 자동 삭제됩니다. 만료
+            날짜는 가입 신청 후 안내합니다.
           </p>
         ) : null}
       </form>
