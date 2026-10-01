@@ -372,6 +372,16 @@ export const authService: AuthService = {
     return mapSelf(value.body);
   },
   async register(input) {
+    const fields: Record<string, string> = {};
+    for (const key of ["email", "phone"] as const) {
+      if (input[key]?.normalize("NFC").trim())
+        fields[key] = "현재 선택 정보는 수집하지 않습니다. 비워 주세요.";
+    }
+    if (Object.keys(fields).length)
+      throw new ServiceError("VALIDATION_ERROR", "입력을 확인해 주세요.", {
+        outcome: "rejected",
+        fields,
+      });
     const csrf = await authService.getCsrf();
     if (!csrf.authContext) throw contractError();
     const value = await write(
@@ -380,8 +390,6 @@ export const authService: AuthService = {
         login_id: input.loginId,
         password: input.password,
         nickname: input.nickname,
-        ...(input.email !== undefined ? { email: input.email } : {}),
-        ...(input.phone !== undefined ? { phone: input.phone } : {}),
       },
       csrf.csrfToken,
       {

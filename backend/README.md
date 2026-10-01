@@ -145,10 +145,19 @@ uv run --frozen python -m app.cli sweep-pending
 최초 대기 삭제 대상이 아니다. 기한 도달 후 정리 전 로그인도 INVALID_CREDENTIALS다.
 
 재삭제 원장은 운영 DB와 분리된 `<DATABASE_PATH stem>.deletions.sqlite3`(0600)다.
-운영 DB write lock을 잡은 동안 독립 SQLite FULL commit으로 회원/앱 식별자와 삭제 시각만
-먼저 확정한다. 이것이 삭제 권한의 확정점이다. 운영 DB 반영 실패 시 readiness는 거절되며
-다음 유지관리에서 원장의 확정된 삭제를 재적용한다. 뒤늦은 승인이 삭제를 취소하지 않는다.
-원장 저장 실패는 운영 DB 삭제 전에 실패한다. 연락처·원문·비밀번호·토큰은 기록하지 않는다.
+운영 DB write lock을 잡은 동안 독립 SQLite FULL commit으로 회원/앱 식별자와 intent
+시각을 먼저 기록한다. intent만으로 삭제 성공이나 삭제 권한 확정을 선언하지 않는다
+(R9 Q38, R24 §8). 매 replay도 같은 최종 lock 안에서 현재 최초 승인 이력·pending·
+가입 기한·일반 회원 자격을 재확인한다. 승인 선확정 등으로 자격을 잃었으면 회원·앱·
+세션/흐름/작업키를 건드리지 않고 원장 deletion_cancellations에 종류·ID·취소 시각·
+안전한 사유 코드(APPROVAL_COMMITTED 등)만 기록한다. 취소된 intent는 재실행하지 않고
+운영 member_deletions/app_deletions에도 삭제 성공으로 기록하지 않는다. 앱은 현재
+소유자가 같은 삭제 자격을 갖추거나 이미 없는 경우만 삭제한다.
+
+서비스와 운영자 CLI가 동시에 실행될 수 있다. 운영 DB 반영 실패 시 서비스 유지관리는
+readiness를 거절하지만 별도 CLI 실패가 실행 중 서비스의 readiness를 자동 변경하지는
+않는다. 따라서 이후 승인 commit을 포함한 현재 상태 재확인이 필수다. 원장 기록/취소
+기록 실패는 운영 삭제 전에 실패한다. 연락처·원문·비밀번호·토큰은 기록하지 않는다.
 
 백업 복원은 운영 DB만 복원하고 **현재 독립 원장을 복원하거나 덮어쓰지 않는다**.
 서비스를 중지한 상태에서 기존 `invalidate-restored-auth` 명령을 실행한다. 현재 원장이
@@ -156,3 +165,8 @@ uv run --frozen python -m app.cli sweep-pending
 가입/세션의 원래 시계를 유지한다. 공급자 사본 전체 목록·30일 만료 증거가 확인된 뒤
 7일을 계산하는 운영 절차는 T07 공개 gate다. 현재 증거가 없으므로 최소 재삭제 기록은
 자동 제거하지 않는다. 운영 DB와 함께 원장까지 과거로 되돌리는 복원은 지원하지 않는다.
+
+T07 운영 공개 전에 원장과 SQLite sidecar를 운영 DB의 디렉터리/볼륨 백업·복원 대상과
+다른 저장소에 배치하고 접근 권한·복원 분리를 검증해야 한다. 기본 sibling 경로만으로
+독립 저장소나 볼륨 snapshot rollback 탐지를 보장하지 않는다. 현재 경로의 원장은
+독립 mount 등 운영 배치로 보존하며 해당 운영 검수를 로컬 green으로 대체하지 않는다.

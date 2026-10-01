@@ -72,15 +72,27 @@ test.describe("real pending registration", () => {
     await page
       .getByLabel("비밀번호 확인 (필수)", { exact: true })
       .fill(PASSWORD);
+    await page.locator("#email").fill("synthetic@example.test");
+    await page.locator("#phone").fill("synthetic phone");
+    await submit(page);
+    await expect(page.locator("#email-error")).toHaveText(
+      "현재 선택 정보는 수집하지 않습니다. 비워 주세요.",
+    );
+    await expect(page.locator("#phone-error")).toHaveText(
+      "현재 선택 정보는 수집하지 않습니다. 비워 주세요.",
+    );
+    await expect(page.locator("#email")).toBeFocused();
+    expect(writes).toBe(0);
+    await page.locator("#email").fill("");
+    await page.locator("#phone").fill("");
     const cookies = await context.cookies();
     const sent = page.waitForRequest("**/api/v1/auth/register");
     await submit(page);
-    expect((await sent).postDataJSON()).toEqual({
+    const registration = await sent;
+    expect(registration.postDataJSON()).toEqual({
       login_id: "register-member",
       password: PASSWORD,
       nickname: "같은 별명",
-      email: "",
-      phone: "",
     });
     await expect(
       page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
@@ -91,6 +103,32 @@ test.describe("real pending registration", () => {
       page.getByText(/운영 문의 주소는 현재 설정되지/),
     ).toBeVisible();
     expect(await context.cookies()).toEqual(cookies);
+    // A direct HTTP client still receives the defensive server field contract.
+    const headers = await registration.allHeaders();
+    for (const key of ["host", "content-length", "connection"])
+      delete headers[key];
+    const refused = await page.request.post("/api/v1/auth/register", {
+      headers,
+      data: {
+        ...registration.postDataJSON(),
+        login_id: "register-contact-refused",
+        email: "synthetic@example.test",
+        phone: "synthetic phone",
+      },
+    });
+    expect(refused.status()).toBe(422);
+    expect((await refused.json()).error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      fields: {
+        email: "현재 선택 정보는 수집하지 않습니다. 비워 주세요.",
+        phone: "현재 선택 정보는 수집하지 않습니다. 비워 주세요.",
+      },
+    });
+    expect(
+      query(
+        "SELECT count(*) FROM members WHERE login_id_key='register-contact-refused'",
+      ),
+    ).toEqual([[0]]);
     expect(
       query(
         "SELECT approval_status,is_admin,first_approved_at,email,phone FROM members WHERE login_id_key='register-member'",
@@ -132,6 +170,9 @@ test.describe("real pending registration", () => {
     context,
   }) => {
     await signup(page, "register-lost");
+    const attemptsBefore = query(
+      "SELECT count(*) FROM rate_limit_events WHERE purpose='register'",
+    )[0][0];
     const cookies = await context.cookies();
     const entered = deferred(),
       release = deferred();
@@ -178,6 +219,14 @@ test.describe("real pending registration", () => {
     ).toEqual([[0]]);
     release.resolve();
     await expect(page.getByText(/가입 결과를 확인할 수 없어요/)).toBeVisible();
+    await page.waitForLoadState("networkidle");
+    expect(writes).toBe(1);
+    expect(
+      query("SELECT count(*) FROM rate_limit_events WHERE purpose='register'"),
+    ).toEqual([[attemptsBefore + 1]]);
+    expect(
+      query("SELECT count(*) FROM members WHERE login_id_key='register-lost'"),
+    ).toEqual([[1]]);
     expect(await context.cookies()).toEqual(cookies);
     await page.unroute("**/api/v1/auth/register");
     await login(page, "register-lost");
@@ -191,6 +240,10 @@ test.describe("real pending registration", () => {
       await page.clock.setFixedTime(new Date("2026-10-01T00:00:00Z"));
       await page.setViewportSize(viewport);
       await signup(page, `capture-${viewport.width}`);
+      let writes = 0;
+      page.on("request", (request) => {
+        if (request.url().endsWith("/auth/register")) writes++;
+      });
       await expect(page.getByText(/실제 수집 기능은 비활성화/)).toBeVisible();
       const fields = [
         "#login-id",
@@ -225,6 +278,7 @@ test.describe("real pending registration", () => {
         "aria-invalid",
         "true",
       );
+      expect(writes).toBe(0);
       await page.locator("#email").fill("");
       await prepareViewportCapture(page, viewport);
       await page.screenshot({

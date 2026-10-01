@@ -8,6 +8,23 @@ from tests.auth_client import API, Browser
 PASSWORD = "  가입 비밀번호 보존 AbC 1234  "
 
 
+def test_ordinary_runtime_rejects_registration_without_creating_a_member(
+    make_test_app, tmp_path
+):
+    path = tmp_path / "ordinary.sqlite3"
+    app = make_test_app(path, auth_testing=False)
+    with TestClient(app) as client:
+        result = client.post(
+            f"{API}/register",
+            json={"login_id": "teacher", "nickname": "교사", "password": PASSWORD},
+            headers={"Origin": "http://localhost:5174"},
+        )
+    assert result.status_code == 503
+    assert result.json()["error"]["code"] == "FEATURE_UNAVAILABLE"
+    with sqlite3.connect(path) as db:
+        assert db.execute("SELECT count(*) FROM members").fetchone() == (0,)
+
+
 def register(browser, **values):
     return browser.client.post(
         f"{API}/register",
@@ -134,18 +151,27 @@ def test_normalized_ids_are_unique_but_unicode_nicknames_are_not(member_app):
 
 
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event
+from threading import Barrier, Event
 
 from app.auth_boundary import after, digest, now
 from app.auth_login import HASHER, HashGate
 from tests.auth_client import signed_in
 
 
-def test_concurrent_normalized_registration_is_one_member(member_app):
+def test_concurrent_normalized_registration_is_one_member(member_app, monkeypatch):
     app, path = member_app()
+    hashed = Barrier(2)
+    real_hash = HASHER.hash
+
+    def concurrent_hash(password):
+        value = real_hash(password)
+        hashed.wait(timeout=5)  # Both requests finish hashing before final commit.
+        return value
+
     with TestClient(app) as one, TestClient(app) as two:
         a = Browser(one).prepare().anonymous()
         b = Browser(two).prepare().anonymous()
+        monkeypatch.setattr(HASHER, "hash", concurrent_hash)
         with ThreadPoolExecutor(2) as pool:
             futures = [
                 pool.submit(register, a),
@@ -253,7 +279,7 @@ def test_rolling_registration_limit_serializes_last_slot_and_excludes_unproven_c
                 ).fetchone()[0]
                 == 100
             )
-            # An event exactly one hour old no longer occupies a rolling slot.
+            # An event older than one hour no longer occupies a rolling slot.
             db.execute(
                 "UPDATE rate_limit_events SET occurred_at=?,expires_at=? WHERE purpose='register'",
                 (after(now(), -3601), after(now(), -1)),
@@ -316,12 +342,20 @@ def test_login_distinguishes_initial_deadline_revocation_and_expired_deleted_mem
             return fixed
 
     monkeypatch.setattr(auth_boundary, "datetime", Clock)
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET created_at='2026-10-01T20:00:00.000000Z' WHERE id=?",
+            (AUTH_MEMBERS["pending"][0],),
+        )
     with TestClient(app) as client:
         browser = Browser(client).prepare().anonymous()
         pending = browser.login("pending-user")
         assert pending.status_code == 403
         assert "90일" in pending.json()["error"]["message"]
-        assert "2026-12-27" in pending.json()["error"]["message"]
+        assert pending.json()["error"]["message"] == (
+            "승인 대기 중인 계정입니다. 최초 승인 대기는 가입일부터 90일이며 "
+            "2026년 12월 31일 오전 5:00 (KST)에 만료됩니다. 관리자 승인 후 로그인해 주세요."
+        )
         revoked = browser.login("revoked-user")
         assert revoked.status_code == 403
         assert "승인이 해제" in revoked.json()["error"]["message"]

@@ -51,8 +51,8 @@ it("registers with current anonymous S headers, without sending confirmation or 
     loginId: "teacher",
     password: "synthetic password 1234",
     nickname: "교사",
-    email: "",
-    phone: "",
+    email: "　 \t ",
+    phone: null,
   });
   expect(result).toMatchObject({
     loginId: "teacher",
@@ -64,8 +64,6 @@ it("registers with current anonymous S headers, without sending confirmation or 
     login_id: "teacher",
     password: "synthetic password 1234",
     nickname: "교사",
-    email: "",
-    phone: "",
   });
   expect(Object.fromEntries(writes[0].headers)).toMatchObject({
     "x-csrf-token": "fixture-csrf",
@@ -75,6 +73,27 @@ it("registers with current anonymous S headers, without sending confirmation or 
   });
   expect(writes[0].headers.has("X-EduVibe-Transition-Id")).toBe(false);
 });
+
+it.each(["email", "phone"] as const)(
+  "rejects nonempty disabled %s locally with the server field contract and no network request",
+  async (field) => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      authService.register({
+        loginId: "teacher",
+        password: "synthetic password 1234",
+        nickname: "교사",
+        [field]: " synthetic private value ",
+      }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      outcome: "rejected",
+      fields: { [field]: "현재 선택 정보는 수집하지 않습니다. 비워 주세요." },
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  },
+);
 
 it("keeps duplicate login ID errors distinct from an uncertain transport outcome", async () => {
   localStorage.setItem(

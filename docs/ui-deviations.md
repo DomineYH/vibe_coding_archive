@@ -377,7 +377,7 @@ a lost reply asks the user to check the same credentials through login.
 
 | Difference | Product behavior | Reason and evidence |
 | --- | --- | --- |
-| Signup fields and disabled collection | Existing required/optional labels, separate nickname and browser-only confirmation; nonempty contact input is rejected. | UI-D01/UI-D08 and #118; [T04 ledger](evidence/phase-3/issue118/2026-10-02/README.md). |
+| Signup fields and disabled collection | Existing required/optional labels, separate nickname and browser-only confirmation; nonempty contact input is rejected locally without a network request; empty contact fields are omitted. Direct HTTP requests retain the server field-error contract. | UI-D01/UI-D08 and #118; [T04 ledger](evidence/phase-3/issue118/2026-10-02/README.md). |
 | Initial pending deadline and revocation | Existing pending card announces 90-day automatic deletion before submission and shows the server's actual deadline after submission, no automatic login and support-not-configured notice. Correct-credential login distinguishes initial pending from prior approval revocation. | R9 Q16/Q35; the same ledger separates source signup observations from product-only pending/error evidence. |
 | Uncertain registration response | Existing inline error block preserves input and asks for a login check; no automatic resubmission or member cookie. | Actual server commit/DB/cookie loss test, UI-D03; same ledger. |
 

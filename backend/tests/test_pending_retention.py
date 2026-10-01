@@ -3,9 +3,12 @@ import sqlite3
 import subprocess
 import sys
 from datetime import UTC, datetime, timedelta
+from threading import Event
 
 from fastapi.testclient import TestClient
+from sqlalchemy import event
 
+from app.pending_retention import sweep_pending
 from tests.auth_client import Browser
 from tests.support import AUTH_MEMBERS
 
@@ -100,16 +103,32 @@ def test_approval_commits_first_while_deletion_waits_for_final_write_lock(member
     with TestClient(app):
         pass  # Prepare the independent ledger before the controlled race.
     id_ = make_expired(path)
-    with sqlite3.connect(path) as approval, ThreadPoolExecutor(1) as pool:
-        approval.execute("BEGIN IMMEDIATE")
-        future = pool.submit(maintenance, path)
-        stamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
-        approval.execute(
-            "UPDATE members SET approval_status='approved',first_approved_at=?,account_version=account_version+1 WHERE id=?",
-            (stamp, id_),
-        )
-        approval.commit()
-        assert future.result().returncode == 0
+    waiting = Event()
+
+    def observe_lock(connection, cursor, statement, parameters, context, many):
+        if statement == "BEGIN IMMEDIATE":
+            waiting.set()
+        if statement.startswith("SELECT id FROM members WHERE approval_status="):
+            # A candidate SELECT outside the write transaction must fail here,
+            # even when scheduling happens to make the resulting race harmless.
+            assert cursor.connection.in_transaction
+
+    event.listen(app.state.engine, "before_cursor_execute", observe_lock)
+    try:
+        with sqlite3.connect(path) as approval, ThreadPoolExecutor(1) as pool:
+            approval.execute("BEGIN IMMEDIATE")
+            future = pool.submit(sweep_pending, app.state.session_factory)
+            assert waiting.wait(5)
+            assert not future.done()  # sweep has reached the occupied DB lock.
+            stamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+            approval.execute(
+                "UPDATE members SET approval_status='approved',first_approved_at=?,account_version=account_version+1 WHERE id=?",
+                (stamp, id_),
+            )
+            approval.commit()
+            future.result()
+    finally:
+        event.remove(app.state.engine, "before_cursor_execute", observe_lock)
     with sqlite3.connect(path) as db:
         assert db.execute(
             "SELECT approval_status,first_approved_at,account_version FROM members WHERE id=?",
@@ -294,3 +313,59 @@ def test_pending_deletion_records_archive_app_ids_without_recording_content(memb
         assert [
             row[1] for row in ledger.execute("PRAGMA table_info(app_deletions)")
         ] == ["app_id", "deleted_at"]
+
+
+def test_failed_cli_intent_is_cancelled_when_approval_commits_before_replay(member_app):
+    app, path = member_app()
+    with TestClient(app) as client:
+        id_ = make_expired(path)
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "INSERT INTO apps(id,owner_id,name,url,prompt,description,subject,is_public,theme_id,version,url_version,created_at,updated_at) VALUES ('approval-app',?,'합성 앱','https://example.test','합성 prompt','합성 description','수학',1,'cloudDancer',1,1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+                (id_,),
+            )
+            db.execute(
+                "CREATE TRIGGER fail_delete BEFORE DELETE ON members BEGIN SELECT RAISE(ABORT,'controlled failure'); END"
+            )
+        # Exact reviewer scenario: operator CLI fails after durable intent;
+        # the independently running service remains ready and accepts approval.
+        assert maintenance(path).returncode != 0
+        assert client.get("/readyz").status_code == 200
+        stamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        with sqlite3.connect(path) as db:
+            assert db.execute("SELECT id FROM apps WHERE id='approval-app'").fetchone()
+            db.execute("DROP TRIGGER fail_delete")
+            db.execute(
+                "UPDATE members SET approval_status='approved',first_approved_at=?,account_version=account_version+1 WHERE id=?",
+                (stamp, id_),
+            )
+        browser = Browser(client).prepare().anonymous()
+        assert browser.login(AUTH_MEMBERS["pending"][1]).status_code == 200
+        assert maintenance(path).returncode == 0
+        assert maintenance(path).returncode == 0
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT approval_status,first_approved_at,account_version FROM members WHERE id=?",
+                (id_,),
+            ).fetchone() == ("approved", stamp, 2)
+            assert db.execute("SELECT id FROM apps WHERE id='approval-app'").fetchone()
+            assert db.execute(
+                "SELECT member_id FROM sessions WHERE member_id=?", (id_,)
+            ).fetchone()
+            assert db.execute(
+                "SELECT revoked_at FROM auth_flows WHERE id=?", (browser.flow,)
+            ).fetchone() == (None,)
+            assert db.execute("SELECT member_id FROM member_deletions").fetchall() == []
+            assert db.execute("SELECT app_id FROM app_deletions").fetchall() == []
+        assert browser.me().status_code == 200
+    with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+        assert ledger.execute(
+            "SELECT kind,target_id,reason FROM deletion_cancellations ORDER BY kind"
+        ).fetchall() == [
+            ("app", "approval-app", "OWNER_NOT_INITIAL_PENDING_EXPIRED"),
+            ("member", id_, "APPROVAL_COMMITTED"),
+        ]
+        assert all(
+            row[0]
+            for row in ledger.execute("SELECT cancelled_at FROM deletion_cancellations")
+        )
