@@ -987,8 +987,44 @@ export function AdminView({ scopeKey, meta, active = true }) {
   const [deleteOperationExpired, setDeleteOperationExpired] = useState(false);
   const alive = useRef(true);
   const detailRequest = useRef(0);
+  const pendingSelection = useRef(selection);
+  pendingSelection.current = selection;
   const resetDetailRequest = useRef(0);
   const deleteDetailRequest = useRef(0);
+  useEffect(() => {
+    const request = ++detailRequest.current;
+    const current = pendingSelection.current;
+    if (!active || !current) return;
+    setSelection({ ...current, loading: true, error: "" });
+    void adminService
+      .getUser(current.id)
+      .then((target) => {
+        if (!alive.current || request !== detailRequest.current) return;
+        const changed =
+          current.target &&
+          target.accountVersion !== current.target.accountVersion;
+        setSelection({
+          ...current,
+          target: changed ? null : target,
+          loading: false,
+          error: changed
+            ? "회원 상태가 바뀌었어요. 현재 상태를 다시 확인해 주세요."
+            : "",
+        });
+      })
+      .catch((error) => {
+        if (!alive.current || request !== detailRequest.current) return;
+        if (["NOT_FOUND", "FORBIDDEN", "AUTH_REQUIRED"].includes(error?.code))
+          setSelection(null);
+        else
+          setSelection({
+            ...current,
+            target: null,
+            loading: false,
+            error: "대상을 확인할 수 없어요. 다시 확인해 주세요.",
+          });
+      });
+  }, [active, scopeKey]);
   const usersKey = [__DATA_MODE__, "admin", "users", scopeKey];
   const query = useInfiniteQuery({
     queryKey: usersKey,

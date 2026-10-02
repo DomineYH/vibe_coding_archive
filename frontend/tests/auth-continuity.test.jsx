@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -51,17 +52,23 @@ async function recheck(identityChanged = false) {
   localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
   await act(async () => window.dispatchEvent(new Event("focus")));
 }
-it("restores a concealed draft after revision-only proof and discards it after identity history changes", async () => {
-  await visit("/apps/new", 1);
-  const field = await screen.findByLabelText("어플리케이션 이름");
-  fireEvent.change(field, { target: { value: "T06 같은 탭 초안" } });
-  await recheck();
-  expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
-    "T06 같은 탭 초안",
-  );
-  await recheck(true);
-  expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue("");
-});
+it.each(["/apps/new", "/apps/00000000-0000-4000-8000-000000000091/edit"])(
+  "restores a concealed draft after revision-only proof and discards identity history changes at %s",
+  async (path) => {
+    await visit(path, 1);
+    const field = await screen.findByLabelText("어플리케이션 이름");
+    const initial = field.value;
+    fireEvent.change(field, { target: { value: "T06 같은 탭 초안" } });
+    await recheck();
+    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
+      "T06 같은 탭 초안",
+    );
+    await recheck(true);
+    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
+      initial,
+    );
+  },
+);
 it("preserves pending approval confirmation across ordinary verification without submitting it", async () => {
   await visit("/admin", 0);
   const pending = await screen.findAllByRole("button", {
@@ -83,4 +90,80 @@ it("preserves pending approval confirmation across ordinary verification without
   expect(
     screen.queryByRole("region", { name: /회원 승인 확인/ }),
   ).not.toBeInTheDocument();
+});
+
+it.each([false, true])(
+  "discards draft across A logout A and A B A round trips (other=%s)",
+  async (other) => {
+    await visit("/apps/new", 1);
+    fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+      target: { value: "T06 폐기할 초안" },
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event("blur"));
+      await authService.logout();
+      if (other) {
+        await authService.login({
+          loginId: DEMO_ACCOUNTS[0].loginId,
+          password: DEMO_ACCOUNTS[0].password,
+        });
+        await authService.logout();
+      }
+      await authService.login({
+        loginId: DEMO_ACCOUNTS[1].loginId,
+        password: DEMO_ACCOUNTS[1].password,
+      });
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue("");
+  },
+);
+
+it("discards an edit draft after fresh target authority is lost, even if ownership later returns", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  await visit(`/apps/${id}/edit`, 1);
+  const field = await screen.findByLabelText("어플리케이션 이름");
+  const original = field.value;
+  fireEvent.change(field, { target: { value: "T06 소유권을 잃은 초안" } });
+  function transfer(index) {
+    const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+    const app = state.private_apps.find((item) => item.id === id);
+    app.owner = {
+      id: DEMO_ACCOUNTS[index].id,
+      nickname: DEMO_ACCOUNTS[index].nickname,
+    };
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  }
+  transfer(0);
+  await recheck();
+  expect(await screen.findByText("앱을 수정할 수 없어요")).toBeInTheDocument();
+  transfer(1);
+  await recheck();
+  expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
+    original,
+  );
+});
+
+it("revalidates pending admin target authority before restoring its confirmation", async () => {
+  await visit("/admin", 0);
+  fireEvent.click(
+    (
+      await screen.findAllByRole("button", { name: "승인하기", exact: true })
+    )[0],
+  );
+  expect(
+    await screen.findByRole("region", { name: /회원 승인 확인/ }),
+  ).toBeInTheDocument();
+  const { adminService } = await import("../src/services/mock/admin");
+  const { ServiceError } = await import("../src/services/service-error");
+  const freshTarget = vi
+    .spyOn(adminService, "getUser")
+    .mockRejectedValue(new ServiceError("NOT_FOUND", "회원을 찾을 수 없어요."));
+  await recheck();
+  await waitFor(() => expect(freshTarget).toHaveBeenCalled());
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("region", { name: /회원 승인 확인/ }),
+    ).not.toBeInTheDocument(),
+  );
 });

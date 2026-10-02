@@ -962,6 +962,19 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
   const lastApp = useRef(null);
   if (detail.data) lastApp.current = detail.data;
   if (canEdit) ownerScope.current = continuity;
+  if (
+    readyMember &&
+    ([
+      "NOT_FOUND",
+      "FORBIDDEN",
+      "AUTH_REQUIRED",
+      "PASSWORD_CHANGE_REQUIRED",
+    ].includes(detail.error?.code) ||
+      (detail.data && !ownsApp && !adminCanManage))
+  ) {
+    ownerScope.current = null;
+    lastApp.current = null;
+  }
   const formApp =
     detail.data ?? (lastApp.current?.id === id ? lastApp.current : null);
   useEffect(() => {

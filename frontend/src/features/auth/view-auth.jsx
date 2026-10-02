@@ -33,6 +33,9 @@ function loginFailureMessage(error) {
     case "TEMP_PASSWORD_EXPIRED":
     case "ACCOUNT_NOT_APPROVED":
     case "ALREADY_AUTHENTICATED":
+    case "FORBIDDEN":
+    case "NOT_FOUND":
+    case "FEATURE_UNAVAILABLE":
       return error.message;
     case "RATE_LIMITED":
       return rateLimitMessage(error, "로그인");

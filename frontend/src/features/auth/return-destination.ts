@@ -38,9 +38,25 @@ export async function recheckReturnDestination(
         "아카이브를 현재 사용할 수 없어요.",
       );
     if (destination.startsWith("/apps/")) {
-      const app = await apps.get(destination.slice(6), {
-        readContext: context,
-      });
+      const id = destination.slice(6);
+      let app;
+      try {
+        app = await apps.get(id);
+      } catch (error) {
+        if (
+          !(error instanceof ServiceError) ||
+          error.code !== "NOT_FOUND" ||
+          !context
+        )
+          throw error;
+      }
+      if (app?.isPublic) return destination;
+      if (!context)
+        throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
+          httpStatus: 404,
+        });
+      app = await apps.get(id, { readContext: context });
+      assertAuthObservation(context);
       if (!app.isPublic) {
         if (context) assertAuthObservation(context);
         if (

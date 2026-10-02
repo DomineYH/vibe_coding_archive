@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { recheckReturnDestination } from "../src/features/auth/return-destination";
 import { appsService } from "../src/services/api/apps";
 import type { CurrentAuthState } from "../src/services/auth-service";
+import publicApps from "../src/fixtures/public-apps.json";
 import catalog from "../../contracts/catalog.json";
 
 const current: CurrentAuthState = {
@@ -95,6 +96,28 @@ describe("return destination current availability and authority", () => {
     ).resolves.toBe("/?subject=%EC%88%98%ED%95%99");
     expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
   });
+  it("permits an independently public detail even when the member observation becomes stale", async () => {
+    const fetch = stubMeta();
+    fetch
+      .mockResolvedValueOnce(new Response(JSON.stringify(meta())))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            item: publicApps[0],
+            server_time: "2026-10-02T00:00:00Z",
+          }),
+        ),
+      );
+    await expect(
+      recheckReturnDestination(
+        `/apps/${publicApps[0].id}`,
+        current,
+        appsService,
+        () => false,
+      ),
+    ).resolves.toBe(`/apps/${publicApps[0].id}`);
+    expect(fetch.mock.calls[1][1].headers.has("X-EduVibe-Flow-Id")).toBe(false);
+  });
   it("rejects admin for a full ordinary member before navigation", async () => {
     stubMeta();
     await expect(
@@ -117,20 +140,23 @@ describe("return destination current availability and authority", () => {
   });
   it("does not swallow failed detail authorization", async () => {
     const fetch = stubMeta();
-    fetch
-      .mockResolvedValueOnce(new Response(JSON.stringify(meta())))
-      .mockResolvedValueOnce(
+    fetch.mockImplementation(
+      async (url) =>
         new Response(
-          JSON.stringify({
-            error: {
-              code: "NOT_FOUND",
-              message: "자료 없음",
-              request_id: null,
-            },
-          }),
-          { status: 404 },
+          JSON.stringify(
+            url === "/api/v1/meta"
+              ? meta()
+              : {
+                  error: {
+                    code: "NOT_FOUND",
+                    message: "자료 없음",
+                    request_id: null,
+                  },
+                },
+          ),
+          { status: url === "/api/v1/meta" ? 200 : 404 },
         ),
-      );
+    );
     await expect(
       recheckReturnDestination(
         "/apps/00000000-0000-4000-8000-000000000003",
@@ -139,7 +165,7 @@ describe("return destination current availability and authority", () => {
         () => true,
       ),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
   it("retains strict parsing and rejects stale completion", async () => {
     for (const destination of [
