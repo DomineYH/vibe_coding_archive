@@ -2389,9 +2389,13 @@ export interface operations {
             /** @description Public detail, or private detail authorized for the current approved full owner or full administrator. Headerless requests ignore cookies. Supplied context is all-or-none and canonical; stale or pending context is rejected without replay. Missing and unauthorized detail share 404. Member-bound responses include verified context and are never cached. */
             200: {
                 headers: {
+                    /** @description Present on member-bound responses only. */
                     "Cache-Control"?: "private, no-store";
+                    /** @description Verified flow ID, present on member-bound responses only. */
                     "X-EduVibe-Flow-Id"?: string;
+                    /** @description Verified revision, present on member-bound responses only. */
                     "X-EduVibe-Auth-Revision"?: string;
+                    /** @description Verified generation, present on member-bound responses only. */
                     "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
