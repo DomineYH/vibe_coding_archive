@@ -379,10 +379,22 @@ if (prepared) {
     );
     expect(oldSession).toBeDefined();
     const before = await (await page.request.get("/api/v1/apps")).json();
+    const secondContext = await browser.newContext();
+    await blockExternalRequests(secondContext);
+    const secondPage = await secondContext.newPage();
+    await secondPage.bringToFront();
+    await signedIn(secondPage);
+    await secondPage.goto(`/apps/${A}`);
+    await expect(heading(secondPage)).toBeVisible();
+    const secondProof = await approvalHeaders(secondPage);
+    expect(secondProof["X-EduVibe-Flow-Id"]).not.toBe(
+      oldContext["X-EduVibe-Flow-Id"],
+    );
     const adminContext = await browser.newContext();
     await blockExternalRequests(adminContext);
     const adminPage = await adminContext.newPage();
     try {
+      await adminPage.bringToFront();
       await openAdmin(adminPage);
       const headers = {
         ...(await approvalHeaders(adminPage)),
@@ -418,6 +430,16 @@ if (prepared) {
           },
         );
         expect(response.status()).toBe(200);
+        // Both independently issued browser sessions are rejected immediately
+        // after revoke and remain rejected after reapproval.
+        expect(await read(page, A, true, oldContext)).toMatchObject({
+          status: 404,
+          code: "NOT_FOUND",
+        });
+        expect(await read(secondPage, A, true, secondProof)).toMatchObject({
+          status: 404,
+          code: "NOT_FOUND",
+        });
         await expect
           .poll(
             () =>
@@ -446,6 +468,7 @@ if (prepared) {
       await page.goto(`/apps/${A}`);
       await expect(heading(page)).toBeVisible();
     } finally {
+      await secondContext.close();
       await adminContext.close();
     }
   });

@@ -33,7 +33,9 @@ function requireFreePort(port, host) {
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     receivedSignal = signal;
-    playwright?.kill(signal);
+    // Playwright's runner handles SIGINT with web-server teardown; SIGTERM
+    // would terminate it before its separately grouped servers are stopped.
+    playwright?.kill("SIGINT");
   });
 }
 
@@ -197,7 +199,12 @@ raise SystemExit(status)`,
         arguments_: [...run.arguments_, "--grep-invert", capture],
       };
       return [
-        functional,
+        ...(run.arguments_.some(
+          (arg) =>
+            /\.spec\.js$/.test(arg) && !/auth-recovery-captures/.test(arg),
+        )
+          ? [functional]
+          : []),
         {
           arguments_: [
             ...run.arguments_.filter((arg) =>

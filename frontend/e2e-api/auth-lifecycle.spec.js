@@ -40,6 +40,18 @@ if (prepared)
     // Includes two logins, logout, revoke/reapprove, and anonymous app reads.
     test.setTimeout(60000);
     await blockExternalRequests(context);
+    const publicAuthRequests = [];
+    const observePublic = (request) => {
+      if (request.url().includes("/api/v1/auth/"))
+        publicAuthRequests.push(request.url());
+    };
+    page.on("request", observePublic);
+    await page.goto("/");
+    await expect(
+      page.getByRole("link", { name: /^둘째 공개 앱,/ }),
+    ).toBeVisible();
+    expect(publicAuthRequests).toHaveLength(0);
+    page.off("request", observePublic);
     await page.goto("/auth?mode=signup");
     await page
       .getByLabel("로그인 아이디 (필수)", { exact: true })
@@ -64,6 +76,16 @@ if (prepared)
     ).toEqual([["pending", 1, null]]);
     const [[memberId]] = query(
       "SELECT id FROM members WHERE login_id_key='lifecycle-member'",
+    );
+    const privateId = "00000000-0000-4000-8000-000000000130";
+    query(
+      `INSERT INTO apps (id,owner_id,name,url,prompt,description,subject,is_public,theme_id,stack_db,stack_backend,stack_frontend,stack_hosting,version,url_version,created_at,updated_at) SELECT '${privateId}','${memberId}','완주 회원 비공개 자료',url,prompt,description,subject,0,theme_id,stack_db,stack_backend,stack_frontend,stack_hosting,version,url_version,created_at,updated_at FROM apps WHERE id='00000000-0000-4000-8000-000000000030'`,
+    );
+    query(
+      `INSERT INTO app_grades SELECT '${privateId}',grade FROM app_grades WHERE app_id='00000000-0000-4000-8000-000000000030'`,
+    );
+    query(
+      `INSERT INTO health_results(app_id,state) VALUES ('${privateId}','unchecked')`,
     );
     query(`UPDATE apps SET owner_id='${memberId}' WHERE id='${PUBLIC_APP_ID}'`);
     const publicApp = await (
@@ -97,6 +119,34 @@ if (prepared)
       await expect(
         page.getByRole("banner").getByText("완주 교사", { exact: true }),
       ).toBeVisible();
+      await page.goto(`/apps/${privateId}`);
+      await expect(
+        page.getByRole("heading", {
+          name: "완주 회원 비공개 자료",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.reload();
+      await expect(
+        page.getByRole("heading", {
+          name: "완주 회원 비공개 자료",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+      await expect(
+        page.getByRole("heading", {
+          name: "완주 회원 비공개 자료",
+          exact: true,
+        }),
+      ).toHaveCount(0);
+      await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await expect(
+        page.getByRole("heading", {
+          name: "완주 회원 비공개 자료",
+          exact: true,
+        }),
+      ).toBeVisible();
       await page.getByRole("button", { name: "로그아웃", exact: true }).click();
       await expect(
         page.getByRole("button", { name: "로그아웃", exact: true }),
@@ -106,6 +156,10 @@ if (prepared)
           .getByRole("banner")
           .getByRole("button", { name: "로그인", exact: true }),
       ).toBeVisible();
+      await page.goto(`/apps/${privateId}`);
+      await expect(page.getByRole("alert")).toContainText(
+        "아카이브 앱을 찾을 수 없어요",
+      );
       await login(page, "lifecycle-member", PASSWORD);
       await expect(
         page.getByRole("banner").getByText("완주 교사", { exact: true }),
@@ -203,6 +257,9 @@ if (prepared)
         page.getByRole("link", { name: /^둘째 공개 앱,/ }),
       ).toBeVisible();
     } finally {
+      query(`DELETE FROM app_grades WHERE app_id='${privateId}'`);
+      query(`DELETE FROM health_results WHERE app_id='${privateId}'`);
+      query(`DELETE FROM apps WHERE id='${privateId}'`);
       await adminContext.close();
     }
   });

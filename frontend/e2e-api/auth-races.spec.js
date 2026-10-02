@@ -173,6 +173,22 @@ for (const operation of ["login", "password"]) {
           ),
         ).toBe(true);
       } else {
+        // Origin-only no-S logout acknowledges absence; it cannot settle this
+        // committed operation or discard its missing result session.
+        expect(
+          await page.evaluate(
+            async () =>
+              (await fetch("/api/v1/auth/logout", { method: "POST" })).status,
+          ),
+        ).toBe(204);
+        expect((await readFlow(page)).body.session_generation).toBe(
+          state.body.session_generation,
+        );
+        expect(
+          query(
+            `SELECT state FROM auth_transitions WHERE flow_id='${flowId}' AND kind='${operation === "password" ? "password_change" : "login"}' ORDER BY rowid DESC LIMIT 1`,
+          ),
+        ).toEqual([["succeeded"]]);
         await expect(
           page.getByText("인증 결과를 확인할 수 없어요"),
         ).toBeVisible();
@@ -268,6 +284,78 @@ for (const stage of ["before_claim", "hash_return"]) {
       .click();
     await expect(
       survivor.getByRole("banner").getByText("승인 회원", { exact: true }),
+    ).toBeVisible();
+  });
+}
+
+for (const stage of ["before_claim", "hash_return"]) {
+  test(`R23-03/08 password owner closes at ${stage}; survivor settles before fresh change`, async ({
+    page,
+    context,
+  }) => {
+    recoverAdmin();
+    await openLogin(page, "admin-user");
+    await page
+      .locator("form")
+      .getByRole("button", { name: "로그인", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
+    ).toBeVisible();
+    const survivor = await context.newPage();
+    await survivor.goto("/auth?mode=password-change");
+    await expect(
+      survivor.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
+    ).toBeVisible();
+    const { body: before } = await readFlow(page);
+    await page
+      .getByLabel("새 비밀번호 (필수)", { exact: true })
+      .fill(NEW_PASSWORD);
+    await page
+      .getByLabel("새 비밀번호 확인 (필수)", { exact: true })
+      .fill(NEW_PASSWORD);
+    await serverControl({ action: "arm", stage });
+    await page
+      .getByRole("button", { name: "비밀번호 변경", exact: true })
+      .click();
+    await expect
+      .poll(async () => (await serverControl({ action: "status" })).reached)
+      .toBe(true);
+    await page.close();
+    await survivor.reload();
+    await expect(
+      survivor.getByText("인증 결과를 확인할 수 없어요"),
+    ).toBeVisible();
+    await survivor
+      .getByRole("button", { name: "결과 확인", exact: true })
+      .click();
+    await expect(
+      survivor.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
+    ).toBeVisible();
+    await serverControl({ action: "release" });
+    await expect
+      .poll(() =>
+        query(
+          `SELECT state FROM auth_transitions WHERE flow_id='${before.flow_id}' AND kind='password_change'`,
+        ),
+      )
+      .toEqual([["cancelled"]]);
+    expect(
+      query(
+        `SELECT count(*) FROM sessions WHERE flow_id='${before.flow_id}' AND kind='full'`,
+      ),
+    ).toEqual([[0]]);
+    await survivor
+      .getByLabel("새 비밀번호 (필수)", { exact: true })
+      .fill(NEW_PASSWORD);
+    await survivor
+      .getByLabel("새 비밀번호 확인 (필수)", { exact: true })
+      .fill(NEW_PASSWORD);
+    await survivor
+      .getByRole("button", { name: "비밀번호 변경", exact: true })
+      .click();
+    await expect(
+      survivor.getByRole("banner").getByText("관리 담당", { exact: true }),
     ).toBeVisible();
   });
 }

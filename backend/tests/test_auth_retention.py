@@ -266,7 +266,7 @@ def test_obsolete_older_session_preserves_real_executing_login(process_server):
     with server.client() as client, ThreadPoolExecutor() as workers:
         browser = Browser(client).prepare().anonymous()
         older = browser.generation
-        # Recovery-only activity legitimately keeps the flow alive after S expiry.
+        # New anonymous S issuances legitimately keep the flow alive after S expiry.
         for minutes in (20, 40):
             server.command(
                 action="clock", at=(start + timedelta(minutes=minutes)).isoformat()

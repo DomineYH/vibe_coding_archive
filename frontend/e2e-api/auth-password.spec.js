@@ -80,10 +80,23 @@ test.describe("administrator own password change over real HTTP and cookies", ()
     await expect(
       page.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
     ).toBeVisible();
+    expect(
+      (
+        await page.request.get(
+          "/api/v1/apps/00000000-0000-4000-8000-000000000030",
+        )
+      ).status(),
+    ).toBe(404);
     await change(page);
     await expect(
       page.getByRole("banner").getByText("첫 관리자", { exact: true }),
     ).toBeVisible();
+    await page.goto("/apps/00000000-0000-4000-8000-000000000030");
+    await expect(
+      page.getByRole("heading", { name: "회원 A 비공개 자료", exact: true }),
+    ).toBeVisible();
+    await page.goto("/admin");
+    await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
     await page.reload();
     await expect(
       page.getByRole("banner").getByText("첫 관리자", { exact: true }),

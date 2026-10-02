@@ -22,3 +22,6 @@ export const proxyControl = (message) =>
   control(process.env.AUTH_PROXY_CONTROL, message);
 export const serverControl = (message) =>
   control(process.env.AUTH_FAULT_CONTROL, message);
+
+export const processControl = (message) =>
+  control(process.env.AUTH_PROCESS_CONTROL, message);
