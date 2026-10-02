@@ -2070,6 +2070,20 @@ export default function App() {
       }
     };
     const onMockReset = () => void refreshMockState();
+    const onMockHealthUpdated = () => {
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            __DATA_MODE__ === "mock" &&
+            key[0] === __DATA_MODE__ &&
+            (key[1] === "health" ||
+              (key[1] === "apps" && key[2] === "list") ||
+              (key[1] === "admin" && (key[2] === "users" || key[2] === "apps")))
+          );
+        },
+      });
+    };
     const onMockAppDeleted = () => {
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
@@ -2083,6 +2097,7 @@ export default function App() {
       else restoreOnReturn();
     };
     window.addEventListener("eduvibe:mock-reset", onMockReset);
+    window.addEventListener("eduvibe:mock-health-updated", onMockHealthUpdated);
     window.addEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
     window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVisibilityChange);
@@ -2092,6 +2107,10 @@ export default function App() {
     window.addEventListener("pageshow", onPageShow);
     return () => {
       window.removeEventListener("eduvibe:mock-reset", onMockReset);
+      window.removeEventListener(
+        "eduvibe:mock-health-updated",
+        onMockHealthUpdated,
+      );
       window.removeEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
       window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onVisibilityChange);

@@ -22,6 +22,7 @@ export const MOCK_ACCOUNT_DELETED_EVENT = "eduvibe:mock-account-deleted";
 export const MOCK_WRITE_OPERATIONS_RESET_EVENT =
   "eduvibe:mock-write-operations-reset";
 export const MOCK_HEALTH_RESET_EVENT = "eduvibe:mock-health-reset";
+export const MOCK_HEALTH_UPDATED_EVENT = "eduvibe:mock-health-updated";
 
 const MOCK_SCENARIOS = [
   "original",
