@@ -26,4 +26,7 @@ def upgrade():
 
 
 def downgrade():
-    raise RuntimeError("Retired credential fences cannot be discarded safely.")
+    raise RuntimeError(
+        "Retired credential fences cannot be discarded safely; "
+        "restore a separately verified backup."
+    )
