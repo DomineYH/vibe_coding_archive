@@ -6,7 +6,7 @@ export default defineConfig({
   testIgnore:
     process.env.API_E2E_AUTH_BOUNDARY === "prepared"
       ? []
-      : ["**/auth-races.spec.js", "**/auth-recovery.spec.js"],
+      : ["**/auth-races*.spec.js", "**/auth-recovery*.spec.js"],
   outputDir: "test-results/api",
   fullyParallel: false,
   workers: 1,

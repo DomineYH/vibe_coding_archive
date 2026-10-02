@@ -12,18 +12,27 @@ test("R23-17 ID-only proof cannot reset an active flow", async ({
   const flowId = await page.evaluate(
     () => JSON.parse(localStorage.getItem("eduvibe-auth-flow-v1")).flowId,
   );
-  await context.clearCookies(); // explicitly simulated proof loss, not natural eviction
-  const observed = await page.evaluate(async (id) => {
-    const eligible = await fetch(
-      `/api/v1/auth/flows/${id}/restart-eligibility`,
-    ).then((r) => r.json());
-    const reset = await fetch(`/api/v1/auth/flows/${id}/reset`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ expected_revision: "4" }),
-    });
-    return { eligible, resetStatus: reset.status };
+  const revision = await page.evaluate(async (id) => {
+    const state = await fetch("/api/v1/auth/flow-state", {
+      headers: { "X-EduVibe-Flow-Id": id },
+    }).then((response) => response.json());
+    return state.revision;
   }, flowId);
+  await context.clearCookies(); // explicitly simulated proof loss, not natural eviction
+  const observed = await page.evaluate(
+    async ({ id, revision }) => {
+      const eligible = await fetch(
+        `/api/v1/auth/flows/${id}/restart-eligibility`,
+      ).then((r) => r.json());
+      const reset = await fetch(`/api/v1/auth/flows/${id}/reset`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ expected_revision: revision }),
+      });
+      return { eligible, resetStatus: reset.status };
+    },
+    { id: flowId, revision },
+  );
   expect(observed).toEqual({
     eligible: { restart_eligible: false },
     resetStatus: 401,
