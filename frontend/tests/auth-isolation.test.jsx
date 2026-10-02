@@ -1,7 +1,14 @@
 // Mock auth is only a regression seam; protected reads use the real API adapter.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
@@ -157,6 +164,78 @@ it("rechecks on focus without a preceding departure and on every pageshow", asyn
   ).toBeInTheDocument();
   missedScenario("original");
   await act(async () => window.dispatchEvent(new Event("pageshow")));
+  expect(
+    await screen.findByRole("heading", { name: item.name }),
+  ).toBeInTheDocument();
+});
+
+it.each(["focus", "visibilitychange", "pageshow"])(
+  "restores protected detail when %s returns during an in-flight storage recheck",
+  async (event) => {
+    visit();
+    await screen.findByRole("heading", { name: item.name });
+    const observe = authService.getCurrentAuthState.bind(authService);
+    let release;
+    const held = new Promise((resolve) => {
+      release = resolve;
+    });
+    const recheck = vi.spyOn(authService, "getCurrentAuthState");
+    recheck.mockImplementationOnce(async (options) => {
+      const proof = await observe(options);
+      await held;
+      return proof;
+    });
+    await act(async () => window.dispatchEvent(new Event("blur")));
+    await act(async () => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: MOCK_STORAGE_KEY,
+          newValue: localStorage.getItem(MOCK_STORAGE_KEY),
+        }),
+      );
+      (event === "visibilitychange" ? document : window).dispatchEvent(
+        new Event(event),
+      );
+    });
+    await waitFor(() => expect(recheck).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(item.prompt)).not.toBeInTheDocument();
+    await act(async () => release());
+    expect(
+      await screen.findByRole("heading", { name: item.name }),
+    ).toBeInTheDocument();
+  },
+);
+
+it("rechecks each push entry and issues exactly one auth proof on browser back", async () => {
+  window.history.replaceState(null, "", `/apps/${id}`);
+  const recheck = vi.spyOn(authService, "getCurrentAuthState");
+  render(
+    <QueryClientProvider client={client}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </QueryClientProvider>,
+  );
+  await screen.findByRole("heading", { name: item.name });
+  recheck.mockClear();
+  fireEvent.click(screen.getByRole("link", { name: "갤러리" }));
+  await waitFor(() => expect(recheck).toHaveBeenCalledTimes(1));
+  recheck.mockClear();
+  await act(async () => window.history.back());
+  await screen.findByRole("heading", { name: item.name });
+  expect(recheck).toHaveBeenCalledTimes(1);
+});
+
+it("offers an explicit recheck that restores a concealed screen after a failed proof", async () => {
+  visit();
+  await screen.findByRole("heading", { name: item.name });
+  await act(async () => window.dispatchEvent(new Event("blur")));
+  expect(screen.queryByText(item.prompt)).not.toBeInTheDocument();
+  missedScenario("auth_observation_error");
+  fireEvent.click(screen.getAllByRole("button", { name: "다시 확인" })[0]);
+  await screen.findByText("로그인 상태를 확인할 수 없습니다");
+  missedScenario("original");
+  fireEvent.click(screen.getAllByRole("button", { name: "다시 확인" })[0]);
   expect(
     await screen.findByRole("heading", { name: item.name }),
   ).toBeInTheDocument();

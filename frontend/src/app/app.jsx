@@ -172,11 +172,16 @@ function Header({
               인증 기능 준비 중
             </span>
           ) : auth.concealed || auth.status === "checking" ? (
-            <span className="text-[12px] text-neutral-500" role="status">
-              {auth.concealed
-                ? "화면이 잠시 가려졌습니다"
-                : "로그인 상태 확인 중"}
-            </span>
+            <>
+              <span className="text-[12px] text-neutral-500" role="status">
+                {auth.concealed
+                  ? "화면이 잠시 가려졌습니다"
+                  : "로그인 상태 확인 중"}
+              </span>
+              <Btn size="sm" variant="line" onClick={onRetryAuth}>
+                다시 확인
+              </Btn>
+            </>
           ) : auth.status === "error" ? (
             <Btn size="sm" variant="line" onClick={onRetryAuth}>
               다시 확인
@@ -1750,9 +1755,14 @@ export default function App() {
   }, [beginAuthTransition]);
 
   const restoreOnReturn = useCallback(() => {
-    if (document.visibilityState === "hidden" || authController.current) return;
+    if (document.visibilityState === "hidden") return;
     pageAway.current = false;
-    void restoreAuth();
+    if (!authController.current) void restoreAuth();
+  }, [restoreAuth]);
+
+  const recheckAuth = useCallback(() => {
+    if (document.visibilityState !== "hidden") pageAway.current = false;
+    return restoreAuth();
   }, [restoreAuth]);
 
   const isCurrentObservation = useCallback(
@@ -2033,7 +2043,7 @@ export default function App() {
       return;
     }
     void restoreAuth();
-  }, [apiAuthEnabled, apiAuthPath, location.pathname, restoreAuth]);
+  }, [apiAuthEnabled, location.key, restoreAuth]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
@@ -2049,13 +2059,6 @@ export default function App() {
     )
       window.scrollTo({ top: 0 });
   }, [location.key, location.pathname, navigationType]);
-  const previousAuthLocation = useRef(location.key);
-  useLayoutEffect(() => {
-    const previousKey = previousAuthLocation.current;
-    previousAuthLocation.current = location.key;
-    if (navigationType === "POP" && previousKey !== location.key)
-      void restoreAuth({ concealed: true });
-  }, [location.key, navigationType, restoreAuth]);
   useEffect(() => {
     const onStorage = (event) => {
       if (__DATA_MODE__ === "api" && event.key === "eduvibe-auth-flow-v1") {
@@ -2086,11 +2089,7 @@ export default function App() {
     window.addEventListener("blur", concealOnDeparture);
     window.addEventListener("focus", restoreOnReturn);
     const onPageShow = () => restoreOnReturn();
-    const onPopState = () => {
-      void restoreAuth({ concealed: true });
-    };
     window.addEventListener("pageshow", onPageShow);
-    window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("eduvibe:mock-reset", onMockReset);
       window.removeEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
@@ -2099,7 +2098,6 @@ export default function App() {
       window.removeEventListener("blur", concealOnDeparture);
       window.removeEventListener("focus", restoreOnReturn);
       window.removeEventListener("pageshow", onPageShow);
-      window.removeEventListener("popstate", onPopState);
     };
   }, [
     beginAuthTransition,
@@ -2158,7 +2156,7 @@ export default function App() {
         auth={auth}
         onLogin={() => navigate("/auth?mode=login")}
         onLogout={logout}
-        onRetryAuth={() => void restoreAuth()}
+        onRetryAuth={recheckAuth}
         logoutPending={logoutPending}
       />
       <Routes>
@@ -2176,7 +2174,7 @@ export default function App() {
           element={
             <SubmitRoute
               auth={auth}
-              onRetryAuth={() => restoreAuth()}
+              onRetryAuth={recheckAuth}
               onCreated={onAppCreated}
             />
           }
@@ -2187,7 +2185,7 @@ export default function App() {
             <EditRoute
               auth={auth}
               isCurrentObservation={isCurrentObservation}
-              onRetryAuth={restoreAuth}
+              onRetryAuth={recheckAuth}
               onSaved={onAppUpdated}
             />
           }
@@ -2198,7 +2196,7 @@ export default function App() {
             <DetailRoute
               auth={auth}
               isCurrentObservation={isCurrentObservation}
-              onRetryAuth={restoreAuth}
+              onRetryAuth={recheckAuth}
               onDeleted={onAppDeleted}
               deletionState={deletion}
               setDeletionState={setDeletion}
@@ -2211,7 +2209,7 @@ export default function App() {
             <AuthRoute
               location={location}
               auth={auth}
-              onRetry={() => restoreAuth()}
+              onRetry={recheckAuth}
               onLogin={login}
               onChangePassword={changePassword}
               onReauthenticate={reauthenticate}
@@ -2227,7 +2225,7 @@ export default function App() {
           element={
             <AdminRoute
               auth={auth}
-              onRetry={() => restoreAuth()}
+              onRetry={recheckAuth}
               meta={authMetadata.meta}
             />
           }

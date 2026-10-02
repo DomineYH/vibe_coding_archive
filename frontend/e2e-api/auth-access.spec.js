@@ -99,6 +99,65 @@ test("public visitor makes zero auth calls and private/missing remain indistingu
 });
 
 if (prepared) {
+  test("focus during a delayed real auth proof and explicit concealed retry restore private detail", async ({
+    page,
+    context,
+  }) => {
+    await blockExternalRequests(context);
+    await signedIn(page);
+    await page.goto(`/apps/${A}`);
+    await expect(heading(page)).toBeVisible();
+    const started = deferred(),
+      release = deferred(),
+      completed = deferred();
+    let held = false;
+    await page.route("**/api/v1/auth/flow-state", async (route) => {
+      if (held) return route.continue();
+      held = true;
+      const proof = await route.fetch();
+      expect(proof.status()).toBe(200);
+      started.resolve();
+      await release.promise;
+      await route.fulfill({ response: proof });
+      completed.resolve();
+    });
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"));
+      const key = "eduvibe-auth-flow-v1";
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key,
+          newValue: localStorage.getItem(key),
+        }),
+      );
+    });
+    await started.promise;
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(heading(page)).toHaveCount(0);
+    release.resolve();
+    await completed.promise;
+    await expect(heading(page)).toBeVisible();
+    await page.unroute("**/api/v1/auth/flow-state");
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await page.route("**/api/v1/auth/flow-state", (route) =>
+      route.abort("failed"),
+    );
+    await page
+      .getByRole("banner")
+      .getByRole("button", { name: "다시 확인" })
+      .click();
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      "로그인 상태를 확인할 수 없습니다",
+    );
+    await expect(heading(page)).toHaveCount(0);
+    await page.unroute("**/api/v1/auth/flow-state");
+    await page
+      .getByRole("main")
+      .getByRole("button", { name: "다시 확인" })
+      .click();
+    await expect(heading(page)).toBeVisible();
+  });
+
   test("real owner A/B, full admin and change-only permission matrix preserves public listing", async ({
     page,
     context,
@@ -273,10 +332,21 @@ if (prepared) {
     await page.unroute("**/api/v1/auth/flow-state");
     await page.evaluate(() => window.dispatchEvent(new Event("pageshow")));
     await expect(heading(page)).toBeVisible();
-    await page.evaluate(() =>
-      window.dispatchEvent(new PopStateEvent("popstate")),
-    );
+    await page.getByRole("link", { name: "갤러리", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    await expect(
+      page.getByRole("banner").getByText("승인 회원", { exact: true }),
+    ).toBeVisible();
+    const proofs = [];
+    const countProof = (request) => {
+      if (new URL(request.url()).pathname === "/api/v1/auth/flow-state")
+        proofs.push(request);
+    };
+    page.on("request", countProof);
+    await page.goBack();
     await expect(heading(page)).toBeVisible();
+    expect(proofs).toHaveLength(1);
+    page.off("request", countProof);
   });
 
   test("actual admin revoke and reapprove cannot revive owner old session or change public data", async ({
