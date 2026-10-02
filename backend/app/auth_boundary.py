@@ -439,7 +439,14 @@ def invalid_cookie_names(db, request):
             text("SELECT 1 FROM auth_retired_flow_ids WHERE id_hash=:hash"),
             {"hash": digest(flow_id)},
         ).first()
-        if row is None and retired:
+        retired_name = db.execute(
+            text(
+                "SELECT 1 FROM auth_retired_credentials "
+                "WHERE flow_id=:flow AND kind=:kind AND issued_seq=:seq"
+            ),
+            {"flow": flow_id, "kind": kind, "seq": seq},
+        ).first()
+        if row is None and (retired or retired_name):
             names.append(name)
             continue
         # An unknown name or a bad token value proves neither revocation nor non-reuse.
