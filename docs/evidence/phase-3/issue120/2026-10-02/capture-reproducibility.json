@@ -1,0 +1,357 @@
+{
+  "renderer": "Chromium 151.0.7922.34",
+  "pixelTolerance": 0,
+  "baselineUpdated": false,
+  "results": [
+    {
+      "state": "owner",
+      "size": "1440x1000",
+      "sha256": "45fd167691dfdde1a67f5ab46ce72b2199e2a2509611d1e8fd6f958a08b6f66e",
+      "dimensions": [
+        1440,
+        1481
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "concealed",
+      "size": "1440x1000",
+      "sha256": "1570c876096a7fafce178563d53f1bff19b277640c7623e46cfe2bb1e53702be",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "checking",
+      "size": "1440x1000",
+      "sha256": "ed8e340975d3e8fd3947fb814c6927a43bd274e3349eca49ad7d9986eea647f8",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "restored",
+      "size": "1440x1000",
+      "sha256": "45fd167691dfdde1a67f5ab46ce72b2199e2a2509611d1e8fd6f958a08b6f66e",
+      "dimensions": [
+        1440,
+        1481
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "error",
+      "size": "1440x1000",
+      "sha256": "ce6a58f7a351166422ec6d96d776befeb4a4de57f162c4b6790eca1ebc828445",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "denied",
+      "size": "1440x1000",
+      "sha256": "24ad6f9806715267378411cb9f3a21e1820748d7ba1b0a549c8889fe52a2482a",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "admin",
+      "size": "1440x1000",
+      "sha256": "87ac6c43f2cc66a84fe4ff040032a6a8d1cc50a0c33f1177c0d78800bb29bde5",
+      "dimensions": [
+        1440,
+        1619
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "owner",
+      "size": "1024x900",
+      "sha256": "4a6177f83c5eb4e2a3c8774f7221d85a2bd108f0cf2607b99c67d172b3a0fa96",
+      "dimensions": [
+        1024,
+        1462
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "concealed",
+      "size": "1024x900",
+      "sha256": "174e148aa77e70bc6e652c80f3e558ab1f11fb422812cb0ef025a05a49ffb465",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "checking",
+      "size": "1024x900",
+      "sha256": "7d93cf343ff6d01c519f0a363e63161f493915517da3b265d5f27755bf75c20e",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "restored",
+      "size": "1024x900",
+      "sha256": "4a6177f83c5eb4e2a3c8774f7221d85a2bd108f0cf2607b99c67d172b3a0fa96",
+      "dimensions": [
+        1024,
+        1462
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "error",
+      "size": "1024x900",
+      "sha256": "e242ef7e805d81747a460f34bada95ca7861c71ef072d9e78d630b77bbb55b9f",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "denied",
+      "size": "1024x900",
+      "sha256": "0d1780df4f288dbaf07b6d526f162022cc682343a57d772fcc15896944931506",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "admin",
+      "size": "1024x900",
+      "sha256": "ceda32e2f28436b4cf386be510c2de5b9f466a47211e0a86836ea76d677bd56f",
+      "dimensions": [
+        1024,
+        1600
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "owner",
+      "size": "768x1024",
+      "sha256": "b56f51d86fcad5fe6918f34c4a9e9186e8826b0bed80c5eb7dcd858df35d8c81",
+      "dimensions": [
+        768,
+        1655
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "concealed",
+      "size": "768x1024",
+      "sha256": "00d485b44ee929829731d310acde5a85ebd587cb5f926d7fab28a89460d9d993",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "checking",
+      "size": "768x1024",
+      "sha256": "2f7831f1b5077af253640a973d520c61c0741ec5b7bdfd7dd7848867b62466b0",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "restored",
+      "size": "768x1024",
+      "sha256": "b56f51d86fcad5fe6918f34c4a9e9186e8826b0bed80c5eb7dcd858df35d8c81",
+      "dimensions": [
+        768,
+        1655
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "error",
+      "size": "768x1024",
+      "sha256": "deb1ba332647898bf1f2f3e9ba19af45622acbb6388ee3891216b3ea9be04260",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "denied",
+      "size": "768x1024",
+      "sha256": "e3a0802c2bb4bcec5037d458ec25ee25c701b606e2c50d081d9e3a1f24072356",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "admin",
+      "size": "768x1024",
+      "sha256": "70476e9e3571b46b608def0c3d5e4da6ef953f6823ea0bff61a2f1d3accd93e6",
+      "dimensions": [
+        768,
+        1793
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "owner",
+      "size": "390x844",
+      "sha256": "a0870d43bea54f8d6135c40eccffdd1ef1874d3ed3b3baf11326c83b8eff543b",
+      "dimensions": [
+        390,
+        1644
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "concealed",
+      "size": "390x844",
+      "sha256": "1b9f8ab0991bd92a6388609bb35e8b6d0832140283f76beca8317a465fc12e14",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "checking",
+      "size": "390x844",
+      "sha256": "edae444062606ea6e168de94e8622104ce508e56b20414103943e84aa4945777",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "restored",
+      "size": "390x844",
+      "sha256": "a0870d43bea54f8d6135c40eccffdd1ef1874d3ed3b3baf11326c83b8eff543b",
+      "dimensions": [
+        390,
+        1644
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "error",
+      "size": "390x844",
+      "sha256": "ca7f68373dbd458be9342af88fb8c6668ac0c4754731ec83c7ff6fc1db560cf1",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "denied",
+      "size": "390x844",
+      "sha256": "fec856e9bafc0b532c4f795740027cf6e66d9e92ba751813a9d9e1bae5545e6c",
+      "dimensions": [
+        390,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "admin",
+      "size": "390x844",
+      "sha256": "ea7a16de45df2b24e7dd695ea917bac78881de1dd654121a11860dcb635c4477",
+      "dimensions": [
+        390,
+        1782
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "owner",
+      "size": "360x844",
+      "sha256": "458921852dca1bed8e966c8d92c1c8c77faef1692a41430541fd2d5ce56d13ef",
+      "dimensions": [
+        360,
+        1631
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "concealed",
+      "size": "360x844",
+      "sha256": "5a302ec74ac5978f06577d19c3c3637420f31e51cb2152bb07bf9b8890b5b3a2",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "checking",
+      "size": "360x844",
+      "sha256": "be9581296c552eaf03fc46da018a5fb6d1a932def4047da065b2f87fb13f3080",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "restored",
+      "size": "360x844",
+      "sha256": "458921852dca1bed8e966c8d92c1c8c77faef1692a41430541fd2d5ce56d13ef",
+      "dimensions": [
+        360,
+        1631
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "error",
+      "size": "360x844",
+      "sha256": "303cf1d048173e4df1e6cdc2c49b980fdd5ca19e3d94d70d01f6c25f1cb70e1a",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "denied",
+      "size": "360x844",
+      "sha256": "2807339953084f2c22ae983a8d30984a89c0470be1a0a707cf2a81f463199d2d",
+      "dimensions": [
+        360,
+        844
+      ],
+      "scope": "product_only"
+    },
+    {
+      "state": "admin",
+      "size": "360x844",
+      "sha256": "52baa202b557af7b9179e9c185c59211a409bae694e6b4bbe97f2d07306172fa",
+      "dimensions": [
+        360,
+        1769
+      ],
+      "scope": "product_only"
+    }
+  ]
+}

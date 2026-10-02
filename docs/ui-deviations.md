@@ -401,3 +401,20 @@ confirmation/unknown/cancelled observations are product-only evidence; existing
 mock source comparisons are reported separately. Automated keyboard/focus/name
 checks do not claim direct human visual or screen-reader acceptance. Operating
 release and physical-device evidence remain the T07 U01/U02 gate.
+
+## Issue #120 T06 private detail and account isolation · UI-D02/UI-D03/UI-D07/UI-D09
+
+The existing detail, EmptyState, EV card and 57px header now use verified API
+authority for private reads. Public detail remains available independently of
+auth restoration. No new card or administrator dashboard is introduced.
+
+| Difference | Product behavior | Reason and evidence |
+| --- | --- | --- |
+| Private detail conceal and restore | Blur, hide and auth notifications remove the private body, member header and controls from DOM/keyboard access. Focus, history and pageshow require fresh proof; failure offers the existing explicit recheck. | #120 / R23 §4, UI-D02/UI-D03/UI-D07; [T06 ledger](evidence/phase-3/issue120/2026-10-02/README.md), actual shared-cookie tabs and delayed backend response. |
+| Draft and pending approval continuity | Same-tab memory retains an eligible draft or confirmation through ordinary rechecking, hidden and inert. Identity-history or target-authority loss discards it; confirmation never submits automatically. | US-39 and UI-D09; current target revalidation, component regressions and actual administrator recovery-cookie rotation in the same ledger. |
+| Destination refusal | Login and password change recheck current capability and destination authority, using existing safe access/not-found messages on refusal. | Strict return_to contract and public-read independence, UI-D03/UI-D07; route and mock regressions in the same ledger. |
+
+The 35 private-detail states across five viewports are product-only observations,
+identical across two independent real-API runs. Existing source comparisons are
+recorded separately; no baseline, mask or tolerance changes. Automated checks do
+not claim human visual, screen-reader, physical-device or operating acceptance.
