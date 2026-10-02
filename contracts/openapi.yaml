@@ -1143,7 +1143,7 @@ paths:
         - {
             name: offset,
             in: query,
-            schema: { type: integer, minimum: 0, default: 0 },
+            schema: { type: integer, minimum: 0, maximum: 9007199254740991, default: 0 },
           }
         - $ref: "#/components/parameters/AuthFlowId"
         - $ref: "#/components/parameters/AuthRevision"
@@ -1152,7 +1152,10 @@ paths:
         "200":
           description: An offset page and aggregate statistics for all users/apps.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminUserPage" }
@@ -1217,7 +1220,10 @@ paths:
         "200":
           description: The current target without contact fields.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminUser" }
@@ -1293,7 +1299,10 @@ paths:
         "201":
           description: An unresolved key result with no echoed business input.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema:
@@ -1307,6 +1316,7 @@ paths:
         "403": { $ref: "#/components/responses/ServiceError" }
         "404": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
         "422": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users/{id}/approval:
@@ -1342,7 +1352,10 @@ paths:
         "200":
           description: The account state applied by this request.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminUser" }
@@ -1352,6 +1365,8 @@ paths:
         "404": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "410": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users/{id}/password-reset:
     post:
@@ -1416,7 +1431,10 @@ paths:
         "200":
           description: Unresolved is not success; the result does not expose input.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema:
@@ -1453,18 +1471,23 @@ paths:
         "200":
           description: The result after cancellation; a prior success is not rolled back.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema:
                 oneOf:
                   - $ref: "#/components/schemas/ApprovalOperation"
                   - $ref: "#/components/schemas/PasswordResetOperation"
+        "400": { $ref: "#/components/responses/ServiceError" }
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
         "404": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "410": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
 components:
   parameters:

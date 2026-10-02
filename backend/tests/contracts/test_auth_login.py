@@ -467,7 +467,7 @@ def test_an_expired_permit_cannot_commit_a_late_login(member_app, server_clock):
         assert not rows(path, "SELECT 1 FROM sessions WHERE member_id IS NOT NULL")
 
 
-def test_meta_advertises_the_verified_t01_t04_bundle_and_nothing_else(member_app):
+def test_meta_advertises_the_verified_t01_t05_bundle_and_nothing_else(member_app):
     app, _ = member_app()
     with TestClient(app) as client:
         capabilities = client.get("/api/v1/meta").json()["capabilities"]
@@ -478,6 +478,9 @@ def test_meta_advertises_the_verified_t01_t04_bundle_and_nothing_else(member_app
         "auth_logout",
         "auth_password_change",
         "auth_register",
+        "admin_users_read",
+        "admin_approval",
+        "admin_summary",
     }
     assert capabilities["auth_password_change"] == {"enabled": True, "reasons": []}
 

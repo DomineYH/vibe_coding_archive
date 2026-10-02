@@ -955,7 +955,19 @@ function UserDeletePanel({
   );
 }
 
-export function AdminView({ scopeKey }) {
+export function AdminView({ scopeKey, meta }) {
+  const canReset =
+    __DATA_MODE__ === "mock" ||
+    meta?.capabilities.admin_password_reset.enabled === true;
+  const canDelete =
+    __DATA_MODE__ === "mock" ||
+    meta?.capabilities.admin_user_delete.enabled === true;
+  const canReadApps =
+    __DATA_MODE__ === "mock" ||
+    meta?.capabilities.admin_apps_read.enabled === true;
+  const canApprove =
+    __DATA_MODE__ === "mock" ||
+    meta?.capabilities.admin_approval.enabled === true;
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -995,7 +1007,7 @@ export function AdminView({ scopeKey }) {
   const appsKey = [__DATA_MODE__, "admin", "apps", scopeKey];
   const appsQuery = useInfiniteQuery({
     queryKey: appsKey,
-    enabled: !route.invalid && tab === "health",
+    enabled: !route.invalid && tab === "health" && canReadApps,
     queryFn: ({ pageParam, signal }) =>
       adminService.listApps(
         { limit: PAGE_SIZE, offset: pageParam },
@@ -1965,6 +1977,23 @@ export function AdminView({ scopeKey }) {
     }
   }
 
+  const approvalPanel = selection ? (
+    <ApprovalPanel
+      target={selection.target}
+      loading={selection.loading}
+      busy={busy}
+      error={actionError || selection.error}
+      operation={selection.operation}
+      onConfirm={() => void submitApproval()}
+      onClose={() => setSelection(null)}
+      onRetryDetail={() => void retryTarget()}
+      onReadResult={() => void readResult()}
+      onResubmit={() => void resubmit()}
+      onCancelOperation={() => void cancelOperation()}
+      operationExpired={operationExpired}
+    />
+  ) : null;
+
   if (route.invalid)
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
@@ -2021,6 +2050,7 @@ export function AdminView({ scopeKey }) {
             aria-selected={tab === "health"}
             aria-current={tab === "health" ? "page" : undefined}
             aria-controls="admin-health-panel"
+            disabled={!canReadApps}
             tabIndex={tab === "health" ? 0 : -1}
             className={`rounded-full px-4 py-2 ${tab === "health" ? "bg-white text-neutral-900 shadow-sm" : "hover:text-neutral-700"}`}
             onClick={() => changeTab("health")}
@@ -2062,6 +2092,12 @@ export function AdminView({ scopeKey }) {
             </span>
           ) : null}
         </div>
+
+        {selection &&
+        !query.isPending &&
+        !users.some((user) => user.id === selection.id)
+          ? approvalPanel
+          : null}
 
         {deleteSelection &&
         !query.isPending &&
@@ -2166,6 +2202,7 @@ export function AdminView({ scopeKey }) {
                           variant="line"
                           onClick={() => beginPasswordReset(user.id)}
                           disabled={
+                            !canReset ||
                             busy ||
                             resetBusy ||
                             resetPending ||
@@ -2180,6 +2217,7 @@ export function AdminView({ scopeKey }) {
                           variant="line"
                           onClick={() => beginUserDelete(user.id)}
                           disabled={
+                            !canDelete ||
                             busy ||
                             resetBusy ||
                             resetPending ||
@@ -2194,6 +2232,7 @@ export function AdminView({ scopeKey }) {
                           variant={user.approved ? "line" : "primary"}
                           onClick={() => void openApproval(user)}
                           disabled={
+                            !canApprove ||
                             busy ||
                             resetBusy ||
                             resetPending ||
@@ -2206,22 +2245,7 @@ export function AdminView({ scopeKey }) {
                       </div>
                     )}
                   </div>
-                  {selection?.id === user.id ? (
-                    <ApprovalPanel
-                      target={selection.target}
-                      loading={selection.loading}
-                      busy={busy}
-                      error={actionError || selection.error}
-                      operation={selection.operation}
-                      onConfirm={() => void submitApproval()}
-                      onClose={() => setSelection(null)}
-                      onRetryDetail={() => void retryTarget()}
-                      onReadResult={() => void readResult()}
-                      onResubmit={() => void resubmit()}
-                      onCancelOperation={() => void cancelOperation()}
-                      operationExpired={operationExpired}
-                    />
-                  ) : null}
+                  {selection?.id === user.id ? approvalPanel : null}
                   {resetSelection?.id === user.id ? (
                     <PasswordResetPanel
                       target={resetSelection.target}
@@ -2314,7 +2338,11 @@ export function AdminView({ scopeKey }) {
             개별 재검사는 아직 사용할 수 없어요.
           </p>
 
-          {appsQuery.isPending ? (
+          {!canReadApps ? (
+            <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
+              아카이브 앱 관리 기능은 아직 준비 중이에요.
+            </p>
+          ) : appsQuery.isPending ? (
             <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
               앱 목록을 불러오고 있어요.
             </p>

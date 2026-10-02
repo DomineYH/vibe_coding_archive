@@ -2645,7 +2645,10 @@ export interface operations {
             /** @description An offset page and aggregate statistics for all users/apps. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2708,7 +2711,10 @@ export interface operations {
             /** @description The current target without contact fields. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2784,7 +2790,10 @@ export interface operations {
             /** @description An unresolved key result with no echoed business input. */
             201: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2796,6 +2805,7 @@ export interface operations {
             403: components["responses"]["ServiceError"];
             404: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -2825,7 +2835,10 @@ export interface operations {
             /** @description The account state applied by this request. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2838,6 +2851,8 @@ export interface operations {
             404: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
             410: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -2900,7 +2915,10 @@ export interface operations {
             /** @description Unresolved is not success; the result does not expose input. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2935,18 +2953,23 @@ export interface operations {
             /** @description The result after cancellation; a prior success is not rolled back. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["ApprovalOperation"] | components["schemas"]["PasswordResetOperation"];
                 };
             };
+            400: components["responses"]["ServiceError"];
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
             410: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

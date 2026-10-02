@@ -1269,7 +1269,7 @@ function AuthRoute({
   );
 }
 
-function AdminRoute({ auth, onRetry }) {
+function AdminRoute({ auth, onRetry, meta }) {
   if (auth.status === "unavailable")
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
@@ -1343,7 +1343,7 @@ function AdminRoute({ auth, onRetry }) {
       </main>
     );
   const scopeKey = authScopeIdentity(auth);
-  return <AdminView key={scopeKey} scopeKey={scopeKey} />;
+  return <AdminView key={scopeKey} scopeKey={scopeKey} meta={meta} />;
 }
 
 export default function App() {
@@ -2076,7 +2076,13 @@ export default function App() {
         />
         <Route
           path="/admin"
-          element={<AdminRoute auth={auth} onRetry={() => restoreAuth()} />}
+          element={
+            <AdminRoute
+              auth={auth}
+              onRetry={() => restoreAuth()}
+              meta={authMetadata.meta}
+            />
+          }
         />
         {__DATA_MODE__ === "mock" ? (
           <Route path="/__dev/mock-reset" element={<MockResetPage />} />

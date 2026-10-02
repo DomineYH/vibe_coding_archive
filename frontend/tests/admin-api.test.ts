@@ -15,7 +15,14 @@ vi.mock("../src/services/api/auth", () => ({
         sessionGeneration: "2",
       },
     }),
-    getCsrf: vi.fn().mockResolvedValue({ csrfToken: "csrf-test-token" }),
+    getCsrf: vi.fn().mockResolvedValue({
+      csrfToken: "csrf-test-token",
+      authContext: {
+        flowId: "00000000-0000-4000-8000-000000000200",
+        revision: "4",
+        sessionGeneration: "2",
+      },
+    }),
   },
 }));
 
@@ -23,6 +30,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
+
+function adminResponse(body: BodyInit | null, init: ResponseInit) {
+  return new Response(body, {
+    ...init,
+    headers: {
+      "X-EduVibe-Flow-Id": "00000000-0000-4000-8000-000000000200",
+      "X-EduVibe-Auth-Revision": "4",
+      "X-EduVibe-Session-Generation": "2",
+      ...init.headers,
+    },
+  });
+}
 
 const target = {
   id: "00000000-0000-4000-8000-000000000107",
@@ -100,7 +119,7 @@ describe("admin API service", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(
+        adminResponse(
           JSON.stringify({
             items: [target],
             pagination: { limit: 24, offset: 0, total: 1, has_more: false },
@@ -134,7 +153,7 @@ describe("admin API service", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(
+        adminResponse(
           JSON.stringify({
             items: [monitorApp],
             pagination: { limit: 50, offset: 100, total: 120, has_more: true },
@@ -167,10 +186,10 @@ describe("admin API service", () => {
       vi
         .fn()
         .mockResolvedValueOnce(
-          new Response(JSON.stringify(operation), { status: 201 }),
+          adminResponse(JSON.stringify(operation), { status: 201 }),
         )
         .mockResolvedValueOnce(
-          new Response(
+          adminResponse(
             JSON.stringify({ ...target, approved: true, account_version: 2 }),
             { status: 200 },
           ),
@@ -213,11 +232,11 @@ describe("admin API service", () => {
       vi
         .fn()
         .mockResolvedValueOnce(
-          new Response(JSON.stringify(resetOperation), { status: 201 }),
+          adminResponse(JSON.stringify(resetOperation), { status: 201 }),
         )
-        .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        .mockResolvedValueOnce(adminResponse(null, { status: 204 }))
         .mockResolvedValueOnce(
-          new Response(
+          adminResponse(
             JSON.stringify({
               ...resetOperation,
               state: "succeeded",
@@ -278,11 +297,11 @@ describe("admin API service", () => {
       vi
         .fn()
         .mockResolvedValueOnce(
-          new Response(JSON.stringify(userDeleteOperation), { status: 201 }),
+          adminResponse(JSON.stringify(userDeleteOperation), { status: 201 }),
         )
-        .mockResolvedValueOnce(new Response(null, { status: 204 }))
+        .mockResolvedValueOnce(adminResponse(null, { status: 204 }))
         .mockResolvedValueOnce(
-          new Response(
+          adminResponse(
             JSON.stringify({
               ...userDeleteOperation,
               state: "succeeded",
@@ -329,7 +348,7 @@ describe("admin API service", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(
+        adminResponse(
           JSON.stringify({
             error: {
               code: "DELETION_CONFIRMATION_PENDING",
@@ -357,7 +376,7 @@ describe("admin API service", () => {
 
   it("keeps a lost password-reset response unknown and never retries it", async () => {
     const fetch = vi.fn().mockResolvedValue(
-      new Response(
+      adminResponse(
         JSON.stringify({
           error: {
             code: "SERVICE_UNAVAILABLE",
@@ -385,7 +404,7 @@ describe("admin API service", () => {
 
   it("reports a lost write response as unknown and never retries it", async () => {
     const fetch = vi.fn().mockResolvedValue(
-      new Response(
+      adminResponse(
         JSON.stringify({
           error: {
             code: "SERVICE_UNAVAILABLE",
@@ -411,7 +430,7 @@ describe("admin API service", () => {
       "fetch",
       vi
         .fn()
-        .mockResolvedValue(new Response(JSON.stringify({}), { status: 200 })),
+        .mockResolvedValue(adminResponse(JSON.stringify({}), { status: 200 })),
     );
     await expect(
       adminService.setApproval(target.id, true, 1, operation.key),
@@ -422,7 +441,7 @@ describe("admin API service", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
-        new Response(
+        adminResponse(
           JSON.stringify({
             error: {
               code: "FORBIDDEN",
@@ -438,4 +457,40 @@ describe("admin API service", () => {
       adminService.setApproval(target.id, true, 1, operation.key),
     ).rejects.toMatchObject({ code: "CONTRACT_ERROR", outcome: "unknown" });
   });
+});
+
+it("refuses an approval write if CSRF was observed in another authentication context", async () => {
+  const { authService } = await import("../src/services/api/auth");
+  vi.mocked(authService.getCsrf).mockResolvedValueOnce({
+    expiresAt: "2026-10-02T00:00:00Z",
+    csrfToken: "csrf-test-token",
+    authContext: {
+      flowId: "00000000-0000-4000-8000-000000000200",
+      revision: "5",
+      sessionGeneration: "2",
+    },
+  });
+  const fetcher = vi.fn();
+  vi.stubGlobal("fetch", fetcher);
+  await expect(
+    adminService.setApproval(target.id, true, 1, operation.key),
+  ).rejects.toMatchObject({ code: "AUTH_STATE_CHANGED", outcome: "rejected" });
+  expect(fetcher).not.toHaveBeenCalled();
+});
+
+it("keeps an approval reply unknown when its authentication metadata belongs to another revision", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        adminResponse(
+          JSON.stringify({ ...target, approved: true, account_version: 2 }),
+          { status: 200, headers: { "X-EduVibe-Auth-Revision": "5" } },
+        ),
+      ),
+  );
+  await expect(
+    adminService.setApproval(target.id, true, 1, operation.key),
+  ).rejects.toMatchObject({ code: "CONTRACT_ERROR", outcome: "unknown" });
 });

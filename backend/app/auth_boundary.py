@@ -507,7 +507,7 @@ def transition_summary(db, item, transition_id):
 
 
 class AuthBodyLimit:
-    """Bound streamed auth bodies as well as declared Content-Length."""
+    """Bound streamed auth and administrator write bodies."""
 
     def __init__(self, app):
         self.app = app
@@ -515,8 +515,10 @@ class AuthBodyLimit:
     async def __call__(self, scope, receive, send):
         if (
             scope["type"] != "http"
-            or not scope["path"].startswith("/api/v1/auth/")
-            or scope["method"] != "POST"
+            or scope["method"] not in ("POST", "PATCH")
+            or not scope["path"].startswith(
+                ("/api/v1/auth/", "/api/v1/admin/users/", "/api/v1/write-operations")
+            )
         ):
             return await self.app(scope, receive, send)
         body = bytearray()

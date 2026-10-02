@@ -48,7 +48,9 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|password|register)/.test(arg),
+      /auth-(prepare|login|password|register|lifecycle)|admin-approval/.test(
+        arg,
+      ),
     );
   const env = {
     ...process.env,
@@ -105,7 +107,7 @@ raise SystemExit(status)`,
         "--frozen",
         "python",
         "-c",
-        "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path)",
+        "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path); from tests.approval_fixtures import populate_approval_members; populate_approval_members(database_path)",
       ],
       { cwd: backend, env, stdio: "inherit" },
     );
@@ -130,17 +132,22 @@ raise SystemExit(status)`,
                 "e2e-api/auth-login.spec.js",
                 "e2e-api/auth-password.spec.js",
                 "e2e-api/auth-register.spec.js",
+                "e2e-api/admin-approval.spec.js",
+                "e2e-api/auth-lifecycle.spec.js",
               ],
               prepared: true,
             },
           ];
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
-    const capture = "change-only card and field errors|registration cards";
+    const capture =
+      "change-only card and field errors|registration cards|administrator approval cards";
     const separated = runs.flatMap((run) => {
       if (
         !run.prepared ||
-        !run.arguments_.some((arg) => /auth-(password|register)/.test(arg))
+        !run.arguments_.some((arg) =>
+          /auth-(password|register)|admin-approval/.test(arg),
+        )
       )
         return [run];
       // Preserve explicitly selected cases; they run with the ordinary moving clock.
@@ -154,7 +161,7 @@ raise SystemExit(status)`,
         {
           arguments_: [
             ...run.arguments_.filter((arg) =>
-              /auth-(password|register)/.test(arg),
+              /auth-(password|register)|admin-approval/.test(arg),
             ),
             "--grep",
             capture,

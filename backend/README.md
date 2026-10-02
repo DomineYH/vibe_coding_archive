@@ -179,3 +179,33 @@ T07 운영 공개 전에 원장과 SQLite sidecar를 운영 DB의 디렉터리/�
 다른 저장소에 배치하고 접근 권한·복원 분리를 검증해야 한다. 기본 sibling 경로만으로
 독립 저장소나 볼륨 snapshot rollback 탐지를 보장하지 않는다. 현재 경로의 원장은
 독립 mount 등 운영 배치로 보존하며 해당 운영 검수를 로컬 green으로 대체하지 않는다.
+
+### T05 실제 관리자 승인·승인 해제
+
+T04의 `0005_member_approval` schema와 T01~T03의 full S/흐름/순번/세대/CSRF 경계를
+재사용한다. `APP_ENV=test` prepared factory에서는 `auth_register`,
+`admin_users_read`, `admin_approval`, `admin_summary`를 묶음으로 활성화한다.
+일반 실행은 T07 공개 gate 전까지 인증을 열지 않는다. 새 phase flag는 없다.
+
+현재 full 관리자는 `/admin/users`(페이지·전체 stats), `/admin/users/{id}`를 읽고,
+`POST /write-operations`의 `kind=user_approval`로 별도 업무 키를 발급한다.
+`PATCH /admin/users/{id}/approval`은 명시 승인값·expected_account_version과
+Idempotency-Key가 발급 입력과 같아야 한다. 성공·거절 키의 재실행은
+OPERATION_ALREADY_RESOLVED이며 원래 키를 조회한다. `GET /write-operations/{key}`와
+`POST /write-operations/{key}/cancel`도 현재 full 관리자와 키 소유를 확인한다.
+승인에는 recent-auth를 추가 요구하지 않는다. 관리자 대상은 보호한다.
+
+회원 버전·최초 승인 이력·승인값·승인 해제 시 전체 대상 세션 폐기·최소 감사·성공
+결과는 하나의 BEGIN IMMEDIATE/commit이다. 충돌은 rejected 결과를 기록하며,
+감사/결과 저장 실패는 부분 승인이나 세션 폐기 없이 rollback한다. 같은 값의 새
+승인도 버전을 증가시킨다. 업무 키는 발급 후 24시간부터 실행/조회/취소할 수 없고
+기존 60초 유지관리에서 정리한다. 재시작은 키를 보존하고 백업 복원 무효화 CLI는
+과거 업무 키도 제거한다. 결과/감사는 대상 회원 삭제 CASCADE에 귀속되지 않는다.
+
+```sh
+APP_ENV=test uv run --frozen pytest tests/contracts/test_admin_approval.py tests/test_approval_races.py
+```
+
+비밀번호 초기화·회원 삭제·관리자 재인증·아카이브 앱 관리 실행은 후속 범위다.
+[T05 검수 원장](../docs/evidence/phase-3/issue119/2026-10-02/README.md)에 실제 HTTP,
+파일 SQLite, 브라우저 쿠키, 응답 유실, 경합과 재현 명령을 기록한다.
