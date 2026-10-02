@@ -53,8 +53,11 @@ def test_simultaneous_approval_serializes_business_and_terminal_results(
                 "SELECT account_version FROM members WHERE id=?", (PENDING_ID,)
             ).fetchone() == (2,)
             assert db.execute(
-                "SELECT count(*) FROM audit_logs WHERE action='user_approval'"
+                "SELECT count(*) FROM audit_logs WHERE action='user_approval' AND outcome='succeeded'"
             ).fetchone() == (1,)
+            assert db.execute(
+                "SELECT count(*) FROM audit_logs WHERE action='user_approval' AND outcome='rejected'"
+            ).fetchone() == (0 if same_key else 1,)
 
 
 @pytest.mark.parametrize("cancel_first", [True, False])

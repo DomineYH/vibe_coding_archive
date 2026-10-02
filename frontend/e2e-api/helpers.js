@@ -74,7 +74,7 @@ export function query(statement) {
       "--frozen",
       "python",
       "-c",
-      "import json, os, sqlite3, sys; c = sqlite3.connect(os.environ['DATABASE_PATH']); print(json.dumps(c.execute(sys.argv[1]).fetchall()))",
+      "import json, os, sqlite3, sys; c = sqlite3.connect(os.environ['DATABASE_PATH']); rows = c.execute(sys.argv[1]).fetchall(); c.commit(); print(json.dumps(rows))",
       statement,
     ],
     {

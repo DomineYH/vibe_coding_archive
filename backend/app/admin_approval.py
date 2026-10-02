@@ -193,11 +193,18 @@ def set_approval(id: UUID, request: Request, body: SetApproval, db=Db):
     try:
         member = ordinary_target(db, id, body.expected_account_version)
     except AuthError as error:
+        stamp = now()
         db.execute(
             text(
                 "UPDATE write_operations SET state='rejected',failure_code=:code,applied_at=:now WHERE key=:key"
             ),
-            {"key": key, "code": error.code, "now": now()},
+            {"key": key, "code": error.code, "now": stamp},
+        )
+        db.execute(
+            text(
+                "INSERT INTO audit_logs(action,actor_id,target_id,occurred_at,outcome) VALUES ('user_approval',:actor,:target,:now,'rejected')"
+            ),
+            {"actor": actor["id"], "target": str(id), "now": stamp},
         )
         administrator(db, request, write=True)
         operation(db, key, actor)
@@ -309,7 +316,7 @@ def user_body(db, member):
 def list_users(
     request: Request,
     limit: Annotated[int, Query(ge=1, le=100)] = 24,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    offset: Annotated[int, Query(ge=0, le=9007199254740991)] = 0,
     db=Unlocked,
 ):
     item, _ = administrator(db, request)

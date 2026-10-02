@@ -54,6 +54,25 @@ if (prepared)
         query("SELECT count(*) FROM members")[0][0],
       );
       expect(body.stats.healthy_apps).toBe(0);
+      expect(body.stats.next_health_expiry_at).toBeNull();
+      const healthIds =
+        "'00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000003'";
+      try {
+        query(
+          `UPDATE health_results SET state=CASE WHEN app_id LIKE '%003' THEN 'http_error' ELSE 'healthy' END,checked_at='2000-01-01T00:00:00.000000Z',fresh_until=CASE WHEN app_id LIKE '%002' THEN '2000-01-02T00:00:00.000000Z' WHEN app_id LIKE '%003' THEN '2998-01-01T00:00:00.000000Z' ELSE '2999-01-01T00:00:00.000000Z' END WHERE app_id IN (${healthIds})`,
+        );
+        const mixed = await page.request.get("/api/v1/admin/users?limit=1", {
+          headers,
+        });
+        expect(mixed.status()).toBe(200);
+        const { stats } = await mixed.json();
+        expect(stats.healthy_apps).toBe(1);
+        expect(stats.next_health_expiry_at).toBe("2999-01-01T00:00:00.000000Z");
+      } finally {
+        query(
+          `UPDATE health_results SET state='unchecked',checked_at=NULL,fresh_until=NULL WHERE app_id IN (${healthIds})`,
+        );
+      }
       for (const user of body.items)
         expect(Object.keys(user)).not.toEqual(
           expect.arrayContaining(["email", "phone", "password_hash"]),

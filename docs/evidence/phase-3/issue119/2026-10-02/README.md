@@ -35,10 +35,10 @@ node frontend/scripts/check-approval-evidence.mjs
 
 | 요구·사례 | 기대 결과 / 실제 증거·명령 | 판정 |
 | --- | --- | --- |
-| US-26 / 목록·상세·추가 페이지·통계 / UI-D09 | 계약 `test_admin_reads_current_members_and_full_statistics_without_contact`와 API E2E `real paging and aggregate stats`: 실제 회원 수, 연락처 없는 허용 DTO, 페이지 24개+추가 페이지, 미검사 healthy 0. 오류 UI는 합성 503으로 구분하고 명시 retry를 검증한다. 새 summary endpoint 없음. | 합격 |
+| US-26 / 목록·상세·추가 페이지·통계 / UI-D09 | 계약 `test_admin_reads_current_members_and_full_statistics_without_contact`, `test_healthy_apps_counts_only_fresh_healthy_results`와 API E2E `real paging and aggregate stats`: 실제 회원 수, 연락처 없는 허용 DTO, 페이지 24개+추가 페이지, 미검사 healthy 0 및 fresh healthy/stale healthy/http_error/unchecked 혼합에서 healthy 1·다음 만료 시각. 오류 UI는 합성 503으로 구분하고 명시 retry를 검증한다. 새 summary endpoint 없음. | 합격 |
 | US-32 / full 관리자 권한 / R24 사례21·28 | 계약 `test_admin_authority_and_key_ownership_are_checked_on_every_endpoint`: 일반 회원 403, change_only 403, R 단독 401, 타 관리자 키와 없는 키 동일 404. 관리자 대상 403. Origin/CSRF·흐름/순번/세대/미종결 전환은 기존 인증 경계를 적용한다. | 합격 |
-| US-27·30 / R24 사례1·4·5·9 / 별도 업무 키 | `test_approval_key_commits_history_version_audit_and_result_once`, `test_key_mismatch_version_conflict_and_strict_wire_input`: 승인/이력/버전/감사/결과 원자 commit, 같은 값의 새 키도 버전 증가, 입력 불일치 유지, 확정 키 재실행 409 후 GET. `test_simultaneous_approval_serializes_business_and_terminal_results`: 같은 키·다른 키의 동시 200/409뿐 아니라 error code·succeeded/rejected 결과·버전/감사 1회 단언. | 합격 |
-| US-28 / 승인 해제·재승인 / R24 사례8·12 | `test_revocation_permanently_revokes_all_old_sessions_and_preserves_public_apps`: 두 프로필의 모든 옛 S 직접 me 401, 재승인 후도 401·승인 이력·공개 읽기 보존. `test_revocation_during_login_verification_fails_terminally`: 해싱 중 해제 뒤 늦은 로그인 409 AUTH_STATE_CHANGED, failed/failure_code·유효 세션 0. | 합격 |
+| US-27·30 / R24 사례1·4·5·9 / 별도 업무 키 | `test_approval_key_commits_history_version_audit_and_result_once`, `test_key_mismatch_version_conflict_and_strict_wire_input`: 승인/이력/버전/감사/결과 원자 commit, 같은 값의 새 키도 버전 증가, 입력 불일치 유지, 확정 키 재실행 409 후 GET. `test_simultaneous_approval_serializes_business_and_terminal_results`: 같은 키·다른 키의 동시 200/409뿐 아니라 error code·succeeded/rejected 결과·버전·성공 감사 1회 및 다른 키의 거절 감사 1회 단언. | 합격 |
+| US-28 / 승인 해제·재승인 / R24 사례8·12 | `test_revocation_permanently_revokes_all_old_sessions_and_preserves_public_apps`: 두 프로필의 모든 옛 S 직접 me 401, 재승인 후도 401·승인 이력·대상 회원 소유 앱의 익명 목록/상세 보존. `auth-lifecycle.spec.js`는 두 번째 로그인 직후 활성 S를 캡처하고 DB에서 승인 해제 전 미폐기→해제/재승인 후 폐기를 확인하며 해당 쿠키를 재주입한다. `test_revocation_during_login_verification_fails_terminally`: 해싱 중 해제 뒤 늦은 로그인 409 AUTH_STATE_CHANGED, failed/failure_code·유효 세션 0. | 합격 |
 | US-31·52~55 / 응답 유실 / R24 사례13·15·16 | 실제 Node HTTP 전달→서버 200 commit/파일 DB succeeded→브라우저 응답 abort. 화면 unknown/자동 재실행 0회/호출자 쿠키 불변→원래 키 조회로 성공 확인. 성공 후 cancel은 succeeded 유지. 전달 전 abort 시험은 별도로 unresolved→명시 cancel/rejected·OPERATION_CANCELLED·업무 미반영을 단언한다. | 합격 |
 | 취소 대 성공 양방향 경합 / R24 사례15 | `test_cancel_and_success_both_commit_orders`: 실제 HTTP/파일 DB write lock을 event로 유지해 두 commit 순서를 보장한다. 취소 먼저면 409 OPERATION_ALREADY_RESOLVED/rejected, 성공 먼저면 cancel 200/succeeded. 단순 상태코드만 검사하지 않는다. | 합격 |
 | 원자성·실패 경로 / R24 사례19 | 감사 INSERT·결과 UPDATE의 DB trigger 실패는 503 SERVICE_UNAVAILABLE, 원래 unresolved·미변경 승인/이력/버전. 승인 해제 감사 실패 때 기존 S도 그대로 유효하다. 회원 버전 상한은 순환하지 않고 503으로 업무를 차단한다. | 합격 |
@@ -81,6 +81,46 @@ node frontend/scripts/check-approval-evidence.mjs
    기존 관리자 검사와 16KiB middleware를 재사용해 수정했다. 영향 계약/경합
    26개가 green이며 권한 만료 시 키/감사 rollback과 unresolved를 단언한다.
 
+## PR #126 독립 리뷰 r1 반영
+
+APPROVE / minor 5건을 아래처럼 반영했다. 테스트 경계는 #113 Testing Decisions의
+기존 실제 HTTP·파일 SQLite·브라우저 쿠키이며 외부 사이트 송신은 하지 않는다.
+
+| 지적 | 최초 실패 → 수정 → 재검증 |
+| --- | --- |
+| offset 상한 | `test_admin_list_offset_bounds_return_defined_validation_errors`가 2^53 입력의 200에서 실패. 서버 Query와 OpenAPI의 관리자 offset 상한을 9007199254740991로 일치시켰다. 음수/상한 초과/2^63/10^30은 422 VALIDATION_ERROR, 상한 자체는 200 빈 페이지를 검사한다. |
+| 재승인 시 옛 S 미복구 | 기존 캡처를 유지한 채 승인 해제 직전 `revoked_at IS NOT NULL == 0`을 추가하니 이미 로그아웃한 S라 1로 실패. 두 번째 로그인 직후로 캡처를 옮겼다. 실제 쿠키 재주입·개인 헤더 제한과 해당 full session 행의 해제 전 0→해제/재승인 후 1을 함께 검사한다. |
+| healthy 집계의 비영(非零) 값 | 새 계약 검사에서 freshness 조건과 healthy 조건을 각각 제거한 임시 변이가 모두 2 != 1로 실패했다. 구현 조건은 올바르므로 유지했다. 계약/브라우저 API 검사에 fresh healthy·stale healthy·http_error·unchecked 혼합과 healthy 1/next_health_expiry_at을 추가했다. 브라우저 합성 연결 결과는 finally에서 원복한다. |
+| 거절된 승인 감사 | 대상 삭제/버전 충돌 후 감사가 빈 배열이라 실패. #113 audit_logs의 행위/대상/시각/결과와 R24 §5의 적법한 일치 요청의 대상 삭제·관리자 보호·버전 충돌 확정 거절 및 §4의 감사 별도 보관을 적용했다. 해당 확정 거절에만 같은 트랜잭션으로 최소 user_approval/rejected를 기록한다. 권한/CSRF/만료/포화·불일치 요청이나 확정 키 재실행은 새 감사 대상으로 확대하지 않았다. 중복 0회, 감사 실패 503/unresolved rollback, 키 sweep 뒤 감사 보존, 경합의 성공/거절 감사 개수를 검사한다. |
+| 대상 소유 공개 앱 보존 | 기존 fixture의 소유자가 대상 회원과 달라 계약/브라우저 소유권 단언이 실패. 시험 소유 공개 앱을 대상 회원에게 배정한 뒤 해제와 재승인 각각에서 익명 목록의 ID/소유자 및 상세 item 전체 보존을 검사한다. |
+
+공개 상세의 최초 시험 작성은 item 봉투를 빠뜨려 KeyError/TypeError로 실패했다.
+DTO 관찰을 item으로 고친 뒤 실제 소유권 불일치의 red를 확인했다.
+대상/키·관리자 최종 검사와 기존 BEGIN IMMEDIATE 경합 경계를 유지한다. 회원 완주
+시나리오는 추가 HTTP/DB 관찰 때문에 기존 30초 총 한도에 도달해 이 테스트의 총
+한도만 60초로 조정했다. 개별 expect 대기·retries·시각 허용 오차는 변경하지 않았다.
+재부팅 뒤 사라진 pinned renderer는 테스트 전 별도로 준비했고 R15는 기존 private
+준비 파일을 사용했다. 테스트 중 다운로드하지 않는다.
+
+### r1 반영 후 검사
+
+아래는 이번 변경에서 다시 실행한 결과다. 초기 구현의 추가 검사 결과는 뒤의
+d49536e 표에 구분해 보존한다. CI 결과는 push 후 PR에 별도로 기록한다.
+
+| 명령 | 결과 |
+| --- | --- |
+| `cd backend && APP_ENV=test uv run --frozen pytest tests/contracts/test_admin_approval.py tests/test_approval_races.py -q` | 30개 통과 / 71.35초 |
+| `cd backend && APP_ENV=test uv run --frozen pytest -q` | 전체 264개 통과 / 801.09초 / 기존 Starlette deprecation 경고 1개 |
+| `cd backend && uv run --frozen ruff check .` / `uv run --frozen ruff format --check .` | 통과 / 50개 파일 포맷 통과 |
+| `npm --prefix frontend run check` / `npm --prefix frontend test` | 통과 / 33개 파일·846개 통과 |
+| `npm --prefix frontend run test:e2e -- e2e/auth.spec.js e2e/auth-recovery.spec.js e2e/admin.spec.js` | 영향 mock E2E 45개 통과 |
+| `npm --prefix frontend run test:e2e:api -- admin-approval.spec.js auth-lifecycle.spec.js` | 기능 6개 + 캡처 5개 통과 |
+| `node frontend/scripts/check-approval-evidence.mjs` | 위 재현 결과와 커밋된 PNG 15장 byte-for-byte 일치·captures.json 전체 일치 |
+| `npm --prefix frontend run test:e2e:api` (인자 없음) | 일반 52개 통과/기존 gate 29개 skip + prepared 45개 통과 + 캡처 15개 통과 = 112개 통과/29개 skip |
+
+OpenAPI 생성도 다시 실행했고 생성 타입의 변경은 없었다. API E2E가 바꾼 무관한
+Phase 2 증거 PNG는 원복했다. 이번에 새 증거 PNG나 시각 baseline을 갱신하지 않았다.
+
 ## Standards
 
 독립 Standards 리뷰: 문서화된 기준 위반 0개, 실행할 코드 냄새 지적 0개.
@@ -94,7 +134,7 @@ red→green 및 수정분 재리뷰로 두 지적 모두 해소했다. 범위 �
 
 최종 지적 수: Standards 0개 / Spec 0개(발견한 P2 2개 수정 완료).
 
-## 최종 검사
+## 초기 구현 검사 (d49536e)
 
 명령은 저장소 루트에서 실행한다. 위 환경변수는 backend/API E2E에도 적용한다.
 

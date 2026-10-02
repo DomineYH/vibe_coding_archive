@@ -178,6 +178,143 @@ def test_admin_reads_current_members_and_full_statistics_without_contact(member_
         }
 
 
+def test_admin_list_offset_bounds_return_defined_validation_errors(member_app):
+    app, _ = member_app()
+    with TestClient(app, raise_server_exceptions=False) as client:
+        admin = signed_in(client, "admin")
+        for offset in (-1, 9007199254740992, 2**63, 10**30):
+            result = client.get(
+                f"{API}/admin/users?offset={offset}", headers=headers(admin)
+            )
+            assert result.status_code == 422, result.text
+            assert result.json()["error"]["code"] == "VALIDATION_ERROR"
+        result = client.get(
+            f"{API}/admin/users?offset=9007199254740991", headers=headers(admin)
+        )
+        assert result.status_code == 200
+        assert result.json()["items"] == []
+        assert result.json()["pagination"]["has_more"] is False
+
+
+def test_healthy_apps_counts_only_fresh_healthy_results(
+    member_app, seed_public_and_private_apps, monkeypatch
+):
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2026, 10, 1, tzinfo=UTC)
+
+    monkeypatch.setattr("app.auth_boundary.datetime", Clock)
+    app, path = member_app()
+    seed_public_and_private_apps(path, public_count=3)
+    with TestClient(app) as client:
+        admin = signed_in(client, "admin")
+        unchecked = client.get(f"{API}/admin/users", headers=headers(admin)).json()
+        assert unchecked["stats"]["healthy_apps"] == 0
+        assert unchecked["stats"]["next_health_expiry_at"] is None
+        with sqlite3.connect(path) as db:
+            db.executemany(
+                "UPDATE health_results SET state=?,checked_at='2026-09-30T23:00:00.000000Z',fresh_until=? WHERE app_id=?",
+                [
+                    (
+                        state,
+                        expiry,
+                        f"00000000-0000-4000-8000-{index:012d}",
+                    )
+                    for index, state, expiry in (
+                        (1, "healthy", "2026-10-01T01:00:00.000000Z"),
+                        (2, "healthy", "2026-10-01T00:00:00.000000Z"),
+                        (3, "http_error", "2026-10-01T00:30:00.000000Z"),
+                    )
+                ],
+            )
+        result = client.get(f"{API}/admin/users", headers=headers(admin))
+        assert result.status_code == 200
+        assert result.json()["stats"]["total_apps"] == 4
+        assert result.json()["stats"]["healthy_apps"] == 1
+        assert (
+            result.json()["stats"]["next_health_expiry_at"]
+            == "2026-10-01T01:00:00.000000Z"
+        )
+
+
+@pytest.mark.parametrize("deleted", [False, True])
+def test_terminal_approval_rejection_is_audited_once_and_survives_key_cleanup(
+    member_app, deleted
+):
+    from app.auth_maintenance import sweep
+
+    app, path = member_app()
+    with TestClient(app) as client:
+        admin = signed_in(client, "admin")
+        key = issue(admin).json()["key"]
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "DELETE FROM members WHERE id=?"
+                if deleted
+                else "UPDATE members SET account_version=2 WHERE id=?",
+                (PENDING_ID,),
+            )
+        code = "USER_NOT_FOUND" if deleted else "USER_STATE_CONFLICT"
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "CREATE TRIGGER fail_audit BEFORE INSERT ON audit_logs BEGIN SELECT RAISE(ABORT,'controlled failure'); END"
+            )
+        failed = execute(admin, key)
+        assert (failed.status_code, failed.json()["error"]["code"]) == (
+            503,
+            "SERVICE_UNAVAILABLE",
+        )
+        unresolved = read(admin, key).json()
+        assert (unresolved["state"], unresolved["rejection_code"]) == (
+            "unresolved",
+            None,
+        )
+        with sqlite3.connect(path) as db:
+            assert db.execute("SELECT count(*) FROM audit_logs").fetchone() == (0,)
+            db.execute("DROP TRIGGER fail_audit")
+        result = execute(admin, key)
+        assert (result.status_code, result.json()["error"]["code"]) == (
+            404 if deleted else 409,
+            code,
+        )
+        resolved = read(admin, key).json()
+        assert (resolved["state"], resolved["rejection_code"]) == ("rejected", code)
+        repeated = execute(admin, key)
+        assert (repeated.status_code, repeated.json()["error"]["code"]) == (
+            409,
+            "OPERATION_ALREADY_RESOLVED",
+        )
+        with sqlite3.connect(path) as db:
+            audit = db.execute(
+                "SELECT action,actor_id,target_id,occurred_at,outcome FROM audit_logs"
+            ).fetchall()
+            assert audit == [
+                (
+                    "user_approval",
+                    AUTH_MEMBERS["admin"][0],
+                    PENDING_ID,
+                    resolved["finalized_at"],
+                    "rejected",
+                )
+            ]
+            db.execute(
+                "UPDATE write_operations SET expires_at='2000-01-01T00:00:00.000000Z' WHERE key=?",
+                (key,),
+            )
+        sweep(app.state.session_factory)
+        with sqlite3.connect(path) as db:
+            assert db.execute("SELECT count(*) FROM write_operations").fetchone() == (
+                0,
+            )
+            assert (
+                db.execute(
+                    "SELECT action,actor_id,target_id,occurred_at,outcome FROM audit_logs"
+                ).fetchall()
+                == audit
+            )
+
+
 def test_admin_authority_and_key_ownership_are_checked_on_every_endpoint(member_app):
     app, path = member_app()
     with TestClient(app) as admin_client, TestClient(app) as other_client:
@@ -313,12 +450,28 @@ def test_revocation_permanently_revokes_all_old_sessions_and_preserves_public_ap
 ):
     app, path = member_app()
     seed_public_and_private_apps(path)
+    id_ = AUTH_MEMBERS["approved"][0]
+    app_id = "00000000-0000-4000-8000-000000000002"
+    with sqlite3.connect(path) as db:
+        db.execute("UPDATE apps SET owner_id=? WHERE id=?", (id_, app_id))
     with TestClient(app) as client, TestClient(app) as first, TestClient(app) as second:
         admin = signed_in(client, "admin")
         old = [signed_in(first), signed_in(second)]
-        id_ = AUTH_MEMBERS["approved"][0]
+        with TestClient(app) as public:
+            detail = public.get(f"{API}/apps/{app_id}")
+            assert detail.status_code == 200
+            assert detail.json()["item"]["owner"]["id"] == id_
         key = issue(admin, id_, approved=False).json()["key"]
         assert execute(admin, key, id_, approved=False).status_code == 200
+        with TestClient(app) as public:
+            listed = public.get(f"{API}/apps").json()["items"]
+            assert any(
+                item["id"] == app_id and item["owner"]["id"] == id_ for item in listed
+            )
+            assert (
+                public.get(f"{API}/apps/{app_id}").json()["item"]
+                == detail.json()["item"]
+            )
         for browser in old:
             assert (browser.me().status_code, browser.me().json()["error"]["code"]) == (
                 401,
@@ -328,7 +481,15 @@ def test_revocation_permanently_revokes_all_old_sessions_and_preserves_public_ap
         assert execute(admin, key, id_, version=2).status_code == 200
         for browser in old:
             assert browser.me().status_code == 401
-        assert client.get(f"{API}/apps").status_code == 200
+        with TestClient(app) as public:
+            listed = public.get(f"{API}/apps").json()["items"]
+            assert any(
+                item["id"] == app_id and item["owner"]["id"] == id_ for item in listed
+            )
+            assert (
+                public.get(f"{API}/apps/{app_id}").json()["item"]
+                == detail.json()["item"]
+            )
         with sqlite3.connect(path) as db:
             assert db.execute(
                 "SELECT count(*) FROM sessions WHERE member_id=? AND revoked_at IS NULL",
@@ -476,8 +637,8 @@ def test_restart_preserves_keys_and_target_deletion_does_not_erase_success(membe
         assert read(admin, unresolved).json()["rejection_code"] == "USER_NOT_FOUND"
         with sqlite3.connect(path) as db:
             assert db.execute(
-                "SELECT target_id FROM audit_logs WHERE action='user_approval'"
-            ).fetchall() == [(PENDING_ID,)]
+                "SELECT target_id,outcome FROM audit_logs WHERE action='user_approval' ORDER BY id"
+            ).fetchall() == [(PENDING_ID, "succeeded"), (PENDING_ID, "rejected")]
         reconcile(app.state.session_factory, restored=True)
         fresh = signed_in(TestClient(app), "admin")
         assert (

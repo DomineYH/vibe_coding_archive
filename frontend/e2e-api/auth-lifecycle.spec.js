@@ -4,6 +4,7 @@ import { login, openAdmin, userRow } from "./approval-helpers.js";
 
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
 const PASSWORD = "  회원 완주 비밀번호 AbC 1234  ";
+const PUBLIC_APP_ID = "00000000-0000-4000-8000-000000000002";
 
 test("registration and administrator approval activate as one bundle; future features stay closed", async ({
   request,
@@ -34,7 +35,10 @@ if (prepared)
     page,
     browser,
     context,
+    request,
   }) => {
+    // Includes two logins, logout, revoke/reapprove, and anonymous app reads.
+    test.setTimeout(60000);
     await blockExternalRequests(context);
     await page.goto("/auth?mode=signup");
     await page
@@ -58,6 +62,14 @@ if (prepared)
         "SELECT approval_status,account_version,first_approved_at FROM members WHERE login_id_key='lifecycle-member'",
       ),
     ).toEqual([["pending", 1, null]]);
+    const [[memberId]] = query(
+      "SELECT id FROM members WHERE login_id_key='lifecycle-member'",
+    );
+    query(`UPDATE apps SET owner_id='${memberId}' WHERE id='${PUBLIC_APP_ID}'`);
+    const publicApp = await (
+      await request.get(`/api/v1/apps/${PUBLIC_APP_ID}`)
+    ).json();
+    expect(publicApp.item.owner.id).toBe(memberId);
     const adminContext = await browser.newContext();
     await blockExternalRequests(adminContext);
     const adminPage = await adminContext.newPage();
@@ -85,10 +97,6 @@ if (prepared)
       await expect(
         page.getByRole("banner").getByText("완주 교사", { exact: true }),
       ).toBeVisible();
-      const oldCookies = await context.cookies();
-      const oldFlow = await page.evaluate(() =>
-        localStorage.getItem("eduvibe-auth-flow-v1"),
-      );
       await page.getByRole("button", { name: "로그아웃", exact: true }).click();
       await expect(
         page.getByRole("button", { name: "로그아웃", exact: true }),
@@ -102,6 +110,16 @@ if (prepared)
       await expect(
         page.getByRole("banner").getByText("완주 교사", { exact: true }),
       ).toBeVisible();
+      const oldCookies = await context.cookies();
+      const oldFlow = await page.evaluate(() =>
+        localStorage.getItem("eduvibe-auth-flow-v1"),
+      );
+      const oldSession = oldCookies.find((cookie) =>
+        cookie.name.startsWith("eduvibe_session_dev_"),
+      );
+      expect(oldSession).toBeDefined();
+      const oldSessionQuery = `SELECT revoked_at IS NOT NULL FROM sessions WHERE flow_id='${JSON.parse(oldFlow).flowId}' AND issued_seq='${oldSession.name.split("_").at(-1)}' AND kind='full'`;
+      expect(query(oldSessionQuery)).toEqual([[0]]);
       await adminPage.bringToFront();
       await adminPage.reload();
       row = userRow(adminPage, "lifecycle-member");
@@ -122,6 +140,20 @@ if (prepared)
           "SELECT count(*) FROM sessions s JOIN members m ON s.member_id=m.id WHERE m.login_id_key='lifecycle-member' AND s.revoked_at IS NULL",
         ),
       ).toEqual([[0]]);
+      expect(query(oldSessionQuery)).toEqual([[1]]);
+      const revokedList = await (await request.get("/api/v1/apps")).json();
+      expect(revokedList.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: PUBLIC_APP_ID,
+            owner: expect.objectContaining({ id: memberId }),
+          }),
+        ]),
+      );
+      expect(
+        (await (await request.get(`/api/v1/apps/${PUBLIC_APP_ID}`)).json())
+          .item,
+      ).toEqual(publicApp.item);
       await page.bringToFront();
       await page.reload();
       await expect(
@@ -153,6 +185,20 @@ if (prepared)
           "SELECT approval_status,account_version FROM members WHERE login_id_key='lifecycle-member'",
         ),
       ).toEqual([["approved", 4]]);
+      expect(query(oldSessionQuery)).toEqual([[1]]);
+      const reapprovedList = await (await request.get("/api/v1/apps")).json();
+      expect(reapprovedList.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: PUBLIC_APP_ID,
+            owner: expect.objectContaining({ id: memberId }),
+          }),
+        ]),
+      );
+      expect(
+        (await (await request.get(`/api/v1/apps/${PUBLIC_APP_ID}`)).json())
+          .item,
+      ).toEqual(publicApp.item);
       await expect(
         page.getByRole("link", { name: /^둘째 공개 앱,/ }),
       ).toBeVisible();
