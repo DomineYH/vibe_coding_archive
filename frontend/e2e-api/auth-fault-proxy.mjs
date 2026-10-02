@@ -7,6 +7,8 @@ import { chmod } from "node:fs/promises";
 export async function startFaultProxy({ port, upstreamPort, controlPath }) {
   let armed;
   let held;
+  let retainedReply;
+  let duplicate;
   const events = [];
   const sockets = new Set();
   const stages = new Set([
@@ -16,6 +18,15 @@ export async function startFaultProxy({ port, upstreamPort, controlPath }) {
     "mid_body",
   ]);
   const server = http.createServer(async (incoming, outgoing) => {
+    if (duplicate?.path === incoming.url) {
+      const copy = duplicate;
+      duplicate = undefined;
+      incoming.resume();
+      outgoing.writeHead(copy.status, copy.headers);
+      outgoing.end(Buffer.concat(copy.chunks));
+      events.push({ path: incoming.url, stage: "duplicate_delivery" });
+      return;
+    }
     const fault = armed?.path === incoming.url ? armed : null;
     if (fault) armed = undefined;
     const ingress = (incoming.headers.cookie ?? "")
@@ -42,6 +53,10 @@ export async function startFaultProxy({ port, upstreamPort, controlPath }) {
       held = undefined;
     };
     await pause("before_forward");
+    if (outgoing.destroyed) {
+      incoming.destroy();
+      return;
+    }
     const upstream = http.request({
       hostname: "127.0.0.1",
       port: upstreamPort,
@@ -63,6 +78,14 @@ export async function startFaultProxy({ port, upstreamPort, controlPath }) {
           sameSiteLax: /SameSite=Lax/i.test(cookie),
         })),
       });
+      const copy = fault
+        ? {
+            path: incoming.url,
+            status: reply.statusCode,
+            headers: reply.rawHeaders,
+            chunks: [],
+          }
+        : null;
       reply.pause();
       await pause("before_headers");
       if (outgoing.destroyed) {
@@ -79,6 +102,7 @@ export async function startFaultProxy({ port, upstreamPort, controlPath }) {
       }
       let first = true;
       for await (const chunk of reply) {
+        if (copy) copy.chunks.push(Buffer.from(chunk));
         if (first && fault?.stage === "mid_body") {
           first = false;
           // At least one original byte, strictly less than the full JSON body.
@@ -91,6 +115,7 @@ export async function startFaultProxy({ port, upstreamPort, controlPath }) {
           outgoing.write(chunk.subarray(1));
         } else outgoing.write(chunk);
       }
+      if (copy) retainedReply = copy;
       outgoing.end();
       events.push({ path: incoming.url, stage: "complete" });
     });
@@ -112,10 +137,14 @@ export async function startFaultProxy({ port, upstreamPort, controlPath }) {
           if (armed || held || !stages.has(message.stage)) throw new Error();
           armed = { path: message.path, stage: message.stage };
           events.length = 0;
+        } else if (message.action === "duplicate") {
+          if (!retainedReply || held || duplicate) throw new Error();
+          duplicate = retainedReply;
         } else if (message.action === "release" || message.action === "drop") {
           if (message.action === "drop") held?.outgoing.destroy();
           held?.release();
           armed = undefined;
+          duplicate = undefined;
         } else if (message.action !== "status") throw new Error();
         socket.end(JSON.stringify({ events, held: Boolean(held) }) + "\n");
       } catch {

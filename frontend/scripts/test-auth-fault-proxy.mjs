@@ -74,6 +74,10 @@ for (const stage of [
       assert.ok(cookies[0].startsWith("first="));
       assert.ok(cookies[1].startsWith("second="));
       assert.equal(bytes, 11);
+      await control(socket, { action: "duplicate" });
+      const duplicated = await request();
+      assert.deepEqual(duplicated, cookies);
+      assert.deepEqual(ingress, [null]);
       await request();
       assert.deepEqual(ingress, [null, null]);
     } finally {
@@ -83,3 +87,51 @@ for (const stage of [
     }
   });
 }
+
+test("dropping before_forward never reaches the upstream", async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), "auth-proxy-drop-"));
+  const socket = path.join(directory, "control.sock");
+  const ingress = [];
+  const upstream = http.createServer((request, response) => {
+    ingress.push(request.url);
+    response.end("unexpected");
+  });
+  await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+  const proxy = await startFaultProxy({
+    port: 0,
+    upstreamPort: upstream.address().port,
+    controlPath: socket,
+  });
+  try {
+    await control(socket, {
+      action: "arm",
+      path: "/never-forward",
+      stage: "before_forward",
+    });
+    const dropped = new Promise((resolve, reject) => {
+      http
+        .get(`http://127.0.0.1:${proxy.port}/never-forward`, () =>
+          reject(new Error("dropped request received a response")),
+        )
+        .on("error", resolve);
+    });
+    const deadline = Date.now() + 5000;
+    while (!(await control(socket, { action: "status" })).held) {
+      assert.ok(Date.now() < deadline);
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    await control(socket, { action: "drop" });
+    await dropped;
+    // A control round-trip observes the resumed callback without a timing budget change.
+    const observed = await control(socket, { action: "status" });
+    assert.equal(
+      observed.events.some((event) => event.stage === "forwarded"),
+      false,
+    );
+    assert.equal(ingress.length, 0);
+  } finally {
+    await proxy.close();
+    await new Promise((resolve) => upstream.close(resolve));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
