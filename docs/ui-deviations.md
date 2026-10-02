@@ -417,14 +417,19 @@ auth restoration. No new card or administrator dashboard is introduced.
 | Explicit concealed recheck (review r1) | The existing header shows “다시 확인” during concealed/checking states; clicking requests fresh proof and restores only after success. Focus/visible/pageshow clear the away flag even while proof is in flight. | AC4 and R23 §4. Unit red→green and delayed actual backend proof; protected DOM stays absent until proof. Header dimensions and existing button style remain unchanged. |
 | Mock health progress (review r1 regression) | Existing batch progress and explicit requery remain visible. Health updates refresh health/list/admin data without concealing the member header or restarting the batch query through auth restoration. | AC8: the broader existing admin-apps E2E caught a reset/cache-removal feedback loop; a data-only notification fixes it with the original assertion unchanged. Authentication notifications still conceal and clear protected queries. |
 
-Review r1 separates the historical source metric from an actual product change.
-Reproducing T05 `c80d24a` at all five sizes produces PNGs byte-identical to the
-retained pre-repair T06 mock owner screen: private body, member header, controls,
-health card and dimensions are unchanged. Historical T05 source pixel counts
-cannot be reproduced and its original product PNGs are not retained in issue119.
-The cause of that historical increment remains blocked pending those originals;
-no intended UI change or regression is inferred from the counts alone. The direct
-comparison and missing-artifact limit are recorded in the T06 ledger.
+Review r1 classifies the roughly 12k increase against the historical T05 record
+as an inherited environment/recording difference, not a T06 product regression.
+Reproducing T05 `c80d24a` and the final T06 implementation in the same environment
+produces byte-identical private-member-detail PNGs at all five sizes, with zero
+product pixel differences. The private body, member header, controls, health card
+and dimensions are unchanged; T05 reproduction also yields T06's source counts.
+The coordinator confirmed that no T05 run PNGs were retained; the committed
+`frontend/visual` PNGs are baselines, not T05 outputs. This finding is resolved
+using the [direct comparison evidence](evidence/phase-3/issue120/2026-10-02/mock-private-detail-comparison.json)
+and [T06 ledger](evidence/phase-3/issue120/2026-10-02/README.md).
+The exact historical environment or recording mechanism is not established.
+No baseline or tolerance changes, further investigation or human acceptance are
+implied by this classification.
 
 The 35 private-detail states across five viewports are product-only observations,
 identical across two independent real-API runs. Existing source comparisons are

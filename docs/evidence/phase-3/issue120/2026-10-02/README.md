@@ -72,7 +72,7 @@ abort는 실패 UI용 fault injection이며 성공한 인증/Set-Cookie 경합 �
 | 6 / US-01–02·37 | 엄격한 return_to parser 유지, fresh meta/capability/대상 권한 재검사. false/meta failure/denied를 허용으로 해석하지 않음. public detail은 failed/stale auth와 독립, 새 public visitor auth 요청 0. | U2 route/view parser와 current-meta return cases; 공개 detail은 독립 headerless probe 후 표시, private는 captured proof로만 조회. E1 public visitor 요청 감시 authCalls=[]; private/missing 동일 화면. 기존 mock auth e2e: non-admin 로그인 성공 후 return_to=/admin 거절은 login URL 유지+alert (이전 /admin 403 도착 assertion 변경). #113 T06은 복귀 전 권한 확인을 요구하고 승인 계획 §2는 실패 시 기존 safe error/recheck 경로 유지를 명시한다. 인증된 header의 gallery/logout 이용 가능; 로그인 재제출은 ALREADY_AUTHENTICATED이며 이를 새 로그인으로 처리하지 않음. | PASS |
 | 7 / US-28–29·33–39·54 | 실제 A/B/admin/change_only 행렬, 다중 tab·refresh/history·hide/restore, revoke→reapprove old S 거부. archive CUD/admin archive list는 열리지 않음. | E1 여섯 기능 여정, B1/B2. 실제 관리자 발급 operation key+approval HTTP 두 번, DB full active S=0, 이전 cookie/context private 404·새 login만 200, public items 동일. CUD POST/PATCH/DELETE 405, admin/apps GET 404, 관련 caps false. | PASS |
 | 8 / US-54 / I24·Q06–12 | 실제 HTTP/임시 SQLite/cookie/제품을 연결, shared schema/transport/state 영향 평가 후 public/seed/admin/auth 회귀. API 실패→mock fallback 없음. | backend full, frontend full, 기본 API runner 두 boundary, mock auth/admin 및 draft/write-outcome, check/build/dist/reference. mock admin_users_read/admin_approval false→true는 이미 구현된 mock user/approval 서비스를 현재 capability gating에서 계속 접근시키는 선언 수정. API archive 기능 cap false 유지. schema migration/member model/lockfile 변경 없음; OpenAPI 타입은 명시 generator로만 생성. CI는 coordinator 책임으로 아래 NOT RUN. | r1 frontend/browser PASS; backend full 1 FAIL → seed 8 PASS / CI NOT RUN |
-| 9 / US-53·55 / UI-D02·03·07·09 | 기존 EV/card/header 구조 유지, 5 viewport 고정 조건, 독립 source/product 비교. 숨긴 private body 접근 불가; focus/label/error/이름 유지. | V1 35/35 byte-identical; E1 keyboard/accessibility DOM assertions, 기존 auth/admin visual V2 및 legacy JSON. [UI 차이 기록](../../../../ui-deviations.md)의 T06 설명. 사람·screen reader·실기기 acceptance 별도. | AUTOMATED PASS / historical T05 원인 BLOCKED / HUMAN NOT RUN |
+| 9 / US-53·55 / UI-D02·03·07·09 | 기존 EV/card/header 구조 유지, 5 viewport 고정 조건, 독립 source/product 비교. 숨긴 private body 접근 불가; focus/label/error/이름 유지. | V1 35/35 byte-identical; E1 keyboard/accessibility DOM assertions, 기존 auth/admin visual V2 및 legacy JSON. [UI 차이 기록](../../../../ui-deviations.md)의 T06 설명. 사람·screen reader·실기기 acceptance 별도. | AUTOMATED PASS / historical T05 환경·기록 차이 / HUMAN NOT RUN |
 | 10 / US-55 | 모든 AC의 사례/기대/명령/관찰/판정 및 first failure→fix→retest 기록. 비밀/원문 DB 없음, 자동 baseline/type/lock 갱신 없음. | 본 원장, captures/reproducibility/legacy JSON, test source, 아래 TDD·통합·유예 표. V1은 읽기만 한다. 기존 검사 생성 PNG는 보존본을 변경하지 않고 원복한다. | PASS |
 
 ## 결정·원천 사례의 적용 범위
@@ -162,6 +162,7 @@ abort는 실패 UI용 fault injection이며 성공한 인증/Set-Cookie 경합 �
 | MAJOR-1 / AC4 | auth-isolation에서 blur→storage→focus를 지연 proof 중 실행: 3 PASS/1 FAIL, 3.84s; 해제 후 heading 없음. visible 복귀는 in-flight guard 전에 pageAway=false: 4 PASS/2.99s. focus/visibility→visible/pageshow 세 복귀를 같은 seam에서 검사. 실제 E2E는 route.fetch로 실제 flow-state 200을 받은 뒤 지연 전달하고 focus 후 proof 완료까지 heading 0, 완료 후 복원. fabricated success 없음. |
 | explicit retry / AC4 | concealed 상태에는 버튼이 없어 4 PASS/1 FAIL, 3.02s. Header concealed/checking에 기존 다시 확인 제어를 제공하고 visible 명시 retry가 away를 해제한 뒤 재증명: 5 PASS/2.93s. 실패하면 private DOM 없음, 다시 확인 성공 때만 복원. Detail/edit/submit/admin/auth의 명시 retry가 같은 동작을 사용한다. |
 | MINOR-2 / I19 | BrowserRouter의 실제 back은 getCurrentAuthState를 2회 실행하여 7 PASS/1 FAIL, 3.53s. 새 entry layout effect 하나가 location.key를 처리하고 별도 POP layout/native popstate 제거. isolation+continuity 16 PASS/3.78s. R23 §4의 “새 진입·새로고침·뒤로가기 복원·탭/창 복귀 때는 ... 서버에서 재확인”에 따라 push 재증명은 유지. 실제 client push→back의 flow-state 요청도 1회 단언한다. |
+| MINOR-1 / AC9 | 같은 환경에서 c80d24a와 최종 T06 private-member-detail 5 PNG가 byte-identical, productDifferentPixels=0. historical T05 record의 약 12k 증가는 T06에서 발생한 제품 회귀가 아닌 상속된 환경·기록 차이로 분류한다. coordinator가 T05 실행 PNG 미보존을 확인했고 이 증거로 지적을 해소한다. 아래 직접 비교 참조; baseline 변경 없음. |
 | MINOR-3 / AC6·AC8 | mock admin_users_read/admin_approval enabled 선언은 기존 mock read/approval 구현의 가용성을 반영해 demo 접근을 유지. API archive cap은 바꾸지 않음. non-admin return_to=/admin은 로그인 성공 뒤 login URL+safe alert 유지; #120 AC6/#113 T06의 복귀 전 권한 확인 및 승인 계획 §2 safe error/recheck 경로에 부합. 기존 e2e expectation 변경을 AC6/AC8와 ui-deviations에 명시. |
 | NIT / contract | getApp 200 네 header 각각 member-bound-only description. openapi:generate로 타입 comment 생성; lint/type consistency PASS. List BEGIN IMMEDIATE 및 auth-unready 동작은 변경하지 않음. |
 | 추가 AC8 mock Health Monitor 회귀 | broadened admin-apps 포함 mock 82 PASS/1 FAIL (276.65s): manual retry 직후 진행 중 대신 완료. 같은 targeted case 재FAIL, T05 isolated source 1 PASS/7.4s, 같은 Linux dependency에서 r1 source 재FAIL. tagged probe: getBatch 진행 알림이 일반 mock-reset→auth restore→batch query remove→즉시 getBatch 반복을 일으켜 4단계를 213ms에 소진했다. mock-health-updated data 알림으로 health/list/admin data만 invalidate하고 batch query·인증 proof는 보존. 기존 E2E assertion 그대로 1 PASS/13.3s. auth notification의 protected cache 제거·가림은 유지. probe는 checkout 밖에서만 사용하고 제거했다. |
@@ -184,8 +185,9 @@ abort는 실패 UI용 fault injection이며 성공한 인증/Set-Cookie 경합 �
 
 ### MINOR-1: source 비교와 product 회귀의 분리
 
-T05 원본 product PNG는 issue119에 보존되어 있지 않고 legacy JSON만 남아 있다.
-따라서 historical PNG의 가시적 원인을 단정하지 않는다. `git archive c80d24a`
+Coordinator는 T05 실행 product PNG가 어디에도 보존되지 않았고 issue119의
+comparison JSON만 남았음을 확인했다. frontend/visual의 committed PNG는
+기준 이미지이며 T05 실행 출력이 아니다. `git archive c80d24a`
 소스를 별도 일반 디렉터리에서 기존 의존성으로 실행했다 (branch/worktree 변경,
 다운로드, 기준 변경 없음). 같은 Chromium/locale/timezone/fonts/clock/config에서
 5 private-only 사례 5 PASS/24.6s; 원래 전체 auth sequence는 4 PASS/1 deadline FAIL,
@@ -197,9 +199,12 @@ pre-r1 T06 private-member-detail PNG 5장을 비교해 **모두 byte-identical,
 productDifferentPixels=0**을 입증한다. 최종 r1 private PNG도 5/5 동일하여 이 화면의 재현된 product 회귀는 없다.
 반면 historical T05 source differentPixels 394038/307085/342465/176633/172962는
 재현되지 않고 T05 재실행도 T06의 406634/319307/355303/188519/184735를 낸다.
-이는 historical source 메타데이터의 불일치이며 T06 product 회귀로 판정할 근거가
-아니다. 원래 T05 PNG의 위치를 요청했다. 원본이 확보되기 전 historical increment의
-가시적 원인 확정은 **BLOCKED**이며 재현 결과로 baseline을 갱신하지 않는다.
+같은 환경에서 c80d24a와 최종 T06의 출력이 byte-identical이므로 약 12k 증가는
+**T06 코드 변경으로 발생하지 않았다**. Coordinator 결정에 따라 historical T05
+record 대비 **상속된 환경·기록 차이**로 분류하고 MINOR-1을 해소한다. 특정 환경
+요인의 상세 원인은 이 증거만으로 단정하지 않으며 추가 추적은 종료한다.
+이 분류는 source 비교의 완전 일치나 사람의 시각 수락을 뜻하지 않는다.
+기존 baseline·comparison 기록·tolerance는 변경하지 않는다.
 
 ## 통합 검사 결과
 
@@ -221,7 +226,7 @@ productDifferentPixels=0**을 입증한다. 최종 r1 private PNG도 5/5 동일�
 
 ## 검수 상태
 
-r1 코드 수정과 사용 가능한 자동 검증을 마쳤다. backend full의 기존 seed startup deadline 1 FAIL은 준비된 Linux dependency에서 seed 8 PASS로 영향 재검사했으며 전수 PASS로 바꿔 기록하지 않는다. MINOR-1 historical source increment의 가시적 원인은 원본 T05 PNG 부재로 BLOCKED다. 기존 source와 차이가 있는
+r1 코드 수정과 사용 가능한 자동 검증을 마쳤다. backend full의 기존 seed startup deadline 1 FAIL은 준비된 Linux dependency에서 seed 8 PASS로 영향 재검사했으며 전수 PASS로 바꿔 기록하지 않는다. MINOR-1 historical source increment는 c80d24a와 최종 T06의 byte-identical 재현에 근거해 상속된 환경·기록 차이로 해소했다. 기존 source와 차이가 있는
 프레임은 자동 승인하지 않는다. 제품-only 캡처의 동일성은 재현성 증거이며 source
 수락이나 운영 공개를 뜻하지 않는다. user README/CLAUDE/routing/storage/.env,
 기존 reference/baseline 및 issue119 증거는 수정·staging하지 않는다.
