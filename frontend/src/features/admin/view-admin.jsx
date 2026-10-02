@@ -955,7 +955,7 @@ function UserDeletePanel({
   );
 }
 
-export function AdminView({ scopeKey, meta }) {
+export function AdminView({ scopeKey, meta, active = true }) {
   const canReset =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_password_reset.enabled === true;
@@ -992,7 +992,7 @@ export function AdminView({ scopeKey, meta }) {
   const usersKey = [__DATA_MODE__, "admin", "users", scopeKey];
   const query = useInfiniteQuery({
     queryKey: usersKey,
-    enabled: !route.invalid,
+    enabled: active && !route.invalid,
     queryFn: ({ pageParam, signal }) =>
       adminService.listUsers(
         { limit: PAGE_SIZE, offset: pageParam },
@@ -1007,7 +1007,7 @@ export function AdminView({ scopeKey, meta }) {
   const appsKey = [__DATA_MODE__, "admin", "apps", scopeKey];
   const appsQuery = useInfiniteQuery({
     queryKey: appsKey,
-    enabled: !route.invalid && tab === "health" && canReadApps,
+    enabled: active && !route.invalid && tab === "health" && canReadApps,
     queryFn: ({ pageParam, signal }) =>
       adminService.listApps(
         { limit: PAGE_SIZE, offset: pageParam },
