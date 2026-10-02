@@ -26,6 +26,12 @@ async function signedIn(page, id = "member-a", nickname = "승인 회원") {
   await expect(
     page.getByRole("banner").getByText(nickname, { exact: true }),
   ).toBeVisible();
+  const observed = await page.evaluate(async () => {
+    const { authService } = await import("/src/services/api/auth.ts");
+    const state = await authService.getCurrentAuthState();
+    return { status: state.status, kind: state.user?.sessionKind };
+  });
+  expect(observed).toEqual({ status: "ready", kind: "full" });
 }
 async function read(page, id, contextual = true, captured = null) {
   return page.evaluate(
@@ -127,7 +133,7 @@ if (prepared) {
     await denied(page, A);
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
     await expect(page).toHaveURL("/");
-    await signedIn(page, "admin-user", "관리 담당");
+    await signedIn(page, "approval-admin", "승인 담당");
     for (const [id, title] of [
       [A, titleA],
       [B, titleB],
@@ -487,7 +493,7 @@ if (prepared) {
       await capture("denied");
       await page.getByRole("button", { name: "로그아웃", exact: true }).click();
       await expect(page).toHaveURL("/");
-      await signedIn(page, "admin-user", "관리 담당");
+      await signedIn(page, "approval-admin", "승인 담당");
       await page.goto(`/apps/${A}`);
       await expect(heading(page)).toBeVisible();
       await capture("admin");

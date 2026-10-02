@@ -13,6 +13,7 @@ import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
 import { DEMO_ACCOUNTS } from "../src/services/mock/accounts";
 import { MOCK_STORAGE_KEY, resetMockState } from "../src/services/mock/state";
+import { ServiceError } from "../src/services/service-error";
 
 let client;
 beforeEach(() => {
@@ -52,6 +53,51 @@ async function recheck(identityChanged = false) {
   localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
   await act(async () => window.dispatchEvent(new Event("focus")));
 }
+it("preserves change-only field errors across terminal revision and observation changes, then discards changed identity history", async () => {
+  const observe = authService.getCurrentAuthState.bind(authService);
+  vi.spyOn(authService, "getCurrentAuthState").mockImplementation(async () => {
+    const state = await observe();
+    return {
+      ...state,
+      user: state.user
+        ? {
+            ...state.user,
+            sessionKind: "change_only",
+            mustChangePassword: true,
+          }
+        : null,
+    };
+  });
+  const error = "임시 비밀번호와 다른 비밀번호를 입력해 주세요.";
+  vi.spyOn(authService, "changePassword").mockImplementation(async () => {
+    const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+    state.auth_flow.revision = String(Number(state.auth_flow.revision) + 1);
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+    throw new ServiceError("VALIDATION_ERROR", error, {
+      fields: { password: error },
+    });
+  });
+  await visit("/auth?mode=password-change", 0);
+  const field = await screen.findByLabelText("새 비밀번호 (필수)", {
+    exact: true,
+  });
+  const attempted = "x".repeat(20);
+  fireEvent.change(field, { target: { value: attempted } });
+  fireEvent.change(screen.getByLabelText("새 비밀번호 확인 (필수)"), {
+    target: { value: attempted },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: "비밀번호 변경", exact: true }),
+  );
+  expect(await screen.findByText(error)).toBeInTheDocument();
+  expect(screen.getByLabelText("새 비밀번호 (필수)")).toHaveValue(attempted);
+  await recheck();
+  expect(await screen.findByText(error)).toBeInTheDocument();
+  expect(screen.getByLabelText("새 비밀번호 (필수)")).toHaveFocus();
+  await recheck(true);
+  expect(await screen.findByLabelText("새 비밀번호 (필수)")).toHaveValue("");
+  expect(screen.queryByText(error)).not.toBeInTheDocument();
+});
 it.each(["/apps/new", "/apps/00000000-0000-4000-8000-000000000091/edit"])(
   "restores a concealed draft after revision-only proof and discards identity history changes at %s",
   async (path) => {

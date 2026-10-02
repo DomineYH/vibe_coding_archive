@@ -11,7 +11,7 @@ if settings.app_env != "test":
     raise RuntimeError(
         "Prepared authentication boundary requires the test environment."
     )
-# Only the test runner supplies this clock for independent T03 screen captures.
+# Only the test runner supplies this clock for independent screen captures.
 if fixed := os.environ.get("API_E2E_CLOCK"):
     from app import auth_boundary, main, public_apps
 

@@ -1305,7 +1305,13 @@ function AuthRoute({
     <AuthView
       key={
         mode === "password-change"
-          ? `${mode}:${memberCacheScope({ ...auth, observationGeneration: 0 })}`
+          ? `${mode}:${JSON.stringify([
+              auth.user?.id,
+              auth.user?.role,
+              auth.user?.sessionKind,
+              auth.flow?.flowId,
+              auth.flow?.lastIdentityChangeRevision,
+            ])}`
           : mode
       }
       mode={mode}
