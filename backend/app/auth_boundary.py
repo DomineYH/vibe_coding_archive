@@ -97,20 +97,21 @@ def screen_activity(db, item, session):
         or session["absolute_expires_at"] <= timestamp
     ):
         return False
-    expiry = min(after(timestamp, 1800), session["absolute_expires_at"])
+    idle_expiry = after(timestamp, 1800)
+    expiry = min(idle_expiry, session["absolute_expires_at"])
     db.execute(
         text(
             "UPDATE sessions SET last_activity_at=:now,expires_at=:expiry WHERE token_hash=:hash"
         ),
         {"now": timestamp, "expiry": expiry, "hash": session["token_hash"]},
     )
-    item.update(last_activity_at=timestamp, expires_at=expiry)
+    item.update(last_activity_at=timestamp, expires_at=idle_expiry)
     save_flow(db, item)
     db.execute(
         text(
             "UPDATE recovery_credentials SET expires_at=:expiry WHERE flow_id=:id AND revoked_at IS NULL AND expires_at>:now"
         ),
-        {"expiry": expiry, "id": item["id"], "now": timestamp},
+        {"expiry": idle_expiry, "id": item["id"], "now": timestamp},
     )
     return True
 

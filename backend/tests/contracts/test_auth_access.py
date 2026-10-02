@@ -235,7 +235,10 @@ def test_exact_expiry_cannot_authorize_or_resurrect_private_screen(
         ).fetchone() == (original,)
 
 
-def test_activity_is_capped_at_original_absolute_expiry(access_server, monkeypatch):
+@pytest.mark.parametrize("expired_recovery", [False, True])
+def test_only_session_activity_is_capped_at_original_absolute_expiry(
+    access_server, monkeypatch, expired_recovery
+):
     _, path, client = access_server
     browser = signed_in(client)
     with sqlite3.connect(path) as db:
@@ -247,6 +250,11 @@ def test_activity_is_capped_at_original_absolute_expiry(access_server, monkeypat
             "UPDATE sessions SET absolute_expires_at=? WHERE flow_id=? AND issued_seq=?",
             (absolute, browser.flow, browser.generation),
         )
+        if expired_recovery:
+            db.execute(
+                "UPDATE recovery_credentials SET expires_at=? WHERE flow_id=?",
+                (stamp, browser.flow),
+            )
     monkeypatch.setattr("app.auth_boundary.now", lambda: after(stamp, 1))
     assert (
         client.get(f"{API}/apps/{PRIVATE}", headers=headers(browser)).status_code == 200
@@ -258,7 +266,22 @@ def test_activity_is_capped_at_original_absolute_expiry(access_server, monkeypat
         ).fetchone() == (absolute, absolute)
         assert db.execute(
             "SELECT expires_at FROM auth_flows WHERE id=?", (browser.flow,)
-        ).fetchone() == (absolute,)
+        ).fetchone() == (after(stamp, 1801),)
+        assert db.execute(
+            "SELECT expires_at FROM recovery_credentials WHERE flow_id=? AND revoked_at IS NULL",
+            (browser.flow,),
+        ).fetchone() == (stamp if expired_recovery else after(stamp, 1801),)
+    # Flow/R retain their own idle lifetime, but never revive the absolute-expired S.
+    monkeypatch.setattr("app.auth_boundary.now", lambda: absolute)
+    for app_id in (PRIVATE, MISSING):
+        assert (
+            client.get(f"{API}/apps/{app_id}", headers=headers(browser)).status_code
+            == 404
+        )
+    with sqlite3.connect(path) as db:
+        assert db.execute(
+            "SELECT expires_at FROM auth_flows WHERE id=?", (browser.flow,)
+        ).fetchone() == (after(stamp, 1801),)
 
 
 @pytest.mark.parametrize("read_first", [True, False])
