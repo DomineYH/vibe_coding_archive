@@ -31,6 +31,7 @@ import { healthService } from "@services/health";
 import { isSearchTooLong } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { reconcileMockReset } from "../services/mock/state";
+import { isMockHealthStorageUpdate } from "../services/mock/storage-events";
 import { contractError, ServiceError } from "../services/service-error";
 import { AppDetailView } from "../features/detail/view-detail";
 import { GalleryView } from "../features/gallery/view-gallery";
@@ -2088,7 +2089,9 @@ export default function App() {
       }
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1") {
         reconcileMockReset(event.newValue);
-        void refreshMockState();
+        if (isMockHealthStorageUpdate(event.oldValue, event.newValue))
+          onMockHealthUpdated();
+        else void refreshMockState();
       }
     };
     const onMockReset = () => void refreshMockState();

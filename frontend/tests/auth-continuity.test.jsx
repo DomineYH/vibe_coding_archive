@@ -16,6 +16,7 @@ import {
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
+import { healthService } from "../src/services/mock/health";
 import { DEMO_ACCOUNTS } from "../src/services/mock/accounts";
 import { MOCK_STORAGE_KEY, resetMockState } from "../src/services/mock/state";
 import { ServiceError } from "../src/services/service-error";
@@ -311,6 +312,112 @@ it("keeps AdminView active without auth proofs when switching tabs on the same p
     observer.disconnect();
   }
 });
+
+it("keeps loaded admin members accessible during another tab's health scenario and batch writes", async () => {
+  const initial = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  localStorage.setItem(
+    MOCK_STORAGE_KEY,
+    JSON.stringify({ ...initial, scenario: "app_update_delayed" }),
+  );
+  await visit("/admin", 0);
+  const members = await screen.findByRole("list", { name: "회원 목록" });
+  const nickname = DEMO_ACCOUNTS[1].nickname;
+  expect(within(members).getByText(nickname)).toBeInTheDocument();
+  const proof = vi.spyOn(authService, "getCurrentAuthState");
+  const writes = [];
+  const store = Storage.prototype.setItem;
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(
+    function (key, value) {
+      const oldValue = this.getItem(key);
+      store.call(this, key, value);
+      if (this === localStorage && key === MOCK_STORAGE_KEY)
+        writes.push(
+          new StorageEvent("storage", { key, oldValue, newValue: value }),
+        );
+    },
+  );
+  const view = members.closest("[aria-hidden]");
+  const changes = [];
+  const observer = new MutationObserver((records) => changes.push(...records));
+  observer.observe(view, {
+    attributes: true,
+    attributeFilter: ["hidden", "inert", "aria-hidden"],
+  });
+  try {
+    await act(async () => {
+      const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+      localStorage.setItem(
+        MOCK_STORAGE_KEY,
+        JSON.stringify({ ...state, scenario: "health_batch_slow" }),
+      );
+      await healthService.requestBatch();
+    });
+    proof.mockClear();
+    await act(async () => {
+      for (const event of writes) window.dispatchEvent(event);
+    });
+    expect(proof).not.toHaveBeenCalled();
+    expect(
+      within(screen.getByRole("list", { name: "회원 목록" })).getByText(
+        nickname,
+      ),
+    ).toBeInTheDocument();
+    expect(changes).toHaveLength(0);
+  } finally {
+    observer.disconnect();
+  }
+});
+
+it.each(["auth revision", "app ownership", "auth scenario", "damaged storage"])(
+  "still conceals admin members when a health storage write also changes %s",
+  async (change) => {
+    await visit("/admin", 0);
+    const members = await screen.findByRole("list", { name: "회원 목록" });
+    const view = members.closest("[aria-hidden]");
+    const oldValue = localStorage.getItem(MOCK_STORAGE_KEY);
+    const state = JSON.parse(oldValue);
+    state.health_id_sequence += 1;
+    if (change === "auth revision")
+      state.auth_flow.revision = String(Number(state.auth_flow.revision) + 1);
+    if (change === "app ownership")
+      state.private_apps[0].owner = {
+        id: DEMO_ACCOUNTS[0].id,
+        nickname: DEMO_ACCOUNTS[0].nickname,
+      };
+    if (change === "auth scenario") state.scenario = "auth_observation_error";
+    const newValue = change === "damaged storage" ? "{" : JSON.stringify(state);
+    const observe = authService.getCurrentAuthState.bind(authService);
+    let release;
+    const held = new Promise((resolve) => {
+      release = resolve;
+    });
+    const proof = vi
+      .spyOn(authService, "getCurrentAuthState")
+      .mockImplementation(async (options) => {
+        await held;
+        return observe(options);
+      });
+    try {
+      await act(async () => {
+        localStorage.setItem(MOCK_STORAGE_KEY, newValue);
+        window.dispatchEvent(
+          new StorageEvent("storage", {
+            key: MOCK_STORAGE_KEY,
+            oldValue,
+            newValue,
+          }),
+        );
+      });
+      await waitFor(() => expect(proof).toHaveBeenCalledTimes(1));
+      expect(screen.queryByRole("list", { name: "회원 목록" })).toBeNull();
+      expect(view).toHaveAttribute("hidden");
+      expect(view).toHaveAttribute("inert");
+      expect(view).toHaveAttribute("aria-hidden", "true");
+    } finally {
+      await act(async () => release());
+    }
+  },
+);
 
 it("restores public detail with one explicit retry after damaged mock storage is repaired", async () => {
   const saved = localStorage.getItem(MOCK_STORAGE_KEY);

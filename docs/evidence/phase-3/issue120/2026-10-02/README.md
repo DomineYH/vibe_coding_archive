@@ -292,3 +292,22 @@ dimensions 기록 후 원복했다. source pixel 합격이나 새 baseline으로
 최종 r1에서도 기존 API 목적지의 generated PNG를 explicit paths로 원복하고, 임시 mock config와 checkout 밖 진단 source/probe를 제거했다. frontend/backend 원래 의존성 디렉터리는 보존된다.
 
 최종 r2는 관련 없는 generated PNG 25장을 explicit paths로 원복하고 임시 mock config를 제거했다. r2 캡처 변경은 없으며 baseline·tolerance·timeout·retry·skip은 변경하지 않았다.
+
+## CI 수정 (PR #127)
+
+CI `frontend`의 issue-49 통합 여정이 381행에서 회원 행 1개 대신 0개로 실패했다.
+같은 pinned Chromium과 격리 포트 5183에서 원 테스트를 재현하여 1 FAIL/1 PASS를 확인했다.
+실패 snapshot에는 관리자 header·탭이 보이고 회원 목록·통계만 loading 상태였다.
+다른 탭의 health 저장도 일반 `storage` 경로에서 `refreshMockState` → `restoreAuth`를 호출해
+보호 query를 제거하고 observation scope를 바꿨다. 정지된 관리자 탭 시계 때문에 새 조회가
+화면에 반영되지 않았다. 같은 탭의 health 전용 알림은 이미 인증 재확인을 생략하고 있었다.
+health 외 모든 필드(인증·권한·미지 필드 포함)가 같은 저장 변경만 기존 health invalidation
+경로로 연결했다. 인증 scenario·권한 변경·손상/불완전 snapshot은 기존 가림·재확인을 유지한다.
+실제 mock batch 저장을 재생하는 unit 회귀는 수정 전 1 FAIL, 수정 후 PASS였다.
+추가 인증 순번·앱 소유권·인증 scenario·손상 저장 가림 검사까지 focused auth 24 PASS.
+원 issue-49 E2E 2 PASS, 전체 mock E2E 124 PASS (10.5m), frontend unit 894 PASS/38 files
+(170.73s), `npm --prefix frontend run check` PASS (기존 OpenAPI warnings 2개).
+E2E는 `npx playwright test -c playwright.local-fixer.config.js`와 issue-49 경로 선택으로,
+unit은 `npm --prefix frontend test`로 실행했다. API 동작 경로는 변경하지 않아 API E2E 미실행.
+원 assertions·timeouts·retries·baseline은 변경하지 않았고 임시 config/output을 제거했다.
+원격 CI 결과는 coordinator push 후 확인할 예정이며 현재 pending이다.
