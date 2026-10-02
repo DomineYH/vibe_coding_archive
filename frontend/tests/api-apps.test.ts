@@ -14,6 +14,15 @@ const requests = {
 };
 
 const allowedErrors = [
+  { endpoint: "GET /meta", status: 422, code: "VALIDATION_ERROR" },
+  { endpoint: "GET /apps", status: 422, code: "VALIDATION_ERROR" },
+  { endpoint: "GET /apps", status: 409, code: "AUTH_STATE_CHANGED" },
+  { endpoint: "GET /apps", status: 409, code: "AUTH_TRANSITION_PENDING" },
+  { endpoint: "GET /apps", status: 503, code: "DB_BUSY" },
+  { endpoint: "GET /apps/{id}", status: 422, code: "VALIDATION_ERROR" },
+  { endpoint: "GET /apps/{id}", status: 409, code: "AUTH_STATE_CHANGED" },
+  { endpoint: "GET /apps/{id}", status: 409, code: "AUTH_TRANSITION_PENDING" },
+  { endpoint: "GET /apps/{id}", status: 503, code: "DB_BUSY" },
   { endpoint: "GET /meta", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /meta", status: 503, code: "SERVICE_UNAVAILABLE" },
   { endpoint: "GET /apps", status: 400, code: "VALIDATION_ERROR" },
@@ -40,7 +49,6 @@ const allowedErrors = [
 const invalidErrors = [
   { endpoint: "GET /apps/{id}", status: 503, code: "NOT_FOUND" },
   { endpoint: "GET /meta", status: 404, code: "NOT_FOUND" },
-  { endpoint: "GET /apps", status: 422, code: "VALIDATION_ERROR" },
   { endpoint: "GET /apps", status: 429, code: "RATE_LIMITED" },
   { endpoint: "GET /apps", status: 503, code: "RATE_LIMITED" },
   { endpoint: "GET /apps/{id}", status: 403, code: "INVALID_CREDENTIALS" },

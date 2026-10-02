@@ -14,6 +14,8 @@ import {
   type AppsService,
 } from "../apps-service";
 import { authService } from "./auth";
+import { assertAuthObservation } from "../auth-state";
+import { isUuid } from "../../contracts/uuid";
 
 import { requestJson, apiContractError, type ApiEndpoint } from "./transport";
 export async function getJson(
@@ -178,12 +180,64 @@ export const appsService: AppsService = {
     );
   },
 
-  async get(id, { signal } = {}) {
-    return mapAppDetailResponse(
-      await getJson("GET /apps/{id}", `/apps/${encodeURIComponent(id)}`, {
+  async get(id, { signal, readContext } = {}) {
+    const path = `/apps/${encodeURIComponent(id)}`;
+    if (!readContext)
+      return mapAppDetailResponse(
+        await getJson("GET /apps/{id}", path, { signal }),
+      ).item;
+    assertAuthObservation(readContext);
+    const { user, flow, status } = readContext.state;
+    if (
+      status !== "ready" ||
+      !user?.approved ||
+      user.sessionKind !== "full" ||
+      user.mustChangePassword ||
+      !flow.sessionGeneration
+    )
+      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+        httpStatus: 401,
+      });
+    try {
+      const result = (await requestJson("GET /apps/{id}", path, {
         signal,
-      }),
-    ).item;
+        cache: "no-store",
+        includeHeaders: true,
+        headers: new Headers({
+          Accept: "application/json",
+          "X-EduVibe-Flow-Id": flow.flowId,
+          "X-EduVibe-Auth-Revision": flow.revision,
+          "X-EduVibe-Session-Generation": flow.sessionGeneration,
+        }),
+      })) as { body: unknown; headers: Headers };
+      assertAuthObservation(readContext);
+      const responseFlow = result.headers.get("X-EduVibe-Flow-Id");
+      const revision = result.headers.get("X-EduVibe-Auth-Revision");
+      const generation = result.headers.get("X-EduVibe-Session-Generation");
+      if (
+        !responseFlow ||
+        !isUuid(responseFlow) ||
+        responseFlow !== responseFlow.toLowerCase() ||
+        !revision ||
+        !/^(0|[1-9][0-9]*)$/.test(revision) ||
+        !generation ||
+        !/^(0|[1-9][0-9]*)$/.test(generation) ||
+        result.headers.get("Cache-Control") !== "private, no-store"
+      )
+        throw apiContractError(200, false);
+      if (
+        responseFlow !== flow.flowId ||
+        revision !== flow.revision ||
+        generation !== flow.sessionGeneration
+      )
+        throw new DOMException("Authentication context changed", "AbortError");
+      const app = mapAppDetailResponse(result.body).item;
+      assertAuthObservation(readContext);
+      return app;
+    } catch (error) {
+      assertAuthObservation(readContext);
+      throw error;
+    }
   },
 
   async issueCreateOperation(input) {
