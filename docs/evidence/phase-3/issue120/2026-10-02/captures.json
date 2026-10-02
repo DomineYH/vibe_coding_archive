@@ -1,12 +1,7 @@
 {
   "renderer": "Chromium 151.0.7922.34",
-  "deviceScaleFactor": 1,
-  "locale": "ko-KR",
-  "timezone": "Asia/Seoul",
-  "clock": "2026-10-01T00:00:00Z",
-  "font": "Pretendard Variable",
-  "animations": "disabled",
-  "source": "final independent run 1: complete functional plus capture command; existing full approval-admin fixture; new test-owned file database; fixtures once; same DB fixed-clock restart",
+  "pixelTolerance": 0,
+  "baselineUpdated": false,
   "results": [
     {
       "state": "owner",
@@ -21,7 +16,7 @@
     {
       "state": "concealed",
       "size": "1440x1000",
-      "sha256": "1570c876096a7fafce178563d53f1bff19b277640c7623e46cfe2bb1e53702be",
+      "sha256": "e6966930880db7943c2273f77094f05ecd1f50b26432e3b23ee071e9a2ab6731",
       "dimensions": [
         1440,
         1000
@@ -31,7 +26,7 @@
     {
       "state": "checking",
       "size": "1440x1000",
-      "sha256": "ed8e340975d3e8fd3947fb814c6927a43bd274e3349eca49ad7d9986eea647f8",
+      "sha256": "a5de1e2e6bf5279d1b7f292408527e709b3b5ca7526b0b4cea77d05f664b467d",
       "dimensions": [
         1440,
         1000
@@ -91,7 +86,7 @@
     {
       "state": "concealed",
       "size": "1024x900",
-      "sha256": "174e148aa77e70bc6e652c80f3e558ab1f11fb422812cb0ef025a05a49ffb465",
+      "sha256": "5face126fdaa83af9ff8ad97000c3d4a299769b74d4a164bf80f42e97b0952a6",
       "dimensions": [
         1024,
         900
@@ -101,7 +96,7 @@
     {
       "state": "checking",
       "size": "1024x900",
-      "sha256": "7d93cf343ff6d01c519f0a363e63161f493915517da3b265d5f27755bf75c20e",
+      "sha256": "6c22548e293700f1470472336bc695d29c7f40ac3e1804de7aa74254b72c0c23",
       "dimensions": [
         1024,
         900
@@ -161,7 +156,7 @@
     {
       "state": "concealed",
       "size": "768x1024",
-      "sha256": "00d485b44ee929829731d310acde5a85ebd587cb5f926d7fab28a89460d9d993",
+      "sha256": "2075c0260cd8009ba434a47d9c00a9000cca72f11c598f500eb31d5372ef33f8",
       "dimensions": [
         768,
         1024
@@ -171,7 +166,7 @@
     {
       "state": "checking",
       "size": "768x1024",
-      "sha256": "2f7831f1b5077af253640a973d520c61c0741ec5b7bdfd7dd7848867b62466b0",
+      "sha256": "ed314e0b37d80bd0d6569fa6111c22e244af349f1094572b9aaab706669b15ee",
       "dimensions": [
         768,
         1024
@@ -231,7 +226,7 @@
     {
       "state": "concealed",
       "size": "390x844",
-      "sha256": "1b9f8ab0991bd92a6388609bb35e8b6d0832140283f76beca8317a465fc12e14",
+      "sha256": "a5c2e96ca973c86610bfb78c531a0a8cf5306dd7940ec5cac003896d1963a325",
       "dimensions": [
         390,
         844
@@ -241,7 +236,7 @@
     {
       "state": "checking",
       "size": "390x844",
-      "sha256": "edae444062606ea6e168de94e8622104ce508e56b20414103943e84aa4945777",
+      "sha256": "8e3a4ad5e136879725c31de190ca923091a55cc95c2dcf59fccd26d6f9cc269e",
       "dimensions": [
         390,
         844
@@ -301,7 +296,7 @@
     {
       "state": "concealed",
       "size": "360x844",
-      "sha256": "5a302ec74ac5978f06577d19c3c3637420f31e51cb2152bb07bf9b8890b5b3a2",
+      "sha256": "e5a126fb17b4aee14f6ecbcbaa29be92cbf795b9b3b9bb2d54221e37d5f5327b",
       "dimensions": [
         360,
         844
@@ -311,7 +306,7 @@
     {
       "state": "checking",
       "size": "360x844",
-      "sha256": "be9581296c552eaf03fc46da018a5fb6d1a932def4047da065b2f87fb13f3080",
+      "sha256": "3c9004d84954d412847604600648accff1bdc047f98297c3e8816ea09917cebd",
       "dimensions": [
         360,
         844

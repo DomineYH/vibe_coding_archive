@@ -412,7 +412,19 @@ auth restoration. No new card or administrator dashboard is introduced.
 | --- | --- | --- |
 | Private detail conceal and restore | Blur, hide and auth notifications remove the private body, member header and controls from DOM/keyboard access. Focus, history and pageshow require fresh proof; failure offers the existing explicit recheck. | #120 / R23 §4, UI-D02/UI-D03/UI-D07; [T06 ledger](evidence/phase-3/issue120/2026-10-02/README.md), actual shared-cookie tabs and delayed backend response. |
 | Draft and pending approval continuity | Same-tab memory retains an eligible draft or confirmation through ordinary rechecking, hidden and inert. Identity-history or target-authority loss discards it; confirmation never submits automatically. | US-39 and UI-D09; current target revalidation, component regressions and actual administrator recovery-cookie rotation in the same ledger. |
-| Destination refusal | Login and password change recheck current capability and destination authority, using existing safe access/not-found messages on refusal. | Strict return_to contract and public-read independence, UI-D03/UI-D07; route and mock regressions in the same ledger. |
+| Destination refusal | Login and password change recheck current capability and destination authority. A non-admin successfully logging in with `return_to=/admin` stays on the login route with the existing safe alert; authenticated header navigation and logout remain available. | #120 AC6 and #113 T06 require permission before return; approved plan §2 specifies staying on the safe error/recheck path on failure. `e2e/auth.spec.js` now asserts the alert and unchanged auth URL rather than landing on the admin 403 screen. UI-D03/UI-D07. |
+| Mock administrator capabilities | Mock `admin_users_read` and `admin_approval` advertise enabled because the existing mock services already implement user reading and approval. Current capability checks therefore preserve the existing administrator demo. | AC6/AC8 regression disclosure; API capabilities remain server-owned and archive writes/admin archive lists remain disabled in API. No new mock administrator feature. |
+| Explicit concealed recheck (review r1) | The existing header shows “다시 확인” during concealed/checking states; clicking requests fresh proof and restores only after success. Focus/visible/pageshow clear the away flag even while proof is in flight. | AC4 and R23 §4. Unit red→green and delayed actual backend proof; protected DOM stays absent until proof. Header dimensions and existing button style remain unchanged. |
+| Mock health progress (review r1 regression) | Existing batch progress and explicit requery remain visible. Health updates refresh health/list/admin data without concealing the member header or restarting the batch query through auth restoration. | AC8: the broader existing admin-apps E2E caught a reset/cache-removal feedback loop; a data-only notification fixes it with the original assertion unchanged. Authentication notifications still conceal and clear protected queries. |
+
+Review r1 separates the historical source metric from an actual product change.
+Reproducing T05 `c80d24a` at all five sizes produces PNGs byte-identical to the
+retained pre-repair T06 mock owner screen: private body, member header, controls,
+health card and dimensions are unchanged. Historical T05 source pixel counts
+cannot be reproduced and its original product PNGs are not retained in issue119.
+The cause of that historical increment remains blocked pending those originals;
+no intended UI change or regression is inferred from the counts alone. The direct
+comparison and missing-artifact limit are recorded in the T06 ledger.
 
 The 35 private-detail states across five viewports are product-only observations,
 identical across two independent real-API runs. Existing source comparisons are

@@ -1,0 +1,86 @@
+{
+  "renderer": "Chromium 151.0.7922.34",
+  "t05Commit": "c80d24a",
+  "t06Commit": "1a8a4e1",
+  "comparison": "reproduced T05 product vs retained pre-repair T06 product",
+  "historicalT05ProductPngRetained": false,
+  "baselineUpdated": false,
+  "pixelTolerance": 0,
+  "results": [
+    {
+      "size": "1440x1000",
+      "dimensions": [
+        1440,
+        1569
+      ],
+      "historicalT05SourceDifferentPixels": 394038,
+      "recordedT06SourceDifferentPixels": 406634,
+      "reproducedT05Sha256": "58567dd9a9991809b0c802492aa7915886a7f7b1e67f3eadf522056816d05df4",
+      "preRepairT06Sha256": "58567dd9a9991809b0c802492aa7915886a7f7b1e67f3eadf522056816d05df4",
+      "productDifferentPixels": 0,
+      "reproducedT05SourceDifferentPixels": 406634,
+      "repairR1Sha256": "58567dd9a9991809b0c802492aa7915886a7f7b1e67f3eadf522056816d05df4",
+      "repairR1ProductDifferentPixels": 0
+    },
+    {
+      "size": "1024x900",
+      "dimensions": [
+        1024,
+        1549
+      ],
+      "historicalT05SourceDifferentPixels": 307085,
+      "recordedT06SourceDifferentPixels": 319307,
+      "reproducedT05Sha256": "75dd8203c1ef5ea7290244346c1b99f187a25a55a1227bfe32345f08c0d67fb0",
+      "preRepairT06Sha256": "75dd8203c1ef5ea7290244346c1b99f187a25a55a1227bfe32345f08c0d67fb0",
+      "productDifferentPixels": 0,
+      "reproducedT05SourceDifferentPixels": 319307,
+      "repairR1Sha256": "75dd8203c1ef5ea7290244346c1b99f187a25a55a1227bfe32345f08c0d67fb0",
+      "repairR1ProductDifferentPixels": 0
+    },
+    {
+      "size": "768x1024",
+      "dimensions": [
+        768,
+        1941
+      ],
+      "historicalT05SourceDifferentPixels": 342465,
+      "recordedT06SourceDifferentPixels": 355303,
+      "reproducedT05Sha256": "de30c7ed08bbba3a54e31c2929ed3810b0f02a84f43b0c48ef37ac2c593690af",
+      "preRepairT06Sha256": "de30c7ed08bbba3a54e31c2929ed3810b0f02a84f43b0c48ef37ac2c593690af",
+      "productDifferentPixels": 0,
+      "reproducedT05SourceDifferentPixels": 355303,
+      "repairR1Sha256": "de30c7ed08bbba3a54e31c2929ed3810b0f02a84f43b0c48ef37ac2c593690af",
+      "repairR1ProductDifferentPixels": 0
+    },
+    {
+      "size": "390x844",
+      "dimensions": [
+        390,
+        2052
+      ],
+      "historicalT05SourceDifferentPixels": 176633,
+      "recordedT06SourceDifferentPixels": 188519,
+      "reproducedT05Sha256": "70e7c33d1a46c5a760fde76b29387fefd6e881be7928033cdbe2d9cbf627ea0e",
+      "preRepairT06Sha256": "70e7c33d1a46c5a760fde76b29387fefd6e881be7928033cdbe2d9cbf627ea0e",
+      "productDifferentPixels": 0,
+      "reproducedT05SourceDifferentPixels": 188519,
+      "repairR1Sha256": "70e7c33d1a46c5a760fde76b29387fefd6e881be7928033cdbe2d9cbf627ea0e",
+      "repairR1ProductDifferentPixels": 0
+    },
+    {
+      "size": "360x844",
+      "dimensions": [
+        360,
+        2166
+      ],
+      "historicalT05SourceDifferentPixels": 172962,
+      "recordedT06SourceDifferentPixels": 184735,
+      "reproducedT05Sha256": "feb66aca8a6e7525a8594031fa162132a92d4c4d80f94dbe6caf4b4f7cb8c344",
+      "preRepairT06Sha256": "feb66aca8a6e7525a8594031fa162132a92d4c4d80f94dbe6caf4b4f7cb8c344",
+      "productDifferentPixels": 0,
+      "reproducedT05SourceDifferentPixels": 184735,
+      "repairR1Sha256": "feb66aca8a6e7525a8594031fa162132a92d4c4d80f94dbe6caf4b4f7cb8c344",
+      "repairR1ProductDifferentPixels": 0
+    }
+  ]
+}
