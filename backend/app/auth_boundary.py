@@ -17,6 +17,102 @@ SEQUENCE = re.compile(r"^(0|[1-9][0-9]*)$")
 COOKIE = re.compile(
     r"^(?:__Host-eduvibe_(session|recovery)_|eduvibe_(session|recovery)_dev_)([0-9a-f-]{36})_(0|[1-9][0-9]*)$"
 )
+READ_CONTEXT_PARAMETERS = [
+    {"name": name, "in": "header", "required": False, "schema": {"type": "string"}}
+    for name in (
+        "X-EduVibe-Flow-Id",
+        "X-EduVibe-Auth-Revision",
+        "X-EduVibe-Session-Generation",
+    )
+]
+
+
+def read_context(request):
+    """Headerless public reads ignore cookies; supplied context is all-or-none."""
+    names = [parameter["name"] for parameter in READ_CONTEXT_PARAMETERS]
+    values = [request.headers.get(name) for name in names]
+    if all(value is None for value in values):
+        return None
+    if any(len(request.headers.getlist(name)) != 1 for name in names):
+        raise AuthError("VALIDATION_ERROR", 422)
+    flow_id, revision, generation = values
+    try:
+        if str(UUID(flow_id)) != flow_id:
+            raise ValueError()
+    except (ValueError, TypeError, AttributeError):
+        raise AuthError("VALIDATION_ERROR", 422) from None
+    if not all(
+        isinstance(value, str) and SEQUENCE.fullmatch(value)
+        for value in (revision, generation)
+    ):
+        raise AuthError("VALIDATION_ERROR", 422)
+    return flow_id, revision, generation
+
+
+def screen_read_context(db, request, context):
+    """Resolve only the supplied flow. Caller holds the write reservation."""
+    if (
+        context is None
+        or not request.app.state.auth_testing
+        or not request.app.state.auth_ready
+    ):
+        return None, None, None
+    flow_id, revision, _generation = context
+    try:
+        item = flow(db, flow_id)
+    except AuthError as error:
+        if error.code == "AUTH_REQUIRED":
+            return None, None, None
+        raise
+    check_revision(request, item, revision, item["current_session_generation"])
+    if pending(db, item):
+        raise AuthError("AUTH_TRANSITION_PENDING")
+    session = credential(db, request, item, "session", required=False)
+    if session is None:
+        return None, None, None
+    member = (
+        db.execute(
+            text("SELECT * FROM members WHERE id=:id"), {"id": session["member_id"]}
+        )
+        .mappings()
+        .first()
+        if session["kind"] == "full" and session["member_id"]
+        else None
+    )
+    if (
+        member is None
+        or member["approval_status"] != "approved"
+        or member["must_change_password"]
+    ):
+        return item, session, None
+    return item, session, member
+
+
+def screen_activity(db, item, session):
+    """Ordinary authorized screen activity never advances the auth revision."""
+    timestamp = now()
+    if (
+        not valid(item)
+        or not valid(session)
+        or session["absolute_expires_at"] <= timestamp
+    ):
+        return False
+    expiry = min(after(timestamp, 1800), session["absolute_expires_at"])
+    db.execute(
+        text(
+            "UPDATE sessions SET last_activity_at=:now,expires_at=:expiry WHERE token_hash=:hash"
+        ),
+        {"now": timestamp, "expiry": expiry, "hash": session["token_hash"]},
+    )
+    item.update(last_activity_at=timestamp, expires_at=expiry)
+    save_flow(db, item)
+    db.execute(
+        text(
+            "UPDATE recovery_credentials SET expires_at=:expiry WHERE flow_id=:id AND revoked_at IS NULL AND expires_at>:now"
+        ),
+        {"expiry": expiry, "id": item["id"], "now": timestamp},
+    )
+    return True
 
 
 def now():

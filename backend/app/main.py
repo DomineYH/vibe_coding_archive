@@ -18,10 +18,12 @@ from starlette.responses import JSONResponse
 from app.admin_approval import router as admin_approval_router
 from app.auth import router as auth_router
 from app.auth_boundary import (
+    READ_CONTEXT_PARAMETERS,
     AuthBodyLimit,
     AuthError,
     error_response,
     invalid_cookie_names,
+    read_context,
 )
 from app.auth_login import HashGate
 from app.auth_login import router as login_router
@@ -37,6 +39,7 @@ from app.database import (
     make_session_factory,
 )
 from app.password_policy import load_blocklist
+from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
 from app.settings import ConfigurationError, Settings
 
@@ -278,8 +281,14 @@ def create_app(
 
     api = APIRouter(prefix="/api/v1")
 
-    @api.get("/meta", response_model=MetaResponse)
+    @api.get(
+        "/meta",
+        response_model=MetaResponse,
+        openapi_extra={"parameters": READ_CONTEXT_PARAMETERS},
+        responses={422: {"model": ErrorEnvelope}},
+    )
     def get_meta(request: Request) -> dict[str, object]:
+        read_context(request)
         capabilities = _capabilities()
         if request.app.state.auth_testing and request.app.state.auth_ready:
             # #113: the T01–T05 bundle; operating release remains behind T07.

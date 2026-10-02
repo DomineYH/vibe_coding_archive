@@ -761,7 +761,23 @@ paths:
     get:
       operationId: getMeta
       summary: Read public catalog metadata
+      description: >-
+        Headerless metadata discovery is independent of authentication. If any
+        connection header is supplied, all three must be canonical; otherwise 422.
       security: []
+      parameters:
+        - name: X-EduVibe-Flow-Id
+          in: header
+          required: false
+          schema: { type: string }
+        - name: X-EduVibe-Auth-Revision
+          in: header
+          required: false
+          schema: { type: string }
+        - name: X-EduVibe-Session-Generation
+          in: header
+          required: false
+          schema: { type: string }
       responses:
         "200":
           description: Public catalog metadata and feature availability.
@@ -770,6 +786,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/Meta"
         "400":
+          $ref: "#/components/responses/ServiceError"
+        "422":
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
@@ -784,6 +802,18 @@ paths:
         query parameters.
       security: []
       parameters:
+        - name: X-EduVibe-Flow-Id
+          in: header
+          required: false
+          schema: { type: string }
+        - name: X-EduVibe-Auth-Revision
+          in: header
+          required: false
+          schema: { type: string }
+        - name: X-EduVibe-Session-Generation
+          in: header
+          required: false
+          schema: { type: string }
         - name: q
           in: query
           description: >-
@@ -825,6 +855,10 @@ paths:
               schema:
                 $ref: "#/components/schemas/AppPage"
         "400":
+          $ref: "#/components/responses/ServiceError"
+        "409":
+          $ref: "#/components/responses/ServiceError"
+        "422":
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
@@ -870,6 +904,18 @@ paths:
         - {}
         - SessionCookie: []
       parameters:
+        - name: X-EduVibe-Flow-Id
+          in: header
+          required: false
+          schema: { type: string }
+        - name: X-EduVibe-Auth-Revision
+          in: header
+          required: false
+          schema: { type: string }
+        - name: X-EduVibe-Session-Generation
+          in: header
+          required: false
+          schema: { type: string }
         - name: id
           in: path
           required: true
@@ -885,7 +931,17 @@ paths:
             maxLength: 36
       responses:
         "200":
-          description: Public app detail.
+          description: >-
+            Public detail, or private detail authorized for the current approved
+            full owner or full administrator. Headerless requests ignore cookies.
+            Supplied context is all-or-none and canonical; stale or pending context
+            is rejected without replay. Missing and unauthorized detail share 404.
+            Member-bound responses include verified context and are never cached.
+          headers:
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string } }
+            X-EduVibe-Session-Generation: { schema: { type: string } }
           content:
             application/json:
               schema:
@@ -897,6 +953,10 @@ paths:
         "401":
           $ref: "#/components/responses/ServiceError"
         "403":
+          $ref: "#/components/responses/ServiceError"
+        "409":
+          $ref: "#/components/responses/ServiceError"
+        "422":
           $ref: "#/components/responses/ServiceError"
         "503":
           $ref: "#/components/responses/ServiceError"
