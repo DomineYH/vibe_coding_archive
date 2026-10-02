@@ -90,6 +90,9 @@ for (const viewport of viewports) {
           event.path === `${API}/transitions` && event.stage === "ingress",
       ),
     ).toHaveLength(1);
+    // The restored member label appears before login's final navigation.
+    // Wait for that navigation so it cannot replace the logout button mid-click.
+    await expect(page).toHaveURL("http://localhost:5174/");
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
     await expect(
       page
