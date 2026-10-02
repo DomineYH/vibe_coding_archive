@@ -13,7 +13,7 @@ if settings.app_env != "test":
     )
 # Only the test runner supplies this clock for independent T03 screen captures.
 if fixed := os.environ.get("API_E2E_CLOCK"):
-    from app import auth_boundary
+    from app import auth_boundary, main, public_apps
 
     class Clock(datetime):
         @classmethod
@@ -21,4 +21,6 @@ if fixed := os.environ.get("API_E2E_CLOCK"):
             return datetime.fromisoformat(fixed)
 
     auth_boundary.datetime = Clock
+    main.datetime = Clock
+    public_apps.datetime = Clock
 app = create_app(settings, auth_testing=True)

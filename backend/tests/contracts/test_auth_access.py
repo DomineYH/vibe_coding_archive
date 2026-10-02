@@ -14,7 +14,7 @@ from sqlalchemy import event
 from app.auth_boundary import after
 from tests.auth_client import Browser, signed_in
 from tests.contracts.test_admin_approval import execute, issue
-from tests.support import AUTH_MEMBERS, populate_public_and_private_apps
+from tests.support import AUTH_MEMBERS, AUTH_PASSWORD, populate_public_and_private_apps
 
 API = "/api/v1"
 PUBLIC = "00000000-0000-4000-8000-000000000002"
@@ -320,3 +320,52 @@ def test_private_read_and_revoke_both_commit_orders_and_reapprove(
                 "SELECT count(*) FROM sessions WHERE member_id=? AND revoked_at IS NULL",
                 (target,),
             ).fetchone() == (0,)
+
+
+@pytest.mark.parametrize("finish", ["failed", "cancelled"])
+def test_original_read_after_terminal_transition_keeps_same_s_but_rejects_old_revision(
+    access_server, finish
+):
+    _, _, client = access_server
+    browser = (
+        Browser(client).prepare().anonymous()
+        if finish == "failed"
+        else signed_in(client)
+    )
+    original = headers(browser)
+    if finish == "failed":
+        assert browser.login("member-a", AUTH_PASSWORD + "incorrect").status_code == 401
+    else:
+        permit = browser.admit("logout").json()
+        settled = client.post(
+            f"{API}/auth/transitions/{permit['transition_id']}/settle",
+            headers=browser.recovery_headers(),
+            json={"flow_id": browser.flow, "expected_revision": permit["revision"]},
+        )
+        assert settled.status_code == 200
+    state = browser.state()
+    assert state["session_generation"] == original["X-EduVibe-Session-Generation"]
+    assert state["revision"] != original["X-EduVibe-Auth-Revision"]
+    for app_id in (PUBLIC, PRIVATE, MISSING):
+        rejected = client.get(f"{API}/apps/{app_id}", headers=original)
+        assert rejected.status_code == 409
+        assert rejected.json()["error"]["code"] == "AUTH_STATE_CHANGED"
+    browser.revision = state["revision"]
+    assert client.get(
+        f"{API}/apps/{PRIVATE}", headers=headers(browser)
+    ).status_code == (404 if finish == "failed" else 200)
+
+
+def test_old_a_read_context_cannot_adopt_current_b_cookie(access_server):
+    _, _, client = access_server
+    browser = signed_in(client)
+    original = headers(browser)
+    assert browser.logout().status_code == 204
+    browser.anonymous()
+    assert browser.login("한글교사").status_code == 200
+    for app_id in (PUBLIC, PRIVATE, MISSING):
+        result = client.get(f"{API}/apps/{app_id}", headers=original)
+        assert result.status_code == 409
+        assert result.json()["error"]["code"] == "AUTH_STATE_CHANGED"
+    denied = client.get(f"{API}/apps/{PRIVATE}", headers=headers(browser))
+    assert denied.status_code == 404
