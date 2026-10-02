@@ -72,3 +72,16 @@ def password_blocklist(tmp_path_factory):
     path.write_bytes(raw)
     path.chmod(0o600)
     return path
+
+
+@pytest.fixture
+def process_server(member_app, password_blocklist):
+    from tests.auth_process import AuthProcess
+
+    _, database = member_app()
+    server = AuthProcess(database, password_blocklist)
+    try:
+        server.start()
+        yield server, database
+    finally:
+        server.close()

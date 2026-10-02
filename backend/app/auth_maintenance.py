@@ -2,7 +2,16 @@
 
 from sqlalchemy import text
 
-from app.auth_boundary import SEQUENCE, advance, after, digest, flow, now, terminalize
+from app.auth_boundary import (
+    SEQUENCE,
+    advance,
+    after,
+    digest,
+    flow,
+    now,
+    save_flow,
+    terminalize,
+)
 from app.pending_retention import sweep_pending
 
 
@@ -131,8 +140,7 @@ def sweep(factory):
                 )
         for item in changed.values():
             # Cleared references and the replay fence persist in the same commit.
-            terminalize(db, item, "expired")
-            advance(db, item)
+            save_flow(db, item)
         old = (
             db.execute(
                 text(

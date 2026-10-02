@@ -1,5 +1,6 @@
 """Private process barriers; imported only by the isolated T07 test launcher."""
 
+import asyncio
 import json
 import os
 import socketserver
@@ -50,8 +51,10 @@ class Barrier:
             elif action == "release":
                 self.release.set()
             elif action == "clock":
-                self.clock = datetime.fromisoformat(message["at"])
-                if self.clock.tzinfo is None:
+                self.clock = (
+                    datetime.fromisoformat(message["at"]) if message["at"] else None
+                )
+                if self.clock is not None and self.clock.tzinfo is None:
                     raise ValueError("The injected clock must include its zone.")
             elif action != "status":
                 raise ValueError("Unknown private command.")
@@ -60,11 +63,70 @@ class Barrier:
 
 barrier = Barrier()
 
+# Sanitized readiness diagnostic: never report SQL, cookie or exception parameters.
+from app import main
+
+original_reconcile = main.reconcile
+readiness_failure = None
+
+
+def observed_reconcile(*args, **kwargs):
+    global readiness_failure
+    try:
+        return original_reconcile(*args, **kwargs)
+    except RuntimeError as error:
+        known = {
+            "Authentication current credential verification failed.",
+            "Authentication sequence verification failed.",
+            "Authentication foreign key verification failed.",
+            "The independent deletion ledger is incomplete.",
+        }
+        readiness_failure = (
+            str(error) if str(error) in known else "Verification failure"
+        )
+        raise
+
+
+main.reconcile = observed_reconcile
+
+# Tests advance the existing 60s maintenance cycle through a private event, not
+# a shorter product interval. Every other asyncio sleep remains unchanged.
+maintenance_tick = asyncio.Event()
+maintenance_loop = None
+original_sleep = asyncio.sleep
+
+
+async def controlled_sleep(delay, *args, **kwargs):
+    global maintenance_loop
+    if delay == 60:
+        maintenance_loop = asyncio.get_running_loop()
+        await maintenance_tick.wait()
+        maintenance_tick.clear()
+    else:
+        await original_sleep(delay, *args, **kwargs)
+
+
+asyncio.sleep = controlled_sleep
+
 
 class Control(socketserver.StreamRequestHandler):
     def handle(self):
         try:
-            result = barrier.command(json.loads(self.rfile.readline(4096)))
+            message = json.loads(self.rfile.readline(4096))
+            if message["action"] == "readiness":
+                result = {"ready": app.state.auth_ready, "reason": readiness_failure}
+            elif message["action"] == "maintenance":
+                if maintenance_loop is None:
+                    raise ValueError("Maintenance cycle not initialized.")
+                maintenance_loop.call_soon_threadsafe(maintenance_tick.set)
+                result = {"tick": True}
+            elif message["action"] == "sweep":
+                from app.auth_maintenance import sweep
+
+                sweep(app.state.session_factory)
+                result = {"swept": True}
+            else:
+                result = barrier.command(message)
         except (ValueError, KeyError):
             result = {"error": "invalid private command"}
         self.wfile.write((json.dumps(result) + "\n").encode())
