@@ -48,7 +48,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|password|register|lifecycle|access)|admin-approval/.test(
+      /auth-(prepare|login|password|register|lifecycle|access|races|recovery)|admin-approval/.test(
         arg,
       ),
     );
@@ -59,6 +59,8 @@ async function run() {
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
     PUBLIC_ORIGIN: "http://localhost:5174",
+    AUTH_FAULT_CONTROL: path.join(temporary, "auth-control.sock"),
+    AUTH_PROXY_CONTROL: path.join(temporary, "proxy-control.sock"),
   };
 
   try {
@@ -135,6 +137,8 @@ raise SystemExit(status)`,
                 "e2e-api/admin-approval.spec.js",
                 "e2e-api/auth-lifecycle.spec.js",
                 "e2e-api/auth-access.spec.js",
+                "e2e-api/auth-races.spec.js",
+                "e2e-api/auth-recovery.spec.js",
               ],
               prepared: true,
             },
@@ -181,6 +185,11 @@ raise SystemExit(status)`,
           env: {
             ...env,
             API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
+            API_E2E_FAULTS:
+              run.prepared &&
+              run.arguments_.some((arg) => /auth-(races|recovery)/.test(arg))
+                ? "1"
+                : "",
             API_E2E_CLOCK: run.capture ? "2026-10-01T00:00:00Z" : "",
           },
           stdio: "inherit",
