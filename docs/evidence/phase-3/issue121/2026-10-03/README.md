@@ -46,7 +46,7 @@ verifier callable returns; this is not a claim of pausing inside native Argon2 i
 Current process tests use real HTTP client cookies; browser tests additionally assert
 actual Chromium receipt, next-request Cookie names, server state and product DOM.
 A test-only Vite configuration flushes copied upstream headers independently of body
-and propagates upstream abortion; default Vite transport is unchanged.
+and propagates upstream abortion. The checkpoint default batch incorrectly routed T01–T06 through this fault transport. Repair M2 splits ordinary, prepared T01–T06 (tests.auth_server + normal Vite), and prepared races/recovery (API_E2E_FAULTS=1) into independent runs. Each run starts with its own copy of the verified, test-owned prepared database; restart/restore drills within a run never reinsert fixtures.
 
 Commands use the prepared blocklist and Chromium executable from the brief. Node
 24.21.0/npm 12.2.0 differ from pinned 22.23.2/12.0.2, as in E120. Chromium
@@ -60,11 +60,11 @@ font serving refusals and was removed; original node_modules is restored.
 | --- | --- | --- | --- |
 | H1 | Four transport stages / original bytes and independent cookie receipt | `node frontend/scripts/test-auth-fault-proxy.mjs`: 4 PASS, 0.22s; before-forward/header/header-body/mid-body holds; two raw cookie fields; second raw request sends no Cookie. Synthetic transport self-test, not authentication proof. | PASS |
 | B1 | R23-03/04/25: settle beats actual verifier; pre/post commit process death | `cd backend; uv run --frozen python -m pytest tests/test_auth_races.py tests/test_auth_retention.py tests/contracts/test_auth_flow.py -q`: 51 PASS/164.26s before the three additional permit cases. Two real workers rejected after settle; three SIGKILL orders cancel/rollback or retain success respectively. No reply cookie received after kill, state and DB agree, no reinjection. | PASS for named subset |
-| B2 | R9 Q18, old S/R removal without reviving/deleting newer authority | Initial `test_auth_retention.py`: 2 FAIL/79.53s, residual rows 1 instead of 0. Minimal fix adds exact issued-name fences and removes expired/revoked generations, clearing references atomically. Migration/restart/retention: 12 PASS/29.77s; B1 includes original flow contracts. Final races+retention checks: 10 PASS/78.62s, including ±1µs actual-verifier permit checks, unknown-name preservation and newer-pending preservation. | PASS targeted scope |
+| B2 | R9 Q18, old S/R removal without reviving/deleting newer authority | Initial `test_auth_retention.py`: 2 FAIL/79.53s, residual rows 1 instead of 0. Minimal fix adds exact issued-name fences and removes expired/revoked generations, clearing references atomically. Migration/restart/retention: 12 PASS/29.77s; B1 includes original flow contracts. Final races+retention checks: 10 PASS/78.62s, including ±1µs actual-verifier permit checks, unknown-name preservation. The claimed newer-pending preservation did not enter the cleared-current-reference branch; independent review found H1 FAIL there. See H1 repair below. | Historical subset PASS; newer-pending claim corrected |
 | E1 | R23-04/05/08: real login and own-change response loss before headers, after headers, mid-body | `npm --prefix frontend run test:e2e:api -- auth-races.spec.js auth-recovery.spec.js`: 9 PASS/1.6m. Six HTTP cases prove succeeded DB/version, genuine upstream Set-Cookie and next Cookie ingress. Missing S → unknown/exact discard/new explicit login; own-password mutation persists. Received S → hidden identity until actual result/CSRF/me recheck; full identity then restores, no replay. | PASS |
 | E2 | R23-03: owner close before claim and at real verifier return | Same 9-case command: two tab cases; survivor settles stored original ID, late worker has zero full sessions, fresh explicit login succeeds. Stage state admitted/executing separately observed. | PASS |
 | E3 | R23-17: simulated proof loss, ID-only restriction | Same command: clearCookies is explicitly simulated loss; eligibility false, reset 401, public-only product warning, no logout control. Not natural browser eviction. | PASS |
-| B3 | R23-25/26: actual restart then SQLite snapshot restore | `cd backend; uv run --frozen python -m pytest tests/test_auth_restart.py -q`: 4 PASS/30.71s. Real process restart retains original expiry plus resolved/unresolved approval keys. SQLite backup API, deletion after snapshot in current independent ledger, stop/restore/actual `python -m app.cli invalidate-restored-auth`; restored authorities revoked and keys cleared; completed deletion replay despite newer snapshot creation time; old cookies 401, public read 200, auth capability ready only after successful drill. HTTP client; browser restore drill still NOT RUN. | PASS local HTTP drill |
+| B3 | R23-25/26: actual restart then SQLite snapshot restore | `cd backend; uv run --frozen python -m pytest tests/test_auth_restart.py -q`: 4 PASS/30.71s. Real process restart retains original expiry plus resolved/unresolved approval keys. SQLite backup API, deletion after snapshot in current independent ledger, stop/restore/actual `python -m app.cli invalidate-restored-auth`; restored authorities revoked and keys cleared; completed deletion replay despite newer snapshot creation time; old cookies 401, public read 200, auth capability ready only after successful drill. HTTP client; the drill directly ages the pending member with `UPDATE members SET created_at` before the real sweep-pending CLI (test clock shortcut, no member reinsertion). Browser restore evidence is C3, final rerun pending. | PASS local HTTP drill |
 
 ## First failure → correction → retest
 
@@ -73,7 +73,7 @@ font serving refusals and was removed; original node_modules is restored.
   stores only exact `(flow_id, kind, issued_seq)` fences, no token/hash/CSRF/member data;
   flow retirement cascades these fences into the existing permanent retired-flow fence.
   No maximum-sequence inference, TTL change or wildcard cookie deletion. Obsolete
-  cleanup cannot cancel a newer admitted transition; unknown cookie names are retained.
+  cleanup initially canceled a newer admitted transition in the cleared-current-reference branch (af41348 regression, H1); the checkpoint assertion failed to exercise that branch. Repair uses save_flow only, without terminalizing or revision changes. Unknown cookie names remain retained.
 - Process assertion initially expected 409 after a committed/no-cookie restart, but
   the revoked departing S correctly returns 401 before stale-transition validation.
   Corrected stage-specific expectation; B1 retest PASS.
@@ -88,6 +88,54 @@ font serving refusals and was removed; original node_modules is restored.
   Original dependency directory restored. Received-cookie success is accepted only
   after actual server recheck, not by treating aborted bodies as success. Focused
   old-expectation run also failed 1/19s; final E1 all 9 pass, no relaxed assertions.
+
+## Continuation evidence (2026-10-03)
+
+Commands use the prepared environment above. Published observations include only
+states, counts, revision/generation relationships and cookie names/attributes;
+values, passwords, CSRF, contact fields, raw DB/HAR/traces are excluded.
+
+| ID | Scope / command | HTTP / DB / cookie / product-screen observations | Result |
+| --- | --- | --- | --- |
+| C1 | `node frontend/scripts/test-auth-fault-proxy.mjs` | Four stream barriers; original separate Set-Cookie; exact retained-response duplicate sent without another upstream request; no proxy jar | PASS 4/4, 0.23s |
+| C2 | `cd backend; uv run --frozen python -m pytest tests/test_auth_races.py tests/test_auth_boundaries.py tests/test_auth_restore_negative.py tests/test_auth_retention.py -q` | Real Argon2; login/password process death at hash-return/precommit/committed; both R-rotation worker orders; permit/temp final recheck; anonymous/full/change_only/flow and 8h activity/result ±1µs; live-flow sweep fences; missing/corrupt/stale ledger/current-reference/audit failures; real DB-lock readiness loss and reconciliation | PASS 45/45, 281.13s; no skips |
+| C3 | `npm --prefix frontend run test:e2e:api -- auth-races.spec.js auth-races-orders.spec.js auth-recovery-members.spec.js auth-recovery-process.spec.js auth-recovery-captures.spec.js auth-lifecycle.spec.js auth-password.spec.js` | Streaming real upstream cookies + next ingress; pre-admission/page close; exact discard; late and duplicated old S/R; exact logout deletion; member proof loss/partial reset; cookie budget; two tabs; no-S logout; CLI/admin and signup/private journeys; real browser restart/restore. Functional moving clock → fixed capture clock; same DB once per runner, fresh DB between reproductions | NOT RUN final stable reproduction pending |
+| C4 | `npm --prefix frontend run test:e2e:api -- auth-recovery-boundaries.spec.js` (also selected by default final run) | Browser server-authoritative anonymous 15m, full idle 30m and flow/R 30m at −1µs/equal/+1µs; no expired member display | PASS 9/9 in earlier 23-case run; repeated final result pending |
+| C5 | `node frontend/scripts/check-auth-integration-evidence.mjs` | Forty new product-only frames, eight states × five viewports; byte comparison, SHA256 and dimensions; inherited source/UI comparisons retained; no baseline or tolerance mutation | NOT RUN independent capture comparison pending |
+| C6 | Final integration command table below | Full backend once; frontend unit/static; default unavailable + prepared + captures; affected mock; auth/admin visual; mock/API builds, dist/reference | NOT RUN until implementation stabilizes |
+
+Browser cookie deletion/profile merging/late replenishment via browser APIs is
+**simulated loss/eviction/arrival**, never proof of natural browser eviction.
+Proxy duplicate delivery uses the genuine saved upstream header/body bytes,
+not fabricated cookies or another execution. Network/reset capture faults using
+route.abort are **UI-only**; actual committed-loss tests are C3. Maintenance ticks
+advance the existing private test timer event, not the 60s product interval.
+Real restart/restore: same SQLite and independent ledger/browser jar; no fixture,
+bootstrap or migration reinjection. Snapshot uses SQLite backup API; restore is
+stop → operational DB only → actual invalidate-restored-auth CLI → start/readiness.
+
+First failures → corrections → verification (test/harness, no new product fix):
+
+- First expanded backend: 14 PASS/4 FAIL, 232.60s. Old CSRF is rejected 403
+  before revision validation; assert that exact code. Fixture expiry now uses
+  canonical microseconds. Retest 7 PASS/83.39s; complete C2 PASS.
+- First boundary/negative: 16 PASS/1 FAIL, 137.78s. R rotation advanced revision;
+  update the HTTP client context before me. Full-boundary retest 3/18.23s.
+- Absolute cutoff first run: 4 PASS/2 FAIL, 41.68s. T06 private expiry is the
+  same concealed 404 as no authority; me independently asserts 401. C2 PASS.
+- Early browser attempts: first 0/4 (navigation/header shape), then 7/10,
+  then 11/12, then 21/23. Recovery endpoints forbid an extraneous S generation;
+  use recovery-only headers. A delayed UI request owns the Web Lock: late reply
+  tests now retain a real raw browser request, allowing a newer explicit journey.
+- Full R-loss reload of a private screen legitimately extended idle activity;
+  observe rotation from auth screen before subsequent protected activity instead.
+- Profile reset must start on auth, since successful login returns to public gallery.
+  A POSIX SIGKILL sets signalCode, not exitCode: lifecycle checks both. Split stopped
+  restore and subsequent start into separate private commands; preserve timeout.
+- Temporary dependency symlink caused unsupported Vite font paths/stuck auth;
+  restored original frontend/node_modules immediately. No symlink retained.
+- All initial failure artifacts are transient and excluded; final counts below
+  supersede diagnostic runs without deleting this failure history.
 
 ## R23 §8 requirement inventory
 
@@ -239,6 +287,72 @@ public owners are in the separate gate table.
 | AC11 | R23/#113 / actual product visual, operator readiness and human public acceptance | No actual acceptance supplied; DomineYH/operator/human owners. | BLOCKED |
 | AC12 | #121 / four separate verdicts, public authorization withheld, parent left open | Four verdicts recorded below; no issue/PR mutation or release authorization. This record does not complete missing gates. | NOT RUN |
 
+## US-01–US-55 (#113) evidence links
+
+B/ paths are under backend/tests; F/ paths under frontend/e2e-api.
+Inherited aliases link to the committed ledgers at the top. C2/C3/C6 supply the
+current command and seam observations. Each statement below is the source story's
+expected behavior, not an added feature. Human/device/operating execution remains
+G01–G18; future reset/delete/reauth/CUD are excluded to their Phase 4–6 owners.
+
+| Story / expected behavior | Applicability / inherited evidence | Named current test / evidence | Local verdict / remaining owner |
+| --- | --- | --- | --- |
+| US-01 방문자로서, 인증 준비와 무관하게 공개 아카이브 앱을 탐색하여 로그인 장애 중에도 자료를 읽고 싶다. | Phase 3 local; E115/E120 | `F/auth-prepare.spec.js; F/auth-access.spec.js; C3 runtime failures` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-02 방문자로서, 지원하지 않거나 차단된 브라우저 환경에서는 공개 열람과 지원 안내를 받아 보호 기능의 이용 가능 여부를 알고 싶다. | Phase 3 local; E115/E120 | `F/auth-prepare.spec.js; F/auth-access.spec.js; C3 runtime failures` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-03 가입자로서, 로그인 아이디·비밀번호·확인·별명을 구분해 입력하여 나를 식별하는 계정과 공개 이름을 따로 정하고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-04 가입자로서, 정규화·길이·허용 문자·흔한 비밀번호의 필드 오류를 확인하여 유효한 자격증명을 만들고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-05 가입자로서, 다른 회원과 같은 별명을 사용해도 가입하여 공개 이름의 중복 때문에 배제되지 않고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-06 가입자로서, 중복 로그인 아이디를 안내받아 다른 로그인 아이디로 가입하고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-07 가입자로서, 비밀번호 확인값은 브라우저에서만 검사하여 불필요한 전송을 피하고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-08 가입자로서, 선택 이메일·연락처 수집 비활성 안내와 값 거절을 확인하여 수집하지 않는 개인정보를 제출하지 않고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-09 가입자로서, 통신 실패와 필드 오류를 구별하고 중복 클릭을 막아 가입 결과를 오해하지 않고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-10 미승인 회원으로서, 가입 후 자동 로그인 대신 최초 승인 대기와 만료 안내를 받아 다음 절차를 알고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-11 미승인 회원으로서, 정확한 비밀번호로 로그인했을 때 승인 대기 안내를 받아 이용 제한 이유를 알고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-12 최초 승인 대기 회원으로서, 가입일부터 90일의 기한을 안내받아 계정 보관 기간을 알고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-13 승인 해제된 회원으로서, 승인 이력이 보존되어 최초 승인 대기의 자동 삭제 대상으로 오인되지 않고 싶다. | Phase 3 local; E118/E119 | `B/contracts/test_auth_register.py; B/test_pending_retention.py; F/auth-register.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-14 승인 회원으로서, 실제 비밀번호 검증과 서버 세션으로 로그인하여 내 권한으로 이용하고 싶다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-15 회원으로서, 별명으로 헤더와 작성자 표시를 보아 로그인 아이디가 공개 이름으로 노출되지 않고 싶다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-16 회원으로서, 새로고침 뒤 서버에서 현재 세션을 확인하여 유효한 로그인 상태를 이어가고 싶다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-17 회원으로서, 절대·비활동 만료를 정확히 적용받아 만료된 권한이 남지 않기를 원한다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-18 회원으로서, 여러 기기에서 이용하되 현재 기기의 로그아웃이 다른 기기의 세션까지 종료하지 않기를 원한다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-19 회원으로서, 계정을 전환할 때 먼저 로그아웃하여 이전 회원의 자료나 작업이 다음 회원에게 넘어가지 않기를 원한다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-20 회원으로서, 로그인 입력 오류·요청 제한·서버 과부하를 구별해 안내받아 적절히 다시 시도하고 싶다. | Phase 3 local; E116/E120 | `B/contracts/test_auth_login.py; B/test_auth_limits.py; F/auth-login.spec.js; F/auth-access.spec.js; C2/C4` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-21 운영자로서, 관리자 계정이 없을 때만 대화형 CLI로 최초 관리자를 생성하여 임의 승격 없이 운영을 시작하고 싶다. | Phase 3 local; E117 | `B/test_admin_bootstrap.py; B/contracts/test_auth_password.py; F/auth-password.spec.js; C2/C3` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-22 운영자로서, 기존 관리자 계정만 복구하고 기존 세션을 폐기하여 관리자 계정 복구의 대상을 명확히 하고 싶다. | Phase 3 local; E117 | `B/test_admin_bootstrap.py; B/contracts/test_auth_password.py; F/auth-password.spec.js; C2/C3` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-23 관리자로서, 임시 비밀번호로 변경 전용 세션을 받아 본인 비밀번호 변경 전에는 관리자 기능에 접근하지 않고 싶다. | Phase 3 local; E117 | `B/test_admin_bootstrap.py; B/contracts/test_auth_password.py; F/auth-password.spec.js; C2/C3` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-24 관리자로서, 임시 비밀번호의 24시간 만료와 변경 전용 세션의 짧은 만료를 안내받아 유효한 기간에 변경하고 싶다. | Phase 3 local; E117 | `B/test_admin_bootstrap.py; B/contracts/test_auth_password.py; F/auth-password.spec.js; C2/C3` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-25 관리자로서, 본인 비밀번호 변경을 완료한 브라우저에서만 새 full 세션을 받아 임시 자격증명의 사용을 끝내고 싶다. | Phase 3 local; E117 | `B/test_admin_bootstrap.py; B/contracts/test_auth_password.py; F/auth-password.spec.js; C2/C3` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-26 관리자로서, 기존 사용자 탭의 실제 목록·상세·통계를 조회하여 회원의 현재 승인 상태를 확인하고 싶다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-27 관리자로서, 대상 회원의 최신 상태를 확인하고 승인하여 가입자가 실제 로그인할 수 있게 하고 싶다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-28 관리자로서, 승인 해제 시 대상의 모든 세션을 폐기하여 철회된 권한으로 계속 이용하지 못하게 하고 싶다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-29 회원으로서, 승인 해제 이후에도 공개 아카이브 앱은 유지되고 재승인이 과거 세션을 되살리지 않기를 원한다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-30 관리자로서, 동시 승인·중복 제출을 작업 키와 회원 버전으로 처리하여 한 작업을 중복 반영하지 않고 싶다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-31 관리자로서, 승인 응답을 잃으면 원래 작업의 결과를 조회하거나 명시적으로 취소하여 불확실한 결과를 성공·실패로 추측하지 않고 싶다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-32 관리자로서, 관리자 계정에 대한 승인 해제 등 금지 작업이 직접 API에서도 거절되어 운영 계정을 보호하고 싶다. | Phase 3 local; E119/E120 | `B/contracts/test_admin_approval.py; B/test_approval_races.py; F/admin-approval.spec.js; F/auth-lifecycle.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-33 승인 회원으로서, 내 비공개 아카이브 앱 상세만 읽어 다른 회원의 비공개 자료를 침범하지 않고 싶다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-34 관리자로서, 현재 권한으로 비공개 아카이브 앱 상세를 읽되 이번 단계에 없는 관리·쓰기 기능은 열리지 않기를 원한다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-35 방문자로서, 없는 상세와 무권한 비공개 상세에 같은 404를 받아 비공개 자료의 존재가 드러나지 않기를 원한다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-36 회원으로서, 다른 탭의 인증 변경과 탭 복귀 시 보호 화면을 가리고 재확인하여 이전 권한의 자료가 남지 않기를 원한다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-37 회원으로서, 인증 확인에 실패하면 공개 열람과 명시적 다시 확인을 이용하여 확인되지 않은 보호 화면을 보지 않기를 원한다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-38 회원으로서, 이전 요청의 늦은 응답이 현재 회원의 화면이나 캐시를 바꾸지 않기를 원한다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-39 회원으로서, 같은 회원으로 돌아왔더라도 중간 로그아웃·계정 전환이 있었다면 이전 초안과 관리자 대기 작업을 폐기하고 싶다. | Phase 3 local; E120 | `B/contracts/test_auth_access.py; F/auth-access.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-40 회원으로서, 인증 전환 결과가 불명확하면 서버 종결 확인까지 보호 작업을 보류하여 늦은 요청과 충돌하지 않고 싶다. | Phase 3 local; E116/E117 | `C2/C3; F/auth-races.spec.js; F/auth-races-orders.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-41 회원으로서, 성공한 로그인 뒤 새 세션 쿠키를 받지 못하면 그 결과 세션만 폐기하고 다시 로그인하고 싶다. | Phase 3 local; E116/E117 | `C2/C3; F/auth-races.spec.js; F/auth-races-orders.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-42 회원으로서, 본인 비밀번호 변경 응답을 잃더라도 완료된 비밀번호 변경을 유지하고 결과를 확인하고 싶다. | Phase 3 local; E116/E117 | `C2/C3; F/auth-races.spec.js; F/auth-races-orders.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-43 회원으로서, 복구 자격증명을 잃었지만 현재 세션이 유효하면 제한된 교체 절차로 복구 준비를 다시 마치고 싶다. | Phase 3 local; E115/E117 | `C3/C4; F/auth-recovery-members.spec.js; F/auth-recovery-boundaries.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-44 방문자로서, 흐름 ID만 남았을 때 서버가 재시작 가능하다고 확인할 때까지 공개 열람을 계속하고 싶다. | Phase 3 local; E115/E117 | `C3/C4; F/auth-recovery-members.spec.js; F/auth-recovery-boundaries.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-45 회원으로서, 흐름 ID를 잃었지만 증명이 남았을 때 명시적 브라우저 인증 초기화로 증명 가능한 흐름을 종료하고 싶다. | Phase 3 local; E115/E117 | `C3/C4; F/auth-recovery-members.spec.js; F/auth-recovery-boundaries.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-46 회원으로서, 여러 흐름 초기화가 일부만 완료되면 원래 대상 모두의 종료를 확인한 뒤 새 로그인을 준비하고 싶다. | Phase 3 local; E115/E117 | `C3/C4; F/auth-recovery-members.spec.js; F/auth-recovery-boundaries.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-47 회원으로서, 과거 전환 결과를 더 이상 조회할 수 없으면 확인 불가 안내와 현재 상태 확인을 받아 과거 성공·실패를 오인하지 않고 싶다. | Phase 3 local; E115/E117 | `C3/C4; F/auth-recovery-members.spec.js; F/auth-recovery-boundaries.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-48 회원으로서, 늦게 도착한 옛 쿠키가 현재 인증을 덮지 않고 쿠키 예산 부족이 명시적으로 안내되기를 원한다. | Phase 3 local; E115/E117 | `C3/C4; F/auth-recovery-members.spec.js; F/auth-recovery-boundaries.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-49 회원으로서, 정상 서버 재시작 뒤 유효한 세션은 유지되고 미종결 요청은 자동 재실행되지 않기를 원한다. | Phase 3 local; E118/E119 | `C2/C3; B/test_auth_restart.py; F/auth-recovery-process.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-50 운영자로서, 백업 복원 뒤 과거 세션·흐름·복구 권한·허가를 무효화하여 오래된 인증이 되살아나지 않기를 원한다. | Phase 3 local; E118/E119 | `C2/C3; B/test_auth_restart.py; F/auth-recovery-process.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-51 운영자로서, 기존 회원 식별자와 아카이브 앱 소유권을 보존하고 불명확한 이관 자료는 중단하여 계정 이력을 꾸미지 않고 싶다. | Phase 3 local; E115/E118/E119 | `B/test_auth_migrations.py; B/test_pending_retention.py; B/contracts/test_admin_approval.py; C2` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-52 운영자로서, 승인·CLI 자격증명 변경·감사를 원자적으로 기록하고 만료 자료를 정리하여 업무와 기록이 어긋나지 않기를 원한다. | Phase 3 local; E115/E118/E119 | `B/test_auth_migrations.py; B/test_pending_retention.py; B/contracts/test_admin_approval.py; C2` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-53 키보드 및 보조기술 사용자로서, 기존 입력 순서·focus·label·오류 연결을 유지하고 가린 자료에는 접근하지 않기를 원한다. | Phase 3 local; E115–E120 | `C1–C5; F/auth-access.spec.js; F/auth-recovery-captures.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-54 검수자로서, 합성 자료를 실제 HTTP·파일 SQLite·브라우저 쿠키로 검증하여 mock 성공과 실제 인증 증거를 구별하고 싶다. | Phase 3 local; E115–E120 | `C1–C5; F/auth-access.spec.js; F/auth-recovery-captures.spec.js` | NOT RUN final current integration; public/human portions G01–G18 |
+| US-55 인계 검토자로서, 요구별 실행 증거와 필수 실기기·운영·사람 수락을 확인하여 로컬 합격과 인증 공개 승인을 구별하고 싶다. | Phase 3 local; E115–E120 | `C1–C6; G01–G18/four separate verdicts; CI coordinator` | NOT RUN final current integration; public/human portions G01–G18 |
+
 ## Public gate — authorization WITHHELD
 
 Actual OS/browser/device/host/proxy/ALPN/build versions, executed-at, evidence URI,
@@ -252,24 +366,24 @@ none passed. Required operating procedures and responsible roles are in each row
 
 | Gate | Initial status | Required evidence / owner |
 | --- | --- | --- |
-| Windows Chrome | NOT RUN | Actual supported Windows/current stable Chrome versions and complete required auth/cookie/restore cases; device tester/U01 coordination. |
-| Windows Edge | NOT RUN | Independent actual Edge run, not Chromium branding assumption; same requirements. |
-| Windows Firefox | NOT RUN | Actual Gecko run; same requirements. |
-| macOS Safari on real Mac | BLOCKED (needs human/U01/U02) | Real machine availability and exact stable OS/Safari versions, actual cookies/locks/restore; U01/device tester (U01 dependency). |
-| Android Chrome on real device | BLOCKED (needs human/U01/U02) | Actual device/OS/stable Chrome and background/restore/tab behavior; U01/device tester (U01 dependency). |
-| iOS Safari on real device | BLOCKED (needs human/U01/U02) | Actual iPhone/iPad context as approved, OS/stable Safari, background/history/cookie behavior; U01/device tester (U01 dependency). |
-| Same-origin HTTPS/proxy and applicable HTTP/2 | NOT RUN | Production-equivalent route/TLS/ALPN and independent cookie response ordering, attributes and next-request ingress. Explicitly document applicability; do not waive HTTP/2 because localhost uses HTTP/1.1. Operating owner. |
-| Runtime primitives in each of six environments | NOT RUN | SecureContext, real Web Lock exclusivity, localStorage read/write/cross-tab events, Fetch, AbortController and actual cookie receipt; unsupported path public-only. Feature-presence probes alone insufficient. |
-| Cookie storage/eviction/session restore across environments | NOT RUN | Actual receipt/late Set-Cookie/old deletion/current-missing behavior, distinguish manually cleared and naturally evicted cookies; browser-close behavior not promised logout. |
-| Host hashing/pool/DB-lock measurements | NOT RUN | Actual deployment host Argon2 profile/cost, concurrent2/queue4/wait1s candidate load behavior, controlled AUTH_BUSY/Retry-After and DB lock bound. Local five-second test is not host capacity. Operating owner. |
-| Trusted proxy/client-IP/spoof-resistance | NOT RUN | Actual trusted hop configuration/direct access restriction/client IP derivation, forged Forwarded/XFF tests and rate bucket behavior. Operating owner. |
-| Cleanup and backup/restore operations | NOT RUN | Actual scheduler, failed-sweep response, backup inventory/max retention, current independent ledger, stop/restore/invalidate/redelete/readiness drill and failure recovery. Local temp-DB drill is supporting evidence only. Operating owner/R9/#16. |
-| Authentication readiness/operating configuration | NOT RUN | Correct migration, fixed blocklist integrity, secret/path permissions, valid current references, missing-list refusal, health/auth readiness distinction, maintenance failure recovery on actual host. |
-| U01 support addresses, devices, staffing/schedule | BLOCKED (needs human/U01/U02) | Real service operator-supplied contact/configuration and responsible schedule; U01 owner. Keep support null until supplied. |
-| U02 blocklist redistribution rights | BLOCKED (needs human/U01/U02) | Documented right to include fixed source in image/package; U02 owner. Local explicit provisioning neither resolves rights nor authorizes redistribution. |
-| DomineYH actual product visual acceptance | BLOCKED (needs human/U01/U02) | Explicit acceptance linked to exact screenshots/build and unresolved differences; DomineYH. Design auto-approval is not visual approval. |
-| Operator readiness acceptance | BLOCKED (needs human/U01/U02) | Named operator's actual preparation evidence and acknowledgment; do not infer from developer tests. |
-| Human public-release acceptance | BLOCKED (needs human/U01/U02) | Explicit human acceptance after all applicable gates and U01/U02 resolved; no automatic release from ready-for-agent/green CI. |
+| G01 Windows Chrome | NOT RUN | Actual supported Windows/current stable Chrome versions and complete required auth/cookie/restore cases; device tester/U01 coordination. |
+| G02 Windows Edge | NOT RUN | Independent actual Edge run, not Chromium branding assumption; same requirements. |
+| G03 Windows Firefox | NOT RUN | Actual Gecko run; same requirements. |
+| G04 macOS Safari on real Mac | BLOCKED (needs human/U01/U02) | Real machine availability and exact stable OS/Safari versions, actual cookies/locks/restore; U01/device tester (U01 dependency). |
+| G05 Android Chrome on real device | BLOCKED (needs human/U01/U02) | Actual device/OS/stable Chrome and background/restore/tab behavior; U01/device tester (U01 dependency). |
+| G06 iOS Safari on real device | BLOCKED (needs human/U01/U02) | Actual iPhone/iPad context as approved, OS/stable Safari, background/history/cookie behavior; U01/device tester (U01 dependency). |
+| G07 Same-origin HTTPS/proxy and applicable HTTP/2 | NOT RUN | Production-equivalent route/TLS/ALPN and independent cookie response ordering, attributes and next-request ingress. Explicitly document applicability; do not waive HTTP/2 because localhost uses HTTP/1.1. Operating owner. |
+| G08 Runtime primitives in each of six environments | NOT RUN | SecureContext, real Web Lock exclusivity, localStorage read/write/cross-tab events, Fetch, AbortController and actual cookie receipt; unsupported path public-only. Feature-presence probes alone insufficient. |
+| G09 Cookie storage/eviction/session restore across environments | NOT RUN | Actual receipt/late Set-Cookie/old deletion/current-missing behavior, distinguish manually cleared and naturally evicted cookies; browser-close behavior not promised logout. |
+| G10 Host hashing/pool/DB-lock measurements | NOT RUN | Actual deployment host Argon2 profile/cost, concurrent2/queue4/wait1s candidate load behavior, controlled AUTH_BUSY/Retry-After and DB lock bound. Local five-second test is not host capacity. Operating owner. |
+| G11 Trusted proxy/client-IP/spoof-resistance | NOT RUN | Actual trusted hop configuration/direct access restriction/client IP derivation, forged Forwarded/XFF tests and rate bucket behavior. Operating owner. |
+| G12 Cleanup and backup/restore operations | NOT RUN | Actual scheduler, failed-sweep response, backup inventory/max retention, current independent ledger, stop/restore/invalidate/redelete/readiness drill and failure recovery. Local temp-DB drill is supporting evidence only. Operating owner/R9/#16. |
+| G13 Authentication readiness/operating configuration | NOT RUN | Correct migration, fixed blocklist integrity, secret/path permissions, valid current references, missing-list refusal, health/auth readiness distinction, maintenance failure recovery on actual host. |
+| G14 U01 support addresses, devices, staffing/schedule | BLOCKED (needs human/U01/U02) | Real service operator-supplied contact/configuration and responsible schedule; U01 owner. Keep support null until supplied. |
+| G15 U02 blocklist redistribution rights | BLOCKED (needs human/U01/U02) | Documented right to include fixed source in image/package; U02 owner. Local explicit provisioning neither resolves rights nor authorizes redistribution. |
+| G16 DomineYH actual product visual acceptance | BLOCKED (needs human/U01/U02) | Explicit acceptance linked to exact screenshots/build and unresolved differences; DomineYH. Design auto-approval is not visual approval. |
+| G17 Operator readiness acceptance | BLOCKED (needs human/U01/U02) | Named operator's actual preparation evidence and acknowledgment; do not infer from developer tests. |
+| G18 Human public-release acceptance | BLOCKED (needs human/U01/U02) | Explicit human acceptance after all applicable gates and U01/U02 resolved; no automatic release from ready-for-agent/green CI. |
 
 
 ## Checkpoint commits and static verification
@@ -283,12 +397,8 @@ changed/new JS/MJS/config files. No full frontend check or full regression is im
 First targeted ESLint invocation from repository root failed to locate the config;
 rerun from frontend succeeded without configuration edits.
 
-**BLOCKED checkpoint: implementer usage budget**, per the brief's explicit handoff rule.
-This blocks continuation of local work in this run; U01/U02 only block public gates.
-Do not close #121/#113 or claim final integration completeness from these partial results.
-The coordinator owns continuation and later CI; API CI is functional-only unless it
-provisions the same pinned capture renderer. No local capture hash/visual acceptance
-can be inferred from bundled CI Chromium.
+Continuation resumed with service available; the earlier usage-budget checkpoint
+is historical. Public U01/U02 dependencies do not block local verification.
 
 ## Four separate verdicts and remaining work
 
@@ -326,3 +436,11 @@ Unrelated user README/CLAUDE/routing/storage/.env are excluded from staging. No 
 HAR/traces, cookie/CSRF/password/contact artifacts are evidence. Failed browser error
 contexts are transient local outputs and must be discarded before handoff. No visual
 baseline, tolerance, policy, TTL, dependency lock or production capability was changed.
+
+## Checkpoint review repairs
+
+- H1/M1: af41348's commit message overstated newer-pending preservation; this entry corrects the history without rewriting it. `B/test_auth_retention.py::test_clearing_expired_current_session_preserves_newer_admission` uses the reviewer scenario through real monotonic HTTP: RED (pending cleared), then PASS after save_flow-only cleanup; the old admitted revision completes successfully. `test_obsolete_older_session_preserves_real_executing_login` pauses the actual verifier at hash_return with a newer valid anonymous S and obsolete older S; real HTTP PASS. `test_synthetic_state_cleared_reference_never_touches_executing_ledger`: RED (executing became expired), then PASS; **synthetic state, unreachable via monotonic real HTTP; guards the branch only**, direct row setup in an isolated file DB, no clock rewind. Retention 6 PASS/24.93s; affected backend rerun pending. Expired/revoked-flow terminalization remains in its existing loop.
+- M2: normal T01–T06 and races/recovery use separate transports and fresh run-owned DBs. Default no-argument runner still selects unavailable + all prepared specs + captures. No mutation in a fault run can affect later runs. Mixed-argument verification: normal auth-prepare 18 PASS/1.5m, then fault auth-recovery 1 PASS/29.3s; separate launcher commands and DB paths observed.
+- L1: before_forward drop regression RED (forwarded event present); guard destroys incoming and returns before upstream creation. Proxy self-tests 5 PASS/0.15s, including zero upstream ingress on drop.
+- L2: migration 0006 downgrade message and backend operator notes require restoring a separately verified backup; explicit upgrade head and live-flow expired/revoked S/R sweep documented.
+- L3/L4: B3 discloses direct created_at aging; ID-only reset now sends the revision actually observed before proof loss.
