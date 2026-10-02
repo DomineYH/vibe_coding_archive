@@ -6,8 +6,13 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import {
+  BrowserRouter,
+  createMemoryRouter,
+  RouterProvider,
+} from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
@@ -212,4 +217,124 @@ it("revalidates pending admin target authority before restoring its confirmation
       screen.queryByRole("region", { name: /회원 승인 확인/ }),
     ).not.toBeInTheDocument(),
   );
+});
+
+it("keeps member auth ready without proofs when gallery search and filters change only the query", async () => {
+  const account = DEMO_ACCOUNTS[1];
+  await authService.login({
+    loginId: account.loginId,
+    password: account.password,
+  });
+  window.history.replaceState(null, "", "/");
+  const proof = vi.spyOn(authService, "getCurrentAuthState");
+  render(
+    <QueryClientProvider client={client}>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </QueryClientProvider>,
+  );
+  await screen.findByRole("button", { name: "로그아웃" });
+  await screen.findByRole("link", {
+    name: "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+  });
+  proof.mockClear();
+  fireEvent.change(screen.getByRole("textbox", { name: "앱·작성자 검색" }), {
+    target: { value: "분수" },
+  });
+  await waitFor(() =>
+    expect(new URLSearchParams(window.location.search).get("q")).toBe("분수"),
+  );
+  expect(proof).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "수학", exact: true }));
+  await waitFor(() =>
+    expect(new URLSearchParams(window.location.search).get("subject")).toBe(
+      "수학",
+    ),
+  );
+  expect(proof).not.toHaveBeenCalled();
+  fireEvent.change(screen.getByRole("combobox", { name: "학년 필터" }), {
+    target: { value: "초3" },
+  });
+  await waitFor(() =>
+    expect(new URLSearchParams(window.location.search).get("grade")).toBe(
+      "초3",
+    ),
+  );
+  expect(proof).not.toHaveBeenCalled();
+  expect(screen.getByRole("button", { name: "로그아웃" })).toBeEnabled();
+  await act(async () => window.history.back());
+  await waitFor(() => expect(proof).toHaveBeenCalledTimes(1));
+  await screen.findByRole("button", { name: "로그아웃" });
+  expect(screen.getByRole("combobox", { name: "학년 필터" })).toHaveValue("");
+  proof.mockClear();
+  await act(async () => window.history.forward());
+  await waitFor(() => expect(proof).toHaveBeenCalledTimes(1));
+  await screen.findByRole("button", { name: "로그아웃" });
+  expect(screen.getByRole("combobox", { name: "학년 필터" })).toHaveValue(
+    "초3",
+  );
+  proof.mockClear();
+  fireEvent.click(screen.getByRole("button", { name: "전체", exact: true }));
+  await waitFor(() =>
+    expect(new URLSearchParams(window.location.search).has("subject")).toBe(
+      false,
+    ),
+  );
+  expect(proof).not.toHaveBeenCalled();
+});
+
+it("keeps AdminView active without auth proofs when switching tabs on the same pathname", async () => {
+  await visit("/admin", 0);
+  const menu = await screen.findByRole("tablist", { name: "관리자 메뉴" });
+  await screen.findByRole("button", { name: "로그아웃" });
+  const view = menu.closest("[aria-hidden]");
+  const proof = vi.spyOn(authService, "getCurrentAuthState");
+  const changes = [];
+  const observer = new MutationObserver((records) => changes.push(...records));
+  observer.observe(view, {
+    attributes: true,
+    attributeFilter: ["hidden", "inert", "aria-hidden"],
+  });
+  try {
+    fireEvent.click(screen.getByRole("tab", { name: "Health Monitor" }));
+    expect(view).not.toHaveAttribute("hidden");
+    expect(view).not.toHaveAttribute("inert");
+    expect(view).toHaveAttribute("aria-hidden", "false");
+    expect(proof).not.toHaveBeenCalled();
+    await screen.findByRole("tabpanel", { name: "Health Monitor" });
+    fireEvent.click(screen.getByRole("tab", { name: "사용자 관리" }));
+    await screen.findByRole("tabpanel", { name: "사용자 관리" });
+    expect(proof).not.toHaveBeenCalled();
+    expect(changes).toHaveLength(0);
+  } finally {
+    observer.disconnect();
+  }
+});
+
+it("restores public detail with one explicit retry after damaged mock storage is repaired", async () => {
+  const saved = localStorage.getItem(MOCK_STORAGE_KEY);
+  localStorage.setItem(
+    MOCK_STORAGE_KEY,
+    JSON.stringify({ ...JSON.parse(saved), apps: [{}] }),
+  );
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider
+        router={createMemoryRouter([{ path: "*", element: <App /> }], {
+          initialEntries: ["/apps/00000000-0000-4000-8000-000000000001"],
+        })}
+      />
+    </QueryClientProvider>,
+  );
+  const main = within(screen.getByRole("main"));
+  const retry = await main.findByRole("button", {
+    name: "다시 확인",
+    exact: true,
+  });
+  localStorage.setItem(MOCK_STORAGE_KEY, saved);
+  fireEvent.click(retry);
+  expect(
+    await main.findByRole("heading", { name: "분수 피자 가게" }),
+  ).toBeInTheDocument();
 });

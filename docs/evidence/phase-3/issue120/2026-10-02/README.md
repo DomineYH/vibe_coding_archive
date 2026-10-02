@@ -206,6 +206,59 @@ record 대비 **상속된 환경·기록 차이**로 분류하고 MINOR-1을 해
 이 분류는 source 비교의 완전 일치나 사람의 시각 수락을 뜻하지 않는다.
 기존 baseline·comparison 기록·tolerance는 변경하지 않는다.
 
+## 독립 리뷰 r2 반영 (2026-10-03)
+
+`bd33ed6` 재검수의 R2-MINOR-1을 coordinator 결정에 따라 수정했다.
+Gallery의 debounced search REPLACE와 subject/grade PUSH는 pathname을 바꾸지
+않으므로 새 인증 proof를 보내지 않는다. 관리자 query tab 전환도 기존 proof와
+active AdminView를 유지하며 hidden/inert/aria-hidden을 바꾸지 않는다.
+Pathname 변경은 R23 §4의 새 진입으로 한 번 재증명하고 모든 POP는 query-only
+history traversal도 한 번 재증명한다. Auth 준비 조건이 변경될 때의 재확인은 유지한다.
+
+| 최초 실패 → 수정 → 재검증 | 관찰 |
+| --- | --- |
+| Gallery regression: 8 PASS/1 FAIL, 13.67s | search query REPLACE 뒤 getCurrentAuthState 1회로 zero-proof assertion 실패. |
+| Gallery+admin+기존 isolation: 16 PASS/2 FAIL, 8.61s | 같은 gallery 실패와 admin tab click 직후 wrapper hidden=true 실패. |
+| 최소 수정 후 같은 두 파일: 18 PASS/8.66s | 이전 entry의 pathname/key와 restoreAuth를 비교하는 단일 layout path로 query PUSH/REPLACE만 건너뜀. admin tabs active 및 conceal 속성 mutation 0. 기존 새 pathname push/back 1회 검사도 PASS. |
+| 추가 동일 pathname POP 검사 | 실제 BrowserRouter back/forward 각 1 proof, 그 뒤 query PUSH 0 proof; 아래 전체 unit 실행에 포함. |
+
+첫 통합 실행의 unit 888 PASS/153.26s (wall 159.91s), API functional
+12 PASS/1 FAIL (gallery screenshot의 기존 30s deadline, wall 217.19s), mock
+72 PASS/2 FAIL (admin page.goto의 기존 30s deadline과 아래 public retry 회귀,
+wall 286.79s)를 보존한다. 순차 API 재실행은 functional 13 PASS+capture 10 PASS,
+wall 202.29s였다. 추가 수정 뒤 최종 명령을 아래에 다시 기록한다.
+Timeout·retry·assertion은 변경하지 않는다. Backend full 및 default full API/mock/
+visual suites는 r2 범위 밖이며 coordinator CI가 담당한다; r1 원 결과와 영향
+재검증 기록은 위에 보존한다.
+
+### r2 영향 검사에서 확인한 T06 public retry 회귀
+
+Mock gallery의 기존 damaged-storage 여정은 원래 저장 값을 복원한 뒤 명시
+“다시 확인” 한 번으로 public detail을 복원해야 한다. 순차 focused 실행에서도
+admin 1 PASS/gallery 1 FAIL (wall 37.48s)이었다. 동일 현재 서비스·의존성·원 assertion에서
+App 코드만 바꾼 control은 bd33ed6 1 FAIL (wall 24.19s), c80d24a 1 PASS (16.3s, wall 18.05s)였다.
+이 control은 App 코드 책임을 확인하며 전체 T05 환경 재현으로 세지 않는다.
+진단 동안 교체한 App 원문은 finally에서 r2 수정본으로 복원했고 임시 config는 제거했다.
+
+원인은 T06의 auth-error retry가 auth proof만 복원하고 이미 실패한 headerless
+public-detail query를 재조회하지 않는 것이었다. 새 unit은 10 PASS/1 FAIL,
+17.19s (명시 retry 뒤 public heading 없음). 같은 명시 동작이 proof를 다시 확인한
+뒤 기존 metadata/public refetch를 호출하도록 4행을 보완했다. Unit isolation+
+continuity 19 PASS/12.66s. Private 읽기는 기존 current-observation 보호를 그대로
+통과해야 하며 public refetch는 context 없이 공개 집합만 읽는다. 원 E2E assertion은
+변경하지 않았다. 이는 요구된 gallery 영향 검사에서 드러난 T06 회귀 보완이다.
+
+### r2 최종 검사
+
+| 명령 | 결과 / 소요 시간 |
+| --- | --- |
+| `npm --prefix frontend test` | 최종 889 PASS / 38 files / 117.44s (wall 123.15s). public retry 보완 뒤 실행; 이전 888 PASS도 위에 보존. |
+| `npm --prefix frontend run test:e2e -- --config=playwright.local-mock-120.config.js e2e/admin.spec.js e2e/auth.spec.js e2e/gallery.spec.js e2e/gallery-zero-result.spec.js` | 최종 74 PASS / wall 177.63s (2.9m). 기존 assertions 그대로, gallery damaged-state retry도 PASS. 임시 config는 기존 pinned executable과 격리 outputDir만 선택하고 제거했다. |
+| `npm --prefix frontend run test:e2e:api -- auth-access.spec.js admin-approval.spec.js apps.spec.js` | 최종 23 PASS: functional 13 PASS (1.9m) + fixed capture 10 PASS (1.4m), wall 207.14s. 추가 public retry 보완 뒤 순차 실행. 실제 HTTP/DB/cookie 여정; mock 성공으로 세지 않음. |
+| `node frontend/scripts/check-access-evidence.mjs` + r1 final manifest `cmp` | 35/35 PNG 및 manifest가 r1과 byte-identical, tolerance 0. 변경 캡처 0이므로 r2 두 번째 독립 재현은 NOT RUN (brief의 변경 조건 불충족). 기존 독립 두 재현 기록을 유지한다. |
+| `npm --prefix frontend run check` | PASS / wall 76.77s: OpenAPI lint/check, typecheck, eslint, prettier. 기존 4XX warnings 2개 유지; 타입 자동 갱신 없음. |
+| backend full / default full API / broader mock / full visual / build·dist·reference / remote CI / human acceptance | r2 NOT RUN: coordinator가 targeted-only와 CI 전수 회귀를 지정했다. 사람·screen-reader·실기기 acceptance는 T07. r1 backend startup FAIL 및 seed 재PASS 원 기록은 보존한다. |
+
 ## 통합 검사 결과
 
 최종 impact-set 브라우저·static/build 결과를 기록한다.
@@ -226,7 +279,7 @@ record 대비 **상속된 환경·기록 차이**로 분류하고 MINOR-1을 해
 
 ## 검수 상태
 
-r1 코드 수정과 사용 가능한 자동 검증을 마쳤다. backend full의 기존 seed startup deadline 1 FAIL은 준비된 Linux dependency에서 seed 8 PASS로 영향 재검사했으며 전수 PASS로 바꿔 기록하지 않는다. MINOR-1 historical source increment는 c80d24a와 최종 T06의 byte-identical 재현에 근거해 상속된 환경·기록 차이로 해소했다. 기존 source와 차이가 있는
+r2 코드 수정과 지정된 targeted 자동 검증을 마쳤다. 최종 unit 889/API 23/mock 74 PASS, check PASS, access PNG 35장 불변이다. r1 backend full의 기존 seed startup deadline 1 FAIL은 준비된 Linux dependency에서 seed 8 PASS로 영향 재검사했으며 전수 PASS로 바꿔 기록하지 않는다. MINOR-1 historical source increment는 c80d24a와 최종 T06의 byte-identical 재현에 근거해 상속된 환경·기록 차이로 해소했다. 기존 source와 차이가 있는
 프레임은 자동 승인하지 않는다. 제품-only 캡처의 동일성은 재현성 증거이며 source
 수락이나 운영 공개를 뜻하지 않는다. user README/CLAUDE/routing/storage/.env,
 기존 reference/baseline 및 issue119 증거는 수정·staging하지 않는다.
@@ -237,3 +290,5 @@ dimensions 기록 후 원복했다. source pixel 합격이나 새 baseline으로
 제거하고 원래 backend/frontend 의존성 디렉터리를 복원했다.
 
 최종 r1에서도 기존 API 목적지의 generated PNG를 explicit paths로 원복하고, 임시 mock config와 checkout 밖 진단 source/probe를 제거했다. frontend/backend 원래 의존성 디렉터리는 보존된다.
+
+최종 r2는 관련 없는 generated PNG 25장을 explicit paths로 원복하고 임시 mock config를 제거했다. r2 캡처 변경은 없으며 baseline·tolerance·timeout·retry·skip은 변경하지 않았다.

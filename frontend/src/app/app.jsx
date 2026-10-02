@@ -865,7 +865,10 @@ function DetailRoute({
         invalidQuery && !invalidId
           ? () => navigate(location.pathname, { replace: true })
           : authError
-            ? onRetryAuth
+            ? async () => {
+                await onRetryAuth();
+                access.retry(publicDetail.refetch);
+              }
             : () => access.retry(detail.refetch)
       }
       canEdit={canEdit}
@@ -1479,6 +1482,7 @@ export default function App() {
     pathname: location.pathname,
     initial: true,
   });
+  const previousAuthEntry = useRef(null);
   const galleryReturnPosition = useRef(null);
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
@@ -2029,6 +2033,18 @@ export default function App() {
   }, [restoreAuth]);
 
   useLayoutEffect(() => {
+    const previous = previousAuthEntry.current;
+    previousAuthEntry.current = {
+      key: location.key,
+      pathname: location.pathname,
+      restoreAuth,
+    };
+    if (
+      previous?.restoreAuth === restoreAuth &&
+      previous.pathname === location.pathname &&
+      (navigationType !== "POP" || previous.key === location.key)
+    )
+      return;
     if (__DATA_MODE__ === "mock") {
       void restoreAuth();
       return;
@@ -2043,7 +2059,13 @@ export default function App() {
       return;
     }
     void restoreAuth();
-  }, [apiAuthEnabled, location.key, restoreAuth]);
+  }, [
+    apiAuthEnabled,
+    location.key,
+    location.pathname,
+    navigationType,
+    restoreAuth,
+  ]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
