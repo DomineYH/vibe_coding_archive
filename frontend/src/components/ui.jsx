@@ -58,15 +58,37 @@ export function Chip({ children, tone = "gray" }) {
 
 export function StatusBadge({ state, size = "sm" }) {
   const healthy = state === "healthy";
+  const unchecked = state === "unchecked";
+  const blocked = state === "blocked";
   const big = size === "md";
-  const label = state === "unchecked" ? "미검사" : healthy ? "정상" : "오류";
+  const label = healthy
+    ? "정상"
+    : unchecked
+      ? "미검사"
+      : blocked
+        ? "검사 제한"
+        : "오류";
+  const tone = healthy
+    ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+    : unchecked
+      ? "border-neutral-200 bg-neutral-100 text-neutral-600"
+      : blocked
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : "border-red-200 bg-red-50 text-red-700";
+  const dot = healthy
+    ? "bg-emerald-600"
+    : unchecked
+      ? "bg-neutral-600"
+      : blocked
+        ? "bg-amber-600"
+        : "bg-red-600";
   return (
     <span
       aria-label={`연결 결과: ${label}`}
-      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${big ? "px-3 py-1 text-[13px]" : "px-2.5 py-0.5 text-[11.5px]"} ${healthy ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-red-200 bg-red-50 text-red-700"}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${big ? "px-3 py-1 text-[13px]" : "px-2.5 py-0.5 text-[11.5px]"} ${tone}`}
     >
       <span
-        className={`inline-block h-1.5 w-1.5 rounded-full ${healthy ? "bg-emerald-600" : "bg-red-600"}`}
+        className={`inline-block h-1.5 w-1.5 rounded-full ${dot}`}
         aria-hidden="true"
       />
       <span>{label}</span>
