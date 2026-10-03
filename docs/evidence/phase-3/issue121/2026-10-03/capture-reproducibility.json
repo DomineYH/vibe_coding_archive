@@ -1,0 +1,408 @@
+{
+  "renderer": "Chromium 151.0.7922.34",
+  "pixelTolerance": 0,
+  "baselineUpdated": false,
+  "independentRun": true,
+  "results": [
+    {
+      "state": "field-errors",
+      "viewport": "1440x1000",
+      "sha256": "da361ac4e476bfce5722ca35e311f9a1a5a1c7087d7cd876a51032879292a71a",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "in-flight",
+      "viewport": "1440x1000",
+      "sha256": "028c9221dc8eb0bf892d9689cedff405812bae04fe425da3b72dec7205f5de71",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "network-unknown",
+      "viewport": "1440x1000",
+      "sha256": "19e7506efe93b55c20fa5c0d64553d8091e1ff8dfaeed32f044dab1a8aee3cca",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "unavailable",
+      "viewport": "1440x1000",
+      "sha256": "c20765091cf05cc33c2b2e8b5e8a0582afadd3586c9f5edd46afa05266508a9f",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "missing-session",
+      "viewport": "1440x1000",
+      "sha256": "f132484a6541648380c9bfd0a114c2a65b6dc870e2294c6b7e918c23bfd9c80d",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "explicit-reset",
+      "viewport": "1440x1000",
+      "sha256": "a75568fc43d194bc59a32f5b9fb9cdb516c1178b25cfc89ecb6c488c9a67f19b",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "reset-recheck",
+      "viewport": "1440x1000",
+      "sha256": "f9d8a7c8adc89ae516e40bb5229ab9b70bcbe5f5f61003c3a80e79d2ebb94d97",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "cookie-budget",
+      "viewport": "1440x1000",
+      "sha256": "154843b686c6c26ae0fdc4abbfd1639ce28113e8e7392a463d59d73e6e70464a",
+      "dimensions": [
+        1440,
+        1000
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "field-errors",
+      "viewport": "1024x900",
+      "sha256": "d0029f116946bc5b868c1b37601b517a91e37cf25c78746f89fc1245f92ed700",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "in-flight",
+      "viewport": "1024x900",
+      "sha256": "c445b29967fa37ef8b73390c10d2467d2a71f41a867ce89184ba4646d6ea14fc",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "network-unknown",
+      "viewport": "1024x900",
+      "sha256": "944cc97a363e98485c0e406e161fa60e40a95ac1b5a1238b65add116538bfe80",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "unavailable",
+      "viewport": "1024x900",
+      "sha256": "31fb20e8e412918d45eb357c5b0dc5dcce6ec247ed0ad51b5ba33836ae36e5bd",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "missing-session",
+      "viewport": "1024x900",
+      "sha256": "c893c0f452fbac5247e06f40c09e8d3cbee01301898f31805da1a479abde116d",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "explicit-reset",
+      "viewport": "1024x900",
+      "sha256": "21c3769b7ad3d82667cd644a8f605dc1319d42a0f4564fcee7a4dd76fd3d164e",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "reset-recheck",
+      "viewport": "1024x900",
+      "sha256": "e733e3b34953533ae7f8247dbab6e08facb836dd274f01a5be0173cdf2f93a4e",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "cookie-budget",
+      "viewport": "1024x900",
+      "sha256": "78000ef895c5d255846d517ce174c65903b4622e5f5db93024c3f04e37b543eb",
+      "dimensions": [
+        1024,
+        900
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "field-errors",
+      "viewport": "768x1024",
+      "sha256": "f45cc2fb07feaf5e8c6f3e6eb49f6ee9ef48d141f41ddd4c4f4cb13ea6e9a2e2",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "in-flight",
+      "viewport": "768x1024",
+      "sha256": "ab631a090a88a440a082ee8c151fe06c8f61dd70d4c3fb4b0cc5dfed79bfebed",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "network-unknown",
+      "viewport": "768x1024",
+      "sha256": "4ad3aef29451fd0bcb6f6abea80ac9b1ea38b2ff1293e7c94458252554864d6d",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "unavailable",
+      "viewport": "768x1024",
+      "sha256": "778586e0942be39713d7187b8caf173ea95a2cfec3e74d992f81a4b1215d11c0",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "missing-session",
+      "viewport": "768x1024",
+      "sha256": "a1571e2817e75339b4e71953308e5ead53c90bed846972ceb8bf57a171e0316a",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "explicit-reset",
+      "viewport": "768x1024",
+      "sha256": "35f520601ec7e17d23611c04da520bc901093809f310903cb9de5ade9aa4e378",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "reset-recheck",
+      "viewport": "768x1024",
+      "sha256": "6f50ea3c66e0382e328402478541b1d3b5931216b2f216b8d379737d6c8290c8",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "cookie-budget",
+      "viewport": "768x1024",
+      "sha256": "fbedbbc051cb1c00bd7e9a3df3c43130d049ad35516fc4fcce04f177c8cda6f5",
+      "dimensions": [
+        768,
+        1024
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "field-errors",
+      "viewport": "390x844",
+      "sha256": "0a422ad3054da8328dfe3c567ec46510f6e2ab28940d373cc71588d4202e4f4a",
+      "dimensions": [
+        390,
+        854
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "in-flight",
+      "viewport": "390x844",
+      "sha256": "c921e0703dfc27867383521fabf0307387f7c3fe300b478ac304deb22553880e",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "network-unknown",
+      "viewport": "390x844",
+      "sha256": "5f96e682b13330e43ed7f83f03cc34d9ef2762104d2071e2c6d1df8046cdfe6f",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "unavailable",
+      "viewport": "390x844",
+      "sha256": "97fd13c8dd200acf595d5aa996c13d85b452f58db1a3144ae5044709c9bce888",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "missing-session",
+      "viewport": "390x844",
+      "sha256": "81a8300ccc4c3db6861d9c69a5799779d3857cf3b625beb1b2501e12d4148d48",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "explicit-reset",
+      "viewport": "390x844",
+      "sha256": "0d66b35fef8198708b28a5a40e210bfb2bb81288537affc36d0dd7bf721a0df7",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "reset-recheck",
+      "viewport": "390x844",
+      "sha256": "2fa50b38fd91a469ba4e147bb72d5f54712ca922e0fbffae6ce6100f16074980",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "cookie-budget",
+      "viewport": "390x844",
+      "sha256": "843137c440d872c7d9b3d39bb5d373c96906851d8bbf54e980b1357d71bd2931",
+      "dimensions": [
+        390,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "field-errors",
+      "viewport": "360x844",
+      "sha256": "15e871e7e8c687e30729775708e9ef9a4cf16cd4c0deaa56a05f303027daeaef",
+      "dimensions": [
+        360,
+        854
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "in-flight",
+      "viewport": "360x844",
+      "sha256": "951009ccd6026e31b5ed1c17a0be6d3d16c80e5a11adf64111f546ddedb4c6f9",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "network-unknown",
+      "viewport": "360x844",
+      "sha256": "79ae989cf30faeb5e609c03140cf93a4047f264806967593a9d5deab18283797",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "unavailable",
+      "viewport": "360x844",
+      "sha256": "75e4df1429f9da75fe657635ab75a8eb04f8d2e7369b7a2489be147d01358f95",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "missing-session",
+      "viewport": "360x844",
+      "sha256": "088d9c5010a57942f275928e3bc558d2a428e391331fbca60c7ec42e6d5c4dac",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "explicit-reset",
+      "viewport": "360x844",
+      "sha256": "e87c20435a64a3c4f86b34b4ae10d870db0fde3732b37f0e484790ca4f3b05a3",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "reset-recheck",
+      "viewport": "360x844",
+      "sha256": "09d951e4d9a092bfb56d2411321be2fc530e1ed99a50359a31c8a531e857abd5",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    },
+    {
+      "state": "cookie-budget",
+      "viewport": "360x844",
+      "sha256": "16009623f41acc04258fec8b91300d5f69b833e9f4123998131e977c54537959",
+      "dimensions": [
+        360,
+        844
+      ],
+      "classification": "product_only"
+    }
+  ]
+}

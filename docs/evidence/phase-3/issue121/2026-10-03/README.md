@@ -497,6 +497,19 @@ baseline, tolerance, policy, TTL, dependency lock or production capability was c
   Settled reset/recheck evidence will be regenerated only from complete lifecycles;
   independent complete repetitions and final integration remain pending here.
 
+- Capture regeneration after the reset fix: first complete fresh lifecycle
+  43 functional PASS/2.4m → 20 fixed-clock capture PASS/1.4m, wall245.94s.
+  Read-only comparison against historical captures failed safely at reset-recheck
+  1440×1000, as expected from the changed readiness. All forty artifacts were
+  copied directly from that completed run; only four reset-recheck PNGs changed
+  (1440×1000, 1024×900, 390×844, 360×844). The settled 768×1024 PNG already matched.
+  The manifest records the actual toast/recheck readiness and fresh hashes.
+  Second complete fresh lifecycle 43 functional PASS/2.6m → 20 capture PASS/1.3m,
+  wall254.52s; read-only byte/SHA256/dimension comparison 40/40 PASS. Its JSON is
+  `capture-reproducibility.json`. These are reproduced product-only artifacts,
+  not screenshot baselines or human acceptance. Two further independent complete
+  matching lifecycles and final integration are still required after this commit.
+
 - N1: this commit includes all runner-referenced new specs, helpers, backend boundaries/negative drills, checker and preliminary 40-frame manifest together. C4 is attached to its actual committed spec. The earlier 1f3d603 runner/ledger snapshot depended on untracked files; it cannot reproduce that inventory alone and is not rewritten.
 - N2: the real-executing retention test comment now describes new anonymous S issuances. Fault-server periodic maintenance only runs on explicit private ticks, as disclosed above; no automatic 60s scheduler evidence is claimed.
 - Capture-only selection initially produced an empty functional batch; the runner now omits that empty batch. Per-run socket paths also remove the reused process-control address conflict.

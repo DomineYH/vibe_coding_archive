@@ -9,7 +9,7 @@
   "colorScheme": "light/sRGB",
   "reducedMotion": true,
   "animations": "disabled",
-  "readiness": "fonts loaded and two animation frames",
+  "readiness": "fonts loaded and two animation frames; reset-recheck observes error toast visible then removed and restored reset button/alert",
   "pixelTolerance": 0,
   "baselineUpdated": false,
   "captures": [
@@ -93,9 +93,9 @@
         1440,
         1000
       ],
-      "sha256": "34f0be57513499ff1269ef1572cf2329bcd01b99aaa597cc80fa85605aa9de87",
+      "sha256": "f9d8a7c8adc89ae516e40bb5229ab9b70bcbe5f5f61003c3a80e79d2ebb94d97",
       "classification": "product_only",
-      "evidenceScope": "UI-only route.abort fault"
+      "evidenceScope": "UI-only route.abort fault; error toast observed then removed; restored reset/recheck state"
     },
     {
       "state": "cookie-budget",
@@ -189,9 +189,9 @@
         1024,
         900
       ],
-      "sha256": "d05e084017a78ac1cf7b4f9413d26c704d3d45d4a31315f50ebc02434d69cb2a",
+      "sha256": "e733e3b34953533ae7f8247dbab6e08facb836dd274f01a5be0173cdf2f93a4e",
       "classification": "product_only",
-      "evidenceScope": "UI-only route.abort fault"
+      "evidenceScope": "UI-only route.abort fault; error toast observed then removed; restored reset/recheck state"
     },
     {
       "state": "cookie-budget",
@@ -287,7 +287,7 @@
       ],
       "sha256": "6f50ea3c66e0382e328402478541b1d3b5931216b2f216b8d379737d6c8290c8",
       "classification": "product_only",
-      "evidenceScope": "UI-only route.abort fault"
+      "evidenceScope": "UI-only route.abort fault; error toast observed then removed; restored reset/recheck state"
     },
     {
       "state": "cookie-budget",
@@ -381,9 +381,9 @@
         390,
         844
       ],
-      "sha256": "74bd4124c7bef963e87aaa69f9741d55c994d947300184d3b90e67a420d6ee87",
+      "sha256": "2fa50b38fd91a469ba4e147bb72d5f54712ca922e0fbffae6ce6100f16074980",
       "classification": "product_only",
-      "evidenceScope": "UI-only route.abort fault"
+      "evidenceScope": "UI-only route.abort fault; error toast observed then removed; restored reset/recheck state"
     },
     {
       "state": "cookie-budget",
@@ -477,9 +477,9 @@
         360,
         844
       ],
-      "sha256": "b1f5bfba47bd7afa2b62d27c74be8aa3c99c6027c5cb1f797c5ce638ba51e90f",
+      "sha256": "09d951e4d9a092bfb56d2411321be2fc530e1ed99a50359a31c8a531e857abd5",
       "classification": "product_only",
-      "evidenceScope": "UI-only route.abort fault"
+      "evidenceScope": "UI-only route.abort fault; error toast observed then removed; restored reset/recheck state"
     },
     {
       "state": "cookie-budget",
