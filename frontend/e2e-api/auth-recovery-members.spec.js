@@ -164,13 +164,28 @@ test("R23-23 real cookie budget exact cleanup, observed reduction and simulated 
   context,
 }) => {
   await login(page);
+  // Login's first member header precedes the gallery route-entry auth read.
+  // Let its real cleanup replies settle before simulating late cookie arrival.
+  await expect(page).toHaveURL("http://localhost:5174/");
+  await expect(
+    page.getByRole("link", { name: /^둘째 공개 앱,/ }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByText("승인 회원", { exact: true }),
+  ).toBeVisible();
+  const names = async () => (await context.cookies()).map((c) => c.name).sort();
+  const initialNames = await names();
+  expect(initialNames).toHaveLength(2);
   const oldR = (await context.cookies()).find((c) =>
     c.name.includes("recovery"),
   );
   const { flow, headers } = await proof(page, "session");
   const endpoint = `${API}/flows/${flow.flow_id}/recovery-cookie/rotate`;
-  const rotate = (revision) =>
-    request(
+  const rotate = async (revision, expectedNames) => {
+    // Assert the exact fixture immediately before sending; no cleanup may erase
+    // the reinserted retired name and silently change the budget precondition.
+    expect(await names()).toEqual(expectedNames);
+    const result = await request(
       page,
       endpoint,
       {
@@ -179,8 +194,17 @@ test("R23-23 real cookie budget exact cleanup, observed reduction and simulated 
       },
       headers,
     );
-  const first = await rotate(flow.revision);
+    const ingress = (await proxyControl({ action: "status" })).events
+      .filter((event) => event.path === endpoint && event.stage === "ingress")
+      .at(-1);
+    expect(ingress.cookies.slice().sort()).toEqual(expectedNames);
+    return result;
+  };
+  const first = await rotate(flow.revision, initialNames);
   expect(first.status).toBe(201);
+  const currentNames = await names();
+  expect(currentNames).toHaveLength(2);
+  expect(currentNames).not.toContain(oldR.name);
   // Replay an actually issued cookie via browser API; simulated late arrival.
   const unknown = Array.from({ length: 5 }, (_, i) => ({
     name: `eduvibe_session_dev_00000000-0000-4000-8000-${String(i).padStart(12, "0")}_1`,
@@ -190,7 +214,14 @@ test("R23-23 real cookie budget exact cleanup, observed reduction and simulated 
     sameSite: "Lax",
   }));
   await context.addCookies([oldR, ...unknown]);
-  const blocked = await rotate(first.body.revision);
+  const replenishedNames = [
+    ...currentNames,
+    oldR.name,
+    ...unknown.map((c) => c.name),
+  ].sort();
+  expect(replenishedNames).toHaveLength(8);
+  const reducedNames = replenishedNames.filter((name) => name !== oldR.name);
+  const blocked = await rotate(first.body.revision, replenishedNames);
   expect(blocked.status).toBe(409);
   expect(blocked.body.error.code).toBe("AUTH_COOKIE_BUDGET_EXCEEDED");
   expect((await context.cookies()).map((c) => c.name)).not.toContain(oldR.name);
@@ -198,8 +229,10 @@ test("R23-23 real cookie budget exact cleanup, observed reduction and simulated 
     expect.arrayContaining(unknown.map((c) => c.name)),
   );
   await context.addCookies([oldR]);
-  expect((await rotate(first.body.revision)).status).toBe(409);
-  const allowed = await rotate(first.body.revision);
+  expect((await rotate(first.body.revision, replenishedNames)).status).toBe(
+    409,
+  );
+  const allowed = await rotate(first.body.revision, reducedNames);
   expect(allowed.status).toBe(201);
   expect(
     query(

@@ -119,6 +119,39 @@ raised to hide a failure.
   of Phase 4–5 API features. No product, deadline, retry, tolerance or baseline
   change. Full default API/mock and auth/admin visual corrections remain pending.
 
+- Default API second attempt exposed the cookie-budget setup race:
+  unavailable 53 PASS/29 existing SKIP → normal prepared 52 PASS → normal
+  captures 20 PASS → fault functional 42 PASS/1 FAIL (409 expected, 201 received),
+  wall697.65s; final fault captures NOT RUN. Exposing log:
+  `issue121-resume-logs/api-cookie-budget-red.log` (private durable coordinator
+  cache). Six unchanged focused diagnostic repetitions passed (35.6s,
+  wall44.11s); these do not negate that failure or configure retries.
+  T07 #113 I20 / #121 / R23-23 requires counting observed names plus the new
+  credential: eight existing names forbid issuance (409), seven permit an eighth
+  (201), with only observed permanently invalid names deleted.
+  An observable barrier on the actual gallery route-entry `/auth/csrf` read
+  forced its original request to reach the server after the first rotation,
+  then delivered its genuine 200/deletion reply after test-side reinsertion.
+  Exact eight-name browser jar became seven; proxy ingress independently
+  observed those same seven names. The unchanged 409 assertion failed with 201
+  deterministically (7.0s, wall23.21s/maxRSS203064KB;
+  `budget-ordering-red-6.log`). This directly demonstrates a cleanup/reinsertion
+  fixture race, and 201 in that observed state satisfies the contract.
+  Earlier diagnostic barriers stopped at member-header readiness or selected
+  recovery-only reads returning 401 with no cleanup; those unsuccessful setup
+  probes are preserved as `budget-ordering-red.log` and `-2` through `-5`, and
+  are not product failures. The original full run did not record its exact jar
+  or ingress: attribution of that historical request remains unverified; it is
+  not labelled a flake or evidence of an eight-name product-budget violation.
+  Fix is local to the budget test: observe the gallery URL, rendered link and
+  restored member header before fixture setup; assert the exact cookie names
+  immediately before every rotation and independently at proxy ingress. Both
+  eight-name requests still require 409/AUTH_COOKIE_BUDGET_EXCEEDED, exact old-R
+  deletion and unknown-name retention; only the observed seven-name request
+  requires 201. Focused GREEN 1 PASS/16.8s, wall24.08s/maxRSS233328KB
+  (`budget-precondition-green.log`); configured lint/format PASS. No product,
+  budget, status set, retry, sleep or deadline changes. Full final rerun pending.
+
 - Retention product defect: cleanup only removed credentials when retiring the entire
   flow. Live flow with expired full S and old rotated R violates R9 Q18. The migration
   stores only exact `(flow_id, kind, issued_seq)` fences, no token/hash/CSRF/member data;
