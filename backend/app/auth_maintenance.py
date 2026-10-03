@@ -2,7 +2,16 @@
 
 from sqlalchemy import text
 
-from app.auth_boundary import SEQUENCE, advance, after, digest, flow, now, terminalize
+from app.auth_boundary import (
+    SEQUENCE,
+    advance,
+    after,
+    digest,
+    flow,
+    now,
+    save_flow,
+    terminalize,
+)
 from app.pending_retention import sweep_pending
 
 
@@ -88,6 +97,50 @@ def sweep(factory):
             text("DELETE FROM rate_limit_events WHERE expires_at<=:now"),
             {"now": timestamp},
         )
+        # R9 Q18 also bounds old generations in a flow that remains active.
+        # Preserve only exact issued names, never tokens, CSRF or member data.
+        changed = {}
+        for kind, table, reference in (
+            ("session", "sessions", "current_session_generation"),
+            ("recovery", "recovery_credentials", "current_recovery_seq"),
+        ):
+            absolute = " OR absolute_expires_at<=:cutoff" if kind == "session" else ""
+            rows = (
+                db.execute(
+                    text(
+                        f"SELECT flow_id,issued_seq FROM {table} "
+                        f"WHERE revoked_at<=:cutoff OR expires_at<=:cutoff{absolute}"
+                    ),
+                    {"cutoff": after(timestamp, -1800)},
+                )
+                .mappings()
+                .all()
+            )
+            for row in rows:
+                db.execute(
+                    text(
+                        "INSERT OR IGNORE INTO auth_retired_credentials(flow_id,kind,issued_seq) "
+                        "VALUES (:flow_id,:kind,:issued_seq)"
+                    ),
+                    dict(row, kind=kind),
+                )
+                item = changed.get(row["flow_id"]) or flow(
+                    db, row["flow_id"], live=False
+                )
+                if item[reference] == row["issued_seq"]:
+                    item[reference] = None
+                    changed[row["flow_id"]] = item
+                    if kind == "recovery":
+                        item["recovery_ready"] = 0
+                db.execute(
+                    text(
+                        f"DELETE FROM {table} WHERE flow_id=:flow_id AND issued_seq=:issued_seq"
+                    ),
+                    dict(row),
+                )
+        for item in changed.values():
+            # Cleared references and the replay fence persist in the same commit.
+            save_flow(db, item)
         old = (
             db.execute(
                 text(

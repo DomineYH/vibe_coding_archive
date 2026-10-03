@@ -17,7 +17,8 @@ const router = createBrowserRouter([{ path: "*", element: <App /> }]);
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
+      {/* Each history entry must commit so App observes it and rechecks auth. */}
+      <RouterProvider router={router} useTransitions={false} />
     </QueryClientProvider>
   </React.StrictMode>,
 );

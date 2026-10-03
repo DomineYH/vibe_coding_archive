@@ -1,5 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
-import { chmod, copyFile, mkdtemp, rm } from "node:fs/promises";
+import { chmod, copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
 import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -33,7 +33,9 @@ function requireFreePort(port, host) {
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     receivedSignal = signal;
-    playwright?.kill(signal);
+    // Playwright's runner handles SIGINT with web-server teardown; SIGTERM
+    // would terminate it before its separately grouped servers are stopped.
+    playwright?.kill("SIGINT");
   });
 }
 
@@ -48,7 +50,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|password|register|lifecycle|access)|admin-approval/.test(
+      /auth-(prepare|login|password|register|lifecycle|access|races|recovery)|admin-approval/.test(
         arg,
       ),
     );
@@ -56,9 +58,13 @@ async function run() {
     ...process.env,
     APP_ENV: "test",
     API_E2E_AUTH_BOUNDARY: authPrepared ? "prepared" : "unavailable",
+    API_E2E_TEMP_ROOT: temporary,
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
     PUBLIC_ORIGIN: "http://localhost:5174",
+    AUTH_FAULT_CONTROL: path.join(temporary, "auth-control.sock"),
+    AUTH_PROXY_CONTROL: path.join(temporary, "proxy-control.sock"),
+    AUTH_PROCESS_CONTROL: path.join(temporary, "process-control.sock"),
   };
 
   try {
@@ -119,35 +125,71 @@ raise SystemExit(status)`,
       return;
     }
 
-    // Keep the same migrated database across the ordinary and prepared-boundary runs.
-    // Fixtures are inserted once; restarting the server cannot repair test authority.
+    // Each independent Playwright run starts from the same verified test-owned
+    // database. In-process restart/restore drills never reinsert fixtures.
+    const template = path.join(temporary, "prepared.sqlite3");
+    await copyFile(env.DATABASE_PATH, template);
+    const normal = [
+      "e2e-api/auth-prepare.spec.js",
+      "e2e-api/auth-login.spec.js",
+      "e2e-api/auth-password.spec.js",
+      "e2e-api/auth-register.spec.js",
+      "e2e-api/admin-approval.spec.js",
+      "e2e-api/auth-lifecycle.spec.js",
+      "e2e-api/auth-access.spec.js",
+    ];
+    const faults = [
+      "e2e-api/auth-races.spec.js",
+      "e2e-api/auth-races-orders.spec.js",
+      "e2e-api/auth-recovery.spec.js",
+      "e2e-api/auth-recovery-members.spec.js",
+      "e2e-api/auth-recovery-process.spec.js",
+      "e2e-api/auth-recovery-boundaries.spec.js",
+      "e2e-api/auth-recovery-captures.spec.js",
+    ];
+    const isFault = (arg) => /auth-(races|recovery)/.test(arg);
+    const selectedFaults = arguments_.filter(isFault);
+    const selectedNormal = arguments_.filter((arg) => !isFault(arg));
+    const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
+    const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
     const runs =
       arguments_.length || process.argv.includes("--auth-unavailable")
-        ? [{ arguments_, prepared: authPrepared }]
+        ? [
+            ...(normalFiles.length || !selectedFaults.length
+              ? [
+                  {
+                    arguments_: selectedNormal,
+                    prepared: authPrepared,
+                    faults: false,
+                  },
+                ]
+              : []),
+            ...(selectedFaults.length
+              ? [
+                  {
+                    arguments_: [...selectedFaults, ...options],
+                    prepared: true,
+                    faults: true,
+                  },
+                ]
+              : []),
+          ]
         : [
-            { arguments_, prepared: false },
-            {
-              arguments_: [
-                "e2e-api/auth-prepare.spec.js",
-                "e2e-api/auth-login.spec.js",
-                "e2e-api/auth-password.spec.js",
-                "e2e-api/auth-register.spec.js",
-                "e2e-api/admin-approval.spec.js",
-                "e2e-api/auth-lifecycle.spec.js",
-                "e2e-api/auth-access.spec.js",
-              ],
-              prepared: true,
-            },
+            { arguments_: [], prepared: false, faults: false },
+            { arguments_: normal, prepared: true, faults: false },
+            { arguments_: faults, prepared: true, faults: true },
           ];
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
     const capture =
-      "change-only card and field errors|registration cards|administrator approval cards|private access states";
+      "change-only card and field errors|registration cards|administrator approval cards|private access states|integration recovery captures";
     const separated = runs.flatMap((run) => {
       if (
         !run.prepared ||
         !run.arguments_.some((arg) =>
-          /auth-(password|register|access)|admin-approval/.test(arg),
+          /auth-(password|register|access|recovery-captures)|admin-approval/.test(
+            arg,
+          ),
         )
       )
         return [run];
@@ -158,29 +200,48 @@ raise SystemExit(status)`,
         arguments_: [...run.arguments_, "--grep-invert", capture],
       };
       return [
-        functional,
+        ...(run.arguments_.some(
+          (arg) =>
+            /\.spec\.js$/.test(arg) && !/auth-recovery-captures/.test(arg),
+        )
+          ? [functional]
+          : []),
         {
           arguments_: [
             ...run.arguments_.filter((arg) =>
-              /auth-(password|register|access)|admin-approval/.test(arg),
+              /auth-(password|register|access|recovery-captures)|admin-approval/.test(
+                arg,
+              ),
             ),
             "--grep",
             capture,
           ],
           prepared: true,
+          faults: run.faults,
           capture: true,
         },
       ];
     });
-    for (const run of separated) {
+    for (const [index, run] of separated.entries()) {
+      const runDirectory = path.join(temporary, `run-${index}`);
+      await mkdir(runDirectory);
+      const runEnv = {
+        ...env,
+        DATABASE_PATH: path.join(runDirectory, "api.sqlite3"),
+        AUTH_FAULT_CONTROL: path.join(runDirectory, "auth-control.sock"),
+        AUTH_PROXY_CONTROL: path.join(runDirectory, "proxy-control.sock"),
+        AUTH_PROCESS_CONTROL: path.join(runDirectory, "process-control.sock"),
+      };
+      await copyFile(template, runEnv.DATABASE_PATH);
       playwright = spawn(
         path.join(frontend, "node_modules", ".bin", "playwright"),
         ["test", "--config=playwright.api.config.js", ...run.arguments_],
         {
           cwd: frontend,
           env: {
-            ...env,
+            ...runEnv,
             API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
+            API_E2E_FAULTS: run.faults ? "1" : "",
             API_E2E_CLOCK: run.capture ? "2026-10-01T00:00:00Z" : "",
           },
           stdio: "inherit",

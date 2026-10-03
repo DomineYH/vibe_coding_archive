@@ -209,3 +209,12 @@ APP_ENV=test uv run --frozen pytest tests/contracts/test_admin_approval.py tests
 비밀번호 초기화·회원 삭제·관리자 재인증·아카이브 앱 관리 실행은 후속 범위다.
 [T05 검수 원장](../docs/evidence/phase-3/issue119/2026-10-02/README.md)에 실제 HTTP,
 파일 SQLite, 브라우저 쿠키, 응답 유실, 경합과 재현 명령을 기록한다.
+
+### T07 credential retirement
+
+Apply `0006_retired_credentials` explicitly with `uv run --frozen alembic upgrade head`
+before starting the upgraded API. This migration preserves exact issued-cookie-name
+fences after credential material is removed. It is irreversible: restore a separately
+verified backup instead of downgrading. The scheduled sweep now also removes expired
+or revoked S/R generations inside live flows within the R9 Q18 retention bound;
+clearing an obsolete reference does not alter a newer pending transition or revision.

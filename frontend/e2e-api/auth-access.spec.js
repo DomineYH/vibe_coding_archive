@@ -349,6 +349,74 @@ if (prepared) {
     page.off("request", countProof);
   });
 
+  test("POP during deferred gallery rendering conceals private detail and issues exactly one proof", async ({
+    page,
+    context,
+  }) => {
+    await page.addInitScript(() => {
+      const NativeMessageChannel = window.MessageChannel;
+      const tasks = [];
+      let held = false;
+      window.holdRenderTasks = () => {
+        held = true;
+      };
+      window.releaseRenderTasks = () => {
+        held = false;
+        for (const task of tasks.splice(0)) task();
+      };
+      window.MessageChannel = class extends NativeMessageChannel {
+        constructor() {
+          super();
+          const onmessage = Object.getOwnPropertyDescriptor(
+            MessagePort.prototype,
+            "onmessage",
+          );
+          Object.defineProperty(this.port1, "onmessage", {
+            set(handler) {
+              onmessage.set.call(this, (event) => {
+                if (held) tasks.push(() => handler(event));
+                else handler(event);
+              });
+            },
+          });
+        }
+      };
+    });
+    await blockExternalRequests(context);
+    await signedIn(page);
+    await page.goto(`/apps/${A}`);
+    await expect(heading(page)).toBeVisible();
+    await page.evaluate(() => window.holdRenderTasks());
+    await page.getByRole("link", { name: "갤러리", exact: true }).click();
+    await expect(page).toHaveURL("/");
+    const started = deferred(),
+      release = deferred(),
+      completed = deferred();
+    const proofs = [];
+    await page.route("**/api/v1/auth/flow-state", async (route) => {
+      proofs.push(route.request());
+      const proof = await route.fetch();
+      expect(proof.status()).toBe(200);
+      started.resolve();
+      await release.promise;
+      await route.fulfill({ response: proof });
+      completed.resolve();
+    });
+    await page.goBack();
+    // Pending browser work must not leave the previous private observation visible.
+    expect(await heading(page).count()).toBe(0);
+    await page.evaluate(() => window.releaseRenderTasks());
+    await started.promise;
+    await expect(heading(page)).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+    expect(await page.locator("body").textContent()).not.toContain(titleA);
+    expect(proofs).toHaveLength(1);
+    release.resolve();
+    await completed.promise;
+    await expect(heading(page)).toBeVisible();
+    expect(proofs).toHaveLength(1);
+  });
+
   test("actual admin revoke and reapprove cannot revive owner old session or change public data", async ({
     page,
     context,
@@ -379,10 +447,22 @@ if (prepared) {
     );
     expect(oldSession).toBeDefined();
     const before = await (await page.request.get("/api/v1/apps")).json();
+    const secondContext = await browser.newContext();
+    await blockExternalRequests(secondContext);
+    const secondPage = await secondContext.newPage();
+    await secondPage.bringToFront();
+    await signedIn(secondPage);
+    await secondPage.goto(`/apps/${A}`);
+    await expect(heading(secondPage)).toBeVisible();
+    const secondProof = await approvalHeaders(secondPage);
+    expect(secondProof["X-EduVibe-Flow-Id"]).not.toBe(
+      oldContext["X-EduVibe-Flow-Id"],
+    );
     const adminContext = await browser.newContext();
     await blockExternalRequests(adminContext);
     const adminPage = await adminContext.newPage();
     try {
+      await adminPage.bringToFront();
       await openAdmin(adminPage);
       const headers = {
         ...(await approvalHeaders(adminPage)),
@@ -418,6 +498,16 @@ if (prepared) {
           },
         );
         expect(response.status()).toBe(200);
+        // Both independently issued browser sessions are rejected immediately
+        // after revoke and remain rejected after reapproval.
+        expect(await read(page, A, true, oldContext)).toMatchObject({
+          status: 404,
+          code: "NOT_FOUND",
+        });
+        expect(await read(secondPage, A, true, secondProof)).toMatchObject({
+          status: 404,
+          code: "NOT_FOUND",
+        });
         await expect
           .poll(
             () =>
@@ -446,6 +536,7 @@ if (prepared) {
       await page.goto(`/apps/${A}`);
       await expect(heading(page)).toBeVisible();
     } finally {
+      await secondContext.close();
       await adminContext.close();
     }
   });

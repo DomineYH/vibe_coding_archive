@@ -378,6 +378,9 @@ test("signup through approval, app health, account deletion, and reset works as 
     .toBe("pending");
 
   const member = userRow(page);
+  // Cross-tab batch activity invalidates this list while this page's clock is
+  // paused. Let queued UI work settle until the actual member row is visible.
+  await waitForVisibleAfterClockTurn(page, member);
   await expect(member).toHaveCount(1);
   await expect(member).toContainText("등록 앱 1개");
   await member.getByRole("button", { name: "삭제", exact: true }).click();
@@ -481,6 +484,7 @@ test("signup through approval, app health, account deletion, and reset works as 
   expect(finalState.accountExists).toBe(false);
   expect(finalState.adminUserExists).toBe(false);
   expect(finalState.appExists).toBe(false);
+  await waitForVisibleAfterClockTurn(page, totals.nth(0));
   await expect(totals.nth(0)).toHaveText(String(initialUsers - 1));
   await expect(totals.nth(2)).toHaveText(String(initialApps - 1));
   expect(finalState.batch.finished_at).not.toBeNull();

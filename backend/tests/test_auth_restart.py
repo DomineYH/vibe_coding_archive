@@ -1,10 +1,13 @@
 import sqlite3
+import subprocess
+import sys
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
 
 from tests.auth_client import API, Browser, signed_in
+from tests.auth_process import BACKEND, AuthProcess
 from tests.support import AUTH_MEMBERS
 
 APPROVED = AUTH_MEMBERS["approved"][1]
@@ -88,3 +91,103 @@ def test_logout_survives_a_restart(member_app):
             ).status_code
             == 204
         )
+
+
+def test_real_restart_then_operational_backup_restore_uses_the_current_deletion_ledger(
+    member_app, password_blocklist
+):
+    _, path = member_app()
+    server = AuthProcess(path, password_blocklist)
+    backup = path.with_name("snapshot.sqlite3")
+    try:
+        server.start()
+        with server.client() as client:
+            admin = signed_in(client, "admin")
+            expires = admin.me().json()["expires_at"]
+            headers = {
+                **admin.session_headers(),
+                "X-EduVibe-Auth-Revision": admin.revision,
+            }
+
+            def issue(target):
+                response = client.post(
+                    "/api/v1/write-operations",
+                    headers=headers,
+                    json={
+                        "kind": "user_approval",
+                        "target_id": target,
+                        "expected_account_version": 1,
+                        "approved": True,
+                    },
+                )
+                assert response.status_code == 201
+                return response.json()["key"]
+
+            unresolved = issue(AUTH_MEMBERS["pending"][0])
+            resolved = issue(AUTH_MEMBERS["revoked"][0])
+            assert (
+                client.patch(
+                    f"/api/v1/admin/users/{AUTH_MEMBERS['revoked'][0]}/approval",
+                    headers={**headers, "Idempotency-Key": resolved},
+                    json={"expected_account_version": 1, "approved": True},
+                ).status_code
+                == 200
+            )
+            server.kill()
+            server.start()  # no fixture injection, bootstrap or migration
+            assert admin.me().json()["expires_at"] == expires
+            for key, state in ((resolved, "succeeded"), (unresolved, "unresolved")):
+                result = client.get(f"/api/v1/write-operations/{key}", headers=headers)
+                assert result.status_code == 200 and result.json()["state"] == state
+            with sqlite3.connect(path) as db, sqlite3.connect(backup) as snapshot:
+                db.backup(snapshot)  # consistent SQLite backup, including live WAL
+            # Delete after the snapshot into the current independent durable ledger.
+            expired = (datetime.now(UTC) - timedelta(days=90, seconds=1)).isoformat()
+            with sqlite3.connect(path) as db:
+                db.execute(
+                    "UPDATE members SET created_at=? WHERE id=?",
+                    (expired, AUTH_MEMBERS["pending"][0]),
+                )
+            deletion = subprocess.run(
+                [sys.executable, "-m", "app.cli", "sweep-pending"],
+                env=server.env,
+                cwd=BACKEND,
+                capture_output=True,
+                check=False,
+            )
+            assert deletion.returncode == 0
+            assert admin.logout().status_code == 204
+            server.kill()
+            with sqlite3.connect(backup) as snapshot, sqlite3.connect(path) as db:
+                snapshot.backup(db)  # operational DB only; ledger never rolled back
+            invalidation = subprocess.run(
+                [sys.executable, "-m", "app.cli", "invalidate-restored-auth"],
+                env=server.env,
+                cwd=BACKEND,
+                capture_output=True,
+                check=False,
+            )
+            assert invalidation.returncode == 0
+            with sqlite3.connect(path) as db:
+                assert db.execute(
+                    "SELECT count(*) FROM members WHERE id=?",
+                    (AUTH_MEMBERS["pending"][0],),
+                ).fetchone() == (0,)
+                for table in ("sessions", "auth_flows", "recovery_credentials"):
+                    assert db.execute(
+                        f"SELECT count(*) FROM {table} WHERE revoked_at IS NULL"
+                    ).fetchone() == (0,)
+                assert db.execute(
+                    "SELECT count(*) FROM write_operations"
+                ).fetchone() == (0,)
+                assert db.execute(
+                    "SELECT count(*) FROM auth_transitions WHERE state IN ('admitted','executing')"
+                ).fetchone() == (0,)
+            server.start()  # same restored DB and current ledger, no reinjection
+            assert admin.me().status_code == 401
+            assert client.get("/api/v1/apps").status_code == 200
+            assert client.get("/api/v1/meta").json()["capabilities"]["auth_login"][
+                "enabled"
+            ]
+    finally:
+        server.close()

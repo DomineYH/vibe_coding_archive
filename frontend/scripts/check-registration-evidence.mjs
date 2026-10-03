@@ -24,9 +24,9 @@ for (const size of sizes) {
     const committed = readFileSync(
       path.join(evidence, "visual", `${state}-${size}.png`),
     );
-    assert.deepEqual(
-      bytes,
-      committed,
+    // Buffer.equals: a deepEqual failure diffs the bytes (quadratic memory).
+    assert(
+      bytes.equals(committed),
       `${state} ${size}: independent run differs`,
     );
     const png = PNG.sync.read(bytes);
