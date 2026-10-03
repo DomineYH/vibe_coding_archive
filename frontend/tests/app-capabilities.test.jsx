@@ -360,14 +360,55 @@ it("conceals both creation controls while authentication is being rechecked", as
   expectNoCreate();
 });
 
-it("hides creation for a pending member rejected by real mock login", async () => {
-  await expect(authService.login(DEMO_ACCOUNTS[2])).rejects.toMatchObject({
-    code: "ACCOUNT_NOT_APPROVED",
-  });
-  await visit("/", null);
-  await screen.findByRole("button", { name: "로그인", exact: true });
-  expectNoCreate();
-});
+it.each([false, true])(
+  "gates creation for an injected full member with approved=%s",
+  async (approved) => {
+    await authService.login(DEMO_ACCOUNTS[1]);
+    const observed = await authService.getCurrentAuthState();
+    expect(observed).toMatchObject({
+      status: "ready",
+      sessionCookiePresent: true,
+      user: {
+        role: "user",
+        approved: true,
+        sessionKind: "full",
+        mustChangePassword: false,
+      },
+    });
+    const state = { ...observed, user: { ...observed.user, approved } };
+    const spy = vi
+      .spyOn(authService, "getCurrentAuthState")
+      .mockResolvedValue(state);
+    await visit("/", null);
+    await screen.findByRole("button", { name: "로그아웃" });
+    expect(
+      within(screen.getByRole("banner")).getByText(observed.user.nickname, {
+        exact: true,
+      }),
+    ).toBeInTheDocument();
+    await screen.findByRole("link", { name: /^분수 피자 가게,/ });
+    await waitFor(() =>
+      expect(client.getQueryState(["mock", "meta"])).toMatchObject({
+        status: "success",
+        fetchStatus: "idle",
+      }),
+    );
+    expect(spy).toHaveBeenCalled();
+    await expect(spy.mock.results[0].value).resolves.toEqual(state);
+    if (!approved) expectNoCreate();
+    else {
+      expect(
+        within(screen.getByRole("navigation", { name: "주 메뉴" })).getByRole(
+          "link",
+          { name: "앱 등록", exact: true },
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "내 앱 등록하기" }),
+      ).toBeInTheDocument();
+    }
+  },
+);
 
 it("hides creation for a real change-only member session", async () => {
   await visit("/", TEMPORARY_DEMO_ACCOUNTS[0]);
