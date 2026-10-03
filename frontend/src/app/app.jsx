@@ -109,7 +109,6 @@ function canCreateApp(auth, access) {
     auth.user.approved &&
     auth.user.sessionKind === "full" &&
     !auth.user.mustChangePassword &&
-    !access.loading &&
     !access.error &&
     access.meta?.capabilities.apps_create.enabled === true
   );

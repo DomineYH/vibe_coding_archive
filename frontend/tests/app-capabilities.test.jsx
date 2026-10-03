@@ -171,11 +171,15 @@ it("hides creation while metadata is missing and loading", async () => {
 });
 
 it.each(["/", "/apps/new", ownEdit])(
-  "hides creation with stale enabled metadata during refetch and after its failure at %s",
+  "keeps creation with cached enabled metadata during refetch and hides it after failure at %s",
   async (path) => {
     await visit(path);
     const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
     await nav.findByRole("link", { name: "앱 등록" });
+    if (path !== "/")
+      await screen.findByRole("form", {
+        name: path === "/apps/new" ? "새 앱 등록 양식" : "앱 수정 양식",
+      });
     let reject;
     metadata.mockImplementation(
       () =>
@@ -187,7 +191,32 @@ it.each(["/", "/apps/new", ownEdit])(
     await act(async () => {
       refetch = client.refetchQueries({ queryKey: ["mock", "meta"] });
     });
-    await waitFor(expectNoCreate);
+    await waitFor(() =>
+      expect(client.getQueryState(["mock", "meta"]).fetchStatus).toBe(
+        "fetching",
+      ),
+    );
+    expect(
+      nav.getByRole("link", { name: "앱 등록", exact: true }),
+    ).toBeInTheDocument();
+    if (path === "/")
+      expect(
+        screen.getByRole("button", { name: "내 앱 등록하기" }),
+      ).toBeInTheDocument();
+    else {
+      expect(
+        await screen.findByText(
+          path === "/apps/new"
+            ? "등록 기능을 확인하고 있어요"
+            : "앱 정보를 확인하고 있어요",
+        ),
+      ).toBeInTheDocument();
+      const form = screen.queryByRole("form", {
+        name: path === "/apps/new" ? "새 앱 등록 양식" : "앱 수정 양식",
+      });
+      if (path === "/apps/new") expect(form).not.toBeInTheDocument();
+      else expect(form).toBeInTheDocument();
+    }
     await act(async () => {
       reject(new Error("메타 조회 실패"));
       await refetch;
@@ -202,6 +231,44 @@ it.each(["/", "/apps/new", ownEdit])(
     ).toBeInTheDocument();
   },
 );
+
+it("hides creation after a successful metadata refetch revokes creation", async () => {
+  await visit();
+  const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
+  await nav.findByRole("link", { name: "앱 등록", exact: true });
+  await screen.findByRole("button", { name: "내 앱 등록하기" });
+  let release;
+  metadata.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  let refetch;
+  await act(async () => {
+    refetch = client.refetchQueries({ queryKey: ["mock", "meta"] });
+  });
+  await waitFor(() =>
+    expect(client.getQueryState(["mock", "meta"]).fetchStatus).toBe("fetching"),
+  );
+  expect(
+    nav.getByRole("link", { name: "앱 등록", exact: true }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "내 앱 등록하기" }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    release({
+      ...meta,
+      capabilities: {
+        ...meta.capabilities,
+        apps_create: { enabled: false, reasons: ["maintenance"] },
+      },
+    });
+    await refetch;
+  });
+  await waitFor(expectNoCreate);
+});
 
 it.each(["/apps/new", ownEdit])(
   "prioritizes refetch errors over cached not_implemented copy at %s",
