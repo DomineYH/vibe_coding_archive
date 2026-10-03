@@ -19,6 +19,14 @@ async function capture(page, viewport, info, name) {
   // Remove focus only after asserting actual accessible errors/controls.
   await page.evaluate(() => document.activeElement?.blur());
   await prepareViewportCapture(page, viewport);
+  if (name === "reset-recheck") {
+    // This frame represents the settled recheck, after transient error feedback.
+    expect(
+      await page
+        .getByText("서비스에 연결할 수 없어요.", { exact: true })
+        .count(),
+    ).toBe(0);
+  }
   await page.screenshot({
     path: info.outputPath(`${name}.png`),
     fullPage: true,
@@ -227,6 +235,18 @@ for (const viewport of viewports) {
       route.abort("failed"),
     );
     await page.getByRole("button", { name: "브라우저 인증 초기화" }).click();
+    await expect(
+      page.getByRole("button", { name: "브라우저 인증 초기화" }),
+    ).toBeVisible();
+    await expect(page.getByRole("alert").last()).toBeVisible();
+    // The reset control and alert already existed before this click. Observe
+    // the actual transport failure, then its transient feedback clearing,
+    // before recording the restored reset/recheck state.
+    const resetError = page.getByText("서비스에 연결할 수 없어요.", {
+      exact: true,
+    });
+    await expect(resetError).toBeVisible();
+    await expect(resetError).toHaveCount(0);
     await expect(
       page.getByRole("button", { name: "브라우저 인증 초기화" }),
     ).toBeVisible();

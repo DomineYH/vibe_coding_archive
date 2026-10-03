@@ -56,6 +56,16 @@ acceptance is claimed. UV_PROJECT_ENVIRONMENT points to the prepared Linux venv;
 backend/.venv remains a directory. A temporary frontend dependency symlink caused
 font serving refusals and was removed; original node_modules is restored.
 
+WSL stopped twice on 2026-10-03 (11:27 and 13:51) under memory exhaustion.
+The coordinator diagnosed Node 24 `assert.deepEqual(Buffer, Buffer)` on a PNG
+mismatch: diff construction grows quadratically (5KB random buffers used 743MB),
+exhausting 7.5GB anonymous memory and swap. Commit da53ff2 uses `Buffer.equals`
+in all four evidence checkers; the same mismatch fails in 3s/157MB. Historical
+logs are preserved privately in `issue121-resume-logs-crash2`. Every heavy command
+in this continuation runs under `systemd-run --user --scope -q -p MemoryMax=6G
+-p MemorySwapMax=512M`; browser suites remain serialized. Memory caps are never
+raised to hide a failure.
+
 | ID | Applicability / expected | Command / actual HTTP, DB, cookie, screen observation | Result |
 | --- | --- | --- | --- |
 | H1 | Four transport stages / original bytes and independent cookie receipt | `node frontend/scripts/test-auth-fault-proxy.mjs`: 4 PASS, 0.22s; before-forward/header/header-body/mid-body holds; two raw cookie fields; second raw request sends no Cookie. Synthetic transport self-test, not authentication proof. | PASS |
@@ -469,6 +479,23 @@ baseline, tolerance, policy, TTL, dependency lock or production capability was c
 - L3/L4: B3 discloses direct created_at aging; ID-only reset now sends the revision actually observed before proof loss.
 
 ## Continuation commit consistency and capture corrections
+
+- Second-crash capture diagnosis (test first): the old checker mismatch at
+  reset-recheck 768×1024 was an intended reset-error toast racing capture.
+  `resetAuth` catches the deliberately aborted reset, displays the network error,
+  and rechecks original targets. The button and alert already exist before the
+  click; their visibility did not prove the failure or its recheck had completed.
+  A capture-boundary regression requiring no transient toast was RED: reset-only
+  browser command 4 FAIL/1 PASS, 47.5s (wall60.45s, maxRSS302072KB). The capture
+  now observes the actual error toast visible → removed, then the restored reset
+  button/alert, retaining the boundary assertion. Same command GREEN 5/5, 46.2s
+  (wall57.50s, maxRSS318564KB): `npm --prefix frontend run test:e2e:api --
+  auth-recovery-captures.spec.js --grep 'captures reset'`, memory-guarded.
+  The per-viewport `/auth/login` socket-hang-up occurs in the separate results
+  scenario's intentional before_headers drop, not after successful reset/login.
+  No product defect/change, sleep, retry, tolerance, masking or baseline update.
+  Settled reset/recheck evidence will be regenerated only from complete lifecycles;
+  independent complete repetitions and final integration remain pending here.
 
 - N1: this commit includes all runner-referenced new specs, helpers, backend boundaries/negative drills, checker and preliminary 40-frame manifest together. C4 is attached to its actual committed spec. The earlier 1f3d603 runner/ledger snapshot depended on untracked files; it cannot reproduce that inventory alone and is not rewritten.
 - N2: the real-executing retention test comment now describes new anonymous S issuances. Fault-server periodic maintenance only runs on explicit private ticks, as disclosed above; no automatic 60s scheduler evidence is claimed.
