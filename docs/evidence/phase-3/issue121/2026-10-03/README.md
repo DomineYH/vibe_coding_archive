@@ -104,6 +104,20 @@ raised to hide a failure.
   passed. These do not override the browser failures. Generated PNGs outside
   issue121 were restored by explicit paths after API and visual commands
   (77 then 2); repeat cleanup is required after subsequent runs.
+- Frozen-clock mock regression: unchanged focused admin/combined-journey command
+  reproduced 1 PASS/1 FAIL, 39.9s (wall41.66s). The admin navigation passed
+  unchanged; its earlier deadline failure was not reproduced. The combined
+  journey's original member-count assertion failed again while the list stayed
+  loading. A clock-turn wait restored that row, exposing the same queued refresh
+  at the final statistics assertion (1 PASS/1 FAIL, wall34.06s). Both points now
+  use the existing `waitForVisibleAfterClockTurn` helper to advance the paused
+  test clock until the actual row/statistic is visible; original count/value
+  assertions remain. Focused retest 2/2 PASS, 25.5s (wall27.24s/maxRSS295244KB):
+  `npm --prefix frontend run test:e2e -- --config=playwright.resume-121.config.js
+  e2e/admin-apps.spec.js e2e/issue-49.spec.js --grep 'admin can edit and delete|signup
+  through approval'`. This is existing mock-only regression, not implementation
+  of Phase 4–5 API features. No product, deadline, retry, tolerance or baseline
+  change. Full default API/mock and auth/admin visual corrections remain pending.
 
 - Retention product defect: cleanup only removed credentials when retiring the entire
   flow. Live flow with expired full S and old rotated R violates R9 Q18. The migration
