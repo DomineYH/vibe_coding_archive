@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appsService } from "../src/services/mock/apps";
+import { authService } from "../src/services/mock/auth";
 import { MOCK_STORAGE_KEY, resetMockState } from "../src/services/mock/state";
 
 type StoredObject = Record<string, unknown>;
@@ -112,6 +113,31 @@ const invalidStoredStates: [string, MutateStoredState][] = [
   ["missing owner nickname", (state) => delete owner(state).nickname],
   ["empty owner nickname", (state) => (owner(state).nickname = "  ")],
   [
+    "private app owner nickname differs from account",
+    (state) => {
+      for (const app of state.private_apps as StoredObject[]) {
+        nested(app.owner).nickname = "Different nickname";
+      }
+    },
+  ],
+  [
+    "unknown private app owner",
+    (state) => {
+      nested((state.private_apps as StoredObject[])[0].owner).id =
+        "ffffffff-ffff-4fff-8fff-ffffffffffff";
+    },
+  ],
+  [
+    "legacy science apps owned by the pending account",
+    (state) => {
+      for (const app of state.apps) {
+        if (nested(app.owner).nickname === "과학덕후박샘") {
+          nested(app.owner).id = "00000000-0000-4000-8000-000000000102";
+        }
+      }
+    },
+  ],
+  [
     "inconsistent owner nickname reference",
     (state) => {
       nested(state.apps[1].owner).nickname = "Different nickname";
@@ -193,6 +219,70 @@ const invalidStoredStates: [string, MutateStoredState][] = [
 describe("persisted mock state validation", () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => localStorage.clear());
+
+  it("rejects internally consistent owner nickname that differs from account", async () => {
+    resetMockState();
+    const state = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    const ownerId = owner(state).id;
+    for (const app of state.apps) {
+      if (nested(app.owner).id === ownerId) {
+        nested(app.owner).nickname = "Different nickname";
+      }
+    }
+    const damaged = JSON.stringify(state);
+    localStorage.setItem(MOCK_STORAGE_KEY, damaged);
+
+    await expect(appsService.list()).rejects.toMatchObject({
+      code: "MOCK_STORAGE_ERROR",
+    });
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(damaged);
+
+    resetMockState();
+    expect((await appsService.list()).items).toHaveLength(16);
+  });
+
+  it("accepts registered owners with duplicate nicknames in both app collections", async () => {
+    const accounts = [];
+    for (const loginId of ["shared-owner-one", "shared-owner-two"]) {
+      accounts.push(
+        await authService.register({
+          loginId,
+          password: "A long fake password for shared owners",
+          nickname: "과학덕후박샘",
+        }),
+      );
+    }
+    const state = JSON.parse(
+      localStorage.getItem(MOCK_STORAGE_KEY) ?? "null",
+    ) as StoredState;
+    for (const [index, account] of accounts.entries()) {
+      state.apps[index].owner = { id: account.id, nickname: account.nickname };
+    }
+    const privateApp = (state.private_apps as StoredObject[])[0];
+    privateApp.owner = {
+      id: accounts[0].id,
+      nickname: accounts[0].nickname,
+    };
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+
+    const page = await appsService.list();
+    for (const account of accounts) {
+      expect(page.items).toContainEqual(
+        expect.objectContaining({
+          ownerId: account.id,
+          owner: "과학덕후박샘",
+        }),
+      );
+    }
+    await authService.login({ loginId: "admin", password: "admin123" });
+    expect(await appsService.get(String(privateApp.id))).toMatchObject({
+      ownerId: accounts[0].id,
+      owner: "과학덕후박샘",
+      isPublic: false,
+    });
+  });
 
   it.each(invalidStoredStates)(
     "reports %s as damaged and recovers only after explicit reset",
