@@ -83,9 +83,13 @@ it("shows preparation copy on direct create", async () => {
   disable("apps_create");
   await visit("/apps/new");
   const main = within(screen.getByRole("main"));
-  expect(
-    await main.findByText("앱 등록 기능은 아직 준비 중이에요"),
-  ).toBeInTheDocument();
+  const title = await main.findByText("앱 등록 기능은 아직 준비 중이에요");
+  expect(title).toBeInTheDocument();
+  expect(title.closest('[role="status"]')).toHaveAttribute(
+    "aria-live",
+    "polite",
+  );
+  expect(title.closest('[role="alert"]')).toBeNull();
   expect(
     main.getByText("갤러리는 계속 둘러볼 수 있습니다."),
   ).toBeInTheDocument();
@@ -103,9 +107,17 @@ it("shows preparation copy on own edit", async () => {
   disable("apps_update_own");
   await visit(ownEdit);
   const main = within(screen.getByRole("main"));
-  expect(
-    await main.findByText("앱 수정 기능은 아직 준비 중이에요"),
-  ).toBeInTheDocument();
+  const title = await main.findByText("앱 수정 기능은 아직 준비 중이에요");
+  expect(title).toBeInTheDocument();
+  expect(main.getByRole("link", { name: "갤러리로" })).toHaveAttribute(
+    "href",
+    "/",
+  );
+  expect(title.closest('[role="status"]')).toHaveAttribute(
+    "aria-live",
+    "polite",
+  );
+  expect(title.closest('[role="alert"]')).toBeNull();
   expect(main.queryByText(/잠시 후 다시 확인/)).not.toBeInTheDocument();
   expect(
     main.queryByRole("button", { name: "다시 확인" }),
@@ -127,10 +139,22 @@ it.each(["apps_create", "apps_update_own"])(
   async (capability) => {
     disable(capability, ["maintenance"]);
     await visit(capability === "apps_create" ? "/apps/new" : ownEdit);
+    const description = await screen.findByText("잠시 후 다시 확인해 주세요.");
+    expect(description).toBeInTheDocument();
+    const creating = capability === "apps_create";
     expect(
-      await screen.findByText("잠시 후 다시 확인해 주세요."),
-    ).toBeInTheDocument();
+      description.closest(creating ? '[role="alert"]' : '[role="status"]'),
+    ).toHaveAttribute("aria-live", creating ? "assertive" : "polite");
+    expect(
+      description.closest(creating ? '[role="status"]' : '[role="alert"]'),
+    ).toBeNull();
     expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+    if (capability === "apps_update_own")
+      expect(
+        within(screen.getByRole("main")).queryByRole("link", {
+          name: "갤러리로",
+        }),
+      ).not.toBeInTheDocument();
   },
 );
 
@@ -139,7 +163,16 @@ it.each(["apps_create", "apps_update_own"])(
   async (capability) => {
     disable(capability, ["maintenance", "not_implemented"]);
     await visit(capability === "apps_create" ? "/apps/new" : ownEdit);
-    expect(await screen.findByText(/아직 준비 중이에요/)).toBeInTheDocument();
+    const title = await screen.findByText(/아직 준비 중이에요/);
+    expect(title).toBeInTheDocument();
+    expect(title.closest('[role="status"]')).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(title.closest('[role="alert"]')).toBeNull();
+    expect(
+      within(screen.getByRole("main")).getByRole("link", { name: "갤러리로" }),
+    ).toHaveAttribute("href", "/");
     expect(screen.queryByText(/잠시 후 다시 확인/)).not.toBeInTheDocument();
   },
 );
@@ -171,11 +204,15 @@ it("hides creation while metadata is missing and loading", async () => {
 });
 
 it.each(["/", "/apps/new", ownEdit])(
-  "hides creation with stale enabled metadata during refetch and after its failure at %s",
+  "keeps creation with cached enabled metadata during refetch and hides it after failure at %s",
   async (path) => {
     await visit(path);
     const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
     await nav.findByRole("link", { name: "앱 등록" });
+    if (path !== "/")
+      await screen.findByRole("form", {
+        name: path === "/apps/new" ? "새 앱 등록 양식" : "앱 수정 양식",
+      });
     let reject;
     metadata.mockImplementation(
       () =>
@@ -187,7 +224,32 @@ it.each(["/", "/apps/new", ownEdit])(
     await act(async () => {
       refetch = client.refetchQueries({ queryKey: ["mock", "meta"] });
     });
-    await waitFor(expectNoCreate);
+    await waitFor(() =>
+      expect(client.getQueryState(["mock", "meta"]).fetchStatus).toBe(
+        "fetching",
+      ),
+    );
+    expect(
+      nav.getByRole("link", { name: "앱 등록", exact: true }),
+    ).toBeInTheDocument();
+    if (path === "/")
+      expect(
+        screen.getByRole("button", { name: "내 앱 등록하기" }),
+      ).toBeInTheDocument();
+    else {
+      expect(
+        await screen.findByText(
+          path === "/apps/new"
+            ? "등록 기능을 확인하고 있어요"
+            : "앱 정보를 확인하고 있어요",
+        ),
+      ).toBeInTheDocument();
+      const form = screen.queryByRole("form", {
+        name: path === "/apps/new" ? "새 앱 등록 양식" : "앱 수정 양식",
+      });
+      if (path === "/apps/new") expect(form).not.toBeInTheDocument();
+      else expect(form).toBeInTheDocument();
+    }
     await act(async () => {
       reject(new Error("메타 조회 실패"));
       await refetch;
@@ -203,6 +265,44 @@ it.each(["/", "/apps/new", ownEdit])(
   },
 );
 
+it("hides creation after a successful metadata refetch revokes creation", async () => {
+  await visit();
+  const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
+  await nav.findByRole("link", { name: "앱 등록", exact: true });
+  await screen.findByRole("button", { name: "내 앱 등록하기" });
+  let release;
+  metadata.mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  let refetch;
+  await act(async () => {
+    refetch = client.refetchQueries({ queryKey: ["mock", "meta"] });
+  });
+  await waitFor(() =>
+    expect(client.getQueryState(["mock", "meta"]).fetchStatus).toBe("fetching"),
+  );
+  expect(
+    nav.getByRole("link", { name: "앱 등록", exact: true }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "내 앱 등록하기" }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    release({
+      ...meta,
+      capabilities: {
+        ...meta.capabilities,
+        apps_create: { enabled: false, reasons: ["maintenance"] },
+      },
+    });
+    await refetch;
+  });
+  await waitFor(expectNoCreate);
+});
+
 it.each(["/apps/new", ownEdit])(
   "prioritizes refetch errors over cached not_implemented copy at %s",
   async (path) => {
@@ -214,10 +314,14 @@ it.each(["/apps/new", ownEdit])(
     await act(async () =>
       client.refetchQueries({ queryKey: ["mock", "meta"] }),
     );
-    expect(await screen.findByText("메타 조회 실패")).toBeInTheDocument();
+    const error = await screen.findByText("메타 조회 실패");
+    expect(error).toBeInTheDocument();
+    const alert = error.closest('[role="alert"]');
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+    expect(error.closest('[role="status"]')).toBeNull();
     expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
     expect(
-      within(screen.getByRole("main")).getByRole("button", {
+      within(alert).getByRole("button", {
         name: "다시 확인",
       }),
     ).toBeInTheDocument();
@@ -256,14 +360,55 @@ it("conceals both creation controls while authentication is being rechecked", as
   expectNoCreate();
 });
 
-it("hides creation for a pending member rejected by real mock login", async () => {
-  await expect(authService.login(DEMO_ACCOUNTS[2])).rejects.toMatchObject({
-    code: "ACCOUNT_NOT_APPROVED",
-  });
-  await visit("/", null);
-  await screen.findByRole("button", { name: "로그인", exact: true });
-  expectNoCreate();
-});
+it.each([false, true])(
+  "gates creation for an injected full member with approved=%s",
+  async (approved) => {
+    await authService.login(DEMO_ACCOUNTS[1]);
+    const observed = await authService.getCurrentAuthState();
+    expect(observed).toMatchObject({
+      status: "ready",
+      sessionCookiePresent: true,
+      user: {
+        role: "user",
+        approved: true,
+        sessionKind: "full",
+        mustChangePassword: false,
+      },
+    });
+    const state = { ...observed, user: { ...observed.user, approved } };
+    const spy = vi
+      .spyOn(authService, "getCurrentAuthState")
+      .mockResolvedValue(state);
+    await visit("/", null);
+    await screen.findByRole("button", { name: "로그아웃" });
+    expect(
+      within(screen.getByRole("banner")).getByText(observed.user.nickname, {
+        exact: true,
+      }),
+    ).toBeInTheDocument();
+    await screen.findByRole("link", { name: /^분수 피자 가게,/ });
+    await waitFor(() =>
+      expect(client.getQueryState(["mock", "meta"])).toMatchObject({
+        status: "success",
+        fetchStatus: "idle",
+      }),
+    );
+    expect(spy).toHaveBeenCalled();
+    await expect(spy.mock.results[0].value).resolves.toEqual(state);
+    if (!approved) expectNoCreate();
+    else {
+      expect(
+        within(screen.getByRole("navigation", { name: "주 메뉴" })).getByRole(
+          "link",
+          { name: "앱 등록", exact: true },
+        ),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "내 앱 등록하기" }),
+      ).toBeInTheDocument();
+    }
+  },
+);
 
 it("hides creation for a real change-only member session", async () => {
   await visit("/", TEMPORARY_DEMO_ACCOUNTS[0]);
