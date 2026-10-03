@@ -198,6 +198,37 @@ describe("mock app creation", () => {
 });
 
 describe("mock app updates", () => {
+  it("denies science member operations on a history app and permits its actual owner", async () => {
+    const appId = "00000000-0000-4000-8000-000000000013";
+    const patch = { description: "역사수업연구가의 수정" };
+    await authService.login({ loginId: "과학덕후박샘", password: "1234" });
+    expect(await appsService.get(appId)).toMatchObject({
+      owner: "역사수업연구가",
+      ownerId: "00000000-0000-4000-8000-000000000105",
+    });
+    await expect(
+      appsService.issueUpdateOperation(appId, patch, 1),
+    ).rejects.toMatchObject({ code: "NOT_FOUND", outcome: "rejected" });
+    await expect(
+      appsService.issueDeleteOperation(appId, 1),
+    ).rejects.toMatchObject({ code: "NOT_FOUND", outcome: "rejected" });
+
+    await authService.logout();
+    await authService.login({ loginId: "역사수업연구가", password: "1234" });
+    const update = await appsService.issueUpdateOperation(appId, patch, 1);
+    expect(await appsService.update(appId, patch, 1, update.key)).toMatchObject(
+      {
+        description: patch.description,
+        version: 2,
+      },
+    );
+    const deletion = await appsService.issueDeleteOperation(appId, 2);
+    await appsService.delete(appId, 2, deletion.key);
+    await expect(appsService.get(appId)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
   it("issues a versioned key and increments the owned app exactly once", async () => {
     await loginMember();
     const createKey = await appsService.issueCreateOperation(input);

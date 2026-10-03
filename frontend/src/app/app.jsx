@@ -101,9 +101,31 @@ function assertThemeIds(meta, items) {
   return items;
 }
 
+function canCreateApp(auth, access) {
+  return (
+    auth.status === "ready" &&
+    !auth.concealed &&
+    auth.user?.role === "user" &&
+    auth.user.approved &&
+    auth.user.sessionKind === "full" &&
+    !auth.user.mustChangePassword &&
+    !access.loading &&
+    !access.error &&
+    access.meta?.capabilities.apps_create.enabled === true
+  );
+}
+
+function isNotImplemented(capability) {
+  return (
+    capability?.enabled === false &&
+    capability.reasons.includes("not_implemented")
+  );
+}
+
 function Header({
   active,
   auth,
+  access,
   onLogin,
   onLogout,
   onRetryAuth,
@@ -139,12 +161,7 @@ function Header({
           >
             갤러리
           </Link>
-          {auth.status === "ready" &&
-          !auth.concealed &&
-          auth.user?.role === "user" &&
-          auth.user.approved &&
-          auth.user.sessionKind === "full" &&
-          !auth.user.mustChangePassword ? (
+          {canCreateApp(auth, access) ? (
             <Link
               to="/apps/new"
               aria-current={active === "submit" ? "page" : undefined}
@@ -425,15 +442,7 @@ function GalleryRoute({ auth, galleryReturnPosition }) {
     <GalleryView
       meta={access.meta}
       page={page}
-      canCreate={
-        auth.status === "ready" &&
-        !auth.concealed &&
-        auth.user?.role === "user" &&
-        auth.user.approved &&
-        auth.user.sessionKind === "full" &&
-        !auth.user.mustChangePassword &&
-        access.meta?.capabilities.apps_create.enabled === true
-      }
+      canCreate={canCreateApp(auth, access)}
       onCreate={() => navigate("/apps/new")}
       onQueryChange={onQueryChange}
       initialFilters={filters}
@@ -1115,8 +1124,12 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
     !access.meta?.capabilities.apps_update_own.enabled
   )
     return message(
-      "앱 수정 기능을 사용할 수 없어요",
-      "잠시 후 다시 확인해 주세요.",
+      isNotImplemented(access.meta?.capabilities.apps_update_own)
+        ? "앱 수정 기능은 아직 준비 중이에요"
+        : "앱 수정 기능을 사용할 수 없어요",
+      isNotImplemented(access.meta?.capabilities.apps_update_own)
+        ? "갤러리는 계속 둘러볼 수 있습니다."
+        : "잠시 후 다시 확인해 주세요.",
     );
   return form;
 }
@@ -1255,8 +1268,18 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
         <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
           <div role="alert" aria-live="assertive">
             <EmptyState
-              title="앱 등록 기능을 사용할 수 없어요"
-              desc={access.error?.message ?? "잠시 후 다시 확인해 주세요."}
+              title={
+                !access.error &&
+                isNotImplemented(access.meta?.capabilities.apps_create)
+                  ? "앱 등록 기능은 아직 준비 중이에요"
+                  : "앱 등록 기능을 사용할 수 없어요"
+              }
+              desc={
+                access.error?.message ??
+                (isNotImplemented(access.meta?.capabilities.apps_create)
+                  ? "갤러리는 계속 둘러볼 수 있습니다."
+                  : "잠시 후 다시 확인해 주세요.")
+              }
             >
               {access.error ? (
                 <Btn onClick={() => access.retry(() => {})}>다시 확인</Btn>
@@ -2198,6 +2221,7 @@ export default function App() {
       <Header
         active={active}
         auth={auth}
+        access={authMetadata}
         onLogin={() => navigate("/auth?mode=login")}
         onLogout={logout}
         onRetryAuth={recheckAuth}

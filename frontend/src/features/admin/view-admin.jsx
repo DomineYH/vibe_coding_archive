@@ -120,6 +120,13 @@ function ApprovalPanel({
   const title = nextApproved ? "승인하기" : "승인 해제";
   const resultUnresolved = operation?.state === "unresolved";
   const resultRejected = operation?.state === "rejected";
+  const resultSucceeded = operation?.state === "succeeded";
+  const displayedApproved = resultSucceeded
+    ? operation.appliedApproved
+    : nextApproved;
+  const displayedVersion = resultSucceeded
+    ? operation.appliedAccountVersion
+    : target.accountVersion;
   return (
     <section
       className="mx-5 mb-4 rounded-2xl border border-[#4C7A96]/20 bg-[#4C7A96]/[0.06] px-4 py-4 sm:mx-6 sm:px-5"
@@ -133,17 +140,20 @@ function ApprovalPanel({
         회원 승인 확인 · {target.nickname}
       </h3>
       <p className="mt-1 text-[12px] leading-5 text-neutral-600">
-        승인 값: <strong>{nextApproved ? "승인" : "미승인"}</strong>
+        승인 값: <strong>{displayedApproved ? "승인" : "미승인"}</strong>
         <span className="mx-2" aria-hidden="true">
           ·
         </span>
-        대상 버전: <strong>{target.accountVersion}</strong>
+        {resultSucceeded ? "반영 버전" : "대상 버전"}:{" "}
+        <strong>{displayedVersion}</strong>
       </p>
-      <p className="mt-1 text-[12px] leading-5 text-neutral-500">
-        {nextApproved
-          ? "승인 후 회원은 로그인할 수 있습니다. 자동 로그인은 되지 않습니다."
-          : "승인을 해제하면 이 회원의 현재 접근이 차단됩니다."}
-      </p>
+      {!resultSucceeded ? (
+        <p className="mt-1 text-[12px] leading-5 text-neutral-500">
+          {nextApproved
+            ? "승인 후 회원은 로그인할 수 있습니다. 자동 로그인은 되지 않습니다."
+            : "승인을 해제하면 이 회원의 현재 접근이 차단됩니다."}
+        </p>
+      ) : null}
       {operation ? (
         <div className="mt-3 border-t border-[#4C7A96]/15 pt-3">
           {resultUnresolved ? (

@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
+import { MOCK_ACCOUNTS } from "../src/services/mock/accounts";
 import {
+  getMockSnapshot,
   MOCK_RESET_EVENT,
   MOCK_STORAGE_KEY,
   resetMockState,
@@ -20,6 +22,16 @@ describe("deterministic gallery mock", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("all fixture owners match their account nickname", () => {
+    resetMockState();
+    const state = getMockSnapshot();
+    for (const app of [...state.apps, ...state.private_apps]) {
+      const account = MOCK_ACCOUNTS.find((item) => item.id === app.owner.id);
+      expect(account, app.name).toBeDefined();
+      expect(app.owner.nickname, app.name).toBe(account?.nickname);
+    }
   });
 
   it("uses the shared validation error for invalid list queries", async () => {
@@ -98,7 +110,10 @@ describe("deterministic gallery mock", () => {
     const saved = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY) ?? "null");
     const app = saved.apps[0];
     app.name = "Boundary";
-    app.owner.nickname = "Author";
+    app.owner = {
+      id: "00000000-0000-4000-8000-000000000104",
+      nickname: "영어쌤제이",
+    };
     app.description = "Straße 100%_ literal";
     saved.apps = [app];
     localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(saved));
@@ -107,7 +122,7 @@ describe("deterministic gallery mock", () => {
       1,
     );
     expect(
-      (await appsService.list({ q: "BoundaryAuthor" })).items,
+      (await appsService.list({ q: "Boundary영어쌤제이" })).items,
     ).toHaveLength(0);
     expect((await appsService.list({ q: "%" })).items).toHaveLength(1);
     expect((await appsService.list({ q: "_" })).items).toHaveLength(1);

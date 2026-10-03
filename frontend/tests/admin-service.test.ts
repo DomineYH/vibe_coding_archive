@@ -75,6 +75,19 @@ describe("admin service", () => {
       accountVersion: 1,
       appCount: 0,
     });
+    expect(
+      Object.fromEntries(
+        page.items.map((user) => [user.nickname, user.appCount]),
+      ),
+    ).toEqual({
+      교사김코딩: 6,
+      과학덕후박샘: 4,
+      역사수업연구가: 4,
+      영어쌤제이: 3,
+      비기너개발자: 0,
+      코딩꿈나무: 0,
+      "아카이브 관리자": 0,
+    });
   });
 
   it("lists minimal public and private app summaries in stable pages", async () => {
@@ -660,6 +673,30 @@ describe("admin service", () => {
     await expect(
       adminService.deleteUser(target.id, target.appCount + 1, operation.key),
     ).rejects.toMatchObject({ code: "OPERATION_KEY_MISMATCH" });
+  });
+
+  it("deletes a pending fixture account without removing another member's apps", async () => {
+    await reauthenticateAdmin();
+    const before = await adminService.listApps();
+    const target = await adminService.getUser(PENDING_ID);
+    expect(target.appCount).toBe(0);
+    const operation = await adminService.createUserDeleteOperation({
+      targetId: target.id,
+      expectedAppCount: 0,
+    });
+
+    await adminService.deleteUser(target.id, 0, operation.key);
+
+    expect((await adminService.listApps()).items).toEqual(before.items);
+    expect((await adminService.listUsers()).stats).toMatchObject({
+      totalUsers: 6,
+      pendingUsers: 1,
+      totalApps: 17,
+      healthyApps: 15,
+    });
+    await expect(adminService.getUser(PENDING_ID)).rejects.toMatchObject({
+      code: "USER_NOT_FOUND",
+    });
   });
 
   it("removes registered credentials and prevents a deleted account from returning", async () => {
