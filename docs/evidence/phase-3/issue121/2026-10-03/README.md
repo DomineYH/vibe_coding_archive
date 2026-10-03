@@ -412,20 +412,40 @@ is historical. Public U01/U02 dependencies do not block local verification.
 | Human actual product visual acceptance | BLOCKED — DomineYH acceptance not supplied |
 | Operating authentication public-release authorization | WITHHELD — all required public gates remain NOT RUN/BLOCKED |
 
-Full AC1–12 completion is NOT RUN. AC1 inherits existing journeys but needs T07 end-to-end
-integration linkage. AC2/3 only named E1–E3/B1 subsets passed: pre-admission tab close,
-worker-win/rotate order, late/duplicate old S/R and late exact deletion, full-member
-R-only/ID-loss/total-loss/partial reset, execution_blocked branches and cookie-budget
-re-observation remain NOT RUN. AC4 lacks exhaustive ±1µs process/browser boundaries,
-password death/finalization, transient maintenance-lock cases, browser normal-restart/
-restore and negative ledger/readiness drills. AC5 has this inventory checkpoint but
-requires finalized per-row HTTP/DB/cookie/screen evidence and complete US-01–55 mapping.
-AC6/7 final default unavailable+active/capture runner, backend full pytest once, ruff,
-frontend test/check, affected mock, visual auth/admin, both builds, dist/reference and
-coordinator CI remain NOT RUN. Do not repeat full pytest before implementation stabilizes.
-AC8 missing five-viewport captures, two independent functional-to-fixed-clock runs,
-captures/reproducibility manifests and read-only check-auth-integration-evidence.mjs
-remain NOT RUN. AC9–12 public gates/acceptances remain as above, never automatic PASS.
+Reboot-resume audit (2026-10-03): the former remaining-work paragraph described
+370b8a1's checkpoint and was stale against e7f4510/f458f5d. The inventory below
+reconciles committed coverage before fresh reproductions. Prior C2/C3 counts are
+historical T07 runs, not fresh post-reboot PASS. Final commands/results will be
+recorded separately. Machine reboot at 11:40 lost the prior processes and /tmp;
+no prior temporary DB or capture-only run is reused.
+
+| Former NOT RUN item | Committed coverage / precise observation | Resume disposition |
+| --- | --- | --- |
+| Pre-admission close | F/auth-races-orders.spec.js pre-admission owner close: before_forward drop, saved ID settled, replay fenced | Covered; fresh fault run pending |
+| Worker-win and rotate orders | B/test_auth_races.py rotation/real-worker winner × login/password; F/auth-races-orders.spec.js worker-wins-before-settle | Covered; full backend/fault run pending |
+| Late/duplicate old S/R | F/auth-races-orders.spec.js delayed login S and R rotation, repeat original response bytes; selected new authority survives | Covered; fresh fault run pending |
+| Late exact deletion | F/auth-races-orders.spec.js late logout deletion preserves newer anonymous/member cookie names | Covered; fresh fault run pending |
+| R-only, ID-loss, total-loss, partial reset | F/auth-recovery-members.spec.js four full-member loss branches and original-target reset; F/auth-recovery.spec.js ID-only | Covered with explicitly simulated loss; fresh fault run pending |
+| execution_blocked | F/auth-recovery-members.spec.js unavailable false/true explicit settlement; B/test_auth_boundaries.py aged result and retained fence after sweep | Covered; backend/fault run pending |
+| Cookie-budget re-observation | F/auth-recovery-members.spec.js exact cleanup, observed reduction, simulated late replenishment; unknown names retained | Covered locally; natural eviction/2KiB browser storage policy remains G09; backend byte-budget contracts pending fresh run |
+| ±1µs boundaries | B/test_auth_boundaries.py anonymous/full/change_only/flow, absolute8h/activity/results; B/test_auth_races.py permit/temp finalization; F/auth-recovery-boundaries.spec.js 12 server-clock cases | Covered at listed seams; no browser wall-clock authority claim; fresh runs pending |
+| Password death/finalization | B/test_auth_races.py real SIGKILL hash_return/precommit/committed and temp finalization; F/auth-races.spec.js close/lost-body own-change | Covered; backend/fault run pending |
+| Transient maintenance lock | B/test_auth_restore_negative.py lock/readiness/public/reconcile next explicit maintenance tick | Covered; automatic 60s scheduling in fault process NOT RUN (private tick seam); actual scheduler G12 |
+| Browser restart/restore | F/auth-recovery-process.spec.js same jar/S/absolute deadline after real restart; backup→current-ledger deletion replay→actual CLI→readiness/old-cookie rejection | Covered locally; fixture/bootstrap/migration reinjection false; host/device restore remains G09/G12 |
+| Negative ledger/readiness | B/test_auth_restore_negative.py missing/corrupt/stale/current-reference/audit failure; failed CLI keeps stopped, deliberate startup probes reject auth | Covered; fresh full backend pending |
+| Pending/stale approval request | B/test_auth_write_fence.py actual socket HTTP: pending admission/key write 409, cancelled same S rejects old revision, unresolved key preserved until explicit current request | New targeted PASS 1/1, 6.79s (wall 10.78s); fresh full backend pending |
+| AC1 journeys | F/auth-lifecycle.spec.js signup→pending→approve→login→private refresh/focus→logout; F/auth-password.spec.js real CLI bootstrap/recovery→own-change; F/auth-access.spec.js revoke/reapprove two devices | Covered in normal transport; fresh default run pending |
+| US-01–55 map | Complete 55-row source-story table already committed in e7f4510, with B/F/C/G locators | Present; finalize current row verdicts after integration, never infer public acceptance |
+| Visual matrix | F/auth-recovery-captures.spec.js eight × five frames; F/auth-login/password/register/access/admin-approval captures plus inherited source comparisons and auth/admin visual | Forty preliminary frames exist; two independent complete functional→fixed-clock capture reproductions, read-only comparison and final visual checks pending |
+
+Additional limits: real BFCache restoration is NOT RUN (pageshow is explicitly
+synthetic and history/focus tests do not prove browser BFCache admission); missing
+Fetch browser execution is NOT RUN (removing Fetch also disables the public API
+transport; no alternate transport exists in this harness). Supported runtime
+primitives in actual six environments remain G01–G09. These limits are not PASS.
+Final backend once, frontend unit/check, default unavailable/normal/fault/captures,
+full mock e2e, auth/admin visual, both builds/dist/reference and coordinator CI
+remain pending at this resume audit. Public/human gates remain NOT RUN/BLOCKED.
 
 Out-of-scope execution: admin reauth/member reset/account deletion → Phase 5 feature
 owner; archive-app CUD/my-app/admin app list → Phase 4–5 owner; external worker/link
@@ -459,3 +479,5 @@ baseline, tolerance, policy, TTL, dependency lock or production capability was c
 - Cold diagnostic API navigation exceeded the unchanged 30s limit while full unit imports competed for filesystem resources; interrupted diagnostics are not complete reproduction evidence. A SIGTERM probe exposed orphaned separately grouped web servers; forwarding interruption as Playwright's handled SIGINT now performs teardown. An actual interrupted run returned 143 and independent binds proved 8000/5174 free.
 - Combined normal-transport journeys: public visitor + two independent member sessions revoked/reapproved + signup/approval/private refresh/focus/logout: 3 PASS/1.3m. Pre-admission drop/fence case PASS/15.7s in the separate fault run; stale replay uses the captured S proof, not R-CSRF.
 - First complete reproduction attempt: functional 43 PASS/3.6m, captures 15 PASS/5 FAIL/2.0m. The member label precedes login's final gallery navigation, which could replace the logout button during the test click. The capture test now awaits that actual navigation before clicking logout. Capture-only retest 20 PASS/53.4s; this is stabilization, not a complete functional-to-capture reproduction. No product code, timeout, retry or screenshot baseline changed.
+
+- Resume coverage addition: `B/test_auth_write_fence.py` covers R23-11/12 through actual socket HTTP/file DB: admission and original approval writes fail 409 while pending, cancelled logout preserves S but fences old revision, business key stays unresolved, explicit current-revision execution succeeds once. Targeted 1 PASS/6.79s (wall 10.78s); no product defect/change. Initial file command used the wrong working directory and collected no tests; path corrected. Ruff identified formatting in the new file; configured formatter applied, lint/format retest PASS.
