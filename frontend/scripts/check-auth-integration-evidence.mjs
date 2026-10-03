@@ -31,9 +31,9 @@ for (const entry of manifest.captures) {
     path.join(actual, directory[0], `${entry.state}.png`),
   );
   const committed = readFileSync(path.join(evidence, entry.file));
-  assert.deepEqual(
-    bytes,
-    committed,
+  // Buffer.equals: a deepEqual failure diffs the bytes (quadratic memory).
+  assert(
+    bytes.equals(committed),
     `independent ${entry.state} ${entry.viewport} differs`,
   );
   const hash = createHash("sha256").update(bytes).digest("hex");
