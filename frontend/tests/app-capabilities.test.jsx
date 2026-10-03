@@ -103,9 +103,17 @@ it("shows preparation copy on own edit", async () => {
   disable("apps_update_own");
   await visit(ownEdit);
   const main = within(screen.getByRole("main"));
-  expect(
-    await main.findByText("앱 수정 기능은 아직 준비 중이에요"),
-  ).toBeInTheDocument();
+  const title = await main.findByText("앱 수정 기능은 아직 준비 중이에요");
+  expect(title).toBeInTheDocument();
+  expect(main.getByRole("link", { name: "갤러리로" })).toHaveAttribute(
+    "href",
+    "/",
+  );
+  expect(title.closest('[role="status"]')).toHaveAttribute(
+    "aria-live",
+    "polite",
+  );
+  expect(title.closest('[role="alert"]')).toBeNull();
   expect(main.queryByText(/잠시 후 다시 확인/)).not.toBeInTheDocument();
   expect(
     main.queryByRole("button", { name: "다시 확인" }),
@@ -131,6 +139,10 @@ it.each(["apps_create", "apps_update_own"])(
       await screen.findByText("잠시 후 다시 확인해 주세요."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+    if (capability === "apps_update_own")
+      expect(
+        within(screen.getByRole("main")).queryByRole("link", { name: "갤러리로" }),
+      ).not.toBeInTheDocument();
   },
 );
 
@@ -140,6 +152,9 @@ it.each(["apps_create", "apps_update_own"])(
     disable(capability, ["maintenance", "not_implemented"]);
     await visit(capability === "apps_create" ? "/apps/new" : ownEdit);
     expect(await screen.findByText(/아직 준비 중이에요/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("main")).getByRole("link", { name: "갤러리로" }),
+    ).toHaveAttribute("href", "/");
     expect(screen.queryByText(/잠시 후 다시 확인/)).not.toBeInTheDocument();
   },
 );

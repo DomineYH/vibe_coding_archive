@@ -1036,12 +1036,14 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
       />
     </div>
   ) : null;
-  const message = (title, description, action) => (
+  const message = (
+    title,
+    description,
+    action,
+    role = action ? "alert" : "status",
+  ) => (
     <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
-      <div
-        role={action ? "alert" : "status"}
-        aria-live={action ? "assertive" : "polite"}
-      >
+      <div role={role} aria-live={role === "alert" ? "assertive" : "polite"}>
         <EmptyState title={title} desc={description}>
           {action}
         </EmptyState>
@@ -1121,15 +1123,28 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
   if (
     detail.data.ownerId === member.id &&
     !access.meta?.capabilities.apps_update_own.enabled
-  )
+  ) {
+    const preparing = isNotImplemented(
+      access.meta?.capabilities.apps_update_own,
+    );
     return message(
-      isNotImplemented(access.meta?.capabilities.apps_update_own)
+      preparing
         ? "앱 수정 기능은 아직 준비 중이에요"
         : "앱 수정 기능을 사용할 수 없어요",
-      isNotImplemented(access.meta?.capabilities.apps_update_own)
+      preparing
         ? "갤러리는 계속 둘러볼 수 있습니다."
         : "잠시 후 다시 확인해 주세요.",
+      preparing ? (
+        <Link
+          to="/"
+          className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
+        >
+          갤러리로
+        </Link>
+      ) : undefined,
+      "status",
     );
+  }
   return form;
 }
 
