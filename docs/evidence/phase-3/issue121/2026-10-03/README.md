@@ -76,6 +76,58 @@ raised to hide a failure.
 
 ## First failure → correction → retest
 
+- PR #128 CI found a pre-existing T06 POP defect (verdict 1), also present on
+  main run [37091199172](https://github.com/DomineYH/vibe_coding_archive/actions/runs/37091199172);
+  PR run 37107699734 failed while the same SHA passed run 37107702134.
+  Unchanged local `auth-access.spec.js --grep 'focus without notification'
+  --repeat-each=40` passed 40/40, wall252.57s; this did not disprove the flake.
+  A deterministic browser render-task barrier reproduced the exact visible old
+  private heading / zero flow-state requests. Releasing the barrier still issued
+  no proof: deferred gallery PUSH and POP collapsed into the original detail
+  entry before App's layout effect observed the intermediate entry. A separate
+  committed-gallery / held-real-POP-response probe kept protected DOM absent.
+  The retained adjacent regression holds rendering across PUSH/back, requires
+  the old heading absent immediately after POP, then holds the genuine server
+  proof response and checks absent heading/link/body text plus exactly one proof
+  before and after release. Memory-guarded `npm --prefix frontend run
+  test:e2e:api -- auth-access.spec.js --grep 'POP during deferred'
+  --repeat-each=40`: RED 40 FAIL/189.74s → GREEN 40 PASS/213.08s (wall times).
+  Frontend source at RED matched main `3db0f4d`. Test commit `03a13a0` precedes
+  separate product commit `38b8710`: `RouterProvider useTransitions={false}`
+  makes each history entry commit so App observes and rechecks it. No sleeps,
+  retries, raised deadlines, relaxed counts, baseline changes or push.
+  Required checks ran serially under MemoryMax=6G/MemorySwapMax=512M:
+  original case with `taskset -c 0` / `--repeat-each=40` 40 PASS/286.68s;
+  `npm --prefix frontend test` 894 PASS/126.98s; `npm --prefix frontend run
+  check` PASS/50.81s; full no-arg `test:e2e:api` 189 PASS/29 existing SKIP,
+  wall745.91s (53 unavailable + 53 prepared functional + 20 normal captures +
+  43 fault functional + 20 recovery captures). Full mock `test:e2e` with the
+  temporary pinned-browser config: 124 PASS/318.23s; config removed.
+  Full default `test:visual`: 32 PASS/16 FAIL/83 NOT RUN, wall563.13s,
+  **environment-BLOCKED**. Liberation Mono is absent; the existing font guard
+  observed DejaVu Sans Mono instead, preventing 83 gallery cases. The other
+  15 failures are historical app-create/edit/private-detail 0px comparisons.
+  Auth/admin subset passed 10/10 within that same full invocation. CI supplies
+  the required font through Playwright's dependency installation; **CI full
+  visual is pending and remains the authoritative gate**, not a local PASS.
+  Detached pre-fix `03a13a0` ran `test:visual -- visual/app-create.spec.js
+  --grep 'app registration form|app edit form|private app detail after owner
+  update'`: identical 15 FAIL/wall103.47s. All 15 actual PNGs were byte- and
+  SHA256-identical to fixed `38b8710`; no regression candidate. The table shows
+  the common baseline differing-pixel count on both sides; each cell's actual
+  PNG matched byte-for-byte. Classify all 15 as missing-Liberation / DejaVu
+  fallback environment failures, not caused by the POP repair. No fonts were
+  installed/downloaded. The detached worktree was removed; all 77 API and two
+  visual generated tracked PNGs were restored by explicit path.
+
+  | Viewport | Registration: pre-fix = fix | Edit: pre-fix = fix | Private detail: pre-fix = fix |
+  | --- | ---: | ---: | ---: |
+  | 1440×1000 | 2544 | 13457 | 12596 |
+  | 1024×900 | 2544 | 13880 | 12222 |
+  | 768×1024 | 2544 | 16190 | 12838 |
+  | 390×844 | 2543 | 8592 | 11886 |
+  | 360×844 | 2424 | 7457 | 11773 |
+
 - WSL memory failures at 2026-10-03 11:27 and 13:51 interrupted the earlier
   attempts. The coordinator's verified diagnosis was Node24 deep Buffer diff
   construction on PNG mismatch (quadratic allocation; 7.5GB anonymous memory,
