@@ -57,6 +57,10 @@ describe("login failure messages", () => {
     [new ServiceError("AUTH_BUSY", "x"), /서버가 바빠요/],
     [new ServiceError("DB_BUSY", "x"), /서버가 바빠요/],
     [new ServiceError("NETWORK_ERROR", "x"), /로그인하지 못했어요/],
+    [
+      new ServiceError("FORBIDDEN", "관리자 권한이 필요해요."),
+      /관리자 권한이 필요해요/,
+    ],
   ])("tells %s apart from a credential error", async (error, expected) => {
     await submitWith(error);
     expect(await screen.findByText(expected)).toBeInTheDocument();

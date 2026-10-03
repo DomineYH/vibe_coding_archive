@@ -450,7 +450,9 @@ test("an authenticated member gets 403 for the admin route while admin can open 
   await page.goto("/admin");
   await expect(page).toHaveURL("/auth?mode=login&return_to=%2Fadmin");
   await login(page);
-  await expect(page).toHaveURL("/admin");
+  await expect(page).toHaveURL("/auth?mode=login&return_to=%2Fadmin");
+  await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요해요");
+  await page.goto("/admin");
   await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요해요");
 
   await page.getByRole("button", { name: "로그아웃" }).click();

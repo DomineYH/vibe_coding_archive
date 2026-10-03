@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   Link,
   Navigate,
@@ -25,12 +31,20 @@ import { healthService } from "@services/health";
 import { isSearchTooLong } from "../services/apps-service";
 import MockResetPage from "@services/mock-reset";
 import { reconcileMockReset } from "../services/mock/state";
+import { isMockHealthStorageUpdate } from "../services/mock/storage-events";
 import { contractError, ServiceError } from "../services/service-error";
 import { AppDetailView } from "../features/detail/view-detail";
 import { GalleryView } from "../features/gallery/view-gallery";
 import { Avatar, Btn, EmptyState } from "../components/ui";
 import { AuthView } from "../features/auth/view-auth";
 import { readAuthRoute } from "../features/auth/auth-route";
+import { recheckReturnDestination } from "../features/auth/return-destination";
+import {
+  assertAuthObservation,
+  captureAuthObservation,
+  draftContinuityScope,
+  memberCacheScope,
+} from "../services/auth-state";
 import { AdminView } from "../features/admin/view-admin";
 import { SubmitView } from "../features/submit/view-submit";
 
@@ -159,11 +173,16 @@ function Header({
               인증 기능 준비 중
             </span>
           ) : auth.concealed || auth.status === "checking" ? (
-            <span className="text-[12px] text-neutral-500" role="status">
-              {auth.concealed
-                ? "화면이 잠시 가려졌습니다"
-                : "로그인 상태 확인 중"}
-            </span>
+            <>
+              <span className="text-[12px] text-neutral-500" role="status">
+                {auth.concealed
+                  ? "화면이 잠시 가려졌습니다"
+                  : "로그인 상태 확인 중"}
+              </span>
+              <Btn size="sm" variant="line" onClick={onRetryAuth}>
+                다시 확인
+              </Btn>
+            </>
           ) : auth.status === "error" ? (
             <Btn size="sm" variant="line" onClick={onRetryAuth}>
               다시 확인
@@ -245,17 +264,6 @@ function usePublicMetadata() {
       void (query.isError || !canRead ? query.refetch() : refetch());
     },
   };
-}
-
-function authScopeIdentity(auth) {
-  return JSON.stringify([
-    auth.user?.id ?? "anonymous",
-    auth.user?.sessionKind ?? "anonymous",
-    auth.user?.role ?? null,
-    auth.flow?.flowId ?? null,
-    auth.flow?.lastIdentityChangeRevision ?? null,
-    auth.observationGeneration ?? 0,
-  ]);
 }
 
 function adminReauthResumeState(value) {
@@ -472,6 +480,7 @@ function GalleryRoute({ auth, galleryReturnPosition }) {
 
 function DetailRoute({
   auth,
+  isCurrentObservation,
   onRetryAuth,
   onDeleted,
   deletionState,
@@ -494,46 +503,64 @@ function DetailRoute({
           outcome: "rejected",
         })
       : null;
-  const observationId = useRef(auth.observationId);
   const currentActorId = useRef(auth.user?.id ?? null);
   currentActorId.current = auth.user?.id ?? null;
   const deletionBusy = useRef(false);
-  observationId.current = auth.observationId;
-  const detail = useQuery({
-    queryKey: [__DATA_MODE__, "apps", "detail", id],
-    enabled:
-      !routeError &&
-      access.canRead &&
-      (__DATA_MODE__ !== "mock" ||
-        (auth.status !== "checking" && !auth.concealed)),
+  const eligible =
+    auth.status === "ready" &&
+    !auth.concealed &&
+    auth.user?.approved &&
+    auth.user.sessionKind === "full" &&
+    !auth.user.mustChangePassword;
+  const publicDetail = useQuery({
+    queryKey: [__DATA_MODE__, "apps", "detail", id, "public"],
+    enabled: !routeError && access.canRead,
     queryFn: async ({ signal }) => {
       const app = await appsService.get(id, { signal });
-      if (
-        __DATA_MODE__ === "mock" &&
-        !app.isPublic &&
-        (observationId.current !== auth.observationId ||
-          auth.status !== "ready" ||
-          auth.concealed)
-      )
-        throw new DOMException(
-          "Authentication observation changed",
-          "AbortError",
-        );
-      if (
-        !app.isPublic &&
-        __DATA_MODE__ === "mock" &&
-        (!auth.user ||
-          (auth.user.role !== "admin" && app.ownerId !== auth.user.id))
-      )
+      if (!app.isPublic)
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
-          outcome: "rejected",
           httpStatus: 404,
         });
       assertThemeIds(access.meta, [app]);
       return app;
     },
+    retry: false,
   });
-  const app = detail.data;
+  const memberDetail = useQuery({
+    queryKey: [
+      __DATA_MODE__,
+      "apps",
+      "detail",
+      id,
+      "member",
+      memberCacheScope(auth),
+    ],
+    enabled: !routeError && access.canRead && eligible && !publicDetail.data,
+    queryFn: async ({ signal }) => {
+      const context = captureAuthObservation(auth, () =>
+        isCurrentObservation(auth.observationId),
+      );
+      const app = await appsService.get(id, { signal, readContext: context });
+      assertAuthObservation(context);
+      if (
+        !app.isPublic &&
+        auth.user.role !== "admin" &&
+        app.ownerId !== auth.user.id
+      )
+        throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
+          httpStatus: 404,
+        });
+      assertThemeIds(access.meta, [app]);
+      return app;
+    },
+    retry: false,
+  });
+  const detail = publicDetail.data
+    ? publicDetail
+    : eligible
+      ? memberDetail
+      : publicDetail;
+  const app = publicDetail.data ?? (eligible ? memberDetail.data : undefined);
   const healthReadEnabled =
     access.meta?.capabilities.health_read.enabled === true;
   const healthCheckEnabled =
@@ -823,17 +850,14 @@ function DetailRoute({
       return;
     setCurrentDeletion(null);
   };
-  const authError =
-    __DATA_MODE__ === "mock" && protectedDetail && auth.status === "error";
+  const authError = protectedDetail && auth.status === "error";
   return (
     <AppDetailView
       app={app}
       meta={access.meta}
-      authStatus={
-        __DATA_MODE__ === "mock" && protectedDetail ? auth.status : "ready"
-      }
+      authStatus={protectedDetail ? auth.status : "ready"}
       authError={authError ? auth.error : null}
-      concealed={__DATA_MODE__ === "mock" && protectedDetail && auth.concealed}
+      concealed={protectedDetail && auth.concealed}
       loading={
         !routeError && (access.loading || (!authError && detail.isPending))
       }
@@ -842,7 +866,10 @@ function DetailRoute({
         invalidQuery && !invalidId
           ? () => navigate(location.pathname, { replace: true })
           : authError
-            ? onRetryAuth
+            ? async () => {
+                await onRetryAuth();
+                access.retry(publicDetail.refetch);
+              }
             : () => access.retry(detail.refetch)
       }
       canEdit={canEdit}
@@ -889,7 +916,7 @@ function DetailRoute({
   );
 }
 
-function EditRoute({ auth, onRetryAuth, onSaved }) {
+function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
   const { id = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -907,10 +934,21 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
     !member.mustChangePassword &&
     (member.role === "user" || member.role === "admin");
   const detail = useQuery({
-    queryKey: [__DATA_MODE__, "apps", "detail", id],
+    queryKey: [
+      __DATA_MODE__,
+      "apps",
+      "detail",
+      id,
+      "member",
+      memberCacheScope(auth),
+    ],
     enabled: access.canRead && readyMember,
     queryFn: async ({ signal }) => {
-      const app = await appsService.get(id, { signal });
+      const context = captureAuthObservation(auth, () =>
+        isCurrentObservation(auth.observationId),
+      );
+      const app = await appsService.get(id, { signal, readContext: context });
+      assertAuthObservation(context);
       const canManageOther =
         member?.role === "admin" &&
         access.meta?.capabilities.admin_apps_manage.enabled === true;
@@ -928,10 +966,24 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
       ? access.meta?.capabilities.apps_update_own.enabled === true
       : adminCanManage);
   const [wasEditable, setWasEditable] = useState(false);
-  const ownerId = useRef(null);
+  const continuity = draftContinuityScope(auth);
+  const ownerScope = useRef(null);
   const lastApp = useRef(null);
   if (detail.data) lastApp.current = detail.data;
-  if (canEdit) ownerId.current = member?.id;
+  if (canEdit) ownerScope.current = continuity;
+  if (
+    readyMember &&
+    ([
+      "NOT_FOUND",
+      "FORBIDDEN",
+      "AUTH_REQUIRED",
+      "PASSWORD_CHANGE_REQUIRED",
+    ].includes(detail.error?.code) ||
+      (detail.data && !ownsApp && !adminCanManage))
+  ) {
+    ownerScope.current = null;
+    lastApp.current = null;
+  }
   const formApp =
     detail.data ?? (lastApp.current?.id === id ? lastApp.current : null);
   useEffect(() => {
@@ -939,16 +991,34 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
   }, [canEdit]);
   const keepDraft =
     canEdit ||
-    (wasEditable && Boolean(member?.id) && member?.id === ownerId.current);
+    (wasEditable &&
+      continuity &&
+      continuity === ownerScope.current &&
+      (access.meta?.capabilities.apps_update_own.enabled === true ||
+        adminCanManage));
   const form = keepDraft ? (
-    <div hidden={!canEdit} aria-hidden={!canEdit}>
+    <div
+      hidden={!canEdit}
+      inert={!canEdit ? "" : undefined}
+      aria-hidden={!canEdit}
+    >
       <SubmitView
-        key={`${authScopeIdentity(auth)}:${id}`}
+        key={`${continuity}:${id}`}
         app={formApp}
         meta={access.meta}
         onSaved={onSaved}
         onLatest={(app) =>
-          queryClient.setQueryData([__DATA_MODE__, "apps", "detail", id], app)
+          queryClient.setQueryData(
+            [
+              __DATA_MODE__,
+              "apps",
+              "detail",
+              id,
+              "member",
+              memberCacheScope(auth),
+            ],
+            app,
+          )
         }
         onCancel={() =>
           location.state?.fromDetail === true
@@ -1054,7 +1124,8 @@ function EditRoute({ auth, onRetryAuth, onSaved }) {
 function SubmitRoute({ auth, onRetryAuth, onCreated }) {
   const access = usePublicMetadata();
   const [wasAvailable, setWasAvailable] = useState(false);
-  const scopeKey = authScopeIdentity(auth);
+  const scopeKey = draftContinuityScope(auth);
+  const draftOwner = useRef(null);
   const member =
     auth.status === "ready" &&
     !auth.concealed &&
@@ -1068,15 +1139,24 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     !access.error &&
     access.meta?.capabilities.apps_create.enabled === true;
   useEffect(() => {
-    if (canCreate) setWasAvailable(true);
-  }, [canCreate]);
+    if (canCreate) {
+      draftOwner.current = scopeKey;
+      setWasAvailable(true);
+    }
+  }, [canCreate, scopeKey]);
   const keepFormMounted =
     canCreate ||
     (wasAvailable &&
+      scopeKey &&
+      draftOwner.current === scopeKey &&
       (auth.concealed || auth.status !== "ready") &&
       access.meta?.capabilities.apps_create.enabled === true);
   const form = keepFormMounted ? (
-    <div hidden={!canCreate} aria-hidden={!canCreate}>
+    <div
+      hidden={!canCreate}
+      inert={!canCreate ? "" : undefined}
+      aria-hidden={!canCreate}
+    >
       <SubmitView key={scopeKey} meta={access.meta} onCreated={onCreated} />
     </div>
   ) : null;
@@ -1234,7 +1314,13 @@ function AuthRoute({
     <AuthView
       key={
         mode === "password-change"
-          ? `${mode}:${authScopeIdentity({ ...auth, observationGeneration: 0 })}`
+          ? `${mode}:${JSON.stringify([
+              auth.user?.id,
+              auth.user?.role,
+              auth.user?.sessionKind,
+              auth.flow?.flowId,
+              auth.flow?.lastIdentityChangeRevision,
+            ])}`
           : mode
       }
       mode={mode}
@@ -1270,6 +1356,42 @@ function AuthRoute({
 }
 
 function AdminRoute({ auth, onRetry, meta }) {
+  const continuity = draftContinuityScope(auth);
+  const scopeKey = memberCacheScope(auth);
+  const active =
+    auth.status === "ready" &&
+    !auth.concealed &&
+    auth.user?.role === "admin" &&
+    Boolean(continuity) &&
+    meta?.capabilities.admin_users_read.enabled === true;
+  const owner = useRef(null);
+  if (active) owner.current = continuity;
+  const keepMounted =
+    continuity &&
+    continuity === owner.current &&
+    meta?.capabilities.admin_users_read.enabled === true;
+  return (
+    <>
+      {keepMounted ? (
+        <div
+          hidden={!active}
+          inert={!active ? "" : undefined}
+          aria-hidden={!active}
+        >
+          <AdminView
+            key={continuity}
+            scopeKey={scopeKey}
+            active={active}
+            meta={meta}
+          />
+        </div>
+      ) : null}
+      {!active ? <AdminAccessState auth={auth} onRetry={onRetry} /> : null}
+    </>
+  );
+}
+
+function AdminAccessState({ auth, onRetry }) {
   if (auth.status === "unavailable")
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
@@ -1342,8 +1464,14 @@ function AdminRoute({ auth, onRetry, meta }) {
         </div>
       </main>
     );
-  const scopeKey = authScopeIdentity(auth);
-  return <AdminView key={scopeKey} scopeKey={scopeKey} meta={meta} />;
+  return (
+    <main
+      role="status"
+      className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+    >
+      <EmptyState title="관리자 기능을 현재 사용할 수 없어요" />
+    </main>
+  );
 }
 
 export default function App() {
@@ -1355,6 +1483,7 @@ export default function App() {
     pathname: location.pathname,
     initial: true,
   });
+  const previousAuthEntry = useRef(null);
   const galleryReturnPosition = useRef(null);
   const queryClient = useQueryClient();
   const [toast, setToast] = useState("");
@@ -1410,7 +1539,14 @@ export default function App() {
   const onAppUpdated = useCallback(
     (app) => {
       const fromAdmin = location.state?.fromAdmin === true;
-      queryClient.setQueryData([__DATA_MODE__, "apps", "detail", app.id], app);
+      if (app.isPublic)
+        queryClient.setQueryData(
+          [__DATA_MODE__, "apps", "detail", app.id, "public"],
+          app,
+        );
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "detail", app.id],
+      });
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
       });
@@ -1474,11 +1610,12 @@ export default function App() {
       (key[0] === __DATA_MODE__ &&
         key[1] === "apps" &&
         key[2] === "detail" &&
-        query.state.data?.isPublic !== true)
+        key[4] === "member")
     );
   }, []);
   const cancelProtectedQueries = useCallback(async () => {
     await queryClient.cancelQueries({ predicate: isProtectedQuery });
+    queryClient.removeQueries({ predicate: isProtectedQuery });
   }, [isProtectedQuery, queryClient]);
   const clearChangedScopeQueries = useCallback(() => {
     queryClient.removeQueries({
@@ -1531,8 +1668,8 @@ export default function App() {
                 });
         if (request !== authRequest.current || controller.signal.aborted)
           return null;
-        const previousScope = authScopeIdentity(authSnapshot.current);
-        const nextScope = authScopeIdentity(observed);
+        const previousScope = memberCacheScope(authSnapshot.current);
+        const nextScope = memberCacheScope(observed);
         if (previousScope !== nextScope) clearChangedScopeQueries();
         authSnapshot.current = observed;
         const next = {
@@ -1556,6 +1693,9 @@ export default function App() {
         };
         setAuth(failed);
         return failed;
+      } finally {
+        if (authController.current === controller)
+          authController.current = null;
       }
     },
     [
@@ -1601,6 +1741,7 @@ export default function App() {
     if (__DATA_MODE__ === "api" && !apiAuthEnabled) return;
     ++authRequest.current;
     authController.current?.abort();
+    authController.current = null;
     const observationId = ++authObservation.current;
     setAuth({
       ...authSnapshot.current,
@@ -1619,10 +1760,23 @@ export default function App() {
   }, [beginAuthTransition]);
 
   const restoreOnReturn = useCallback(() => {
-    if (document.visibilityState === "hidden" || !pageAway.current) return;
+    if (document.visibilityState === "hidden") return;
     pageAway.current = false;
-    void restoreAuth();
+    if (!authController.current) void restoreAuth();
   }, [restoreAuth]);
+
+  const recheckAuth = useCallback(() => {
+    if (document.visibilityState !== "hidden") pageAway.current = false;
+    return restoreAuth();
+  }, [restoreAuth]);
+
+  const isCurrentObservation = useCallback(
+    (id) =>
+      authObservation.current === id &&
+      !pageAway.current &&
+      document.visibilityState !== "hidden",
+    [],
+  );
 
   const login = useCallback(
     async (input, returnTo) => {
@@ -1647,21 +1801,19 @@ export default function App() {
           );
           return;
         }
-        const appMatch = returnTo.match(/^\/apps\/([0-9a-f-]+)$/i);
-        if (appMatch) {
-          try {
-            await appsService.get(appMatch[1]);
-          } catch {
-            // The destination route repeats this check and renders its safe error state.
-          }
-        }
-        navigate(returnTo, { replace: true });
+        const destination = await recheckReturnDestination(
+          returnTo,
+          current,
+          appsService,
+          () => isCurrentObservation(current.observationId),
+        );
+        navigate(destination, { replace: true });
       } catch (error) {
         if (!confirmed) await restoreAuth();
         throw error;
       }
     },
-    [beginAuthTransition, navigate, restoreAuth],
+    [beginAuthTransition, navigate, restoreAuth, isCurrentObservation],
   );
 
   const changePassword = useCallback(
@@ -1685,14 +1837,20 @@ export default function App() {
             )
           );
         confirmed = true;
-        navigate(returnTo, { replace: true });
+        const destination = await recheckReturnDestination(
+          returnTo,
+          current,
+          appsService,
+          () => isCurrentObservation(current.observationId),
+        );
+        navigate(destination, { replace: true });
         setToast("비밀번호를 변경했어요.");
       } catch (error) {
         if (!confirmed) await restoreAuth();
         throw error;
       }
     },
-    [beginAuthTransition, navigate, restoreAuth],
+    [beginAuthTransition, navigate, restoreAuth, isCurrentObservation],
   );
 
   const reauthenticate = useCallback(
@@ -1875,7 +2033,19 @@ export default function App() {
     await restoreAuth();
   }, [restoreAuth]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const previous = previousAuthEntry.current;
+    previousAuthEntry.current = {
+      key: location.key,
+      pathname: location.pathname,
+      restoreAuth,
+    };
+    if (
+      previous?.restoreAuth === restoreAuth &&
+      previous.pathname === location.pathname &&
+      (navigationType !== "POP" || previous.key === location.key)
+    )
+      return;
     if (__DATA_MODE__ === "mock") {
       void restoreAuth();
       return;
@@ -1890,7 +2060,13 @@ export default function App() {
       return;
     }
     void restoreAuth();
-  }, [apiAuthEnabled, apiAuthPath, restoreAuth]);
+  }, [
+    apiAuthEnabled,
+    location.key,
+    location.pathname,
+    navigationType,
+    restoreAuth,
+  ]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
@@ -1906,13 +2082,6 @@ export default function App() {
     )
       window.scrollTo({ top: 0 });
   }, [location.key, location.pathname, navigationType]);
-  const previousAuthLocation = useRef(location.key);
-  useEffect(() => {
-    const previousKey = previousAuthLocation.current;
-    previousAuthLocation.current = location.key;
-    if (navigationType === "POP" && previousKey !== location.key)
-      void restoreAuth({ concealed: true });
-  }, [location.key, navigationType, restoreAuth]);
   useEffect(() => {
     const onStorage = (event) => {
       if (__DATA_MODE__ === "api" && event.key === "eduvibe-auth-flow-v1") {
@@ -1920,10 +2089,26 @@ export default function App() {
       }
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1") {
         reconcileMockReset(event.newValue);
-        void refreshMockState();
+        if (isMockHealthStorageUpdate(event.oldValue, event.newValue))
+          onMockHealthUpdated();
+        else void refreshMockState();
       }
     };
     const onMockReset = () => void refreshMockState();
+    const onMockHealthUpdated = () => {
+      void queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey;
+          return (
+            __DATA_MODE__ === "mock" &&
+            key[0] === __DATA_MODE__ &&
+            (key[1] === "health" ||
+              (key[1] === "apps" && key[2] === "list") ||
+              (key[1] === "admin" && (key[2] === "users" || key[2] === "apps")))
+          );
+        },
+      });
+    };
     const onMockAppDeleted = () => {
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
@@ -1937,17 +2122,20 @@ export default function App() {
       else restoreOnReturn();
     };
     window.addEventListener("eduvibe:mock-reset", onMockReset);
+    window.addEventListener("eduvibe:mock-health-updated", onMockHealthUpdated);
     window.addEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
     window.addEventListener("storage", onStorage);
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("blur", concealOnDeparture);
     window.addEventListener("focus", restoreOnReturn);
-    const onPageShow = (event) => {
-      if (event.persisted) void restoreAuth({ concealed: true });
-    };
+    const onPageShow = () => restoreOnReturn();
     window.addEventListener("pageshow", onPageShow);
     return () => {
       window.removeEventListener("eduvibe:mock-reset", onMockReset);
+      window.removeEventListener(
+        "eduvibe:mock-health-updated",
+        onMockHealthUpdated,
+      );
       window.removeEventListener("eduvibe:mock-app-deleted", onMockAppDeleted);
       window.removeEventListener("storage", onStorage);
       document.removeEventListener("visibilitychange", onVisibilityChange);
@@ -2012,7 +2200,7 @@ export default function App() {
         auth={auth}
         onLogin={() => navigate("/auth?mode=login")}
         onLogout={logout}
-        onRetryAuth={() => void restoreAuth()}
+        onRetryAuth={recheckAuth}
         logoutPending={logoutPending}
       />
       <Routes>
@@ -2030,7 +2218,7 @@ export default function App() {
           element={
             <SubmitRoute
               auth={auth}
-              onRetryAuth={() => restoreAuth()}
+              onRetryAuth={recheckAuth}
               onCreated={onAppCreated}
             />
           }
@@ -2040,7 +2228,8 @@ export default function App() {
           element={
             <EditRoute
               auth={auth}
-              onRetryAuth={restoreAuth}
+              isCurrentObservation={isCurrentObservation}
+              onRetryAuth={recheckAuth}
               onSaved={onAppUpdated}
             />
           }
@@ -2050,7 +2239,8 @@ export default function App() {
           element={
             <DetailRoute
               auth={auth}
-              onRetryAuth={restoreAuth}
+              isCurrentObservation={isCurrentObservation}
+              onRetryAuth={recheckAuth}
               onDeleted={onAppDeleted}
               deletionState={deletion}
               setDeletionState={setDeletion}
@@ -2063,7 +2253,7 @@ export default function App() {
             <AuthRoute
               location={location}
               auth={auth}
-              onRetry={() => restoreAuth()}
+              onRetry={recheckAuth}
               onLogin={login}
               onChangePassword={changePassword}
               onReauthenticate={reauthenticate}
@@ -2079,7 +2269,7 @@ export default function App() {
           element={
             <AdminRoute
               auth={auth}
-              onRetry={() => restoreAuth()}
+              onRetry={recheckAuth}
               meta={authMetadata.meta}
             />
           }

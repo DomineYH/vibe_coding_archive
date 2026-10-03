@@ -13,7 +13,7 @@ import { appsService } from "./apps";
 import {
   assertCurrentGeneration,
   getMockSnapshot,
-  MOCK_RESET_EVENT,
+  MOCK_HEALTH_UPDATED_EVENT,
   MOCK_HEALTH_RESET_EVENT,
   nextMockHealthId,
   saveMockHealthBatch,
@@ -636,7 +636,7 @@ export const healthService: HealthService = {
     )
       batch.finished_at = now;
     saveMockHealthBatch(batch);
-    window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+    window.dispatchEvent(new Event(MOCK_HEALTH_UPDATED_EVENT));
     return acceptedBatch(batch, getMockSnapshot(), "created");
   },
 
@@ -806,7 +806,7 @@ export const healthService: HealthService = {
         : now,
     };
     saveMockHealthBatch(updatedBatch);
-    window.dispatchEvent(new Event(MOCK_RESET_EVENT));
+    window.dispatchEvent(new Event(MOCK_HEALTH_UPDATED_EVENT));
     state = getMockSnapshot();
     return healthBatch(
       state.health_batches.find((batch) => batch.id === batchId) ??

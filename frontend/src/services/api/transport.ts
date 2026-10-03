@@ -18,6 +18,13 @@ export type ApiEndpoint =
   | "GET /write-operations/{key}";
 
 const API_ERROR_TRIPLES = [
+  { endpoint: "GET /meta", status: 422, code: "VALIDATION_ERROR" },
+  ...(["GET /apps", "GET /apps/{id}"] as const).flatMap((endpoint) => [
+    { endpoint, status: 409, code: "AUTH_STATE_CHANGED" as const },
+    { endpoint, status: 409, code: "AUTH_TRANSITION_PENDING" as const },
+    { endpoint, status: 422, code: "VALIDATION_ERROR" as const },
+    { endpoint, status: 503, code: "DB_BUSY" as const },
+  ]),
   { endpoint: "GET /meta", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "GET /meta", status: 503, code: "SERVICE_UNAVAILABLE" },
   { endpoint: "GET /apps", status: 400, code: "VALIDATION_ERROR" },
@@ -542,6 +549,7 @@ export async function requestJson(
     noContent = false,
     includeStatus = false,
     includeHeaders = false,
+    cache,
   }: {
     signal?: AbortSignal;
     method?: "GET" | "POST" | "PATCH" | "DELETE";
@@ -551,6 +559,7 @@ export async function requestJson(
     noContent?: boolean;
     includeStatus?: boolean;
     includeHeaders?: boolean;
+    cache?: "no-store";
   } = {},
 ): Promise<unknown> {
   if (requestBody !== undefined)
@@ -564,6 +573,7 @@ export async function requestJson(
       body: requestBody === undefined ? undefined : JSON.stringify(requestBody),
       signal,
       keepalive: false,
+      cache,
     });
   } catch (error) {
     if (

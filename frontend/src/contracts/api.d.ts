@@ -429,7 +429,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read public catalog metadata */
+        /**
+         * Read public catalog metadata
+         * @description Headerless metadata discovery is independent of authentication. If any connection header is supplied, all three must be canonical; otherwise 422.
+         */
         get: operations["getMeta"];
         put?: never;
         post?: never;
@@ -2263,7 +2266,11 @@ export interface operations {
     getMeta: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-EduVibe-Flow-Id"?: string;
+                "X-EduVibe-Auth-Revision"?: string;
+                "X-EduVibe-Session-Generation"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2279,6 +2286,7 @@ export interface operations {
                 };
             };
             400: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -2296,7 +2304,11 @@ export interface operations {
                 /** @description Zero-based offset. A valid offset past the result count returns an empty page. */
                 offset?: number;
             };
-            header?: never;
+            header?: {
+                "X-EduVibe-Flow-Id"?: string;
+                "X-EduVibe-Auth-Revision"?: string;
+                "X-EduVibe-Session-Generation"?: string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -2312,6 +2324,8 @@ export interface operations {
                 };
             };
             400: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -2359,7 +2373,11 @@ export interface operations {
     getApp: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-EduVibe-Flow-Id"?: string;
+                "X-EduVibe-Auth-Revision"?: string;
+                "X-EduVibe-Session-Generation"?: string;
+            };
             path: {
                 /** @description Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant 8/9/a/b. Hex is case-insensitive and normalized to lowercase. Other formats return 404 NOT_FOUND; query errors take precedence. */
                 id: string;
@@ -2368,9 +2386,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Public app detail. */
+            /** @description Public detail, or private detail authorized for the current approved full owner or full administrator. Headerless requests ignore cookies. Supplied context is all-or-none and canonical; stale or pending context is rejected without replay. Missing and unauthorized detail share 404. Member-bound responses include verified context and are never cached. */
             200: {
                 headers: {
+                    /** @description Present on member-bound responses only. */
+                    "Cache-Control"?: "private, no-store";
+                    /** @description Verified flow ID, present on member-bound responses only. */
+                    "X-EduVibe-Flow-Id"?: string;
+                    /** @description Verified revision, present on member-bound responses only. */
+                    "X-EduVibe-Auth-Revision"?: string;
+                    /** @description Verified generation, present on member-bound responses only. */
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2381,6 +2407,8 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

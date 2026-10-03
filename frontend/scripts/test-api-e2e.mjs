@@ -48,7 +48,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|password|register|lifecycle)|admin-approval/.test(
+      /auth-(prepare|login|password|register|lifecycle|access)|admin-approval/.test(
         arg,
       ),
     );
@@ -107,7 +107,7 @@ raise SystemExit(status)`,
         "--frozen",
         "python",
         "-c",
-        "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path); from tests.approval_fixtures import populate_approval_members; populate_approval_members(database_path)",
+        "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path); from tests.approval_fixtures import populate_approval_members; populate_approval_members(database_path); from tests.access_fixtures import populate_access_apps; populate_access_apps(database_path)",
       ],
       { cwd: backend, env, stdio: "inherit" },
     );
@@ -134,6 +134,7 @@ raise SystemExit(status)`,
                 "e2e-api/auth-register.spec.js",
                 "e2e-api/admin-approval.spec.js",
                 "e2e-api/auth-lifecycle.spec.js",
+                "e2e-api/auth-access.spec.js",
               ],
               prepared: true,
             },
@@ -141,12 +142,12 @@ raise SystemExit(status)`,
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
     const capture =
-      "change-only card and field errors|registration cards|administrator approval cards";
+      "change-only card and field errors|registration cards|administrator approval cards|private access states";
     const separated = runs.flatMap((run) => {
       if (
         !run.prepared ||
         !run.arguments_.some((arg) =>
-          /auth-(password|register)|admin-approval/.test(arg),
+          /auth-(password|register|access)|admin-approval/.test(arg),
         )
       )
         return [run];
@@ -161,7 +162,7 @@ raise SystemExit(status)`,
         {
           arguments_: [
             ...run.arguments_.filter((arg) =>
-              /auth-(password|register)|admin-approval/.test(arg),
+              /auth-(password|register|access)|admin-approval/.test(arg),
             ),
             "--grep",
             capture,

@@ -17,11 +17,19 @@ from pydantic import (
     ValidationError,
     WithJsonSchema,
 )
-from sqlalchemy import select
+from sqlalchemy import or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, load_only, selectinload
 from starlette.responses import JSONResponse
 
+from app.auth_boundary import (
+    READ_CONTEXT_PARAMETERS,
+    AuthError,
+    read_context,
+    response,
+    screen_activity,
+    screen_read_context,
+)
 from app.catalog import CATALOG
 from app.database import get_session
 from app.models import App, AppGrade, Member
@@ -195,7 +203,9 @@ def _error(
 
 
 def _not_found() -> JSONResponse:
-    return _error(404, "NOT_FOUND", "요청한 자료를 찾을 수 없습니다.")
+    result = _error(404, "NOT_FOUND", "요청한 자료를 찾을 수 없습니다.")
+    result.headers["Cache-Control"] = "private, no-store"
+    return result
 
 
 def _server_unavailable() -> JSONResponse:
@@ -295,10 +305,13 @@ def _fold_search_value(value: str) -> str:
 @router.get(
     "/apps",
     operation_id="listPublicApps",
+    openapi_extra={"parameters": READ_CONTEXT_PARAMETERS},
     summary="List public archive apps",
     response_model=AppPage,
     responses={
         400: {"model": ErrorEnvelope},
+        409: {"model": ErrorEnvelope},
+        422: {"model": ErrorEnvelope},
         503: {"model": ErrorEnvelope},
     },
 )
@@ -368,7 +381,11 @@ def list_public_apps(
     if not 1 <= limit <= 100:
         return _invalid_query({"limit": "1에서 100 사이의 정수여야 합니다."})
 
+    context = read_context(request)
     try:
+        if context is not None:
+            session.execute(text("BEGIN IMMEDIATE"))
+            screen_read_context(session, request, context)
         candidates = (
             select(App.id, App.name, Member.nickname, App.description)
             .join(App.owner)
@@ -443,7 +460,12 @@ def list_public_apps(
                 },
             }
         )
-    except (SQLAlchemyError, ValidationError, ValueError):
+    except SQLAlchemyError as error:
+        session.rollback()
+        if context is not None and "locked" in str(error).lower():
+            raise AuthError("DB_BUSY", 503) from None
+        return _server_unavailable()
+    except (ValidationError, ValueError):
         return _server_unavailable()
     return page
 
@@ -451,6 +473,7 @@ def list_public_apps(
 @router.get(
     "/apps/{id}",
     operation_id="getApp",
+    openapi_extra={"parameters": READ_CONTEXT_PARAMETERS},
     summary="Read an archive app available to the current member",
     response_model=AppDetailResponse,
     responses={
@@ -458,6 +481,8 @@ def list_public_apps(
         401: {"model": ErrorEnvelope},
         403: {"model": ErrorEnvelope},
         404: {"model": ErrorEnvelope},
+        409: {"model": ErrorEnvelope},
+        422: {"model": ErrorEnvelope},
         503: {"model": ErrorEnvelope},
     },
 )
@@ -488,26 +513,51 @@ def get_public_app(
             "상세 조회는 쿼리를 지원하지 않습니다.",
             {"query": "상세 조회는 쿼리를 지원하지 않습니다."},
         )
-    if not re.fullmatch(UUID_PATTERN, id):
-        return _not_found()
+    context = read_context(request)
     app_id = id.lower()
     try:
+        if context is not None:
+            session.execute(text("BEGIN IMMEDIATE"))
+        item, credential_row, member = screen_read_context(session, request, context)
+        if not re.fullmatch(UUID_PATTERN, id):
+            return _not_found()
+        scope = App.is_public.is_(True)
+        if member is not None:
+            scope = or_(scope, App.owner_id == member["id"])
+            if member["is_admin"]:
+                scope = True
         app = session.scalar(
             select(App)
             .options(
-                selectinload(App.owner),
+                selectinload(App.owner).load_only(Member.id, Member.nickname),
                 selectinload(App.grades),
                 selectinload(App.health_result),
             )
-            .where(App.id == app_id, App.is_public.is_(True))
+            .where(App.id == app_id, scope)
         )
         if app is None:
             return _not_found()
-        return AppDetailResponse.model_validate(
+        body = AppDetailResponse.model_validate(
             {
                 "item": _app_detail(app),
                 "server_time": datetime.now(UTC),
             }
         )
-    except (SQLAlchemyError, ValidationError, ValueError):
+        if member is not None:
+            if not screen_activity(session, item, credential_row):
+                return _not_found()
+            return response(
+                session,
+                request,
+                body.model_dump(mode="json"),
+                metadata=item,
+                private=True,
+            )
+        return body
+    except SQLAlchemyError as error:
+        session.rollback()
+        if context is not None and "locked" in str(error).lower():
+            raise AuthError("DB_BUSY", 503) from None
+        return _server_unavailable()
+    except (ValidationError, ValueError):
         return _server_unavailable()

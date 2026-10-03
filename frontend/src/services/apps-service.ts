@@ -3,6 +3,7 @@ import type { components, operations } from "../contracts/api";
 import type { AppWriteOperation, Grade, Subject } from "../contracts/mappers";
 import catalog from "../../../contracts/catalog.json";
 import { ServiceError } from "./service-error";
+import type { ProtectedReadContext } from "./auth-state";
 
 export type ListAppsQuery = Pick<
   NonNullable<operations["listPublicApps"]["parameters"]["query"]>,
@@ -465,7 +466,10 @@ export function isSearchTooLong(value: string): boolean {
 export type AppsService = {
   getMeta(options?: RequestOptions): Promise<Meta>;
   list(query?: ListAppsQuery, options?: RequestOptions): Promise<AppPage>;
-  get(id: string, options?: RequestOptions): Promise<AppDetail>;
+  get(
+    id: string,
+    options?: RequestOptions & { readContext?: ProtectedReadContext },
+  ): Promise<AppDetail>;
   issueCreateOperation(input: unknown): Promise<AppWriteOperation>;
   create(input: unknown, operationKey: string): Promise<AppDetail>;
   getCreateOperation(
