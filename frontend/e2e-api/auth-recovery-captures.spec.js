@@ -90,10 +90,22 @@ for (const viewport of viewports) {
           event.path === `${API}/transitions` && event.stage === "ingress",
       ),
     ).toHaveLength(1);
-    // The restored member label appears before login's final navigation.
-    // Wait for that navigation so it cannot replace the logout button mid-click.
+    // The URL changes before the gallery's route-entry auth recheck settles.
+    // Observe the rendered gallery and its restored header before clicking.
     await expect(page).toHaveURL("http://localhost:5174/");
-    await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+    await expect(
+      page.getByRole("link", { name: /^둘째 공개 앱,/ }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("banner").getByText("승인 회원", { exact: true }),
+    ).toBeVisible();
+    const [logout] = await Promise.all([
+      page.waitForResponse((response) =>
+        response.url().endsWith(`${API}/logout`),
+      ),
+      page.getByRole("button", { name: "로그아웃", exact: true }).click(),
+    ]);
+    expect(logout.status()).toBe(204);
     await expect(
       page
         .getByRole("banner")
