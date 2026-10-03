@@ -71,6 +71,12 @@ test("an approved member logs in, keeps the session across refresh and logs out"
   // The header shows the nickname, never the login ID.
   await expect(banner.getByText("승인 회원", { exact: true })).toBeVisible();
   await expect(banner.getByText("member-a")).toHaveCount(0);
+  await expect(
+    page.getByRole("navigation", { name: "주 메뉴" }).getByRole("link", {
+      name: "앱 등록",
+      exact: true,
+    }),
+  ).toHaveCount(0);
   const after = await authCookies(context);
   const session = after.find((c) => c.name.startsWith("eduvibe_session_"));
   expect(session.name).not.toBe(
