@@ -1007,9 +1007,11 @@ export function AuthView({
               id="contact-hint"
               className="-mt-1 text-[11px] leading-relaxed text-neutral-400"
             >
-              이메일·연락처는 선택이며 공개 화면에 표시되지 않습니다. 개발용
-              mock에서는 가짜 비밀번호와 연락처만 사용해 주세요. 실제 수집
-              기능은 비활성화되어 있습니다.
+              이메일·연락처는 선택이며 공개 화면에 표시되지 않습니다.{" "}
+              {__DATA_MODE__ === "mock"
+                ? "개발용 mock에서는 가짜 비밀번호와 연락처만 사용해 주세요. "
+                : null}
+              실제 수집 기능은 비활성화되어 있습니다.
             </p>
           </>
         ) : null}

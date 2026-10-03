@@ -1,11 +1,36 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AuthView } from "../src/features/auth/view-auth";
 import { ServiceError } from "../src/services/service-error";
 
 describe("API-mode auth availability", () => {
+  it("keeps signup contact guidance without mock-only advice", () => {
+    vi.stubGlobal("__DATA_MODE__", "api");
+    try {
+      const { container } = render(
+        <MemoryRouter>
+          <AuthView mode="signup" authStatus="ready" authUser={null} />
+        </MemoryRouter>,
+      );
+      expect(
+        screen.queryByText(/개발용|mock|가짜 비밀번호/),
+      ).not.toBeInTheDocument();
+      expect(container.querySelector("#contact-hint")).toHaveTextContent(
+        "이메일·연락처는 선택이며 공개 화면에 표시되지 않습니다. 실제 수집 기능은 비활성화되어 있습니다.",
+      );
+      for (const selector of ["#email", "#phone"]) {
+        expect(container.querySelector(selector)).toHaveAttribute(
+          "aria-describedby",
+          "contact-hint",
+        );
+      }
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("explains that authentication is unavailable without showing a form", () => {
     render(
       <MemoryRouter>

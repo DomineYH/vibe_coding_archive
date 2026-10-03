@@ -245,6 +245,16 @@ test.describe("real pending registration", () => {
         if (request.url().endsWith("/auth/register")) writes++;
       });
       await expect(page.getByText(/실제 수집 기능은 비활성화/)).toBeVisible();
+      await expect(page.getByText(/개발용|mock|가짜 비밀번호/)).toHaveCount(0);
+      await expect(page.locator("#contact-hint")).toHaveText(
+        "이메일·연락처는 선택이며 공개 화면에 표시되지 않습니다. 실제 수집 기능은 비활성화되어 있습니다.",
+      );
+      for (const selector of ["#email", "#phone"]) {
+        await expect(page.locator(selector)).toHaveAttribute(
+          "aria-describedby",
+          "contact-hint",
+        );
+      }
       const fields = [
         "#login-id",
         "#login-password",
