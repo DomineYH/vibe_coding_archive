@@ -1275,16 +1275,20 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
         </main>
       </>
     );
-  if (access.error || !access.meta?.capabilities.apps_create.enabled)
+  if (access.error || !access.meta?.capabilities.apps_create.enabled) {
+    const preparing =
+      !access.error && isNotImplemented(access.meta?.capabilities.apps_create);
     return (
       <>
         {form}
         <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
-          <div role="alert" aria-live="assertive">
+          <div
+            role={preparing ? "status" : "alert"}
+            aria-live={preparing ? "polite" : "assertive"}
+          >
             <EmptyState
               title={
-                !access.error &&
-                isNotImplemented(access.meta?.capabilities.apps_create)
+                preparing
                   ? "앱 등록 기능은 아직 준비 중이에요"
                   : "앱 등록 기능을 사용할 수 없어요"
               }
@@ -1309,6 +1313,7 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
         </main>
       </>
     );
+  }
   return form;
 }
 

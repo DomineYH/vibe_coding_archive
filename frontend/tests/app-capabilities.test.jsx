@@ -83,9 +83,13 @@ it("shows preparation copy on direct create", async () => {
   disable("apps_create");
   await visit("/apps/new");
   const main = within(screen.getByRole("main"));
-  expect(
-    await main.findByText("앱 등록 기능은 아직 준비 중이에요"),
-  ).toBeInTheDocument();
+  const title = await main.findByText("앱 등록 기능은 아직 준비 중이에요");
+  expect(title).toBeInTheDocument();
+  expect(title.closest('[role="status"]')).toHaveAttribute(
+    "aria-live",
+    "polite",
+  );
+  expect(title.closest('[role="alert"]')).toBeNull();
   expect(
     main.getByText("갤러리는 계속 둘러볼 수 있습니다."),
   ).toBeInTheDocument();
@@ -135,13 +139,21 @@ it.each(["apps_create", "apps_update_own"])(
   async (capability) => {
     disable(capability, ["maintenance"]);
     await visit(capability === "apps_create" ? "/apps/new" : ownEdit);
+    const description = await screen.findByText("잠시 후 다시 확인해 주세요.");
+    expect(description).toBeInTheDocument();
+    const creating = capability === "apps_create";
     expect(
-      await screen.findByText("잠시 후 다시 확인해 주세요."),
-    ).toBeInTheDocument();
+      description.closest(creating ? '[role="alert"]' : '[role="status"]'),
+    ).toHaveAttribute("aria-live", creating ? "assertive" : "polite");
+    expect(
+      description.closest(creating ? '[role="status"]' : '[role="alert"]'),
+    ).toBeNull();
     expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
     if (capability === "apps_update_own")
       expect(
-        within(screen.getByRole("main")).queryByRole("link", { name: "갤러리로" }),
+        within(screen.getByRole("main")).queryByRole("link", {
+          name: "갤러리로",
+        }),
       ).not.toBeInTheDocument();
   },
 );
@@ -151,7 +163,13 @@ it.each(["apps_create", "apps_update_own"])(
   async (capability) => {
     disable(capability, ["maintenance", "not_implemented"]);
     await visit(capability === "apps_create" ? "/apps/new" : ownEdit);
-    expect(await screen.findByText(/아직 준비 중이에요/)).toBeInTheDocument();
+    const title = await screen.findByText(/아직 준비 중이에요/);
+    expect(title).toBeInTheDocument();
+    expect(title.closest('[role="status"]')).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(title.closest('[role="alert"]')).toBeNull();
     expect(
       within(screen.getByRole("main")).getByRole("link", { name: "갤러리로" }),
     ).toHaveAttribute("href", "/");
@@ -296,10 +314,14 @@ it.each(["/apps/new", ownEdit])(
     await act(async () =>
       client.refetchQueries({ queryKey: ["mock", "meta"] }),
     );
-    expect(await screen.findByText("메타 조회 실패")).toBeInTheDocument();
+    const error = await screen.findByText("메타 조회 실패");
+    expect(error).toBeInTheDocument();
+    const alert = error.closest('[role="alert"]');
+    expect(alert).toHaveAttribute("aria-live", "assertive");
+    expect(error.closest('[role="status"]')).toBeNull();
     expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
     expect(
-      within(screen.getByRole("main")).getByRole("button", {
+      within(alert).getByRole("button", {
         name: "다시 확인",
       }),
     ).toBeInTheDocument();
