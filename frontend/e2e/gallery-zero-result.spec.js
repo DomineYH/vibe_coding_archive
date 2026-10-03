@@ -240,10 +240,19 @@ test("default zero result keeps reset available and refetches the first page", a
         "python",
         "-c",
         `
-import json, os, sqlite3
+import json, os, sqlite3, tempfile
 from pathlib import Path
 p = Path(os.environ["DATABASE_PATH"])
-assert os.environ["APP_ENV"] == "test" and p.parent.name.startswith("eduvibe-api-e2e-")
+runner_root = Path(os.environ["API_E2E_TEMP_ROOT"])
+assert os.environ["APP_ENV"] == "test" and p.is_absolute() and runner_root.is_absolute()
+runner_root = runner_root.resolve(strict=True)
+assert runner_root.parent == Path(tempfile.gettempdir()).resolve(strict=True)
+assert runner_root.name.startswith("eduvibe-api-e2e-")
+p = p.resolve(strict=True)
+relative = p.relative_to(runner_root)
+assert len(relative.parts) == 2 and relative.parts[1] == "api.sqlite3"
+run = relative.parts[0]
+assert run.startswith("run-") and run[4:].isascii() and run[4:].isdigit()
 with sqlite3.connect(p) as db:
     ids = [row[0] for row in db.execute("SELECT id FROM apps WHERE is_public = 1")]
     db.execute("UPDATE apps SET is_public = 0 WHERE is_public = 1")

@@ -58,6 +58,7 @@ async function run() {
     ...process.env,
     APP_ENV: "test",
     API_E2E_AUTH_BOUNDARY: authPrepared ? "prepared" : "unavailable",
+    API_E2E_TEMP_ROOT: temporary,
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
     PUBLIC_ORIGIN: "http://localhost:5174",

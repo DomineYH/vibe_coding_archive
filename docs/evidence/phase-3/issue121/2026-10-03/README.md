@@ -78,6 +78,33 @@ raised to hide a failure.
 
 ## First failure → correction → retest
 
+- Final one-pass API regression: unavailable fixture 52 PASS/29 pre-existing
+  SKIP/1 FAIL, wall164.70s. The gallery-zero-result fixture guard still required
+  `temp-root/api.sqlite3`, while independent runner phases use `run-N/api.sqlite3`.
+  Failure occurred before opening/mutating SQLite; later prepared phases were
+  NOT RUN in this failed invocation. A minimal actual inline-CLI guard probe was
+  also RED on the runner's valid nested path. The runner now passes its mandatory
+  actual mkdtemp root. The guard requires APP_ENV=test and absolute root/database,
+  resolves both realpaths, validates the temporary-root location/prefix, and
+  requires exact root-relative `run-<ASCII digits>/api.sqlite3`. Missing root,
+  outside-root paths, symlink escapes, relative paths, wrong names and extra
+  depth are rejected before mutation; ten boundary probes PASS and rejected
+  databases remain unchanged. Browser retest: `npm --prefix frontend run
+  test:e2e:api -- --auth-unavailable gallery-zero-result.spec.js --grep 'default
+  zero result keeps reset available'`: 1 PASS/39.3s, wall47.01s/maxRSS199888KB.
+  All commands memory-capped. No environment opt-out or product change.
+- Final one-pass full mock: 122 PASS/2 FAIL, wall356.10s. One initial admin
+  navigation hit the unchanged 30s deadline; the combined journey's user list
+  remained loading after cross-tab activity with its clock paused. Diagnosis
+  and focused retests pending; no success is inferred from the 122-case subset.
+  Final auth/admin visual: 9 PASS/1 FAIL (1024×900 cumulative 60s deadline),
+  wall343.96s; focused diagnosis pending, no comparison failure asserted.
+  The full backend passed 347/612.94s (wall614.82s), unit passed 889/144.05s
+  (wall153.61s), static check passed/wall74.06s, both builds/dist/reference
+  passed. These do not override the browser failures. Generated PNGs outside
+  issue121 were restored by explicit paths after API and visual commands
+  (77 then 2); repeat cleanup is required after subsequent runs.
+
 - Retention product defect: cleanup only removed credentials when retiring the entire
   flow. Live flow with expired full S and old rotated R violates R9 Q18. The migration
   stores only exact `(flow_id, kind, issued_seq)` fences, no token/hash/CSRF/member data;
@@ -498,13 +525,13 @@ baseline, tolerance, policy, TTL, dependency lock or production capability was c
   independent complete repetitions and final integration remain pending here.
 
 - Capture regeneration after the reset fix: first complete fresh lifecycle
-  43 functional PASS/2.4m → 20 fixed-clock capture PASS/1.4m, wall245.94s.
+  43 functional PASS/2.5m → 20 fixed-clock capture PASS/1.4m, wall245.94s.
   Read-only comparison against historical captures failed safely at reset-recheck
   1440×1000, as expected from the changed readiness. All forty artifacts were
   copied directly from that completed run; only four reset-recheck PNGs changed
   (1440×1000, 1024×900, 390×844, 360×844). The settled 768×1024 PNG already matched.
   The manifest records the actual toast/recheck readiness and fresh hashes.
-  Second complete fresh lifecycle 43 functional PASS/2.6m → 20 capture PASS/1.3m,
+  Second complete fresh lifecycle 43 functional PASS/2.7m → 20 capture PASS/1.3m,
   wall254.52s; read-only byte/SHA256/dimension comparison 40/40 PASS. Its JSON is
   `capture-reproducibility.json`. These are reproduced product-only artifacts,
   not screenshot baselines or human acceptance. Two further independent complete
