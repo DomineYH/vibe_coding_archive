@@ -61,6 +61,8 @@ def validate_url(value):
     if (
         parsed.scheme not in ("http", "https")
         or (authority and "@" in authority[1])
+        or parsed.username
+        or parsed.password
         or parsed.port != {"http": 80, "https": 443}.get(parsed.scheme)
     ):
         raise ValueError("공개 http 또는 https 주소를 입력해 주세요.")

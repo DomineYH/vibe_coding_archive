@@ -136,6 +136,8 @@ function validateAppUrl(value: unknown): string {
   if (
     (parsed.protocol !== "http:" && parsed.protocol !== "https:") ||
     authority.includes("@") ||
+    parsed.username !== "" ||
+    parsed.password !== "" ||
     parsed.port !== "" ||
     host === "localhost" ||
     host.endsWith(".localhost") ||
