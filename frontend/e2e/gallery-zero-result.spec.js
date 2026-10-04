@@ -227,7 +227,7 @@ test("reset replaces its history entry and cancels draft debounce and IME", asyn
   await expect(page.locator("a.card-r").first()).toBeVisible();
 });
 
-test("default zero result keeps reset available and refetches the first page", async ({
+test("empty archive applies conditions then resets to defaults and refetches the first page", async ({
   page,
 }, testInfo) => {
   const api = testInfo.project.use.baseURL.endsWith("5174");
@@ -268,31 +268,40 @@ print(json.dumps(ids))
   }
   try {
     await page.goto("/");
+    const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
+    const reset = page.getByRole("button", { name: "조건 초기화" });
+    await expect(page.getByText("아직 공개된 앱이 없어요")).toBeVisible();
     await expect(
-      page.getByText("검색어: 없음 · 과목: 전체 · 학년: 전체", { exact: true }),
+      page.getByText("앱이 공개되면 여기에 표시돼요."),
+    ).toBeVisible();
+    await expect(page.getByText(/검색어:/)).toHaveCount(0);
+    await expect(reset).toHaveCount(0);
+
+    await search.fill("없는앱-증거");
+    await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+    await expect(
+      page.getByText("검색어: “없는앱-증거” · 과목: 전체 · 학년: 전체", {
+        exact: true,
+      }),
     ).toBeVisible();
     const response = api
-      ? page.waitForResponse(
-          (response) => new URL(response.url()).pathname === "/api/v1/apps",
-        )
+      ? page.waitForResponse((response) => {
+          const url = new URL(response.url());
+          return url.pathname === "/api/v1/apps" && !url.searchParams.has("q");
+        })
       : null;
-    await page.getByRole("textbox", { name: "앱·작성자 검색" }).focus();
+    await search.focus();
     await page.keyboard.press("Tab");
-    await expect(
-      page.getByRole("button", { name: "조건 초기화" }),
-    ).toBeFocused();
+    await expect(reset).toBeFocused();
     await page.keyboard.press("Enter");
     if (response)
       expect((await (await response).json()).pagination.offset).toBe(0);
-    await expect(
-      page.getByText("검색어: 없음 · 과목: 전체 · 학년: 전체", { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("textbox", { name: "앱·작성자 검색" }),
-    ).toBeFocused();
-    await expect(
-      page.getByRole("button", { name: "조건 초기화" }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByText("아직 공개된 앱이 없어요")).toBeVisible();
+    await expect(search).toHaveValue("");
+    await expect(search).toBeFocused();
+    await expect(page.getByText(/검색어:/)).toHaveCount(0);
+    await expect(reset).toHaveCount(0);
     await expect(page.locator("a.card-r")).toHaveCount(0);
   } finally {
     if (api)
