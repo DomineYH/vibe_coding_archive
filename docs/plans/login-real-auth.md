@@ -212,6 +212,11 @@ AuthFlowState: `flow_id, revision, server_time, expires_at, recovery_ready, sess
 
 ## capability 활성화와 프런트 연결
 
+현재 상태: `APP_ENV=development`는 검증된 T01~T05의 인증 일곱 capability를
+기본 활성화하며 차단 목록 누락·무결성 실패 시 기동을 거부한다. `auth_testing=True`는
+계속 시험 환경 전용이다. 운영 환경의 인증과 T07/G01~G18 공개 검수는 계속 보류하며
+개발 활성화를 운영 공개 증거로 대체하지 않는다.
+
 구현 여부·검증 상태·운영 제한을 기존 `{enabled,reasons}`에 반영한다. `not_implemented`, `verification_pending`, `operational_restriction`, `collection_disabled`를 기존 의미대로 사용하고 새 임의 phase flag를 만들지 않는다. 메타는 기능 준비의 안내이지 권한 증명이 아니며 직접 API도 매 요청 검사한다.
 
 - `apps_read`는 유지. 준비 안 된 인증 때문에 공개 화면이 실패하지 않는다. 저장된 알려진 흐름의 복원이 필요한 경우에만 서버 재확인을 연결하며 공개 데이터 요청은 이에 종속시키지 않는다.

@@ -14,7 +14,8 @@ from app.settings import ROOT
 
 @cache
 def blocklist_source():
-    # Public reads and seed do not depend on authentication provisioning metadata.
+    # Public reads and seed themselves do not depend on this provisioning metadata.
+    # Authentication-enabled development/test-prepared API startup does.
     return json.loads(
         (
             ROOT

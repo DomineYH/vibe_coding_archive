@@ -176,15 +176,21 @@ def create_app(
             engine.dispose()
             raise RuntimeError("Authentication test boundary requires APP_ENV=test.")
         app.state.settings = resolved
-        app.state.auth_testing = auth_testing
+        app.state.auth_enabled = auth_testing or resolved.app_env == "development"
         app.state.auth_ready = False
-        if auth_testing:
+        if app.state.auth_enabled:
             try:
                 app.state.password_blocklist = load_blocklist(
                     resolved.password_blocklist_path
                 )
             except RuntimeError:
                 engine.dispose()
+                if resolved.app_env == "development":
+                    raise RuntimeError(
+                        "Authentication requires a verified password blocklist. "
+                        "From backend/, run: APP_ENV=development uv run --frozen "
+                        "python -m app.cli prepare-password-blocklist"
+                    ) from None
                 raise
         app.state.hash_gate = HashGate()
         app.state.engine = engine
@@ -290,7 +296,7 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         read_context(request)
         capabilities = _capabilities()
-        if request.app.state.auth_testing and request.app.state.auth_ready:
+        if request.app.state.auth_enabled and request.app.state.auth_ready:
             # #113: the T01–T05 bundle; operating release remains behind T07.
             for key in (
                 "auth_login",

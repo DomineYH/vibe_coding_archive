@@ -76,7 +76,7 @@ class Discard(Settle):
 
 
 def open_session(request: Request, *, immediate: bool):
-    if not request.app.state.auth_testing or not request.app.state.auth_ready:
+    if not request.app.state.auth_enabled or not request.app.state.auth_ready:
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     with request.app.state.session_factory() as db:
         try:

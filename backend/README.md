@@ -6,16 +6,20 @@ development reads this directory's ignored `.env` file.
 ```sh
 uv sync --locked
 APP_ENV=development uv run --frozen alembic upgrade head
+# One-time, explicit R15 acquisition outside version control (network required):
+# Optional custom path; otherwise storage/password-blocklist-ncsc.txt:
+# export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist
 APP_ENV=development uv run --frozen python -m app.cli seed
 APP_ENV=development uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
-# One-time, explicit R15 acquisition outside version control (network required):
-export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
-APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist
 # Tests below reuse that verified source offline:
 APP_ENV=test uv run --frozen pytest
 ```
+
+사용자 지정 `PASSWORD_BLOCKLIST_PATH`는 uvicorn 실행 프로세스에도 같은 값으로
+설정한다(실행 셸의 환경 변수 또는 `backend/.env`).
 
 Tests that start the API provide their own temporary `DATABASE_PATH` and
 `PUBLIC_ORIGIN`. The API refuses to start until an explicit migration leaves
@@ -26,11 +30,28 @@ The seed command adds only missing synthetic development rows to
 interactive terminal; when a seeded member is missing, one shared password is
 read twice without echo and stored as a hash.
 
+개발 seed의 승인 회원 `seed-member-one`, `seed-member-two`는 위에서 입력한
+공유 비밀번호로 로그인한다. 고정 기본 비밀번호는 없으며 기존 회원의 비밀번호는
+갱신하지 않는다. 관리자가 필요하면 선택적으로
+`APP_ENV=development uv run --frozen python -m app.cli bootstrap-admin`을 실행하고,
+브라우저 로그인 뒤 본인 비밀번호를 변경한다.
+
 ## T01 authentication preparation
 
-The ordinary app keeps every authentication capability disabled. Only the
-`APP_ENV=test` app factory's `auth_testing=True` boundary exercises preparation;
-it implements T01–T03 only (see the sections below).
+`APP_ENV=development`에서는 검증된 T01~T05 실제 인증을 기본 활성화한다.
+`auth_login`, `auth_logout`, `auth_password_change`, `auth_register`,
+`admin_users_read`, `admin_approval`, `admin_summary` 일곱 capability만 켠다.
+`APP_ENV=test`는 기존 factory의 `auth_testing=True`일 때만 켜며 이 인자는
+시험 환경에서만 허용한다. `APP_ENV=production`은 인증을 계속 비활성화한다.
+T07/G01~G18 운영 공개 검수는 보류 상태다.
+
+프런트는 `npm run dev:api`로 실행한다. 기본 `PUBLIC_ORIGIN`은
+`http://localhost:5174`이며 다른 host/port를 쓰면 정확히 맞춰야 한다.
+명시적 HTTP localhost/loopback만 개발 쿠키의 Secure 예외를 사용한다.
+Origin/CSRF 검사는 유지하며 비 loopback HTTP에는 예외를 적용하지 않는다.
+기동 후 인증 조정/정리 실패는 `/readyz` 503, 인증 capability 비활성 및 인증 API
+503으로 닫힌다. `/healthz`와 공개 읽기는 유지한다. 개발에서도 실제 DB와 아래
+재삭제 원장을 사용하므로 원장을 삭제하거나 DB와 함께 과거로 덮어쓰지 않는다.
 
 Migration `0003_auth_identity` preserves member/app IDs and ownership. For an
 existing database, provide `AUTH_MEMBER_BACKFILL=/absolute/path/history.json`:
@@ -58,10 +79,9 @@ local contract test uses only a temporary SQLite file, not an operating backup.
 
 ## T02 member login, session restore and logout
 
-On the same `APP_ENV=test` boundary, `POST /auth/login`, `GET /auth/me` and
-`POST /auth/logout` are live; the ordinary app keeps every capability off. The
-boundary advertises `auth_login`, `auth_logout` and `auth_password_change` as the
-verified T01–T03 bundle.
+개발 환경과 `APP_ENV=test`의 prepared 경계에서 `POST /auth/login`,
+`GET /auth/me`, `POST /auth/logout`이 동작한다. `auth_login`, `auth_logout`,
+`auth_password_change`는 검증된 T01~T05 묶음에 포함하며 운영 환경은 계속 끈다.
 
 Passwords are verified with pwdlib's recommended Argon2id profile (RFC 9106
 low-memory: m=64 MiB, t=3, p=4) outside any write transaction, behind a gate of
@@ -91,9 +111,11 @@ uv run --frozen python -m app.cli bootstrap-admin
 uv run --frozen python -m app.cli recover-admin
 ```
 
-The list source/version/digest remain the fixed R15 metadata. API startup never
-fetches it; `auth_testing=True` refuses a missing or corrupt list. Tests and the
-API E2E runner require an explicitly prepared
+차단 목록의 출처/버전/digest는 고정 R15 메타데이터를 유지한다. API 기동은
+목록을 내려받지 않는다. 개발 환경과 `auth_testing=True`는 차단 목록 누락·무결성
+실패 시 기동을 거부한다. 개발자는 `backend/`에서
+`APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist`로
+명시적으로 준비한다. Tests and the API E2E runner require an explicitly prepared
 `PASSWORD_BLOCKLIST_PATH`, validate the unchanged full source and copy it into
 private test-owned temporary files. They never acquire it from the network.
 Public backend contracts do not require the list. CI provisions it in a separate
@@ -119,13 +141,13 @@ revokes all restricted sessions and issues full S only to the completing browser
 Its 8-hour absolute/30-minute inactivity and administrator 15-minute recent-auth
 windows begin at the change; ordinary later login does not open recent auth.
 A lost reply uses the original transition and cookie observation, never replays
-the change, and discards only that unreceived result S. Ordinary auth capabilities
-stay off; administrator reauth/reset/deletion and signup stay unavailable.
+the change, and discards only that unreceived result S. 개발 및 prepared 시험 환경은
+가입까지 활성화하며 운영 인증과 관리자 재인증/초기화/삭제는 계속 비활성이다.
 
 ### T04 가입과 최초 승인 대기 정리
 
-가입 API는 T05 전까지 일반 실행에서 비활성이다. `APP_ENV=test`의 기존
-prepared factory만 `auth_register`를 켜며 선택 이메일·연락처는 저장하지 않는다.
+개발 환경과 `APP_ENV=test`의 기존 prepared factory는 T01~T05 묶음으로
+`auth_register`를 켜며 선택 이메일·연락처는 저장하지 않는다. 운영 환경은 계속 끈다.
 가입은 현재 익명 S/CSRF·흐름/순번/세대를 최종 commit에서 재검사하고 S를 유지한다.
 실행권/인증 전환을 새로 만들지 않는다. Origin/CSRF를 통과한 요청은 필드 오류·중복도
 포함해 IP당 rolling 100/시간 슬롯을 write lock에서 예약한다. 차단은 집계하지 않는다.
@@ -183,9 +205,9 @@ T07 운영 공개 전에 원장과 SQLite sidecar를 운영 DB의 디렉터리/�
 ### T05 실제 관리자 승인·승인 해제
 
 T04의 `0005_member_approval` schema와 T01~T03의 full S/흐름/순번/세대/CSRF 경계를
-재사용한다. `APP_ENV=test` prepared factory에서는 `auth_register`,
+재사용한다. 개발 환경과 `APP_ENV=test` prepared factory에서는 `auth_register`,
 `admin_users_read`, `admin_approval`, `admin_summary`를 묶음으로 활성화한다.
-일반 실행은 T07 공개 gate 전까지 인증을 열지 않는다. 새 phase flag는 없다.
+운영 실행은 T07 공개 gate 전까지 인증을 열지 않는다. 새 phase flag는 없다.
 
 현재 full 관리자는 `/admin/users`(페이지·전체 stats), `/admin/users/{id}`를 읽고,
 `POST /write-operations`의 `kind=user_approval`로 별도 업무 키를 발급한다.
