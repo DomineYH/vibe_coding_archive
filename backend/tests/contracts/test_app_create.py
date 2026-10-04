@@ -26,6 +26,54 @@ OPERATION_FIELDS = {
 }
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://[::ffff:127.0.0.1]/",
+        "http://[::ffff:192.168.1.1]/",
+        "http://[::127.0.0.1]/",
+        "http://[::10.0.0.1]/",
+        "http:/@example.com",
+        "http:/:@example.com",
+        "http:@example.com",
+        "http:///@example.com",
+        "https:////:@example.com",
+    ],
+)
+def test_blocked_url_cannot_issue_or_create_and_leaves_key_usable(member_app, url):
+    app, path = member_app()
+    with TestClient(app) as client:
+        browser = signed_in(client)
+        key = issued_key(browser)
+        body = {**INPUT, "url": url}
+        for request in (
+            lambda: issue(browser, body),
+            lambda: create(browser, key, body),
+        ):
+            result = request()
+            error(result, 422, "VALIDATION_ERROR")
+            assert "url" in result.json()["error"]["fields"]
+            with sqlite3.connect(path) as db:
+                assert db.execute("SELECT count(*) FROM apps").fetchone() == (0,)
+        assert read(browser, key).json()["state"] == "unresolved"
+        assert create(browser, key).status_code == 201
+
+
+def test_public_embedded_ipv4_preserves_source_url_on_issue_and_create(member_app):
+    app, path = member_app()
+    with TestClient(app) as client:
+        browser = signed_in(client)
+        url = "https://[::ffff:8.8.8.8]/a?b=c#d"
+        body = {**INPUT, "url": url}
+        issued = issue(browser, body)
+        assert issued.status_code == 201, issued.text
+        result = create(browser, issued.json()["key"], body)
+        assert result.status_code == 201, result.text
+        assert result.json()["item"]["url"] == url
+        with sqlite3.connect(path) as db:
+            assert db.execute("SELECT url FROM apps").fetchall() == [(url,)]
+
+
 @pytest.mark.parametrize("actor", ["approved", "admin"])
 def test_full_member_issues_creates_replays_and_reads_minimal_result(member_app, actor):
     app, path = member_app()

@@ -86,6 +86,32 @@ function isPrivateIPv4(hostname: string): boolean {
   );
 }
 
+function hasPrivateEmbeddedIPv4(ipv6: string): boolean {
+  // URL serializes valid IPv6 hosts as hexadecimal words, including dotted tails.
+  const [left, right] = ipv6.split("::");
+  const words = left ? left.split(":").map((word) => parseInt(word, 16)) : [];
+  if (right !== undefined) {
+    const tail = right
+      ? right.split(":").map((word) => parseInt(word, 16))
+      : [];
+    words.push(
+      ...Array<number>(8 - words.length - tail.length).fill(0),
+      ...tail,
+    );
+  }
+  const mapped =
+    words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
+  const compatible = words.slice(0, 6).every((word) => word === 0);
+  return (
+    (mapped || compatible) &&
+    isPrivateIPv4(
+      [words[6] >>> 8, words[6] & 255, words[7] >>> 8, words[7] & 255].join(
+        ".",
+      ),
+    )
+  );
+}
+
 function invalidAppInput(fields: Record<string, string>): ServiceError {
   return new ServiceError("VALIDATION_ERROR", "입력 내용을 확인해 주세요.", {
     outcome: "rejected",
@@ -130,7 +156,7 @@ function validateAppUrl(value: unknown): string {
   } catch {
     throw invalidAppInput({ url: "http 또는 https 주소를 확인해 주세요." });
   }
-  const authority = url.match(/^https?:\/\/([^/?#]*)/iu)?.[1] ?? "";
+  const authority = url.match(/^https?:\/*([^/?#]*)/iu)?.[1] ?? "";
   const host = parsed.hostname.toLowerCase().replace(/\.$/u, "");
   const ipv6 = host.startsWith("[") ? host.slice(1, -1) : null;
   if (
@@ -147,7 +173,8 @@ function validateAppUrl(value: unknown): string {
       (ipv6 === "::" ||
         ipv6 === "::1" ||
         /^f[cd]/iu.test(ipv6) ||
-        /^fe[89ab]/iu.test(ipv6)))
+        /^fe[89ab]/iu.test(ipv6) ||
+        hasPrivateEmbeddedIPv4(ipv6)))
   )
     throw invalidAppInput({
       url: "공개 http 또는 https 주소를 입력해 주세요.",

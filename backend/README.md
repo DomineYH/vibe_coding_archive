@@ -263,7 +263,10 @@ full 발급 회원만 가능하며 입력·해시를 공개하지 않는다. 작
 있고 공개 목록·검색·facets·total에는 나타나지 않는다. 운영 환경 등록은 계속 비활성이다.
 앱 생성 본문과 `app_create` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
 스트리밍 수신 단계에서 제한한다. 기본 포트(`http:80`, `https:443`)는 허용하고 사용자 정보,
-localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. DNS·HTTP 연결 검사는 하지 않는다.
+localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. IPv4-mapped/compatible IPv6의 내장
+IPv4에도 기존 IPv4 차단 대역을 적용하며 공개 내장 IPv4는 허용한다. 빈 사용자 정보는
+파서가 authority로 해석하는 모든 표기에서 거부하되 경로·query·fragment의 `@`는 허용한다.
+DNS·HTTP 연결 검사는 하지 않는다.
 
 `0007_app_create` 마이그레이션은 기존 승인 작업 행을 보존하며 앱 입력 해시·결과 버전을
 추가한다. 개발 DB는 유효한 SQLite 백업을 만든 뒤 `alembic upgrade head`로 갱신하고
