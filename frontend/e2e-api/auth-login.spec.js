@@ -76,7 +76,7 @@ test("an approved member logs in, keeps the session across refresh and logs out"
       name: "앱 등록",
       exact: true,
     }),
-  ).toHaveCount(0);
+  ).toBeVisible();
   const after = await authCookies(context);
   const session = after.find((c) => c.name.startsWith("eduvibe_session_"));
   expect(session.name).not.toBe(

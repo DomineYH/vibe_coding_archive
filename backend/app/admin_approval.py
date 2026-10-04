@@ -4,11 +4,12 @@ import json
 from typing import Annotated, Literal
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Body, Depends, Query, Request
 from pydantic import Field
 from sqlalchemy import text
 
-from app.auth import Db, StrictModel, Unlocked
+from app.app_input import AppInput
+from app.auth import Db, StrictModel, Unlocked, open_session
 from app.auth_boundary import (
     AuthError,
     after,
@@ -51,6 +52,27 @@ class SetApproval(StrictModel):
 class CreateApproval(SetApproval):
     kind: Literal["user_approval"]
     target_id: UUID
+
+
+class CreateAppOperation(StrictModel):
+    kind: Literal["app_create"]
+    input: AppInput
+
+
+def operation_input(
+    body: Annotated[CreateApproval | CreateAppOperation, Body(discriminator="kind")],
+):
+    return body
+
+
+OperationBody = Depends(operation_input)
+
+
+def operation_database(request: Request, body=OperationBody):
+    yield from open_session(request, immediate=True)
+
+
+OperationDb = Depends(operation_database)
 
 
 def ordinary_target(db, id_, version):
@@ -97,7 +119,11 @@ def operation(db, key, actor):
 
 
 @router.post("/write-operations")
-def create_operation(request: Request, body: CreateApproval, db=Db):
+def create_operation(request: Request, body=OperationBody, db=OperationDb):
+    if body.kind == "app_create":
+        from app.app_create import issue_app_operation
+
+        return issue_app_operation(db, request, body.input)
     item, actor = administrator(db, request, write=True)
     ordinary_target(db, body.target_id, body.expected_account_version)
     stamp = now()
@@ -129,6 +155,21 @@ def create_operation(request: Request, body: CreateApproval, db=Db):
 
 @router.get("/write-operations/{key}")
 def get_operation(key: UUID, request: Request, db=Unlocked):
+    db.execute(text("BEGIN"))
+    kind = db.execute(
+        text("SELECT kind FROM write_operations WHERE key=:key"), {"key": str(key)}
+    ).scalar_one_or_none()
+    if kind != "user_approval":
+        from app.app_create import app_operation_body
+
+        item, actor = protected_member(db, request)
+        return response(
+            db,
+            request,
+            app_operation_body(operation(db, key, actor)),
+            private=True,
+            metadata=item,
+        )
     item, actor = administrator(db, request)
     return response(
         db,
@@ -143,6 +184,8 @@ def get_operation(key: UUID, request: Request, db=Unlocked):
 def cancel_operation(key: UUID, request: Request, db=Db):
     item, actor = administrator(db, request, write=True)
     row = operation(db, key, actor)
+    if row["kind"] != "user_approval":
+        raise AuthError("OPERATION_KEY_MISMATCH")
     if row["state"] == "unresolved":
         stamp = now()
         db.execute(
@@ -183,7 +226,8 @@ def set_approval(id: UUID, request: Request, body: SetApproval, db=Db):
         raise AuthError("VALIDATION_ERROR", 422) from None
     row = operation(db, key, actor)
     if (
-        row["target_id"] != str(id)
+        row["kind"] != "user_approval"
+        or row["target_id"] != str(id)
         or row["expected_account_version"] != body.expected_account_version
         or bool(row["approved"]) != body.approved
     ):
@@ -262,6 +306,10 @@ def set_approval(id: UUID, request: Request, body: SetApproval, db=Db):
 
 
 def administrator(db, request, *, write=False):
+    return protected_member(db, request, write=write, admin=True)
+
+
+def protected_member(db, request, *, write=False, admin=False):
     if write:
         origin(request)
     elif not db.in_transaction():
@@ -269,7 +317,7 @@ def administrator(db, request, *, write=False):
     item, session, member = member_session(db, request)
     if session["kind"] != "full":
         raise AuthError("PASSWORD_CHANGE_REQUIRED", 403)
-    if not member["is_admin"]:
+    if admin and not member["is_admin"]:
         raise AuthError("FORBIDDEN", 403)
     names = ("X-EduVibe-Auth-Revision", "X-EduVibe-Session-Generation")
     if any(request.headers.get(name) is None for name in names):

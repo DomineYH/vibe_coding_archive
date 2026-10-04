@@ -2,6 +2,7 @@
 
 import hashlib
 import ipaddress
+import json
 import re
 import secrets
 from datetime import UTC, datetime, timedelta
@@ -617,26 +618,57 @@ class AuthBodyLimit:
         self.app = app
 
     async def __call__(self, scope, receive, send):
+        app_write = scope.get("method") == "POST" and scope.get("path") in (
+            "/api/v1/apps",
+            "/api/v1/write-operations",
+        )
         if (
             scope["type"] != "http"
             or scope["method"] not in ("POST", "PATCH")
-            or not scope["path"].startswith(
-                ("/api/v1/auth/", "/api/v1/admin/users/", "/api/v1/write-operations")
+            or not (
+                app_write
+                or scope["path"].startswith(
+                    (
+                        "/api/v1/auth/",
+                        "/api/v1/admin/users/",
+                        "/api/v1/write-operations",
+                    )
+                )
             )
         ):
             return await self.app(scope, receive, send)
+        limit = 1048576 if app_write else 16384
         body = bytearray()
         while True:
             message = await receive()
             if message["type"] == "http.disconnect":
                 return
             body.extend(message.get("body", b""))
-            if len(body) > 16384:
+            if len(body) > limit:
+                return await error_response(
+                    AuthError(
+                        "PAYLOAD_TOO_LARGE",
+                        413,
+                        message="요청 본문 크기 제한을 초과했어요.",
+                    )
+                )(scope, receive, send)
+            if not message.get("more_body", False):
+                break
+        if scope["path"] == "/api/v1/write-operations" and len(body) > 16384:
+            # Duplicate keys (including kind) cannot opt an approval body into 1MiB.
+            from app.admin_approval import unique_fields
+
+            try:
+                parsed = json.loads(body, object_pairs_hook=unique_fields)
+                allowed = (
+                    isinstance(parsed, dict) and parsed.get("kind") == "app_create"
+                )
+            except (ValueError, UnicodeError, AuthError, RecursionError):
+                allowed = False
+            if not allowed:
                 return await error_response(AuthError("PAYLOAD_TOO_LARGE", 413))(
                     scope, receive, send
                 )
-            if not message.get("more_body", False):
-                break
         delivered = False
 
         async def replay():
