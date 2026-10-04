@@ -3,6 +3,7 @@ import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { pauseClockAtCurrentTime } from "../playwright-clock.js";
 
 const root = path.resolve("..");
 const baselineRoot = path.join(
@@ -288,9 +289,7 @@ test("gallery-loading status is unique while authentication is checking", async 
       }),
     );
   });
-  await page.clock.pauseAt(
-    new Date(await page.evaluate(() => Date.now() + 10)),
-  );
+  await pauseClockAtCurrentTime(page);
   try {
     await page.goto("/");
     await expect(page.getByRole("banner").getByRole("status")).toHaveText(
@@ -489,8 +488,7 @@ async function captureAndCompare(
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
     });
-    const pauseTime = await page.evaluate(() => Date.now() + 10);
-    await page.clock.pauseAt(new Date(pauseTime));
+    await pauseClockAtCurrentTime(page);
     await expect(galleryLoadingStatus(page)).toContainText(
       "공개 아카이브를 불러오는 중이에요",
     );
