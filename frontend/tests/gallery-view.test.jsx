@@ -18,6 +18,52 @@ describe("connection result badge", () => {
 });
 
 describe("public gallery states", () => {
+  it("shows the empty archive without conditions or reset while draft search is pending", () => {
+    render(
+      <MemoryRouter>
+        <GalleryView
+          page={{ items: [], facets: { subjectsInUse: [] } }}
+          onQueryChange={() => {}}
+          resetQuery={() => {}}
+        />
+      </MemoryRouter>,
+    );
+    const input = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+    expect(screen.getByText("아직 공개된 앱이 없어요")).toBeVisible();
+    expect(screen.getByText("앱이 공개되면 여기에 표시돼요.")).toBeVisible();
+    expect(screen.queryByText(/검색어:/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "조건 초기화" }),
+    ).not.toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "보류된 검색" } });
+    expect(screen.getByText("아직 공개된 앱이 없어요")).toBeVisible();
+    fireEvent.compositionStart(input);
+    fireEvent.change(input, { target: { value: "조합중" } });
+    expect(screen.getByText("아직 공개된 앱이 없어요")).toBeVisible();
+  });
+
+  it.each([{ q: "분수" }, { subject: "수학" }, { grade: "초3" }])(
+    "keeps the conditioned zero-result state for applied filters %j",
+    (initialFilters) => {
+      render(
+        <MemoryRouter>
+          <GalleryView
+            page={{ items: [], facets: { subjectsInUse: [] } }}
+            initialFilters={initialFilters}
+            onQueryChange={() => {}}
+            resetQuery={() => {}}
+          />
+        </MemoryRouter>,
+      );
+      expect(screen.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+      expect(screen.getByText(/검색어:/)).toBeVisible();
+      expect(screen.getByRole("button", { name: "조건 초기화" })).toBeVisible();
+      expect(
+        screen.queryByText("아직 공개된 앱이 없어요"),
+      ).not.toBeInTheDocument();
+    },
+  );
+
   it.each([false, true])(
     "clears draft search, restores defaults and focuses search on keyboard reset (composing=%s)",
     async (composing) => {
@@ -55,9 +101,12 @@ describe("public gallery states", () => {
       await act(async () => {
         await new Promise((resolve) => window.setTimeout(resolve, 400));
       });
+      expect(screen.getByText("아직 공개된 앱이 없어요")).toBeVisible();
+      expect(screen.queryByText(/검색어:/)).not.toBeInTheDocument();
       expect(
-        screen.getByText("검색어: 없음 · 과목: 전체 · 학년: 전체"),
-      ).toBeVisible();
+        screen.queryByRole("button", { name: "조건 초기화" }),
+      ).not.toBeInTheDocument();
+      expect(input).toHaveFocus();
       expect(input).toHaveValue("");
     },
   );
@@ -102,6 +151,9 @@ describe("public gallery states", () => {
     );
     expect(
       screen.queryByText("조건에 맞는 앱이 없어요"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("아직 공개된 앱이 없어요"),
     ).not.toBeInTheDocument();
   });
 
@@ -347,6 +399,9 @@ describe("public gallery states", () => {
     expect(input).toHaveValue("ß".repeat(51));
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByRole("alert")).toHaveTextContent("검색어가 너무 길어요");
+    expect(
+      screen.queryByText("아직 공개된 앱이 없어요"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /상세 보기$/ })).toBeNull();
   });
 
@@ -375,6 +430,9 @@ describe("public gallery states", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "추가 자료를 불러오지 못했어요",
     );
+    expect(
+      screen.queryByText("아직 공개된 앱이 없어요"),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(loadMore).toHaveBeenCalledOnce();
   });
@@ -400,6 +458,9 @@ describe("public gallery states", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "공개 아카이브를 불러오지 못했어요",
     );
+    expect(
+      screen.queryByText("아직 공개된 앱이 없어요"),
+    ).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
     expect(retry).toHaveBeenCalledTimes(1);
   });
@@ -479,6 +540,9 @@ describe("public gallery states", () => {
     for (const message of Object.values(error.fields)) {
       expect(screen.getByText(message)).toBeVisible();
     }
+    expect(
+      screen.queryByText("아직 공개된 앱이 없어요"),
+    ).not.toBeInTheDocument();
     const search = screen.getByRole("textbox", { name: "앱·작성자 검색" });
     expect(search).toHaveAttribute(
       "aria-describedby",

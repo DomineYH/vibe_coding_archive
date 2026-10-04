@@ -503,7 +503,7 @@ test("explicitly selects empty and failure scenarios, then lets the visitor retr
   await page.goto("/__dev/mock-reset");
   await page.getByLabel("갤러리 시나리오").selectOption("empty");
   await page.getByRole("link", { name: "갤러리로" }).click();
-  await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+  await expect(page.getByText("아직 공개된 앱이 없어요")).toBeVisible();
 
   await page.goto("/__dev/mock-reset");
   await page.getByLabel("갤러리 시나리오").selectOption("list_failure");
@@ -568,11 +568,11 @@ test("a mock reset in one tab refreshes the other tab", async ({
   await page.goto("/__dev/mock-reset");
   await page.getByLabel("갤러리 시나리오").selectOption("empty");
   await page.getByRole("link", { name: "갤러리로" }).click();
-  await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+  await expect(page.getByText("아직 공개된 앱이 없어요")).toBeVisible();
 
   const otherTab = await context.newPage();
   await otherTab.goto("/");
-  await expect(otherTab.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
+  await expect(otherTab.getByText("아직 공개된 앱이 없어요")).toBeVisible();
 
   await page.goto("/__dev/mock-reset");
   await page.getByLabel("갤러리 시나리오").selectOption("original");

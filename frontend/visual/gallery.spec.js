@@ -58,6 +58,7 @@ const components = [
 const addedStates = [
   "gallery-loading",
   "gallery-empty",
+  "gallery-empty-archive",
   "gallery-failure",
   "corrupt-storage-recovery",
   "gallery-api-order",
@@ -330,6 +331,7 @@ async function captureAndCompare(
       scenario: "next_page_failure",
       apps: originalApps,
     },
+    "gallery-empty-archive": { scenario: "empty", apps: [] },
     "gallery-loading": { scenario: "list_delayed", apps: [] },
     "gallery-failure": { scenario: "list_failure", apps: [] },
     "corrupt-storage-recovery": { scenario: "original", apps: [{}] },
@@ -494,7 +496,16 @@ async function captureAndCompare(
     );
   } else if (state === "gallery-empty")
     await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
-  else if (state === "gallery-failure") {
+  else if (state === "gallery-empty-archive") {
+    await expect(page.getByText("아직 공개된 앱이 없어요")).toBeVisible();
+    await expect(
+      page.getByText("앱이 공개되면 여기에 표시돼요."),
+    ).toBeVisible();
+    await expect(page.getByText(/검색어:/)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "조건 초기화" })).toHaveCount(
+      0,
+    );
+  } else if (state === "gallery-failure") {
     await expect(page.getByRole("alert")).toContainText(
       "공개 아카이브를 불러오지 못했어요",
     );
@@ -788,7 +799,9 @@ for (const state of addedStates) {
   for (const viewport of viewports) {
     const tag = `${viewport.width}x${viewport.height}`;
     const baselinePath =
-      state === "corrupt-storage-recovery" || state.startsWith("health-")
+      state === "gallery-empty-archive" ||
+      state === "corrupt-storage-recovery" ||
+      state.startsWith("health-")
         ? null
         : state === "gallery-empty"
           ? path.join(issue95BaselineRoot, `${state}-${tag}.png`)

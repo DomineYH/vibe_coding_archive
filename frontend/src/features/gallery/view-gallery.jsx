@@ -33,6 +33,7 @@ export function GalleryView({
   const initialSearch = initialFilters.q ?? "";
   const subject = initialFilters.subject ?? "";
   const grade = initialFilters.grade ?? "";
+  const hasAppliedConditions = Boolean(initialSearch || subject || grade);
   const [search, setSearch] = useState(initialSearch);
   const [composing, setComposing] = useState(false);
   const [subjectsInUse, setSubjectsInUse] = useState(
@@ -374,6 +375,11 @@ export function GalleryView({
             </div>
           ) : null}
         </>
+      ) : !hasAppliedConditions ? (
+        <EmptyState
+          title="아직 공개된 앱이 없어요"
+          desc="앱이 공개되면 여기에 표시돼요."
+        />
       ) : (
         <EmptyState
           title="조건에 맞는 앱이 없어요"

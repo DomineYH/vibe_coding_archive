@@ -436,3 +436,9 @@ The 35 private-detail states across five viewports are product-only observations
 identical across two independent real-API runs. Existing source comparisons are
 recorded separately; no baseline, mask or tolerance changes. Automated checks do
 not claim human visual, screen-reader, physical-device or operating acceptance.
+
+## Issue #134 empty archive state · UI-D03/UI-D09
+
+**Decision: DomineYH, 2026-10-04 — B, approved copy, B1.** The [issue decision](https://github.com/DomineYH/vibe_coding_archive/issues/134) separates successful zero-result responses with default applied search/subject/grade from Q17-95. The existing `EmptyState` shows **“아직 공개된 앱이 없어요”** and **“앱이 공개되면 여기에 표시돼요.”**, without condition text, a reset button, or an added registration CTA. Pending draft/debounced/IME input does not determine this state. Any applied condition retains Q17-95's copy, condition text and keyboard reset to search focus; loading, invalid conditions, input-limit errors and request failures retain their existing states in mock and API modes.
+
+**Visual approval: PENDING.** DomineYH must review the five new `gallery-empty-archive` product-only captures before merge. The [#134 evidence](evidence/phase-3/issue134/2026-10-04/README.md) records the local environment and verification. Existing conditioned `gallery-empty` comparisons retain their five baselines and 0px tolerance; no reference, baseline or tolerance is updated.
