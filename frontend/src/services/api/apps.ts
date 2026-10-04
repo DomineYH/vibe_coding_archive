@@ -115,6 +115,34 @@ export async function getJson(
   });
 }
 
+const createFieldAliases = new Map([
+  ["theme_id", "themeId"],
+  ["is_public", "isPublic"],
+  ["stack_db", "stack.db"],
+  ["stack_backend", "stack.backend"],
+  ["stack_frontend", "stack.frontend"],
+  ["stack_hosting", "stack.hosting"],
+]);
+
+function mapCreateFailure(error: unknown): never {
+  if (!(error instanceof ServiceError) || !error.fields) throw error;
+  const fields = new Map<string, string>();
+  for (const [wireField, message] of Object.entries(error.fields)) {
+    const field = createFieldAliases.get(wireField) ?? wireField;
+    const previous = fields.get(field);
+    fields.set(field, previous ? `${previous}\n${message}` : message);
+  }
+  throw new ServiceError(error.code, error.message, {
+    fields: Object.fromEntries(fields),
+    outcome: error.outcome,
+    httpStatus: error.httpStatus,
+    requestId: error.requestId,
+    reasons: error.reasons,
+    retryAt: error.retryAt,
+    serverTime: error.serverTime,
+  });
+}
+
 function mapWriteResult<T>(mapper: (value: unknown) => T, value: unknown): T {
   try {
     return mapper(value);
@@ -250,7 +278,7 @@ export const appsService: AppsService = {
           kind: "app_create",
           input: appInputToWire(normalized),
         },
-      }),
+      }).catch(mapCreateFailure),
     );
     if (operation.kind !== "app_create" || operation.state !== "unresolved")
       throw contractError();
@@ -270,7 +298,7 @@ export const appsService: AppsService = {
         uncertain: true,
         idempotencyKey: operationKey,
         requestBody: appInputToWire(input),
-      }),
+      }).catch(mapCreateFailure),
     );
     const operation = await appsService.getCreateOperation(operationKey);
     requireSucceededOperation(operation, "app_create", saved.id);

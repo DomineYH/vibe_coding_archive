@@ -79,6 +79,32 @@ function isUncertain(error) {
   return error instanceof ServiceError && error.outcome === "unknown";
 }
 
+function createFailureMessage(error) {
+  if (!(error instanceof ServiceError)) return "";
+  if (error.code === "BAD_REQUEST")
+    return "등록 요청을 처리할 수 없어요. 입력 내용을 확인해 주세요. 입력 내용은 유지됩니다.";
+  if (error.code === "PAYLOAD_TOO_LARGE")
+    return "등록할 내용이 너무 커요. 프롬프트나 설명을 줄인 뒤 다시 시도해 주세요. 입력 내용은 유지됩니다.";
+  if (error.code === "FEATURE_UNAVAILABLE")
+    return `현재 앱 등록 기능을 사용할 수 없어요. 입력 내용은 유지됩니다.${isUncertain(error) ? " 저장 결과를 먼저 확인해 주세요." : ""}`;
+  return "";
+}
+
+const inlineErrorFields = new Set([
+  "name",
+  "url",
+  "prompt",
+  "description",
+  "subject",
+  "grades",
+  "themeId",
+  "isPublic",
+  "stack.db",
+  "stack.backend",
+  "stack.frontend",
+  "stack.hosting",
+]);
+
 export function SubmitView({
   meta,
   app,
@@ -93,6 +119,9 @@ export function SubmitView({
   const [draft, setDraft] = useState(initialDraft);
   const [expectedVersion, setExpectedVersion] = useState(app?.version ?? null);
   const [fieldErrors, setFieldErrors] = useState({});
+  const extraFieldErrors = Object.entries(fieldErrors).filter(
+    ([field]) => !inlineErrorFields.has(field),
+  );
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [unknown, setUnknown] = useState(false);
@@ -174,6 +203,7 @@ export function SubmitView({
   };
 
   const handleFailure = (error) => {
+    const createMessage = editing ? "" : createFailureMessage(error);
     if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED") {
       setSaving(false);
       setUnknown(true);
@@ -184,7 +214,8 @@ export function SubmitView({
     if (isUncertain(error)) {
       setSaving(false);
       setUnknown(true);
-      setFormError(error.message);
+      setFieldErrors(error.fields ?? {});
+      setFormError(createMessage || error.message);
       return;
     }
     setSaving(false);
@@ -204,7 +235,8 @@ export function SubmitView({
     if (error instanceof ServiceError) {
       setFieldErrors(error.fields ?? {});
       setFormError(
-        error.fields ? "표시된 항목을 확인해 주세요." : error.message,
+        createMessage ||
+          (error.fields ? "표시된 항목을 확인해 주세요." : error.message),
       );
     } else {
       setFormError(
@@ -423,12 +455,19 @@ export function SubmitView({
         )}
       </div>
 
-      {formError ? (
+      {formError || extraFieldErrors.length ? (
         <div
           className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-[13px] font-medium text-red-700"
           role="alert"
         >
           {formError}
+          {extraFieldErrors.length ? (
+            <ul className="mt-1 list-disc pl-5">
+              {extraFieldErrors.map(([field, message]) => (
+                <li key={field}>{message}</li>
+              ))}
+            </ul>
+          ) : null}
         </div>
       ) : null}
 
@@ -684,7 +723,15 @@ export function SubmitView({
             <h3 className="mb-2.5 mt-5 text-[12px] font-bold uppercase tracking-wider text-neutral-400">
               Pantone 테마 컬러
             </h3>
-            <div className="grid grid-cols-4 gap-2">
+            <div
+              role="group"
+              aria-label="Pantone 테마 컬러"
+              aria-invalid={Boolean(fieldErrors.themeId)}
+              aria-describedby={
+                fieldErrors.themeId ? "themeId-error" : undefined
+              }
+              className="grid grid-cols-4 gap-2"
+            >
               {meta.themes.map((item) => (
                 <button
                   key={item.id}
@@ -700,6 +747,11 @@ export function SubmitView({
                 />
               ))}
             </div>
+            {fieldErrors.themeId ? (
+              <p id="themeId-error" className="mt-1.5 text-[12px] text-red-700">
+                {fieldErrors.themeId}
+              </p>
+            ) : null}
             <div className="mt-2.5 text-center text-[11.5px] font-semibold text-neutral-500">
               Pantone {theme?.pantone} · {theme?.name}
             </div>
@@ -725,6 +777,10 @@ export function SubmitView({
                 role="switch"
                 aria-label="전체 공개"
                 aria-checked={draft.isPublic}
+                aria-invalid={Boolean(fieldErrors.isPublic)}
+                aria-describedby={
+                  fieldErrors.isPublic ? "isPublic-error" : undefined
+                }
                 disabled={savingLocked}
                 onClick={() => setField("isPublic", !draft.isPublic)}
                 className={`relative h-7 w-12 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4C7A96] disabled:opacity-50 ${draft.isPublic ? "bg-[#3C7A72]" : "bg-neutral-300"}`}
@@ -734,6 +790,14 @@ export function SubmitView({
                 />
               </button>
             </div>
+            {fieldErrors.isPublic ? (
+              <p
+                id="isPublic-error"
+                className="mt-1.5 text-[12px] text-red-700"
+              >
+                {fieldErrors.isPublic}
+              </p>
+            ) : null}
           </section>
 
           <Btn
