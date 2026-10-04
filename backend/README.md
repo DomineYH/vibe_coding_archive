@@ -1,25 +1,46 @@
 # Backend
 
-Run commands from `backend/`. Set `APP_ENV` in the process environment; only
-development reads this directory's ignored `.env` file.
+명령은 `backend/`에서 실행한다. 처음 한 번 `.env.example`을 `.env`로 복사하고
+값을 편집한다. 기존 `.env`는 덮어쓰지 않으며 이 파일은 버전 관리에서 제외한다.
+개발과 운영 모두 `.env`를 읽고, 프로세스 환경 변수가 파일 값보다 우선한다.
+프로세스 `APP_ENV`가 없거나 비어 있으면 파일의 `APP_ENV`를 사용하며 두 곳 모두
+없으면 실행을 거절한다. 편집한 설정을 적용하려면 서버를 재시작한다.
 
 ```sh
+# 기존 .env가 없을 때만 복사:
+if [ ! -e .env ]; then cp .env.example .env; fi
 uv sync --locked
-APP_ENV=development uv run --frozen alembic upgrade head
+uv run --frozen alembic upgrade head
 # One-time, explicit R15 acquisition outside version control (network required):
-# Optional custom path; otherwise storage/password-blocklist-ncsc.txt:
-# export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
-APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist
-APP_ENV=development uv run --frozen python -m app.cli seed
-APP_ENV=development uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+# 사용자 지정 경로는 .env의 PASSWORD_BLOCKLIST_PATH에 절대 경로로 설정:
+# PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+uv run --frozen python -m app.cli prepare-password-blocklist
+uv run --frozen python -m app.cli seed
+uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 # Tests below reuse that verified source offline:
 APP_ENV=test uv run --frozen pytest
 ```
 
-사용자 지정 `PASSWORD_BLOCKLIST_PATH`는 uvicorn 실행 프로세스에도 같은 값으로
-설정한다(실행 셸의 환경 변수 또는 `backend/.env`).
+개발 `DATABASE_PATH`의 상대 경로는 저장소 루트 기준이다.
+`PASSWORD_BLOCKLIST_PATH`의 상대 경로는 현재 작업 디렉터리 기준을 유지하므로
+사용자 지정 경로는 절대 경로를 권장한다. uvicorn도 준비 명령과 같은 경로를
+사용해야 하며 `.env`에 설정하면 두 명령에 함께 적용된다.
+
+실사용 전환은 `.env`의 `APP_ENV=production`과 DB/origin을 함께
+변경한다(`.env.example`의 주석 예시 참고). 운영 DB는 저장소 및 임시 디렉터리
+밖의 절대 경로여야 하고, `PUBLIC_ORIGIN`은 비로컬 HTTPS origin이어야 한다.
+명시적 migration은 계속 필요하며 자동 실행하지 않는다. 운영 API는 인증이
+비활성인 동안 차단 목록을 읽지 않는다. 운영 API의 차단 목록 경로 설정과 준비는
+운영 인증을 활성화할 때만 필요하다.
+셸에 남은 환경 변수가 파일보다 우선하므로 전환 시 확인한다. 필요하면
+`APP_ENV=development uv run --frozen ...`처럼 명령별로 덮어쓸 수 있다.
+
+**주의:** `backend/.env`가 `APP_ENV=production`이면 접두어 없는 `alembic upgrade head`, `bootstrap-admin`, `recover-admin`, `sweep-pending`, `invalidate-restored-auth` 명령은 운영 DB를 대상으로 하므로 실행 전에 적용될 `APP_ENV`를 확인한다.
+
+시험은 프로세스에 `APP_ENV=test`를 명시하며 `.env`를 읽지 않는다. 파일에만
+`APP_ENV=test`를 쓰면 실행을 거절한다. 시험 DB/origin은 별도로 명시해야 한다.
 
 Tests that start the API provide their own temporary `DATABASE_PATH` and
 `PUBLIC_ORIGIN`. The API refuses to start until an explicit migration leaves
@@ -33,7 +54,7 @@ read twice without echo and stored as a hash.
 개발 seed의 승인 회원 `seed-member-one`, `seed-member-two`는 위에서 입력한
 공유 비밀번호로 로그인한다. 고정 기본 비밀번호는 없으며 기존 회원의 비밀번호는
 갱신하지 않는다. 관리자가 필요하면 선택적으로
-`APP_ENV=development uv run --frozen python -m app.cli bootstrap-admin`을 실행하고,
+`uv run --frozen python -m app.cli bootstrap-admin`을 실행하고,
 브라우저 로그인 뒤 본인 비밀번호를 변경한다.
 
 ## T01 authentication preparation
@@ -103,8 +124,7 @@ First run the explicit migration to `0004_session_recent_auth`. Individually
 prepare the fixed R15 list in a private path outside version control:
 
 ```sh
-export APP_ENV=development
-export PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
+# .env: APP_ENV=development, PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
 uv run --frozen python -m app.cli prepare-password-blocklist
 uv run --frozen python -m app.cli bootstrap-admin
 # Only for an existing administrator:
@@ -114,7 +134,7 @@ uv run --frozen python -m app.cli recover-admin
 차단 목록의 출처/버전/digest는 고정 R15 메타데이터를 유지한다. API 기동은
 목록을 내려받지 않는다. 개발 환경과 `auth_testing=True`는 차단 목록 누락·무결성
 실패 시 기동을 거부한다. 개발자는 `backend/`에서
-`APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist`로
+`uv run --frozen python -m app.cli prepare-password-blocklist`로
 명시적으로 준비한다. Tests and the API E2E runner require an explicitly prepared
 `PASSWORD_BLOCKLIST_PATH`, validate the unchanged full source and copy it into
 private test-owned temporary files. They never acquire it from the network.
