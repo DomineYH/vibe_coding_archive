@@ -115,7 +115,7 @@ export async function getJson(
   });
 }
 
-const createFieldAliases = new Map([
+const appFieldAliases = new Map([
   ["theme_id", "themeId"],
   ["is_public", "isPublic"],
   ["stack_db", "stack.db"],
@@ -124,11 +124,11 @@ const createFieldAliases = new Map([
   ["stack_hosting", "stack.hosting"],
 ]);
 
-function mapCreateFailure(error: unknown): never {
+function mapAppInputFailure(error: unknown): never {
   if (!(error instanceof ServiceError) || !error.fields) throw error;
   const fields = new Map<string, string>();
   for (const [wireField, message] of Object.entries(error.fields)) {
-    const field = createFieldAliases.get(wireField) ?? wireField;
+    const field = appFieldAliases.get(wireField) ?? wireField;
     const previous = fields.get(field);
     fields.set(field, previous ? `${previous}\n${message}` : message);
   }
@@ -278,7 +278,7 @@ export const appsService: AppsService = {
           kind: "app_create",
           input: appInputToWire(normalized),
         },
-      }).catch(mapCreateFailure),
+      }).catch(mapAppInputFailure),
     );
     if (operation.kind !== "app_create" || operation.state !== "unresolved")
       throw contractError();
@@ -298,7 +298,7 @@ export const appsService: AppsService = {
         uncertain: true,
         idempotencyKey: operationKey,
         requestBody: appInputToWire(input),
-      }).catch(mapCreateFailure),
+      }).catch(mapAppInputFailure),
     );
     const operation = await appsService.getCreateOperation(operationKey);
     requireSucceededOperation(operation, "app_create", saved.id);
@@ -341,7 +341,7 @@ export const appsService: AppsService = {
           expected_version: expectedVersion,
           input: appPatchToWire(patch),
         },
-      }),
+      }).catch(mapAppInputFailure),
     );
     if (
       operation.kind !== "app_update" ||
@@ -375,7 +375,7 @@ export const appsService: AppsService = {
         uncertain: true,
         idempotencyKey: operationKey,
         requestBody: { expected_version: expectedVersion, ...input },
-      }),
+      }).catch(mapAppInputFailure),
     );
     const operation = await appsService.getUpdateOperation(operationKey);
     requireSucceededOperation(operation, "app_update", id);

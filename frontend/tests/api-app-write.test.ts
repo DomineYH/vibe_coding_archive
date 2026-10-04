@@ -8,6 +8,7 @@ const authMock = vi.hoisted(() => ({
 vi.mock("../src/services/api/auth", () => ({ authService: authMock }));
 
 import { appsService } from "../src/services/api/apps";
+import { ServiceError } from "../src/services/service-error";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -693,6 +694,116 @@ describe.each(createStages)(
     });
   },
 );
+
+describe.each([
+  {
+    stage: "issuance",
+    run: () => appsService.issueUpdateOperation(appId, input, 1),
+    path: "/api/v1/write-operations",
+    method: "POST",
+  },
+  {
+    stage: "update",
+    run: () => appsService.update(appId, input, 1, key),
+    path: `/api/v1/apps/${appId}`,
+    method: "PATCH",
+  },
+])("app-update $stage errors", ({ run, path, method }) => {
+  it("maps every wire field exactly and preserves metadata without another write or result lookup", async () => {
+    const fetch = respondWithError(422, {
+      code: "VALIDATION_ERROR",
+      message: "서버 검증 안내",
+      ...errorMetadata,
+      fields: {
+        theme_id: "테마 안내",
+        is_public: "공개 안내",
+        stack_db: "DB 안내",
+        stack_backend: "백엔드 안내",
+        stack_frontend: "프론트엔드 안내",
+        stack_hosting: "호스팅 안내",
+        name: "이름 안내",
+        form: "전체 양식 안내",
+        future_field: "새 필드 안내",
+      },
+    });
+    const error = await run().catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(ServiceError);
+    if (!(error instanceof ServiceError)) throw error;
+    expect(fetch.mock.calls.map(([url, init]) => [url, init?.method])).toEqual([
+      [path, method],
+    ]);
+    expect(error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      message: "서버 검증 안내",
+      httpStatus: 422,
+      outcome: "not_applicable",
+      ...preservedMetadata,
+    });
+    expect(error.fields).toEqual({
+      themeId: "테마 안내",
+      isPublic: "공개 안내",
+      "stack.db": "DB 안내",
+      "stack.backend": "백엔드 안내",
+      "stack.frontend": "프론트엔드 안내",
+      "stack.hosting": "호스팅 안내",
+      name: "이름 안내",
+      form: "전체 양식 안내",
+      future_field: "새 필드 안내",
+    });
+  });
+
+  it("keeps already mapped field names", async () => {
+    const fields = { themeId: "테마", isPublic: "공개", "stack.db": "DB" };
+    respondWithError(422, {
+      code: "VALIDATION_ERROR",
+      message: "검증",
+      request_id: null,
+      fields,
+    });
+    const error = await run().catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(ServiceError);
+    if (!(error instanceof ServiceError)) throw error;
+    expect(error.fields).toEqual(fields);
+  });
+
+  it("joins both messages when wire and form names collide", async () => {
+    respondWithError(422, {
+      code: "VALIDATION_ERROR",
+      message: "검증",
+      request_id: null,
+      fields: { theme_id: "wire 안내", themeId: "form 안내" },
+    });
+    const error = await run().catch((error: unknown) => error);
+    expect(error).toBeInstanceOf(ServiceError);
+    if (!(error instanceof ServiceError)) throw error;
+    expect(error.fields).toEqual({ themeId: "wire 안내\nform 안내" });
+  });
+
+  it("preserves version-conflict errors without fields", async () => {
+    const fetch = respondWithError(409, {
+      code: "VERSION_CONFLICT",
+      message: "앱이 다른 내용으로 수정되었어요.",
+      ...errorMetadata,
+    });
+    await expect(run()).rejects.toMatchObject({
+      code: "VERSION_CONFLICT",
+      message: "앱이 다른 내용으로 수정되었어요.",
+      httpStatus: 409,
+      outcome: "rejected",
+      fields: undefined,
+      ...preservedMetadata,
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes AbortError through without retrying", async () => {
+    const error = new DOMException("Cancelled", "AbortError");
+    const fetch = vi.fn().mockRejectedValue(error);
+    vi.stubGlobal("fetch", fetch);
+    await expect(run()).rejects.toBe(error);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+});
 
 it("does not extend app POST error acceptance to GET /apps", async () => {
   respondWithError(400, {
