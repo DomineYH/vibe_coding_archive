@@ -53,7 +53,7 @@ def screen_read_context(db, request, context):
     """Resolve only the supplied flow. Caller holds the write reservation."""
     if (
         context is None
-        or not request.app.state.auth_testing
+        or not request.app.state.auth_enabled
         or not request.app.state.auth_ready
     ):
         return None, None, None

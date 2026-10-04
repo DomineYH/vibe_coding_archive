@@ -40,6 +40,11 @@ def _copy_backend(tmp_path: Path) -> tuple[Path, Path]:
     shutil.copytree(BACKEND, backend, ignore=ignored)
     (repo / "contracts").mkdir()
     shutil.copy2(ROOT / "contracts" / "catalog.json", repo / "contracts")
+    metadata = Path(
+        "docs/research/password-blocklist-provenance/metadata/candidate_sources.json"
+    )
+    (repo / metadata.parent).mkdir(parents=True)
+    shutil.copy2(ROOT / metadata, repo / metadata)
     (repo / "storage").mkdir()
     return repo, backend
 
@@ -236,8 +241,9 @@ def _assert_seed_api_read(
 
 
 def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
-    tmp_path: Path,
+    tmp_path: Path, password_blocklist, monkeypatch
 ):
+    monkeypatch.setenv("PASSWORD_BLOCKLIST_PATH", str(password_blocklist))
     repo, backend = _copy_backend(tmp_path)
     database_path = _migrate(backend)
 
