@@ -1,6 +1,12 @@
 import { defineConfig } from "@playwright/test";
 import { chromiumExecutable } from "./playwright-browser.js";
 
+if (process.env.APP_ENV !== "test") {
+  throw new Error(
+    "API E2E requires APP_ENV=test in the process environment. Use npm run test:e2e:api for isolated settings.",
+  );
+}
+
 export default defineConfig({
   testDir: "./e2e-api",
   testIgnore:

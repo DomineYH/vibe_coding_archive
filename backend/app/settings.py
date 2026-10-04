@@ -59,13 +59,17 @@ class Settings(BaseModel):
         repo_root: Path = ROOT,
         backend_root: Path = BACKEND_ROOT,
     ) -> Settings:
-        app_env = environment.get("APP_ENV")
+        process_app_env = environment.get("APP_ENV")
+        values = (
+            {} if process_app_env == "test" else dotenv_values(backend_root / ".env")
+        )
+        app_env = process_app_env or values.get("APP_ENV")
+        if not process_app_env and app_env == "test":
+            raise ConfigurationError(
+                "APP_ENV=test must be set in the process environment."
+            )
         if app_env not in {"development", "test", "production"}:
             raise ConfigurationError("APP_ENV must be set to a supported environment.")
-
-        values = (
-            dotenv_values(backend_root / ".env") if app_env == "development" else {}
-        )
         values.update(environment)
         raw_database_path = values.get("DATABASE_PATH")
         raw_public_origin = values.get("PUBLIC_ORIGIN")

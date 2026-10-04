@@ -55,17 +55,20 @@ def _environment(*, app_env="development", database_path: Path | None = None):
         for key, value in os.environ.items()
         if key not in {"APP_ENV", "DATABASE_PATH", "PUBLIC_ORIGIN", "PYTHONPATH"}
     }
-    env["APP_ENV"] = app_env
+    if app_env is not None:
+        env["APP_ENV"] = app_env
+    if app_env == "test":
+        env["PUBLIC_ORIGIN"] = "http://localhost:5174"
     if database_path is not None:
         env["DATABASE_PATH"] = str(database_path)
     return env
 
 
-def _migrate(backend: Path) -> Path:
+def _migrate(backend: Path, *, app_env="development") -> Path:
     result = subprocess.run(
         [sys.executable, "-m", "alembic", "upgrade", "head"],
         cwd=backend,
-        env=_environment(),
+        env=_environment(app_env=app_env),
         capture_output=True,
         text=True,
         timeout=30,
@@ -387,6 +390,27 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     assert edited_page["pagination"] == restarted_page["pagination"]
     assert edited_detail == restarted_detail
 
+    assert database_path.is_relative_to(repo)
+
+
+def test_seed_cli_accepts_dotenv_only_development(tmp_path: Path):
+    repo, backend = _copy_backend(tmp_path)
+    (backend / ".env").write_text(
+        "APP_ENV=development\nDATABASE_PATH=storage/development.sqlite3\n"
+        "PUBLIC_ORIGIN=http://localhost:5174\n"
+    )
+    database_path = _migrate(backend, app_env=None)
+    status, output = _run_cli(
+        backend, app_env=None, passwords=(TEST_PASSWORD, TEST_PASSWORD)
+    )
+    assert status == 0, output
+    assert "Seeded 2 members and 2 apps." in output
+    assert TEST_PASSWORD not in output
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("SELECT id FROM members ORDER BY id").fetchall() == [
+            (member_id,) for member_id in MEMBER_IDS
+        ]
+        assert connection.execute("SELECT COUNT(*) FROM apps").fetchone() == (2,)
     assert database_path.is_relative_to(repo)
 
 

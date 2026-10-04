@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 from datetime import UTC, datetime
 from getpass import getpass
@@ -66,8 +65,6 @@ class SeedError(Exception):
 def _development_database() -> Settings:
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         raise SeedError("Seed requires an interactive terminal.")
-    if os.environ.get("APP_ENV") != "development":
-        raise SeedError("Seed is available only in the development environment.")
     try:
         settings = Settings.from_environment()
     except ConfigurationError:
