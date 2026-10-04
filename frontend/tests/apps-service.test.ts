@@ -1,4 +1,8 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { ServiceError } from "../src/services/service-error";
 import {
   appPatchToWire,
   isAppInputDirty,
@@ -9,6 +13,16 @@ import {
   type AppInput,
   type ListAppsQuery,
 } from "../src/services/apps-service";
+
+const urlCases = JSON.parse(
+  readFileSync(
+    path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../backend/tests/app_url_cases.json",
+    ),
+    "utf8",
+  ),
+) as [string, boolean][];
 
 const validAppInput: AppInput = {
   name: "  Cafe\u0301 🧑🏽‍💻  ",
@@ -64,6 +78,27 @@ describe("shared query validation", () => {
 });
 
 describe("app input contract", () => {
+  it.each(urlCases)(
+    "applies the shared URL policy: %s (allowed=%s)",
+    (url, allowed) => {
+      if (allowed) {
+        expect(normalizeAppInput({ ...validAppInput, url }).url).toBe(
+          url.trim(),
+        );
+      } else {
+        expect(() => normalizeAppInput({ ...validAppInput, url })).toThrow(
+          ServiceError,
+        );
+        expect(() => normalizeAppInput({ ...validAppInput, url })).toThrowError(
+          expect.objectContaining({
+            code: "VALIDATION_ERROR",
+            fields: { url: expect.any(String) },
+          }),
+        );
+      }
+    },
+  );
+
   it("normalizes only the fields and line breaks fixed by the app contract", () => {
     expect(normalizeAppInput(validAppInput)).toEqual({
       name: "Café 🧑🏽‍💻",

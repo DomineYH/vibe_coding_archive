@@ -3,6 +3,7 @@
 import hashlib
 import json
 import re
+from ipaddress import IPv4Address, IPv6Address
 from unicodedata import normalize
 
 from pydantic import AnyUrl, ConfigDict, model_validator
@@ -45,6 +46,19 @@ def clean_text(
     return value
 
 
+def is_private_ipv4(host):
+    if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){3}", host):
+        return False
+    first, second, *_ = map(int, host.split("."))
+    return (
+        first in (0, 10, 127)
+        or (first == 100 and 64 <= second <= 127)
+        or (first == 169 and second == 254)
+        or (first == 172 and 16 <= second <= 31)
+        or (first == 192 and second == 168)
+    )
+
+
 def validate_url(value):
     value = clean_text(value, 2048, trim=True, required=True)
     if (
@@ -56,7 +70,7 @@ def validate_url(value):
     # Pydantic's installed Rust URL parser applies WHATWG host/IDNA/IPv4 parsing.
     # Inspect the parsed host, but preserve the browser's trimmed source spelling.
     parsed = AnyUrl(value)
-    authority = re.match(r"^https?://([^/?#]*)", value, re.IGNORECASE)
+    authority = re.match(r"^https?:/*([^/?#]*)", value, re.IGNORECASE)
     host = (parsed.host or "").lower().removesuffix(".")
     if (
         parsed.scheme not in ("http", "https")
@@ -67,20 +81,18 @@ def validate_url(value):
     ):
         raise ValueError("공개 http 또는 https 주소를 입력해 주세요.")
     private = host == "localhost" or host.endswith((".localhost", ".local"))
-    if re.fullmatch(r"[0-9]+(?:\.[0-9]+){3}", host):
-        first, second, *_ = map(int, host.split("."))
-        private |= (
-            first in (0, 10, 127)
-            or (first == 100 and 64 <= second <= 127)
-            or (first == 169 and second == 254)
-            or (first == 172 and 16 <= second <= 31)
-            or (first == 192 and second == 168)
-        )
+    private |= is_private_ipv4(host)
     if host.startswith("["):
         ipv6 = host[1:-1]
         private |= (
             ipv6 in ("::", "::1") or re.match(r"^(f[cd]|fe[89ab])", ipv6) is not None
         )
+        address = IPv6Address(ipv6)
+        embedded = address.ipv4_mapped
+        if embedded is None and int(address) >> 32 == 0:
+            embedded = IPv4Address(int(address) & 0xFFFFFFFF)
+        if embedded is not None:
+            private |= is_private_ipv4(str(embedded))
     if private:
         raise ValueError("공개 http 또는 https 주소를 입력해 주세요.")
     return value
