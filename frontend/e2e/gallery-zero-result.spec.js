@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
+import { pauseClockAtCurrentTime } from "../playwright-clock.js";
 import {
   blockExternalRequests,
   disableAutomaticPagination,
@@ -179,7 +180,7 @@ test("reset replaces its history entry and cancels draft debounce and IME", asyn
     }),
   ).toBeVisible();
   await expect(page.getByText("조건에 맞는 앱이 없어요")).toBeVisible();
-  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 10));
+  await pauseClockAtCurrentTime(page);
   await page.clock.runFor(0);
   const applied = await page.evaluate(() => {
     const input = document.getElementById("gallery-search");
