@@ -354,6 +354,22 @@ if (prepared) {
     context,
   }) => {
     await page.addInitScript(() => {
+      const nativeFetch = window.fetch;
+      window.fetch = (input, init) => {
+        const url = input instanceof Request ? input.url : input;
+        if (
+          new URL(url, location.href).pathname === "/api/v1/auth/flow-state"
+        ) {
+          const headers = new Headers(
+            init?.headers ??
+              (input instanceof Request ? input.headers : undefined),
+          );
+          // Capture the origin before Playwright handles a potentially late request.
+          headers.set("X-Test-Proof-Pathname", location.pathname);
+          init = { ...init, headers };
+        }
+        return nativeFetch.call(window, input, init);
+      };
       const NativeMessageChannel = window.MessageChannel;
       const tasks = [];
       let held = false;
@@ -394,6 +410,9 @@ if (prepared) {
       completed = deferred();
     const proofs = [];
     await page.route("**/api/v1/auth/flow-state", async (route) => {
+      // The preceding gallery PUSH may start a proof that POP later aborts.
+      if (route.request().headers()["x-test-proof-pathname"] === "/")
+        return route.continue();
       proofs.push(route.request());
       const proof = await route.fetch();
       expect(proof.status()).toBe(200);
