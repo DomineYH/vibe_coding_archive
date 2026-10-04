@@ -101,14 +101,20 @@ function assertThemeIds(meta, items) {
   return items;
 }
 
-function canCreateApp(auth, access) {
+function isApprovedFullAppCreator(auth) {
   return (
     auth.status === "ready" &&
     !auth.concealed &&
-    auth.user?.role === "user" &&
+    (auth.user?.role === "user" || auth.user?.role === "admin") &&
     auth.user.approved &&
     auth.user.sessionKind === "full" &&
-    !auth.user.mustChangePassword &&
+    !auth.user.mustChangePassword
+  );
+}
+
+function canCreateApp(auth, access) {
+  return (
+    isApprovedFullAppCreator(auth) &&
     !access.error &&
     access.meta?.capabilities.apps_create.enabled === true
   );
@@ -1153,13 +1159,7 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
   const [wasAvailable, setWasAvailable] = useState(false);
   const scopeKey = draftContinuityScope(auth);
   const draftOwner = useRef(null);
-  const member =
-    auth.status === "ready" &&
-    !auth.concealed &&
-    auth.user?.role === "user" &&
-    auth.user.approved &&
-    auth.user.sessionKind === "full" &&
-    !auth.user.mustChangePassword;
+  const member = isApprovedFullAppCreator(auth);
   const canCreate =
     member &&
     !access.loading &&
@@ -1246,7 +1246,7 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
   if (!auth.user) return <Navigate to="/auth?mode=login" replace />;
   if (auth.user.mustChangePassword || auth.user.sessionKind !== "full")
     return <Navigate to="/auth?mode=password-change" replace />;
-  if (!auth.user.approved || auth.user.role !== "user")
+  if (!member)
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
         <div role="alert" aria-live="assertive">

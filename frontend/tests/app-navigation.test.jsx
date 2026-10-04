@@ -29,7 +29,7 @@ it("marks admin editing another member's app current and preserves member editin
       loginId: "admin",
       password: "admin123",
       current: "관리자",
-      absent: "앱 등록",
+      absent: null,
     },
     {
       loginId: "교사김코딩",
@@ -55,7 +55,12 @@ it("marks admin editing another member's app current and preserves member editin
     expect(nav.getByRole("link", { name: "갤러리" })).not.toHaveAttribute(
       "aria-current",
     );
-    expect(nav.queryByRole("link", { name: absent })).not.toBeInTheDocument();
+    if (absent)
+      expect(nav.queryByRole("link", { name: absent })).not.toBeInTheDocument();
+    else
+      expect(
+        await nav.findByRole("link", { name: "앱 등록" }),
+      ).not.toHaveAttribute("aria-current");
     expect(
       await screen.findByRole("heading", { name: "앱 정보 편집" }),
     ).toBeInTheDocument();
