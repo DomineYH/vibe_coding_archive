@@ -104,10 +104,14 @@ it("preserves change-only field errors across terminal revision and observation 
   expect(await screen.findByLabelText("새 비밀번호 (필수)")).toHaveValue("");
   expect(screen.queryByText(error)).not.toBeInTheDocument();
 });
-it.each(["/apps/new", "/apps/00000000-0000-4000-8000-000000000091/edit"])(
-  "restores a concealed draft after revision-only proof and discards identity history changes at %s",
-  async (path) => {
-    await visit(path, 1);
+it.each([
+  ["/apps/new", 1],
+  ["/apps/new", 0],
+  ["/apps/00000000-0000-4000-8000-000000000091/edit", 1],
+])(
+  "restores a concealed draft after revision-only proof and discards identity history changes at %s for account %s",
+  async (path, index) => {
+    await visit(path, index);
     const field = await screen.findByLabelText("어플리케이션 이름");
     const initial = field.value;
     fireEvent.change(field, { target: { value: "T06 같은 탭 초안" } });
@@ -445,3 +449,30 @@ it("restores public detail with one explicit retry after damaged mock storage is
     await main.findByRole("heading", { name: "분수 피자 가게" }),
   ).toBeInTheDocument();
 });
+
+it.each([
+  [1, 0],
+  [0, 1],
+])(
+  "isolates registration drafts when account %s switches to account %s",
+  async (from, to) => {
+    await visit("/apps/new", from);
+    const draft = `#150 actor ${from} draft`;
+    fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+      target: { value: draft },
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event("blur"));
+      await authService.logout();
+      await authService.login(DEMO_ACCOUNTS[to]);
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue("");
+    expect(screen.queryByDisplayValue(draft)).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("banner")).getByText(DEMO_ACCOUNTS[to].nickname, {
+        exact: true,
+      }),
+    ).toBeInTheDocument();
+  },
+);

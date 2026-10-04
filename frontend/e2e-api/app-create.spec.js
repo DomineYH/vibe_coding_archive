@@ -111,3 +111,35 @@ test("approved member creates a persisted public app and a private app", async (
     await anonymous.close();
   }
 });
+
+test("approved full admin creates a persisted app owned by the session actor", async ({
+  page,
+}) => {
+  await login(page, "approval-admin");
+  await expect(
+    page.getByRole("banner").getByText("승인 담당", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("navigation", { name: "주 메뉴" })
+      .getByRole("link", { name: "앱 등록", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "내 앱 등록하기", exact: true }),
+  ).toBeVisible();
+  const name = "API 관리자 등록 수업 도구 150";
+  const form = await fillApp(page, name);
+  await form
+    .getByRole("button", { name: "아카이브에 등록", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/apps\/[0-9a-f-]{36}$/);
+  const id = page.url().split("/").at(-1);
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("승인 담당")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+  await expect(page.getByRole("main").getByText("승인 담당")).toBeVisible();
+  expect(query(`SELECT owner_id FROM apps WHERE id='${id}'`)).toEqual([
+    ["00000000-0000-4000-8000-000000000110"],
+  ]);
+});

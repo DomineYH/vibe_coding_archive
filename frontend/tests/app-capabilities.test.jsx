@@ -72,36 +72,46 @@ function expectNoCreate() {
   ).not.toBeInTheDocument();
 }
 
-it("hides create navigation when metadata disables creation", async () => {
-  disable("apps_create");
-  await visit();
-  await screen.findByRole("link", { name: /^분수 피자 가게,/ });
-  expectNoCreate();
-});
+it.each([DEMO_ACCOUNTS[1], DEMO_ACCOUNTS[0]])(
+  "hides create navigation when metadata disables creation for %j",
+  async (account) => {
+    disable("apps_create");
+    await visit("/", account);
+    await screen.findByRole("link", { name: /^분수 피자 가게,/ });
+    expectNoCreate();
+  },
+);
 
-it("shows preparation copy on direct create", async () => {
-  disable("apps_create");
-  await visit("/apps/new");
-  const main = within(screen.getByRole("main"));
-  const title = await main.findByText("앱 등록 기능은 아직 준비 중이에요");
-  expect(title).toBeInTheDocument();
-  expect(title.closest('[role="status"]')).toHaveAttribute(
-    "aria-live",
-    "polite",
-  );
-  expect(title.closest('[role="alert"]')).toBeNull();
-  expect(
-    main.getByText("갤러리는 계속 둘러볼 수 있습니다."),
-  ).toBeInTheDocument();
-  expect(main.getByRole("link", { name: "갤러리로" })).toHaveAttribute(
-    "href",
-    "/",
-  );
-  expect(main.queryByText(/잠시 후 다시 확인/)).not.toBeInTheDocument();
-  expect(
-    main.queryByRole("button", { name: "다시 확인" }),
-  ).not.toBeInTheDocument();
-});
+it.each([DEMO_ACCOUNTS[1], DEMO_ACCOUNTS[0]])(
+  "shows preparation copy on direct create for %j",
+  async (account) => {
+    disable("apps_create");
+    await visit("/apps/new", account);
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+    const main = within(screen.getByRole("main"));
+    const title = await main.findByText("앱 등록 기능은 아직 준비 중이에요");
+    expect(title).toBeInTheDocument();
+    expect(title.closest('[role="status"]')).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
+    expect(title.closest('[role="alert"]')).toBeNull();
+    expect(
+      main.getByText("갤러리는 계속 둘러볼 수 있습니다."),
+    ).toBeInTheDocument();
+    expect(main.getByRole("link", { name: "갤러리로" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+    expect(main.queryByText(/잠시 후 다시 확인/)).not.toBeInTheDocument();
+    expect(
+      main.queryByRole("button", { name: "다시 확인" }),
+    ).not.toBeInTheDocument();
+  },
+);
 
 it("shows preparation copy on own edit", async () => {
   disable("apps_update_own");
@@ -124,15 +134,20 @@ it("shows preparation copy on own edit", async () => {
   ).not.toBeInTheDocument();
 });
 
-it("shows both creation controls for an enabled member without another metadata request", async () => {
-  await visit();
-  const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
-  expect(await nav.findByRole("link", { name: "앱 등록" })).toBeInTheDocument();
-  expect(
-    await screen.findByRole("button", { name: "내 앱 등록하기" }),
-  ).toBeInTheDocument();
-  expect(metadata).toHaveBeenCalledTimes(1);
-});
+it.each([DEMO_ACCOUNTS[1], DEMO_ACCOUNTS[0]])(
+  "shows both creation controls for an enabled approved full account without another metadata request: %j",
+  async (account) => {
+    await visit("/", account);
+    const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
+    expect(
+      await nav.findByRole("link", { name: "앱 등록" }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "내 앱 등록하기" }),
+    ).toBeInTheDocument();
+    expect(metadata).toHaveBeenCalledTimes(1);
+  },
+);
 
 it.each(["apps_create", "apps_update_own"])(
   "keeps transient copy for other disabled reasons on %s",
@@ -184,29 +199,38 @@ it("checks ownership before unavailable edit copy", async () => {
   expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
 });
 
-it("hides creation while metadata is missing and loading", async () => {
-  let release;
-  metadata.mockImplementation(
-    () =>
-      new Promise((resolve) => {
-        release = resolve;
-      }),
-  );
-  await visit("/apps/new");
-  expect(
-    await screen.findByText("등록 기능을 확인하고 있어요"),
-  ).toBeInTheDocument();
-  expectNoCreate();
-  await act(async () => release(meta));
-  expect(
-    await screen.findByRole("form", { name: "새 앱 등록 양식" }),
-  ).toBeInTheDocument();
-});
+it.each([DEMO_ACCOUNTS[1], DEMO_ACCOUNTS[0]])(
+  "hides creation while metadata is missing and loading for %j",
+  async (account) => {
+    let release;
+    metadata.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+    await visit("/apps/new", account);
+    expect(
+      await screen.findByText("등록 기능을 확인하고 있어요"),
+    ).toBeInTheDocument();
+    expectNoCreate();
+    await act(async () => release(meta));
+    expect(
+      await screen.findByRole("form", { name: "새 앱 등록 양식" }),
+    ).toBeInTheDocument();
+  },
+);
 
-it.each(["/", "/apps/new", ownEdit])(
-  "keeps creation with cached enabled metadata during refetch and hides it after failure at %s",
-  async (path) => {
-    await visit(path);
+it.each([
+  ["/", DEMO_ACCOUNTS[1]],
+  ["/apps/new", DEMO_ACCOUNTS[1]],
+  [ownEdit, DEMO_ACCOUNTS[1]],
+  ["/", DEMO_ACCOUNTS[0]],
+  ["/apps/new", DEMO_ACCOUNTS[0]],
+])(
+  "keeps creation with cached enabled metadata during refetch and hides it after failure at %s for %j",
+  async (path, account) => {
+    await visit(path, account);
     const nav = within(screen.getByRole("navigation", { name: "주 메뉴" }));
     await nav.findByRole("link", { name: "앱 등록" });
     if (path !== "/")
@@ -328,37 +352,66 @@ it.each(["/apps/new", ownEdit])(
   },
 );
 
-it("keeps retry available when the initial metadata request fails", async () => {
-  metadata.mockRejectedValue(new Error("메타 조회 실패"));
-  await visit("/apps/new");
-  expect(await screen.findByText("메타 조회 실패")).toBeInTheDocument();
-  expectNoCreate();
-  metadata.mockResolvedValue(meta);
-  await act(async () => {
-    within(screen.getByRole("main"))
-      .getByRole("button", { name: "다시 확인" })
-      .click();
-  });
-  expect(
-    await screen.findByRole("form", { name: "새 앱 등록 양식" }),
-  ).toBeInTheDocument();
-});
-
-it.each([null, DEMO_ACCOUNTS[0]])(
-  "hides creation for anonymous and admin sessions: %j",
+it.each([DEMO_ACCOUNTS[1], DEMO_ACCOUNTS[0]])(
+  "keeps retry available when the initial metadata request fails for %j",
   async (account) => {
-    await visit("/", account);
-    await screen.findByRole("link", { name: /^분수 피자 가게,/ });
+    metadata.mockRejectedValue(new Error("메타 조회 실패"));
+    await visit("/apps/new", account);
+    expect(await screen.findByText("메타 조회 실패")).toBeInTheDocument();
     expectNoCreate();
+    metadata.mockResolvedValue(meta);
+    await act(async () => {
+      within(screen.getByRole("main"))
+        .getByRole("button", { name: "다시 확인" })
+        .click();
+    });
+    expect(
+      await screen.findByRole("form", { name: "새 앱 등록 양식" }),
+    ).toBeInTheDocument();
   },
 );
 
-it("conceals both creation controls while authentication is being rechecked", async () => {
-  await visit();
-  await screen.findByRole("button", { name: "내 앱 등록하기" });
-  await act(async () => window.dispatchEvent(new Event("blur")));
-  expectNoCreate();
-});
+it.each(["/", "/apps/new"])(
+  "hides creation for anonymous sessions at %s",
+  async (path) => {
+    await visit(path, null);
+    if (path === "/")
+      await screen.findByRole("link", { name: /^분수 피자 가게,/ });
+    else
+      await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+  },
+);
+
+it.each([
+  ["/", DEMO_ACCOUNTS[1]],
+  ["/apps/new", DEMO_ACCOUNTS[1]],
+  ["/", DEMO_ACCOUNTS[0]],
+  ["/apps/new", DEMO_ACCOUNTS[0]],
+])(
+  "conceals creation controls and the form on blur at %s for %j",
+  async (path, account) => {
+    await visit(path, account);
+    const form =
+      path === "/apps/new"
+        ? await screen.findByRole("form", { name: "새 앱 등록 양식" })
+        : null;
+    if (!form) await screen.findByRole("button", { name: "내 앱 등록하기" });
+    await act(async () => window.dispatchEvent(new Event("blur")));
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+    if (form) {
+      expect(form).toBeInTheDocument();
+      expect(form.closest("[aria-hidden]")).toHaveAttribute("hidden");
+      expect(form.closest("[aria-hidden]")).toHaveAttribute("inert");
+    }
+  },
+);
 
 it.each([false, true])(
   "gates creation for an injected full member with approved=%s",
@@ -419,3 +472,131 @@ it("hides creation for a real change-only member session", async () => {
     mustChangePassword: true,
   });
 });
+
+it("renders the existing form for direct approved full admin creation", async () => {
+  await visit("/apps/new", DEMO_ACCOUNTS[0]);
+  expect(
+    await screen.findByRole("form", { name: "새 앱 등록 양식" }),
+  ).toBeInTheDocument();
+  expect(screen.getByLabelText("어플리케이션 이름")).toHaveValue("");
+});
+
+it.each(
+  [
+    ["pending", { approved: false }],
+    ["change_only", { sessionKind: "change_only", mustChangePassword: false }],
+    [
+      "password change required",
+      { sessionKind: "full", mustChangePassword: true },
+    ],
+  ].flatMap(([name, override]) =>
+    ["/", "/apps/new"].map((path) => [name, override, path]),
+  ),
+)(
+  "hides registration for an injected admin with %s (%j) at %s",
+  async (_name, override, path) => {
+    await authService.login(DEMO_ACCOUNTS[0]);
+    const observed = await authService.getCurrentAuthState();
+    expect(observed.user).toMatchObject({
+      role: "admin",
+      approved: true,
+      sessionKind: "full",
+      mustChangePassword: false,
+    });
+    const state = { ...observed, user: { ...observed.user, ...override } };
+    const spy = vi
+      .spyOn(authService, "getCurrentAuthState")
+      .mockResolvedValue(state);
+    await visit(path, null);
+    await screen.findByRole("button", { name: "로그아웃" });
+    await waitFor(() =>
+      expect(client.getQueryState(["mock", "meta"])).toMatchObject({
+        status: "success",
+        fetchStatus: "idle",
+      }),
+    );
+    expect(spy).toHaveBeenCalled();
+    if (path === "/apps/new") {
+      if (override.approved === false)
+        await screen.findByText("승인된 회원만 앱을 등록할 수 있어요");
+      else
+        await waitFor(() =>
+          expect(router.state.location.search).toContain(
+            "mode=password-change",
+          ),
+        );
+    }
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+  },
+);
+
+it.each(["/", "/apps/new"])(
+  "hides creation for a real change-only admin at %s",
+  async (path) => {
+    await visit(path, TEMPORARY_DEMO_ACCOUNTS[1]);
+    const observed = await authService.getCurrentAuthState();
+    expect(observed.user).toMatchObject({
+      role: "admin",
+      sessionKind: "change_only",
+      mustChangePassword: true,
+    });
+    if (path === "/apps/new")
+      await waitFor(() =>
+        expect(router.state.location.search).toContain("mode=password-change"),
+      );
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+  },
+);
+
+it.each(["/", "/apps/new"])(
+  "hides creation during checking and failed auth proof with a stale admin identity at %s",
+  async (path) => {
+    await visit(path, DEMO_ACCOUNTS[0]);
+    await waitFor(() =>
+      expect(client.getQueryState(["mock", "meta"])).toMatchObject({
+        status: "success",
+        fetchStatus: "idle",
+      }),
+    );
+    let reject;
+    const proof = vi
+      .spyOn(authService, "getCurrentAuthState")
+      .mockImplementation(
+        () =>
+          new Promise((_, fail) => {
+            reject = fail;
+          }),
+      );
+    await act(async () => window.dispatchEvent(new Event("blur")));
+    await act(async () => window.dispatchEvent(new Event("focus")));
+    await waitFor(() => expect(proof).toHaveBeenCalled());
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+    await act(async () => reject(new Error("관리자 인증 조회 실패")));
+    if (path === "/apps/new") await screen.findByText("관리자 인증 조회 실패");
+    else {
+      const banner = within(screen.getByRole("banner"));
+      await waitFor(() =>
+        expect(banner.queryByRole("status")).not.toBeInTheDocument(),
+      );
+      expect(
+        banner.getByRole("button", { name: "다시 확인" }),
+      ).toBeInTheDocument();
+      expect(
+        banner.queryByRole("button", { name: "로그아웃" }),
+      ).not.toBeInTheDocument();
+    }
+    expectNoCreate();
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+  },
+);
