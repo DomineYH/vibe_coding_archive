@@ -135,6 +135,31 @@ function expectDraft(form) {
   );
 }
 
+const editAppId = "00000000-0000-4000-8000-000000000001";
+
+async function fillEditDraft() {
+  await authService.login(DEMO_ACCOUNTS[1]);
+  router = createMemoryRouter([{ path: "*", element: <App /> }], {
+    initialEntries: [`/apps/${editAppId}/edit`],
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  const form = within(
+    await screen.findByRole("form", { name: "앱 수정 양식" }),
+  );
+  for (const [, label, value] of textFields) {
+    const control = form.getByRole("textbox", { name: label, exact: true });
+    await user.clear(control);
+    await user.click(control);
+    await user.paste(value);
+  }
+  await user.click(form.getByRole("switch", { name: "전체 공개" }));
+  return form;
+}
+
 function rejectStage(stage, error) {
   const issue = vi.spyOn(appsService, "issueCreateOperation");
   const create = vi.spyOn(appsService, "create");
@@ -285,6 +310,77 @@ describe.each(["issuance", "create"])("registration %s failure", (stage) => {
       }
     },
   );
+});
+
+describe.each(["issuance", "update"])("edit %s failure", (stage) => {
+  it("links mapped errors to controls, retains the draft, and clears only the edited field without further service calls", async () => {
+    const error = new ServiceError("VALIDATION_ERROR", "서버 검증 안내", {
+      httpStatus: 422,
+      fields,
+    });
+    const issue = vi.spyOn(appsService, "issueUpdateOperation");
+    const update = vi.spyOn(appsService, "update");
+    const lookup = vi.spyOn(appsService, "getUpdateOperation");
+    if (stage === "issuance") issue.mockRejectedValue(error);
+    else {
+      issue.mockResolvedValue({
+        ...operation,
+        kind: "app_update",
+        targetId: editAppId,
+      });
+      update.mockRejectedValue(error);
+    }
+    const form = await fillEditDraft();
+    await user.click(form.getByRole("button", { name: "변경사항 저장" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("표시된 항목을 확인해 주세요.");
+    expect(alert).toHaveTextContent(fields.form);
+    expect(alert).toHaveTextContent(fields.future_field);
+    const controls = [
+      ...textFields.map(([field, label]) => [
+        field,
+        form.getByRole("textbox", { name: label, exact: true }),
+      ]),
+      ["subject", form.getByRole("group", { name: "교과 과목" })],
+      ["grades", form.getByRole("group", { name: "적용 가능 학년" })],
+      ["themeId", form.getByRole("group", { name: "Pantone 테마 컬러" })],
+      ["isPublic", form.getByRole("switch", { name: "전체 공개" })],
+    ];
+    for (const [field, control] of controls) {
+      expectFieldError(control, fields[field]);
+    }
+    expectDraft(form);
+    expect(issue).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(stage === "issuance" ? 0 : 1);
+    expect(lookup).not.toHaveBeenCalled();
+
+    await user.click(form.getByRole("button", { name: "테마 Niagara 선택" }));
+    for (const [field, control] of controls) {
+      if (field === "themeId") {
+        expect(control).toHaveAttribute("aria-invalid", "false");
+        expect(control).not.toHaveAttribute("aria-describedby");
+      } else expectFieldError(control, fields[field]);
+    }
+    expect(screen.getByRole("alert")).toHaveTextContent(fields.form);
+    expect(screen.getByRole("alert")).toHaveTextContent(fields.future_field);
+
+    await user.type(
+      form.getByRole("textbox", { name: "DB", exact: true }),
+      " updated",
+    );
+    for (const [field, control] of controls) {
+      if (field === "themeId" || field === "stack.db") {
+        expect(control).toHaveAttribute("aria-invalid", "false");
+        expect(control).not.toHaveAttribute("aria-describedby");
+      } else expectFieldError(control, fields[field]);
+    }
+    expect(screen.getByRole("alert")).toHaveTextContent(fields.form);
+    expect(screen.getByRole("alert")).toHaveTextContent(fields.future_field);
+    expect(router.state.location.pathname).toBe(`/apps/${editAppId}/edit`);
+    expect(issue).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(stage === "issuance" ? 0 : 1);
+    expect(lookup).not.toHaveBeenCalled();
+  });
 });
 
 it("opens the confirmed app after explicitly looking up an uncertain feature-unavailable creation", async () => {
