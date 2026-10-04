@@ -15,6 +15,7 @@ test("registration and administrator approval activate as one bundle; future fea
     "admin_users_read",
     "admin_approval",
     "admin_summary",
+    "apps_create",
   ])
     expect(capabilities[key].enabled).toBe(prepared);
   for (const key of [
@@ -23,7 +24,6 @@ test("registration and administrator approval activate as one bundle; future fea
     "admin_user_delete",
     "admin_apps_read",
     "admin_apps_manage",
-    "apps_create",
     "apps_update_own",
     "apps_delete_own",
   ])

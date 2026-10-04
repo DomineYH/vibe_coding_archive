@@ -111,6 +111,23 @@ describe("app input contract", () => {
     );
   });
 
+  it.each([
+    "http:/u@h",
+    "http:u@h",
+    "http:///u@h",
+    "https:////u:p@h",
+    "http:/www.naver.com@evil.example/",
+  ])("rejects userinfo when authority slashes are omitted: %s", (url) => {
+    expect(() => normalizeAppInput({ ...validAppInput, url })).toThrowError(
+      expect.objectContaining({
+        name: "ServiceError",
+        code: "VALIDATION_ERROR",
+        outcome: "rejected",
+        fields: { url: "공개 http 또는 https 주소를 입력해 주세요." },
+      }),
+    );
+  });
+
   it("compares drafts by normalized persisted values", () => {
     expect(
       isAppInputDirty(validAppInput, {

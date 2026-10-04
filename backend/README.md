@@ -61,7 +61,7 @@ read twice without echo and stored as a hash.
 
 `APP_ENV=development`에서는 검증된 T01~T05 실제 인증을 기본 활성화한다.
 `auth_login`, `auth_logout`, `auth_password_change`, `auth_register`,
-`admin_users_read`, `admin_approval`, `admin_summary` 일곱 capability만 켠다.
+`admin_users_read`, `admin_approval`, `admin_summary`, `apps_create` 여덟 capability를 켠다.
 `APP_ENV=test`는 기존 factory의 `auth_testing=True`일 때만 켜며 이 인자는
 시험 환경에서만 허용한다. `APP_ENV=production`은 인증을 계속 비활성화한다.
 T07/G01~G18 운영 공개 검수는 보류 상태다.
@@ -233,7 +233,7 @@ T04의 `0005_member_approval` schema와 T01~T03의 full S/흐름/순번/세대/C
 `POST /write-operations`의 `kind=user_approval`로 별도 업무 키를 발급한다.
 `PATCH /admin/users/{id}/approval`은 명시 승인값·expected_account_version과
 Idempotency-Key가 발급 입력과 같아야 한다. 성공·거절 키의 재실행은
-OPERATION_ALREADY_RESOLVED이며 원래 키를 조회한다. `GET /write-operations/{key}`와
+OPERATION_ALREADY_RESOLVED이며 원래 키를 조회한다. 승인 키의 `GET /write-operations/{key}`와
 `POST /write-operations/{key}/cancel`도 현재 full 관리자와 키 소유를 확인한다.
 승인에는 recent-auth를 추가 요구하지 않는다. 관리자 대상은 보호한다.
 
@@ -247,6 +247,29 @@ OPERATION_ALREADY_RESOLVED이며 원래 키를 조회한다. `GET /write-operati
 ```sh
 APP_ENV=test uv run --frozen pytest tests/contracts/test_admin_approval.py tests/test_approval_races.py
 ```
+
+승인된 full 회원(관리자 포함)은 `POST /write-operations`의 `kind=app_create`와
+`input=AppInput`으로 키를 발급하고, 같은 입력과 `Idempotency-Key`로 `POST /apps`를
+실행한다. Origin·CSRF·flow·revision·세션 세대 검증을 거치며 작성자는 서버 세션에서
+정한다. 앱·학년·초기 `unchecked` 연결 결과·성공 작업 결과는 같은 트랜잭션으로 저장한다.
+같은 키·정규화된 입력의 재전송은 같은 앱을 반환하고, 다른 입력은 409,
+다른 회원의 키·모르는 키는 404, 만료된 소유 키는 410이다. 앱 키 조회는 현재 승인된
+full 발급 회원만 가능하며 입력·해시를 공개하지 않는다. 작업 응답은 `private, no-store`,
+생성 응답은 `no-store`이다. 키는 24시간 유효하며 승인 키와 같은 정리·복원 무효화에 참여한다.
+앱 키의 승인 실행·취소는 허용하지 않는다.
+
+개발 환경에서는 로그인 후 `/apps/new`에서 공개 앱(예: `https://www.naver.com`)을 등록하고
+상세·새로고침·비로그인 갤러리를 확인할 수 있다. 비공개 앱은 작성자·관리자만 상세를 볼 수
+있고 공개 목록·검색·facets·total에는 나타나지 않는다. 운영 환경 등록은 계속 비활성이다.
+앱 생성 본문과 `app_create` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
+스트리밍 수신 단계에서 제한한다. 기본 포트(`http:80`, `https:443`)는 허용하고 사용자 정보,
+localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. DNS·HTTP 연결 검사는 하지 않는다.
+
+`0007_app_create` 마이그레이션은 기존 승인 작업 행을 보존하며 앱 입력 해시·결과 버전을
+추가한다. 개발 DB는 유효한 SQLite 백업을 만든 뒤 `alembic upgrade head`로 갱신하고
+`/readyz`·`/meta`의 `apps_create`를 확인한다. head가 아니면 서버는 시작하지 않는다.
+스키마 downgrade로 작업 이력을 버릴 수 없으며, 복구는 검증된 백업과 독립 삭제 원장,
+기존 복원 인증 무효화 절차를 따른다.
 
 비밀번호 초기화·회원 삭제·관리자 재인증·아카이브 앱 관리 실행은 후속 범위다.
 [T05 검수 원장](../docs/evidence/phase-3/issue119/2026-10-02/README.md)에 실제 HTTP,
