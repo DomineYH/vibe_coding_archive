@@ -485,3 +485,224 @@ describe("app write API", () => {
     });
   });
 });
+
+const errorMetadata = {
+  request_id: "request-151",
+  reasons: ["not_implemented"],
+  retry_at: "2026-09-22T00:13:00.000Z",
+  server_time: "2026-09-22T00:12:00.000Z",
+};
+const preservedMetadata = {
+  requestId: "request-151",
+  reasons: ["not_implemented"],
+  retryAt: "2026-09-22T00:13:00.000Z",
+  serverTime: "2026-09-22T00:12:00.000Z",
+};
+const createStages = [
+  {
+    stage: "issuance",
+    run: () => appsService.issueCreateOperation(input),
+    uncertain: false,
+  },
+  {
+    stage: "create",
+    run: () => appsService.create(input, key),
+    uncertain: true,
+  },
+];
+
+function respondWithError(
+  status: number,
+  error: Record<string, unknown>,
+  envelope = {},
+) {
+  const fetch = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(JSON.stringify({ error, ...envelope }), { status }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  return fetch;
+}
+
+describe.each(createStages)(
+  "app-create $stage errors",
+  ({ run, uncertain }) => {
+    it.each([
+      { status: 400, code: "BAD_REQUEST" },
+      { status: 413, code: "PAYLOAD_TOO_LARGE" },
+      { status: 503, code: "FEATURE_UNAVAILABLE" },
+    ])(
+      "preserves contract-listed $status $code and metadata without retrying",
+      async ({ status, code }) => {
+        const fetch = respondWithError(status, {
+          code,
+          message: "서버의 원래 안내",
+          ...errorMetadata,
+          fields: { name: "이름 안내" },
+        });
+        await expect(run()).rejects.toMatchObject({
+          code,
+          message: "서버의 원래 안내",
+          httpStatus: status,
+          outcome: uncertain && status === 503 ? "unknown" : "not_applicable",
+          fields: { name: "이름 안내" },
+          ...preservedMetadata,
+        });
+        expect(fetch).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it("maps every wire field to its form key while preserving same-name, form and unknown fields", async () => {
+      const fields = {
+        theme_id: "테마 안내",
+        is_public: "공개 안내",
+        stack_db: "DB 안내",
+        stack_backend: "백엔드 안내",
+        stack_frontend: "프론트엔드 안내",
+        stack_hosting: "호스팅 안내",
+        name: "이름 안내",
+        url: "URL 안내",
+        prompt: "프롬프트 안내",
+        description: "설명 안내",
+        subject: "과목 안내",
+        grades: "학년 안내",
+        form: "전체 양식 안내",
+        future_field: "새 필드 안내",
+        constructor: "알 수 없는 키 안내",
+      };
+      respondWithError(422, {
+        code: "VALIDATION_ERROR",
+        message: "서버 검증 안내",
+        ...errorMetadata,
+        fields,
+      });
+      await expect(run()).rejects.toMatchObject({
+        code: "VALIDATION_ERROR",
+        message: "서버 검증 안내",
+        httpStatus: 422,
+        outcome: "not_applicable",
+        ...preservedMetadata,
+        fields: {
+          themeId: "테마 안내",
+          isPublic: "공개 안내",
+          "stack.db": "DB 안내",
+          "stack.backend": "백엔드 안내",
+          "stack.frontend": "프론트엔드 안내",
+          "stack.hosting": "호스팅 안내",
+          name: "이름 안내",
+          url: "URL 안내",
+          prompt: "프롬프트 안내",
+          description: "설명 안내",
+          subject: "과목 안내",
+          grades: "학년 안내",
+          form: "전체 양식 안내",
+          future_field: "새 필드 안내",
+          constructor: "알 수 없는 키 안내",
+        },
+      });
+    });
+
+    it("keeps already normalized field names", async () => {
+      const fields = { themeId: "테마", isPublic: "공개", "stack.db": "DB" };
+      respondWithError(422, {
+        code: "VALIDATION_ERROR",
+        message: "검증",
+        request_id: null,
+        fields,
+      });
+      await expect(run()).rejects.toMatchObject({ fields });
+    });
+
+    it("preserves both messages if wire and normalized field names collide", async () => {
+      respondWithError(422, {
+        code: "VALIDATION_ERROR",
+        message: "검증",
+        request_id: null,
+        fields: { theme_id: "wire 안내", themeId: "form 안내" },
+      });
+      const error = await run().catch((error: unknown) => error);
+      expect(error).toMatchObject({
+        fields: { themeId: expect.stringContaining("wire 안내") },
+      });
+      expect(error).toMatchObject({
+        fields: { themeId: expect.stringContaining("form 안내") },
+      });
+    });
+
+    it("preserves accepted errors without fields", async () => {
+      respondWithError(422, {
+        code: "VALIDATION_ERROR",
+        message: "검증",
+        ...errorMetadata,
+      });
+      await expect(run()).rejects.toMatchObject({
+        code: "VALIDATION_ERROR",
+        fields: undefined,
+        ...preservedMetadata,
+      });
+    });
+
+    it("passes AbortError through", async () => {
+      const error = new DOMException("Cancelled", "AbortError");
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(error));
+      await expect(run()).rejects.toBe(error);
+    });
+
+    it.each([
+      {
+        label: "missing request_id",
+        error: { code: "VALIDATION_ERROR", message: "검증" },
+        envelope: {},
+      },
+      {
+        label: "extra envelope key",
+        error: { code: "VALIDATION_ERROR", message: "검증", request_id: null },
+        envelope: { extra: true },
+      },
+      {
+        label: "non-string field",
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "검증",
+          request_id: null,
+          fields: { name: 151 },
+        },
+        envelope: {},
+      },
+    ])("rejects a malformed $label envelope", async ({ error, envelope }) => {
+      respondWithError(422, error, envelope);
+      await expect(run()).rejects.toMatchObject({
+        code: "CONTRACT_ERROR",
+        httpStatus: 422,
+        outcome: uncertain ? "unknown" : "not_applicable",
+      });
+    });
+
+    it.each([
+      { status: 400, code: "FEATURE_UNAVAILABLE" },
+      { status: 413, code: "BAD_REQUEST" },
+      { status: 503, code: "PAYLOAD_TOO_LARGE" },
+    ])("rejects the unlisted $status $code tuple", async ({ status, code }) => {
+      respondWithError(status, { code, message: "안내", request_id: null });
+      await expect(run()).rejects.toMatchObject({
+        code: "CONTRACT_ERROR",
+        httpStatus: status,
+        outcome: uncertain ? "unknown" : "not_applicable",
+      });
+    });
+  },
+);
+
+it("does not extend app POST error acceptance to GET /apps", async () => {
+  respondWithError(400, {
+    code: "BAD_REQUEST",
+    message: "안내",
+    request_id: null,
+  });
+  await expect(appsService.list({})).rejects.toMatchObject({
+    code: "CONTRACT_ERROR",
+    httpStatus: 400,
+    outcome: "not_applicable",
+  });
+});
