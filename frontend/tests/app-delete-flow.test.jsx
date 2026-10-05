@@ -104,6 +104,171 @@ it("cancel submits no operation and duplicate confirmation executes one key", as
   await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
 });
 
+it("applies a late delete success after a gallery link without changing the current route", async () => {
+  await setup();
+  let resolve;
+  const execute = vi.spyOn(appsService, "delete").mockImplementation(
+    () =>
+      new Promise((r) => {
+        resolve = r;
+      }),
+  );
+  const healthKey = [__DATA_MODE__, "health", "app", item.id];
+  const adminKey = [__DATA_MODE__, "admin", "summary"];
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  await confirm();
+  await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+  await userEvent.click(
+    screen.getByRole("link", { name: "갤러리", exact: true }),
+  );
+  await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+  const list = vi.spyOn(appsService, "list");
+  await act(async () => router.navigate("/?subject=수학"));
+  const locationKey = router.state.location.key;
+  client.setQueryData(healthKey, { status: "healthy" });
+  client.setQueryData(adminKey, { appCount: 1 });
+  list.mockClear();
+  await act(async () => resolve());
+  await screen.findByText("앱을 삭제했어요.");
+  expect(screen.getAllByText("앱을 삭제했어요.")).toHaveLength(1);
+  expect(router.state.location.key).toBe(locationKey);
+  expect(list).toHaveBeenCalled();
+  expect(client.getQueryState(adminKey)?.isInvalidated).toBe(true);
+  expect(client.getQueryData(healthKey)).toBeUndefined();
+  expect(
+    client.getQueriesData({
+      queryKey: [__DATA_MODE__, "apps", "detail", item.id],
+    }),
+  ).toEqual([]);
+  await act(async () => router.navigate(`/apps/${item.id}`));
+  await screen.findByText("아카이브 앱을 찾을 수 없어요", { exact: true });
+  expect(screen.queryByText(/인증 상태가 바뀌었어요/)).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "삭제 결과 확인" }),
+  ).not.toBeInTheDocument();
+});
+
+it("keeps late deletion confirmation pending after a gallery link without an auth-change message", async () => {
+  await setup();
+  let reject;
+  const execute = vi.spyOn(appsService, "delete").mockImplementation(
+    () =>
+      new Promise((_, r) => {
+        reject = r;
+      }),
+  );
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  await confirm();
+  await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+  await userEvent.click(
+    screen.getByRole("link", { name: "갤러리", exact: true }),
+  );
+  await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+  await act(async () =>
+    reject(
+      new ServiceError(
+        "DELETION_CONFIRMATION_PENDING",
+        "앱 삭제가 반영되었어요.",
+        { outcome: "unknown" },
+      ),
+    ),
+  );
+  await act(async () => router.navigate(`/apps/${item.id}`));
+  await screen.findByRole("button", { name: "삭제 결과 확인" });
+  expect(screen.getByText("앱 삭제가 반영되었어요.")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("heading", { name: input.name }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText(/인증 상태가 바뀌었어요/)).not.toBeInTheDocument();
+  expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+});
+
+it("does not resend an in-flight deletion after leaving and remounting its detail", async () => {
+  await setup();
+  let resolve;
+  const execute = vi.spyOn(appsService, "delete").mockImplementation(
+    () =>
+      new Promise((r) => {
+        resolve = r;
+      }),
+  );
+  const issue = vi.spyOn(appsService, "issueDeleteOperation");
+  await confirm();
+  await waitFor(() => expect(execute).toHaveBeenCalledTimes(1));
+  await act(async () => router.navigate("/"));
+  await act(async () => router.navigate(`/apps/${item.id}`));
+  const resend = await screen.findByRole("button", {
+    name: "같은 삭제 요청 다시 보내기",
+  });
+  await userEvent.click(resend);
+  expect(execute).toHaveBeenCalledTimes(1);
+  expect(issue).toHaveBeenCalledTimes(1);
+  await act(async () => resolve());
+});
+
+it("waits for a pending navigation auth refresh before applying a settled deletion", async () => {
+  await setup();
+  let resolveDelete;
+  let resolveAuth;
+  const observed = await authService.getCurrentAuthState();
+  vi.spyOn(appsService, "delete").mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        resolveDelete = resolve;
+      }),
+  );
+  await confirm();
+  vi.spyOn(authService, "getCurrentAuthState").mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        resolveAuth = resolve;
+      }),
+  );
+  await act(async () => router.navigate("/"));
+  await act(async () => resolveDelete());
+  expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+  await act(async () => resolveAuth(observed));
+  await screen.findByText("앱을 삭제했어요.");
+  expect(router.state.location.pathname).toBe("/");
+});
+
+it.each(["different member", "logged out"])(
+  "discards a settled deletion when navigation auth refresh resolves to %s",
+  async (identity) => {
+    await setup();
+    let resolveDelete;
+    let resolveAuth;
+    vi.spyOn(appsService, "delete").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+    await confirm();
+    await authService.logout();
+    if (identity === "different member")
+      await authService.login({ loginId: "과학덕후박샘", password: "1234" });
+    const observed = await authService.getCurrentAuthState();
+    vi.spyOn(authService, "getCurrentAuthState").mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAuth = resolve;
+        }),
+    );
+    await act(async () => router.navigate("/"));
+    const locationKey = router.state.location.key;
+    await act(async () => resolveDelete());
+    await act(async () => resolveAuth(observed));
+    expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+    expect(router.state.location.key).toBe(locationKey);
+    await act(async () => router.navigate(`/apps/${item.id}`));
+    await screen.findByRole("heading", { name: input.name });
+    expect(
+      screen.queryByRole("button", { name: "삭제 결과 확인" }),
+    ).not.toBeInTheDocument();
+  },
+);
+
 it("retires confirmed DB-applied content while preserving same-key confirmation", async () => {
   await setup();
   vi.spyOn(appsService, "delete").mockRejectedValue(
