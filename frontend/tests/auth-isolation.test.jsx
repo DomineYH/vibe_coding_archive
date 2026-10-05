@@ -276,3 +276,85 @@ it("discards a real-adapter response completing after blur without replay or pri
   ).toBe(true);
   expect(fetch).toHaveBeenCalledTimes(calls);
 });
+
+it("retires cached public detail after a private edit produces public 404 and fetches current owner detail", async () => {
+  const { mapAppDetailResponse } = await import("../src/contracts/mappers");
+  client.setQueryData(
+    [__DATA_MODE__, "apps", "detail", id, "public"],
+    mapAppDetailResponse({
+      item: { ...item, is_public: true, name: "공개였던 이전 이름" },
+      server_time: "2026-10-02T00:00:00Z",
+    }).item,
+  );
+  visit();
+  expect(
+    await screen.findByRole("heading", { name: item.name }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("공개였던 이전 이름")).not.toBeInTheDocument();
+  expect(
+    fetch.mock.calls.some(([, options]) =>
+      options?.headers.has("X-EduVibe-Flow-Id"),
+    ),
+  ).toBe(true);
+});
+
+it("does not reveal an obsolete public body after the owner logs out", async () => {
+  const { mapAppDetailResponse } = await import("../src/contracts/mappers");
+  client.setQueryData(
+    [__DATA_MODE__, "apps", "detail", id, "public"],
+    mapAppDetailResponse({
+      item: { ...item, is_public: true },
+      server_time: "2026-10-02T00:00:00Z",
+    }).item,
+  );
+  visit();
+  await screen.findByRole("heading", { name: item.name });
+  await authService.logout();
+  await act(async () =>
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: MOCK_STORAGE_KEY,
+        newValue: localStorage.getItem(MOCK_STORAGE_KEY),
+      }),
+    ),
+  );
+  await waitFor(() =>
+    expect(screen.queryByText(item.prompt)).not.toBeInTheDocument(),
+  );
+  expect(
+    await screen.findByText("아카이브 앱을 찾을 수 없어요"),
+  ).toBeInTheDocument();
+});
+
+it("retires even fresh public cache on a changed identity observation", async () => {
+  visit();
+  await screen.findByRole("heading", { name: item.name });
+  const { mapAppDetailResponse } = await import("../src/contracts/mappers");
+  const key = [__DATA_MODE__, "apps", "detail", id, "public"];
+  client.setQueryDefaults(key, { staleTime: Infinity });
+  await act(async () =>
+    client.setQueryData(
+      key,
+      mapAppDetailResponse({
+        item: { ...item, is_public: true, name: "오래된 공개 캐시" },
+        server_time: "2026-10-02T00:00:00Z",
+      }).item,
+    ),
+  );
+  const previous = await authService.getCurrentAuthState();
+  vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue({
+    ...previous,
+    user: null,
+    flow: {
+      ...previous.flow,
+      revision: String(Number(previous.flow.revision) + 1),
+      sessionGeneration: null,
+    },
+  });
+  await act(async () => window.dispatchEvent(new Event("blur")));
+  await act(async () => window.dispatchEvent(new Event("focus")));
+  await waitFor(() =>
+    expect(screen.queryByText("오래된 공개 캐시")).not.toBeInTheDocument(),
+  );
+  expect(client.getQueryData(key)).toBeUndefined();
+});

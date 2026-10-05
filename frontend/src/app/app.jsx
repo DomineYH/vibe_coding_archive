@@ -540,6 +540,8 @@ function DetailRoute({
     },
     retry: false,
   });
+  const publicApp =
+    publicDetail.error?.code === "NOT_FOUND" ? undefined : publicDetail.data;
   const memberDetail = useQuery({
     queryKey: [
       __DATA_MODE__,
@@ -549,7 +551,7 @@ function DetailRoute({
       "member",
       memberCacheScope(auth),
     ],
-    enabled: !routeError && access.canRead && eligible && !publicDetail.data,
+    enabled: !routeError && access.canRead && eligible && !publicApp,
     queryFn: async ({ signal }) => {
       const context = captureAuthObservation(auth, () =>
         isCurrentObservation(auth.observationId),
@@ -569,12 +571,12 @@ function DetailRoute({
     },
     retry: false,
   });
-  const detail = publicDetail.data
+  const detail = publicApp
     ? publicDetail
     : eligible
       ? memberDetail
       : publicDetail;
-  const app = publicDetail.data ?? (eligible ? memberDetail.data : undefined);
+  const app = publicApp ?? (eligible ? memberDetail.data : undefined);
   const healthReadEnabled =
     access.meta?.capabilities.health_read.enabled === true;
   const healthCheckEnabled =
@@ -1021,6 +1023,14 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
         app={formApp}
         meta={access.meta}
         onSaved={onSaved}
+        readLatest={async (appId) => {
+          const context = captureAuthObservation(auth, () =>
+            isCurrentObservation(auth.observationId),
+          );
+          const latest = await appsService.get(appId, { readContext: context });
+          assertAuthObservation(context);
+          return latest;
+        }}
         onLatest={(app) =>
           queryClient.setQueryData(
             [
@@ -1579,13 +1589,18 @@ export default function App() {
     [navigate, queryClient],
   );
   const onAppUpdated = useCallback(
-    (app) => {
+    async (app) => {
       const fromAdmin = location.state?.fromAdmin === true;
       if (app.isPublic)
         queryClient.setQueryData(
           [__DATA_MODE__, "apps", "detail", app.id, "public"],
           app,
         );
+      else {
+        const publicKey = [__DATA_MODE__, "apps", "detail", app.id, "public"];
+        await queryClient.cancelQueries({ queryKey: publicKey, exact: true });
+        queryClient.removeQueries({ queryKey: publicKey, exact: true });
+      }
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "detail", app.id],
       });
@@ -1659,10 +1674,15 @@ export default function App() {
     await queryClient.cancelQueries({ predicate: isProtectedQuery });
     queryClient.removeQueries({ predicate: isProtectedQuery });
   }, [isProtectedQuery, queryClient]);
-  const clearChangedScopeQueries = useCallback(() => {
-    queryClient.removeQueries({
-      predicate: isProtectedQuery,
-    });
+  const clearChangedScopeQueries = useCallback(async () => {
+    const changedScope = (query) =>
+      isProtectedQuery(query) ||
+      (query.queryKey[0] === __DATA_MODE__ &&
+        query.queryKey[1] === "apps" &&
+        query.queryKey[2] === "detail" &&
+        query.queryKey[4] === "public");
+    await queryClient.cancelQueries({ predicate: changedScope });
+    queryClient.removeQueries({ predicate: changedScope });
   }, [isProtectedQuery, queryClient]);
 
   const restoreAuth = useCallback(
@@ -1712,7 +1732,9 @@ export default function App() {
           return null;
         const previousScope = memberCacheScope(authSnapshot.current);
         const nextScope = memberCacheScope(observed);
-        if (previousScope !== nextScope) clearChangedScopeQueries();
+        if (previousScope !== nextScope) await clearChangedScopeQueries();
+        if (request !== authRequest.current || controller.signal.aborted)
+          return null;
         authSnapshot.current = observed;
         const next = {
           ...observed,

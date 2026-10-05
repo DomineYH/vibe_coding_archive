@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -598,5 +599,158 @@ it.each(["/", "/apps/new"])(
     expect(
       screen.queryByRole("form", { name: "새 앱 등록 양식" }),
     ).not.toBeInTheDocument();
+  },
+);
+
+it("shows the updated private owner detail after saving an app with cached public detail", async () => {
+  await visit("/apps/00000000-0000-4000-8000-000000000001");
+  await screen.findByRole("heading", { name: "분수 피자 가게", exact: true });
+  await act(async () => router.navigate(ownEdit));
+  await screen.findByRole("heading", { name: "앱 정보 편집", exact: true });
+  const original = await appsService.get(
+    "00000000-0000-4000-8000-000000000001",
+  );
+  client.setQueryData(
+    [__DATA_MODE__, "apps", "detail", original.id, "public"],
+    original,
+  );
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const latePublic = client
+    .fetchQuery({
+      queryKey: [__DATA_MODE__, "apps", "detail", original.id, "public"],
+      queryFn: async () => {
+        await held;
+        return original;
+      },
+    })
+    .catch(() => undefined);
+  const saved = {
+    ...original,
+    name: "비공개로 편집한 피자",
+    isPublic: false,
+    version: 2,
+  };
+  vi.spyOn(appsService, "issueUpdateOperation").mockResolvedValue({
+    key: "00000000-0000-4000-8000-000000000201",
+    kind: "app_update",
+    targetId: original.id,
+    state: "unresolved",
+  });
+  vi.spyOn(appsService, "update").mockImplementation(async () => {
+    vi.spyOn(appsService, "get").mockResolvedValue(saved);
+    return saved;
+  });
+  const form = screen.getByRole("form", { name: "앱 수정 양식", exact: true });
+  fireEvent.change(
+    within(form).getByRole("textbox", {
+      name: "어플리케이션 이름",
+      exact: true,
+    }),
+    { target: { value: "비공개로 편집한 피자" } },
+  );
+  fireEvent.click(
+    within(form).getByRole("switch", { name: "전체 공개", exact: true }),
+  );
+  fireEvent.click(
+    within(form).getByRole("button", { name: "변경사항 저장", exact: true }),
+  );
+  expect(
+    await screen.findByRole("heading", {
+      name: "비공개로 편집한 피자",
+      exact: true,
+    }),
+  ).toBeInTheDocument();
+  await act(async () => {
+    release();
+    await latePublic;
+  });
+  expect(
+    client.getQueryData([
+      __DATA_MODE__,
+      "apps",
+      "detail",
+      "00000000-0000-4000-8000-000000000001",
+      "public",
+    ]),
+  ).toBeUndefined();
+});
+
+it.each(["checkResult", "loadLatest"])(
+  "uses the captured owner observation when %s reads latest private detail",
+  async (action) => {
+    const { ServiceError } = await import("../src/services/service-error");
+    const id = "00000000-0000-4000-8000-000000000001";
+    const original = await appsService.get(id);
+    const latest = {
+      ...original,
+      isPublic: false,
+      name: "최신 비공개 앱",
+      version: 2,
+    };
+    const reader = vi
+      .spyOn(appsService, "get")
+      .mockResolvedValue({ ...original, isPublic: false });
+    vi.spyOn(appsService, "issueUpdateOperation").mockResolvedValue({
+      key: "00000000-0000-4000-8000-000000000201",
+      kind: "app_update",
+      targetId: id,
+      state: "unresolved",
+    });
+    vi.spyOn(appsService, "update").mockRejectedValue(
+      new ServiceError(
+        action === "checkResult" ? "NETWORK_ERROR" : "VERSION_CONFLICT",
+        "편집 결과 확인",
+        { outcome: action === "checkResult" ? "unknown" : "rejected" },
+      ),
+    );
+    vi.spyOn(appsService, "getUpdateOperation").mockResolvedValue({
+      kind: "app_update",
+      targetId: id,
+      state: "succeeded",
+      resultVersion: 2,
+    });
+    await visit(ownEdit);
+    await screen.findByRole("heading", { name: "앱 정보 편집", exact: true });
+    const form = screen.getByRole("form", {
+      name: "앱 수정 양식",
+      exact: true,
+    });
+    fireEvent.change(
+      within(form).getByRole("textbox", {
+        name: "어플리케이션 이름",
+        exact: true,
+      }),
+      { target: { value: "저장할 초안" } },
+    );
+    fireEvent.click(
+      within(form).getByRole("button", { name: "변경사항 저장", exact: true }),
+    );
+    const button = await screen.findByRole("button", {
+      name: action === "checkResult" ? "저장 결과 확인" : "최신 내용 불러오기",
+      exact: true,
+    });
+    reader.mockClear();
+    reader.mockResolvedValue(latest);
+    fireEvent.click(button);
+    if (action === "checkResult")
+      await screen.findByRole("heading", { name: latest.name, exact: true });
+    else
+      await waitFor(() =>
+        expect(
+          within(form).getByRole("textbox", {
+            name: "어플리케이션 이름",
+            exact: true,
+          }),
+        ).toHaveValue(latest.name),
+      );
+    const call = reader.mock.calls[0];
+    expect(call?.[0]).toBe(id);
+    expect(call?.[1]?.readContext).toMatchObject({
+      state: { user: { id: original.ownerId } },
+    });
+    expect(call?.[1]?.readContext?.state.flow.sessionGeneration).toBeTruthy();
   },
 );

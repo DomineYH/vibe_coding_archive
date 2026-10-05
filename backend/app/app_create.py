@@ -24,7 +24,9 @@ def app_operation_body(row):
         "issued_at": row["created_at"],
         "expires_at": row["expires_at"],
         "state": row["state"],
-        "db_applied_at": row["applied_at"],
+        "db_applied_at": None
+        if row["kind"] == "app_update" and row["state"] != "succeeded"
+        else row["applied_at"],
         "finalized_at": row["applied_at"],
         "result_version": row["result_version"],
         "rejection_code": row["failure_code"],

@@ -482,6 +482,7 @@ def test_meta_advertises_the_verified_t01_t05_bundle_and_nothing_else(member_app
         "admin_approval",
         "admin_summary",
         "apps_create",
+        "apps_update_own",
     }
     assert capabilities["auth_password_change"] == {"enabled": True, "reasons": []}
 
