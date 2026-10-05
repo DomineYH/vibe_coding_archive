@@ -68,11 +68,8 @@ function validReturnTo(path) {
   const [pathname, query = ""] = parts;
   if (pathname === "/") return validGalleryQuery(query);
   if (pathname === "/admin") return query === "";
-  return (
-    pathname === `/apps/${pathname.slice(6)}` &&
-    isUuid(pathname.slice(6)) &&
-    !query
-  );
+  const appPath = pathname.match(/^\/apps\/([^/]+)(?:\/edit)?$/);
+  return Boolean(appPath && isUuid(appPath[1]) && !query);
 }
 
 export function readAuthRoute(search) {

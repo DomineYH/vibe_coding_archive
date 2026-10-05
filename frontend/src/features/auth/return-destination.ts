@@ -38,7 +38,7 @@ export async function recheckReturnDestination(
         "아카이브를 현재 사용할 수 없어요.",
       );
     if (destination.startsWith("/apps/")) {
-      const id = destination.slice(6);
+      const id = destination.split("/")[2];
       let app;
       try {
         app = await apps.get(id);
