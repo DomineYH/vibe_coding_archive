@@ -501,6 +501,9 @@ function DetailRoute({
   isAppRetired,
   deletionState,
   setDeletionState,
+  deletionBusy,
+  captureDeletionContext,
+  settleDeletion,
 }) {
   const queryClient = useQueryClient();
   const { id = "" } = useParams();
@@ -519,15 +522,7 @@ function DetailRoute({
           outcome: "rejected",
         })
       : null;
-  const deletionAttempt = useRef(0);
-  useEffect(
-    () => () => {
-      deletionAttempt.current += 1;
-    },
-    [],
-  );
   const retired = isAppRetired(id);
-  const deletionBusy = useRef(false);
   const eligible =
     auth.status === "ready" &&
     !auth.concealed &&
@@ -799,15 +794,7 @@ function DetailRoute({
     setDeletionState,
   ]);
   const canRecover = eligible && Boolean(currentDeletion?.operation);
-  const deletionContext = () => {
-    const attempt = ++deletionAttempt.current;
-    return captureAuthObservation(
-      auth,
-      () =>
-        isCurrentObservation(auth.observationId) &&
-        deletionAttempt.current === attempt,
-    );
-  };
+  const deletionContext = () => captureDeletionContext(id, auth);
   const setCurrentDeletion = (next, context) => {
     assertAuthObservation(context);
     setDeletionState(next);
@@ -816,13 +803,15 @@ function DetailRoute({
     if ((!canDelete && !canRecover) || deletionBusy.current) return;
     if (currentDeletion?.phase === "rejected" && currentDeletion.operation)
       return;
-    const context = deletionContext();
+    const request = deletionContext();
+    let context = request;
     const actorId = auth.user.id;
     const existing = currentDeletion;
     const expectedVersion = existing?.operation
       ? existing.expectedVersion
       : app.version;
     let operation = existing?.operation ?? null;
+    let deleteStarted = false;
     deletionBusy.current = true;
     const state = () => ({
       id,
@@ -843,10 +832,15 @@ function DetailRoute({
         { ...state(), phase: "pending", message: null },
         context,
       );
+      deleteStarted = true;
       await appsService.delete(id, expectedVersion, operation.key);
+      context = await settleDeletion(request);
+      if (!context) return;
       assertAuthObservation(context);
       await onDeleted(id, context, fromAdmin);
     } catch (error) {
+      if (deleteStarted) context = await settleDeletion(request);
+      if (!context) return;
       if (!context.isCurrent()) return;
       const expired = error?.code === "OPERATION_EXPIRED";
       const applied =
@@ -882,7 +876,8 @@ function DetailRoute({
   const checkDeleteResult = async () => {
     const existing = currentDeletion;
     if (!canRecover || deletionBusy.current) return;
-    const context = deletionContext();
+    const request = deletionContext();
+    let context = request;
     deletionBusy.current = true;
     setCurrentDeletion(
       {
@@ -897,6 +892,8 @@ function DetailRoute({
       const operation = await appsService.getDeleteOperation(
         existing.operation.key,
       );
+      context = await settleDeletion(request);
+      if (!context) return;
       assertAuthObservation(context);
       if (
         operation.key !== existing.operation.key ||
@@ -938,6 +935,8 @@ function DetailRoute({
         );
       }
     } catch (error) {
+      context = await settleDeletion(request);
+      if (!context) return;
       if (!context.isCurrent()) return;
       const expired = error?.code === "OPERATION_EXPIRED";
       setCurrentDeletion(
@@ -1749,6 +1748,8 @@ function AdminAccessState({ auth, onRetry }) {
 
 export default function App() {
   const location = useLocation();
+  const currentLocation = useRef(location);
+  currentLocation.current = location;
   const navigate = useNavigate();
   const navigationType = useNavigationType();
   const previousLocation = useRef({
@@ -1788,6 +1789,10 @@ export default function App() {
   });
   const [logoutPending, setLogoutPending] = useState(false);
   const [deletion, setDeletion] = useState(null);
+  const deletionAttempt = useRef(0);
+  const deletionBusy = useRef(false);
+  const activeDeletion = useRef(null);
+  const [settledDeletion, setSettledDeletion] = useState(null);
   const retiredApps = useRef(new Set());
   const isAppRetired = useCallback((id) => retiredApps.current.has(id), []);
   useEffect(() => {
@@ -1882,7 +1887,8 @@ export default function App() {
       await onDbDeleted(id, context);
       assertAuthObservation(context);
       setDeletion(null);
-      navigate(fromAdmin ? "/admin?tab=health" : "/", { replace: true });
+      if (currentLocation.current.pathname === `/apps/${id}`)
+        navigate(fromAdmin ? "/admin?tab=health" : "/", { replace: true });
       setToast("앱을 삭제했어요.");
     },
     [navigate, onDbDeleted],
@@ -2070,6 +2076,67 @@ export default function App() {
       document.visibilityState !== "hidden",
     [],
   );
+
+  const captureDeletionContext = useCallback(
+    (id, state) => {
+      const attempt = ++deletionAttempt.current;
+      const context = {
+        ...captureAuthObservation(
+          state,
+          () =>
+            isCurrentObservation(state.observationId) &&
+            deletionAttempt.current === attempt,
+        ),
+        id,
+        navigationObservations: new Set(),
+        fenced: false,
+      };
+      activeDeletion.current = context;
+      return context;
+    },
+    [isCurrentObservation],
+  );
+  const settleDeletion = useCallback((context) => {
+    if (!context || context.isCurrent()) return Promise.resolve(context);
+    return new Promise((resolve) => setSettledDeletion({ context, resolve }));
+  }, []);
+  useEffect(() => {
+    const request = activeDeletion.current;
+    if (!request) return;
+    const sameScope =
+      auth.user?.id === request.state.user.id &&
+      auth.user?.role === request.state.user.role &&
+      auth.flow?.flowId === request.state.flow.flowId &&
+      auth.flow?.sessionGeneration === request.state.flow.sessionGeneration &&
+      auth.flow?.lastIdentityChangeRevision ===
+        request.state.flow.lastIdentityChangeRevision &&
+      auth.user?.sessionKind === "full" &&
+      auth.user?.approved &&
+      !auth.user?.mustChangePassword;
+    if (auth.concealed || (auth.status === "ready" && !sameScope))
+      request.fenced = true;
+    if (!settledDeletion) return;
+    const { context, resolve } = settledDeletion;
+    let navigationOnly = context === request && !request.fenced;
+    for (
+      let observation = context.state.observationId + 1;
+      observation <= authObservation.current;
+      observation += 1
+    )
+      navigationOnly &&= context.navigationObservations.has(observation);
+    if (navigationOnly && auth.status === "checking") return;
+    setSettledDeletion(null);
+    resolve(
+      navigationOnly && sameScope && auth.status === "ready"
+        ? captureAuthObservation(
+            auth,
+            () =>
+              activeDeletion.current === request &&
+              isCurrentObservation(auth.observationId),
+          )
+        : null,
+    );
+  }, [auth, isCurrentObservation, settledDeletion]);
 
   const login = useCallback(
     async (input, returnTo) => {
@@ -2342,6 +2409,15 @@ export default function App() {
       return;
     if (__DATA_MODE__ === "mock") {
       void restoreAuth();
+      if (
+        deletionBusy.current &&
+        previous &&
+        (previous.pathname !== location.pathname ||
+          previous.key !== location.key)
+      )
+        activeDeletion.current?.navigationObservations.add(
+          authObservation.current,
+        );
       return;
     }
     if (!apiAuthEnabled) {
@@ -2354,6 +2430,14 @@ export default function App() {
       return;
     }
     void restoreAuth();
+    if (
+      deletionBusy.current &&
+      previous &&
+      (previous.pathname !== location.pathname || previous.key !== location.key)
+    )
+      activeDeletion.current?.navigationObservations.add(
+        authObservation.current,
+      );
   }, [
     apiAuthEnabled,
     location.key,
@@ -2569,6 +2653,9 @@ export default function App() {
               isAppRetired={isAppRetired}
               deletionState={deletion}
               setDeletionState={setDeletion}
+              deletionBusy={deletionBusy}
+              captureDeletionContext={captureDeletionContext}
+              settleDeletion={settleDeletion}
             />
           }
         />
