@@ -2311,7 +2311,7 @@ export function AdminView({ scopeKey, meta, active = true }) {
                   </div>
                   {user.role !== "admin" &&
                   (resetNotImplemented || deleteNotImplemented) ? (
-                    <div className="space-y-1 px-5 pb-4 pl-[68px] text-[12px] text-neutral-500 sm:px-6">
+                    <div className="space-y-1 px-5 pb-4 pl-[68px] text-[12px] text-neutral-500 sm:pl-[72px] sm:pr-6">
                       {resetNotImplemented ? (
                         <p id={`admin-password-reset-reason-${user.id}`}>
                           임시 비밀번호 설정 기능은 아직 준비 중이에요.

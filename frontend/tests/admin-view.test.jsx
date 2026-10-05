@@ -54,6 +54,29 @@ async function renderApiMembers(reset, deletion, entry = "/admin") {
 const enabled = { enabled: true, reasons: [] };
 const unimplemented = { enabled: false, reasons: ["not_implemented"] };
 
+it("keeps mock actions enabled without preparation notes for unimplemented metadata", async () => {
+  vi.stubGlobal("__DATA_MODE__", "mock");
+  const meta = await appsService.getMeta();
+  expect(meta.capabilities.admin_password_reset).toEqual(unimplemented);
+  expect(meta.capabilities.admin_user_delete).toEqual(unimplemented);
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <AdminView scopeKey="mock-disabled-reasons" meta={meta} />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  const row = (await screen.findByText("비기너개발자")).closest(
+    '[role="listitem"]',
+  );
+  for (const name of ["임시 비밀번호 설정", "삭제"]) {
+    const button = within(row).getByRole("button", { name, exact: true });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-describedby");
+  }
+  expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+});
+
 it.each([
   [unimplemented, unimplemented, true, true],
   [unimplemented, enabled, true, false],
