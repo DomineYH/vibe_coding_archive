@@ -197,6 +197,7 @@ def error_response(error):
                     "USER_NOT_FOUND": "회원을 찾을 수 없어요.",
                     "USER_STATE_CONFLICT": "회원 상태가 바뀌었어요. 현재 상태를 다시 확인해 주세요.",
                     "LOGIN_ID_TAKEN": "이미 사용 중인 로그인 아이디예요.",
+                    "VERSION_CONFLICT": "다른 곳에서 먼저 바뀌었어요. 최신 내용을 확인해 주세요.",
                     "OPERATION_NOT_FOUND": "작업 키를 찾을 수 없어 결과를 확인할 수 없어요.",
                     "OPERATION_EXPIRED": "작업 키의 확인 기간이 지나 결과를 확인할 수 없어요.",
                     "OPERATION_KEY_MISMATCH": "작업 키와 요청 내용이 일치하지 않아요.",

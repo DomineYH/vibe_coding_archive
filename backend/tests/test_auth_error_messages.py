@@ -1,6 +1,8 @@
 """Auth error defaults preserve the shared response envelope and explicit copy."""
 
+import ast
 import json
+from pathlib import Path
 from uuid import UUID
 
 import pytest
@@ -25,6 +27,11 @@ DEFAULT_MESSAGES = [
         "회원 상태가 바뀌었어요. 현재 상태를 다시 확인해 주세요.",
     ),
     ("LOGIN_ID_TAKEN", 409, "이미 사용 중인 로그인 아이디예요."),
+    (
+        "VERSION_CONFLICT",
+        409,
+        "다른 곳에서 먼저 바뀌었어요. 최신 내용을 확인해 주세요.",
+    ),
     ("OPERATION_NOT_FOUND", 404, "작업 키를 찾을 수 없어 결과를 확인할 수 없어요."),
     ("OPERATION_EXPIRED", 410, "작업 키의 확인 기간이 지나 결과를 확인할 수 없어요."),
     ("OPERATION_KEY_MISMATCH", 409, "작업 키와 요청 내용이 일치하지 않아요."),
@@ -38,6 +45,59 @@ DEFAULT_MESSAGES = [
 REQUEST_ID = "00000000-0000-4000-8000-000000000164"
 SERVER_TIME = "2026-10-05T00:00:00.000000Z"
 RETRY_AT = "2026-10-05T00:01:00.000000Z"
+
+
+def test_all_message_less_auth_error_codes_have_defaults():
+    codes = set()
+    for path in Path(auth_boundary.__file__).parent.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Name)
+                and node.func.id == "AuthError"
+            ):
+                continue
+            if any(
+                keyword.arg == "message"
+                and not (
+                    isinstance(keyword.value, ast.Constant) and not keyword.value.value
+                )
+                for keyword in node.keywords
+            ):
+                continue
+            values = [node.args[0]]
+            if isinstance(values[0], ast.Name):
+                name = values[0].id
+                values = [
+                    assignment.value
+                    for assignment in ast.walk(tree)
+                    if isinstance(assignment, ast.Assign)
+                    and any(
+                        isinstance(target, ast.Name) and target.id == name
+                        for target in assignment.targets
+                    )
+                ]
+            assert values, f"Unresolved AuthError code at {path.name}:{node.lineno}"
+            for value in values:
+                branches = (
+                    [value.body, value.orelse]
+                    if isinstance(value, ast.IfExp)
+                    else [value]
+                )
+                for branch in branches:
+                    assert isinstance(branch, ast.Constant) and isinstance(
+                        branch.value, str
+                    ), f"Unresolved AuthError code at {path.name}:{node.lineno}"
+                    codes.add(branch.value)
+    assert codes
+    missing = [
+        code
+        for code in sorted(codes)
+        if json.loads(error_response(AuthError(code)).body)["error"]["message"]
+        == FALLBACK
+    ]
+    assert missing == [], f"AuthError codes without default messages: {missing}"
 
 
 @pytest.fixture

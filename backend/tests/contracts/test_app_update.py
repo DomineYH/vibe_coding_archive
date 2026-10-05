@@ -270,8 +270,16 @@ def test_mismatch_conflict_and_registration_replay_are_distinct(member_app):
         assert read(owner, key).json()["state"] == "unresolved"
         second = update_key(owner, item["id"])
         assert update(owner, item["id"], key).status_code == 200
-        error(issue_update(owner, item["id"]), 409, "VERSION_CONFLICT")
-        error(update(owner, item["id"], second), 409, "VERSION_CONFLICT")
+        for response in (
+            issue_update(owner, item["id"]),
+            update(owner, item["id"], second),
+        ):
+            error(response, 409, "VERSION_CONFLICT")
+            assert response.json()["error"]["message"] == (
+                "다른 곳에서 먼저 바뀌었어요. 최신 내용을 확인해 주세요."
+            )
+            assert response.headers["Cache-Control"] == "no-store"
+            assert "Retry-After" not in response.headers
         result = read(owner, second).json()
         assert (
             result["state"] == "rejected"
