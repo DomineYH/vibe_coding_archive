@@ -495,11 +495,11 @@ export function AppDetailView({
               >
                 삭제 결과 확인
               </button>
-            ) : (
+            ) : app ? (
               <Btn size="sm" variant="danger" onClick={onDelete}>
                 다시 시도
               </Btn>
-            )}
+            ) : null}
             <button
               ref={deleteCancelRef}
               type="button"

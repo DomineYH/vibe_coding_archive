@@ -252,3 +252,28 @@ it("keeps deletion confirmation recovery available without a deleted app body", 
   expect(check).toHaveBeenCalledOnce();
   expect(screen.queryByText(app.prompt)).not.toBeInTheDocument();
 });
+
+it("hides deletion retry without an app or operation key", async () => {
+  const retry = vi.fn();
+  render(
+    <AppDetailView
+      app={null}
+      meta={meta}
+      deleteState={{
+        id: app.id,
+        phase: "rejected",
+        rejectionCode: "NOT_FOUND",
+        message: "아카이브 앱을 찾을 수 없어요.",
+        operation: null,
+      }}
+      onDelete={retry}
+    />,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "아카이브 앱을 찾을 수 없어요.",
+  );
+  expect(
+    screen.queryByRole("button", { name: "다시 시도", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(retry).not.toHaveBeenCalled();
+});

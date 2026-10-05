@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 from datetime import UTC, datetime
 from getpass import getpass
@@ -258,7 +259,7 @@ def main() -> int:
                 factory = make_session_factory(engine)
                 retry_delivery(factory)
                 sweep_pending(factory)
-        except (RuntimeError, SQLAlchemyError, OSError):
+        except (RuntimeError, SQLAlchemyError, OSError, sqlite3.Error):
             print(
                 "Pending maintenance or restore verification failed; service must remain unavailable.",
                 file=sys.stderr,

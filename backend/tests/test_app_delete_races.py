@@ -1,6 +1,7 @@
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier, Event
+from time import monotonic, sleep
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,6 +14,50 @@ from tests.auth_client import signed_in
 from tests.contracts.test_admin_approval import execute
 from tests.contracts.test_admin_approval import issue as approval_issue
 from tests.support import AUTH_MEMBERS
+
+
+def test_writer_proceeds_during_confirmation_within_five_second_deadline(member_app):
+    app, path = member_app()
+    with TestClient(app) as client:
+        owner = signed_in(client)
+        item = registered(owner)
+        other = registered(owner)
+        key = delete_key(owner, item["id"])
+
+        def submit():
+            started = monotonic()
+            result = delete(owner, item["id"], key)
+            return result, monotonic() - started
+
+        with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+            ledger.execute("BEGIN IMMEDIATE")
+            with ThreadPoolExecutor(1) as pool:
+                future = pool.submit(submit)
+                committed = False
+                deadline = monotonic() + 5
+                while monotonic() < deadline:
+                    with sqlite3.connect(path, timeout=0.1) as db:
+                        committed = bool(
+                            db.execute(
+                                "SELECT count(*) FROM app_delete_outbox"
+                            ).fetchone()[0]
+                        )
+                    if committed:
+                        break
+                    sleep(0.02)
+                assert committed, "Deletion did not commit before ledger confirmation."
+                writer_started = monotonic()
+                with sqlite3.connect(path, timeout=0.5) as db:
+                    db.execute("BEGIN IMMEDIATE")
+                    db.execute("UPDATE apps SET name=name WHERE id=?", (other["id"],))
+                    db.commit()
+                assert monotonic() - writer_started < 0.5
+                assert not future.done()
+                result, elapsed = future.result(timeout=35)
+        error(result, 503, "DELETION_CONFIRMATION_PENDING")
+        assert elapsed < 6, (
+            f"Confirmation exceeded its five-second budget: {elapsed:.2f}s"
+        )
 
 
 @pytest.mark.parametrize("same", [True, False])

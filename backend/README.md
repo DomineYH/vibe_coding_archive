@@ -117,6 +117,7 @@ Synthetic Argon2 members for tests live in `tests/support.py`
 (`populate_auth_members`); the API E2E runner inserts them once with the other
 fixtures. Their shared password is a test-only constant, never a seed default.
 
+
 ## T03 administrator credentials and own password change
 
 First run the explicit migration to `0004_session_recent_auth`. Individually
@@ -210,6 +211,7 @@ readiness를 거절하지만 별도 CLI 실패가 실행 중 서비스의 readin
 확인한 뒤에만 복원한다. 연락처·원문·비밀번호·토큰은 기록하지 않는다.
 
 백업 복원은 운영 DB만 복원하고 **현재 독립 원장을 복원하거나 덮어쓰지 않는다**.
+대화형 앱 삭제는 `invalidate-restored-auth`에서만 재적용되므로 이 명령을 완료하기 전에 복원 DB로 서비스를 시작하거나 sweep을 실행하면 안 된다.
 서비스를 중지한 상태에서 기존 `invalidate-restored-auth` 명령을 실행한다. 현재 원장이
 없거나 검증 불능이면 거절한다. 재삭제를 적용한 후 모든 과거 인증 권한/허가를 폐기하고,
 가입/세션의 원래 시계를 유지한다. 공급자 사본 전체 목록·30일 만료 증거가 확인된 뒤

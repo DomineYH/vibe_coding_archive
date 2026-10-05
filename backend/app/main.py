@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 import sys
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -208,7 +209,7 @@ def create_app(
             app.state.auth_ready = True
         except RuntimeError:
             verification_failed = True
-        except (SQLAlchemyError, AuthError):
+        except (SQLAlchemyError, AuthError, sqlite3.Error):
             app.state.auth_ready = False
 
         async def maintain_auth():

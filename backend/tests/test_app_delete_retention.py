@@ -305,3 +305,60 @@ def test_confirmed_delete_response_does_not_reopen_operational_cookie_reads(memb
             )
         assert response.status_code == 204, response.text
         assert read(owner, key).json()["state"] == "succeeded"
+
+
+def test_confirming_same_key_replay_confirms_without_reexecuting_deletion(member_app):
+    app, path = member_app()
+    with TestClient(app) as client:
+        owner = signed_in(client)
+        item = registered(owner)
+        key = delete_key(owner, item["id"])
+        with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+            ledger.execute("BEGIN IMMEDIATE")
+            error(delete(owner, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
+            original = read(owner, key).json()
+            error(delete(owner, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
+            assert read(owner, key).json()["db_applied_at"] == original["db_applied_at"]
+        error(delete(owner, item["id"], key, 2), 409, "OPERATION_KEY_MISMATCH")
+        assert delete(owner, item["id"], key).status_code == 204
+        result = read(owner, key).json()
+        assert result["state"] == "succeeded"
+        assert result["db_applied_at"] == original["db_applied_at"]
+        with sqlite3.connect(path) as db:
+            assert db.execute("SELECT count(*) FROM app_delete_outbox").fetchone() == (
+                1,
+            )
+            assert db.execute(
+                "SELECT count(*) FROM audit_logs WHERE action='app_delete'"
+            ).fetchone() == (1,)
+        error(delete(owner, item["id"], key), 409, "OPERATION_ALREADY_RESOLVED")
+
+
+def test_conflicting_independent_payload_never_acknowledges_deletion(member_app):
+    app, path = member_app()
+    with TestClient(app) as client:
+        owner = signed_in(client)
+        item = registered(owner)
+        key = delete_key(owner, item["id"])
+        with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+            ledger.execute(
+                "INSERT INTO completed_app_delete_events VALUES ('00000000-0000-4000-8000-000000000000',?,'interactive_app_delete','2000-01-01T00:00:00Z')",
+                (item["id"],),
+            )
+            original = ledger.execute(
+                "SELECT * FROM completed_app_delete_events"
+            ).fetchall()
+        error(delete(owner, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
+        assert read(owner, key).json()["state"] == "confirming_deletion"
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT delivered_at FROM app_delete_outbox"
+            ).fetchone() == (None,)
+        with pytest.raises(RuntimeError, match="disagrees"):
+            sweep(app.state.session_factory)
+        assert read(owner, key).json()["state"] == "confirming_deletion"
+        with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
+            assert (
+                ledger.execute("SELECT * FROM completed_app_delete_events").fetchall()
+                == original
+            )
