@@ -972,6 +972,14 @@ export function AdminView({ scopeKey, meta, active = true }) {
   const canDelete =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_user_delete.enabled === true;
+  const resetNotImplemented =
+    !canReset &&
+    meta?.capabilities.admin_password_reset.enabled === false &&
+    meta.capabilities.admin_password_reset.reasons.includes("not_implemented");
+  const deleteNotImplemented =
+    !canDelete &&
+    meta?.capabilities.admin_user_delete.enabled === false &&
+    meta.capabilities.admin_user_delete.reasons.includes("not_implemented");
   const canReadApps =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_apps_read.enabled === true;
@@ -2247,6 +2255,11 @@ export function AdminView({ scopeKey, meta, active = true }) {
                           size="sm"
                           variant="line"
                           onClick={() => beginPasswordReset(user.id)}
+                          aria-describedby={
+                            resetNotImplemented
+                              ? `admin-password-reset-reason-${user.id}`
+                              : undefined
+                          }
                           disabled={
                             !canReset ||
                             busy ||
@@ -2262,6 +2275,11 @@ export function AdminView({ scopeKey, meta, active = true }) {
                           size="sm"
                           variant="line"
                           onClick={() => beginUserDelete(user.id)}
+                          aria-describedby={
+                            deleteNotImplemented
+                              ? `admin-user-delete-reason-${user.id}`
+                              : undefined
+                          }
                           disabled={
                             !canDelete ||
                             busy ||
@@ -2291,6 +2309,21 @@ export function AdminView({ scopeKey, meta, active = true }) {
                       </div>
                     )}
                   </div>
+                  {user.role !== "admin" &&
+                  (resetNotImplemented || deleteNotImplemented) ? (
+                    <div className="space-y-1 px-5 pb-4 pl-[68px] text-[12px] text-neutral-500 sm:pl-[72px] sm:pr-6">
+                      {resetNotImplemented ? (
+                        <p id={`admin-password-reset-reason-${user.id}`}>
+                          임시 비밀번호 설정 기능은 아직 준비 중이에요.
+                        </p>
+                      ) : null}
+                      {deleteNotImplemented ? (
+                        <p id={`admin-user-delete-reason-${user.id}`}>
+                          회원 삭제 기능은 아직 준비 중이에요.
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                   {selection?.id === user.id ? approvalPanel : null}
                   {resetSelection?.id === user.id ? (
                     <PasswordResetPanel

@@ -442,3 +442,20 @@ not claim human visual, screen-reader, physical-device or operating acceptance.
 **Decision: DomineYH, 2026-10-04 — B, decided copy, B1.** The [issue decision](https://github.com/DomineYH/vibe_coding_archive/issues/134) separates successful zero-result responses with default applied search/subject/grade from Q17-95. The existing `EmptyState` shows **“아직 공개된 앱이 없어요”** and **“앱이 공개되면 여기에 표시돼요.”**, without condition text, a reset button, or an added registration CTA. Pending draft/debounced/IME input does not determine this state. Any applied condition retains Q17-95's copy, condition text and keyboard reset to search focus; loading, invalid conditions, input-limit errors and request failures retain their existing states in mock and API modes.
 
 Visual approval: **DomineYH 승인(2026-10-04)** — five product-only captures in `docs/evidence/phase-3/issue134/2026-10-04` accepted as-is, including the default `EmptyState` icon. The [#134 evidence](evidence/phase-3/issue134/2026-10-04/README.md) records the local environment and verification. Existing conditioned `gallery-empty` comparisons retain their five baselines and 0px tolerance; no reference, baseline or tolerance is updated.
+
+## Issue #163 unavailable member actions · UI-D03/UI-D09
+
+API member rows show “임시 비밀번호 설정 기능은 아직 준비 중이에요.” and
+“회원 삭제 기능은 아직 준비 중이에요.” only when the corresponding capability
+is explicitly disabled with `not_implemented` among its reasons. Each existing
+button references its visible static description through a unique per-member
+`aria-describedby` ID. The notes add row height and may wrap on mobile; enabled
+capabilities, unresolved metadata, other restriction reasons, busy/pending-only
+locks, protected administrator rows and mock controls retain their existing
+behavior.
+
+The 390px and 1440px API rendered observations and DOM accessibility relations
+are product-only evidence, including a separately identified long-nickname
+response fixture. Automated capture and relation checks do not claim human visual
+or screen-reader acceptance. Existing mock visual comparisons remain separate;
+no preserved reference, visual baseline, mask or tolerance is changed.
