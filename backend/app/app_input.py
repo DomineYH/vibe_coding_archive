@@ -4,9 +4,10 @@ import hashlib
 import json
 import re
 from ipaddress import IPv4Address, IPv6Address
+from typing import Annotated
 from unicodedata import normalize
 
-from pydantic import AnyUrl, ConfigDict, model_validator
+from pydantic import AnyUrl, ConfigDict, Field, model_validator
 
 from app.auth import StrictModel
 from app.auth_boundary import AuthError
@@ -116,50 +117,7 @@ class AppInput(StrictModel):
 
     @model_validator(mode="after")
     def normalize_input(self):
-        fields = {}
-        for field, maximum, options in (
-            ("name", 100, {"trim": True, "nfc": True, "required": True}),
-            ("prompt", 30000, {"multiline": True, "required": True}),
-            ("description", 20000, {"multiline": True, "required": True}),
-            *(
-                (field, 200, {"trim": True, "nfc": True})
-                for field in (
-                    "stack_db",
-                    "stack_backend",
-                    "stack_frontend",
-                    "stack_hosting",
-                )
-            ),
-        ):
-            if (value := getattr(self, field)) is None:
-                continue
-            try:
-                cleaned = clean_text(value, maximum, **options)
-                setattr(
-                    self,
-                    field,
-                    (cleaned or None) if field.startswith("stack_") else cleaned,
-                )
-            except ValueError as error:
-                fields[field] = str(error)
-        try:
-            self.url = validate_url(self.url)
-        except ValueError:
-            fields["url"] = "공개 http 또는 https 주소를 입력해 주세요."
-        if self.subject not in CATALOG["subjects"]:
-            fields["subject"] = "교과 과목을 선택해 주세요."
-        if self.theme_id not in {theme["id"] for theme in CATALOG["themes"]}:
-            fields["theme_id"] = "테마를 선택해 주세요."
-        if (
-            not self.grades
-            or len(self.grades) > 12
-            or len(set(self.grades)) != len(self.grades)
-            or any(grade not in CATALOG["grades"] for grade in self.grades)
-        ):
-            fields["grades"] = "서로 다른 적용 학년을 하나 이상 선택해 주세요."
-        if fields:
-            raise AuthError("VALIDATION_ERROR", 422, fields=fields)
-        self.grades = [grade for grade in CATALOG["grades"] if grade in self.grades]
+        normalize_fields(self)
         return self
 
     def request_hash(self):
@@ -171,3 +129,111 @@ class AppInput(StrictModel):
             allow_nan=False,
         )
         return hashlib.sha256(wire.encode("utf-8")).hexdigest()
+
+
+def normalize_fields(self):
+    fields = {}
+    supplied = self.model_fields_set
+    for field, maximum, options in (
+        ("name", 100, {"trim": True, "nfc": True, "required": True}),
+        ("prompt", 30000, {"multiline": True, "required": True}),
+        ("description", 20000, {"multiline": True, "required": True}),
+        *(
+            (field, 200, {"trim": True, "nfc": True})
+            for field in (
+                "stack_db",
+                "stack_backend",
+                "stack_frontend",
+                "stack_hosting",
+            )
+        ),
+    ):
+        if field not in supplied or (value := getattr(self, field)) is None:
+            continue
+        try:
+            cleaned = clean_text(value, maximum, **options)
+            setattr(
+                self,
+                field,
+                (cleaned or None) if field.startswith("stack_") else cleaned,
+            )
+        except ValueError as error:
+            fields[field] = str(error)
+    if "url" in supplied:
+        try:
+            self.url = validate_url(self.url)
+        except ValueError:
+            fields["url"] = "공개 http 또는 https 주소를 입력해 주세요."
+    if "subject" in supplied and self.subject not in CATALOG["subjects"]:
+        fields["subject"] = "교과 과목을 선택해 주세요."
+    if "theme_id" in supplied and self.theme_id not in {
+        theme["id"] for theme in CATALOG["themes"]
+    }:
+        fields["theme_id"] = "테마를 선택해 주세요."
+    if "grades" in supplied and (
+        not self.grades
+        or len(self.grades) > 12
+        or len(set(self.grades)) != len(self.grades)
+        or any(grade not in CATALOG["grades"] for grade in self.grades)
+    ):
+        fields["grades"] = "서로 다른 적용 학년을 하나 이상 선택해 주세요."
+    if fields:
+        raise AuthError("VALIDATION_ERROR", 422, fields=fields)
+    if "grades" in supplied:
+        self.grades = [grade for grade in CATALOG["grades"] if grade in self.grades]
+
+
+Version = Annotated[int, Field(strict=True, ge=1, le=9007199254740991)]
+
+
+class AppPatch(StrictModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    name: str = None
+    url: str = None
+    prompt: str = None
+    description: str = None
+    subject: str = None
+    grades: list[str] = None
+    is_public: bool = None
+    theme_id: str = None
+    stack_db: str | None = None
+    stack_backend: str | None = None
+    stack_frontend: str | None = None
+    stack_hosting: str | None = None
+
+    @model_validator(mode="after")
+    def normalize_patch(self):
+        if not self.model_fields_set.intersection(AppPatch.model_fields):
+            raise AuthError(
+                "VALIDATION_ERROR", 422, fields={"form": "편집할 항목을 입력해 주세요."}
+            )
+        normalize_fields(self)
+        return self
+
+
+class UpdateAppInput(AppPatch):
+    expected_version: Version
+
+    def request_hash(self, app_id):
+        return update_request_hash(
+            app_id,
+            self.expected_version,
+            self.model_dump(exclude_unset=True, exclude={"expected_version"}),
+        )
+
+
+def update_request_hash(app_id, expected_version, patch):
+    wire = json.dumps(
+        {
+            "kind": "app_update",
+            "target_id": str(app_id),
+            "expected_version": expected_version,
+            "input": patch,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        allow_nan=False,
+    )
+    return hashlib.sha256(wire.encode("utf-8")).hexdigest()

@@ -34,3 +34,30 @@ def test_environment_capability_gate(member_app, environment):
         assert client.get(f"{API}/meta").json()["capabilities"]["apps_create"][
             "enabled"
         ] is (environment == "development")
+
+
+def test_edit_capability_has_exactly_the_create_readiness_boundary(
+    member_app, make_test_app, tmp_path
+):
+    prepared, _ = member_app()
+    with TestClient(prepared) as client:
+        capabilities = client.get(f"{API}/meta").json()["capabilities"]
+        assert (
+            capabilities["apps_update_own"]
+            == capabilities["apps_create"]
+            == {"enabled": True, "reasons": []}
+        )
+        assert not capabilities["apps_delete_own"]["enabled"]
+        assert not capabilities["admin_apps_manage"]["enabled"]
+    for environment in ("development", "production", "test"):
+        settings = prepared.state.settings.model_copy(update={"app_env": environment})
+        with TestClient(create_app(settings)) as client:
+            capabilities = client.get(f"{API}/meta").json()["capabilities"]
+            assert (
+                capabilities["apps_update_own"]["enabled"]
+                is capabilities["apps_create"]["enabled"]
+            )
+    with TestClient(make_test_app(tmp_path / "unprepared.sqlite3")) as client:
+        assert not client.get(f"{API}/meta").json()["capabilities"]["apps_update_own"][
+            "enabled"
+        ]

@@ -1004,6 +1004,7 @@ paths:
         "404": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "410": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
         "422": { $ref: "#/components/responses/ServiceError" }
         "429": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }

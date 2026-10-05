@@ -207,8 +207,8 @@ if (prepared) {
     expect(publicOnly.pagination.total).toBe(0);
     const meta = await (await page.request.get("/api/v1/meta")).json();
     expect(meta.capabilities.apps_create.enabled).toBe(true);
+    expect(meta.capabilities.apps_update_own.enabled).toBe(true);
     for (const key of [
-      "apps_update_own",
       "apps_delete_own",
       "admin_apps_read",
       "admin_apps_manage",
@@ -216,7 +216,7 @@ if (prepared) {
       expect(meta.capabilities[key].enabled).toBe(false);
     for (const [method, url, expected] of [
       ["post", "/api/v1/apps", 422],
-      ["patch", `/api/v1/apps/${A}`, 405],
+      ["patch", `/api/v1/apps/${A}`, 422],
       ["delete", `/api/v1/apps/${A}`, 405],
       ["get", "/api/v1/admin/apps", 404],
     ]) {

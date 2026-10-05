@@ -18,11 +18,13 @@ from starlette.responses import JSONResponse
 from app.admin_approval import router as admin_approval_router
 from app.app_create import router as app_create_router
 from app.app_input import AppInput
+from app.app_update import router as app_update_router
 from app.auth import router as auth_router
 from app.auth_boundary import (
     READ_CONTEXT_PARAMETERS,
     AuthBodyLimit,
     AuthError,
+    app_patch_path,
     error_response,
     invalid_cookie_names,
     read_context,
@@ -262,9 +264,13 @@ def create_app(
 
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(request, error):
-        if request.url.path.startswith(
-            ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
-        ) or (request.method == "POST" and request.url.path == "/api/v1/apps"):
+        if (
+            request.url.path.startswith(
+                ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
+            )
+            or (request.method == "POST" and request.url.path == "/api/v1/apps")
+            or (request.method == "PATCH" and app_patch_path(request.url.path))
+        ):
             return error_response(
                 AuthError("BAD_REQUEST", 400)
                 if any(item["type"] == "json_invalid" for item in error.errors())
@@ -285,6 +291,7 @@ def create_app(
                         for item in error.errors()
                     }
                     if request.url.path in ("/api/v1/apps", "/api/v1/write-operations")
+                    or (request.method == "PATCH" and app_patch_path(request.url.path))
                     else None,
                 )
             )
@@ -299,6 +306,7 @@ def create_app(
                 ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
             )
             or (request.method == "POST" and request.url.path == "/api/v1/apps")
+            or (request.method == "PATCH" and app_patch_path(request.url.path))
         ) and error.status_code == 400:
             return error_response(AuthError("BAD_REQUEST", 400))
         from fastapi.exception_handlers import http_exception_handler
@@ -327,6 +335,7 @@ def create_app(
                 "admin_approval",
                 "admin_summary",
                 "apps_create",
+                "apps_update_own",
             ):
                 capabilities[key] = {"enabled": True, "reasons": []}
         return {
@@ -350,6 +359,7 @@ def create_app(
     api.include_router(admin_approval_router)
     api.include_router(public_apps_router)
     api.include_router(app_create_router)
+    api.include_router(app_update_router)
     app.include_router(api)
 
     @app.get("/healthz", response_model=LivenessResponse)

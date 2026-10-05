@@ -817,3 +817,31 @@ it("does not extend app POST error acceptance to GET /apps", async () => {
     outcome: "not_applicable",
   });
 });
+
+it.each([
+  [400, "BAD_REQUEST"],
+  [413, "PAYLOAD_TOO_LARGE"],
+  [503, "FEATURE_UNAVAILABLE"],
+] as const)(
+  "recognizes PATCH %s %s and retains uncertain execution",
+  async (status, code) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: { code, message: "편집 오류", request_id: null },
+          }),
+          { status },
+        ),
+      ),
+    );
+    await expect(
+      appsService.update(appId, { name: "편집" }, 1, key),
+    ).rejects.toMatchObject({
+      code,
+      httpStatus: status,
+      outcome: status >= 500 ? "unknown" : "not_applicable",
+    });
+  },
+);

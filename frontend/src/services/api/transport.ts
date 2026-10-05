@@ -123,6 +123,8 @@ const API_ERROR_TRIPLES = [
   { endpoint: "POST /apps", status: 503, code: "AUTH_BUSY" },
   { endpoint: "POST /apps", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "PATCH /apps/{id}", status: 400, code: "VALIDATION_ERROR" },
+  { endpoint: "PATCH /apps/{id}", status: 400, code: "BAD_REQUEST" },
+  { endpoint: "PATCH /apps/{id}", status: 413, code: "PAYLOAD_TOO_LARGE" },
   { endpoint: "PATCH /apps/{id}", status: 401, code: "AUTH_REQUIRED" },
   { endpoint: "PATCH /apps/{id}", status: 403, code: "FORBIDDEN" },
   {
@@ -183,6 +185,7 @@ const API_ERROR_TRIPLES = [
   },
   { endpoint: "PATCH /apps/{id}", status: 503, code: "DB_BUSY" },
   { endpoint: "PATCH /apps/{id}", status: 503, code: "AUTH_BUSY" },
+  { endpoint: "PATCH /apps/{id}", status: 503, code: "FEATURE_UNAVAILABLE" },
   { endpoint: "DELETE /apps/{id}", status: 400, code: "VALIDATION_ERROR" },
   { endpoint: "DELETE /apps/{id}", status: 401, code: "AUTH_REQUIRED" },
   { endpoint: "DELETE /apps/{id}", status: 403, code: "FORBIDDEN" },

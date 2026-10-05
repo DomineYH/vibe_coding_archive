@@ -66,7 +66,7 @@ def test_migration_preserves_approval_rows_constraints_and_http_operations(
     command.upgrade(config, "head")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0007_app_create",
+            "0008_app_update",
         )
         assert (
             db.execute(
@@ -111,7 +111,7 @@ def test_migration_preserves_approval_rows_constraints_and_http_operations(
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT count(*) FROM write_operations").fetchone() == (3,)
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0007_app_create",
+            "0008_app_update",
         )
     with TestClient(create_app(settings, auth_testing=True)) as client:
         admin = signed_in(client, "admin")

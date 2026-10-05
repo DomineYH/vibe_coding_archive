@@ -61,7 +61,7 @@ read twice without echo and stored as a hash.
 
 `APP_ENV=development`에서는 검증된 T01~T05 실제 인증을 기본 활성화한다.
 `auth_login`, `auth_logout`, `auth_password_change`, `auth_register`,
-`admin_users_read`, `admin_approval`, `admin_summary`, `apps_create` 여덟 capability를 켠다.
+`admin_users_read`, `admin_approval`, `admin_summary`, `apps_create`, `apps_update_own` 아홉 capability를 켠다.
 `APP_ENV=test`는 기존 factory의 `auth_testing=True`일 때만 켜며 이 인자는
 시험 환경에서만 허용한다. `APP_ENV=production`은 인증을 계속 비활성화한다.
 T07/G01~G18 운영 공개 검수는 보류 상태다.
@@ -252,25 +252,38 @@ APP_ENV=test uv run --frozen pytest tests/contracts/test_admin_approval.py tests
 `input=AppInput`으로 키를 발급하고, 같은 입력과 `Idempotency-Key`로 `POST /apps`를
 실행한다. Origin·CSRF·flow·revision·세션 세대 검증을 거치며 작성자는 서버 세션에서
 정한다. 앱·학년·초기 `unchecked` 연결 결과·성공 작업 결과는 같은 트랜잭션으로 저장한다.
-같은 키·정규화된 입력의 재전송은 같은 앱을 반환하고, 다른 입력은 409,
+등록은 같은 키·정규화된 입력의 재전송에 201과 같은 앱을 반환하고, 다른 입력은 409,
 다른 회원의 키·모르는 키는 404, 만료된 소유 키는 410이다. 앱 키 조회는 현재 승인된
 full 발급 회원만 가능하며 입력·해시를 공개하지 않는다. 작업 응답은 `private, no-store`,
-생성 응답은 `no-store`이다. 키는 24시간 유효하며 승인 키와 같은 정리·복원 무효화에 참여한다.
+생성·편집 응답은 `no-store`이다. 키는 24시간 유효하며 승인 키와 같은 정리·복원 무효화에 참여한다.
 앱 키의 승인 실행·취소는 허용하지 않는다.
+
+편집은 `kind=app_update`, `target_id`, `expected_version`, `input=AppPatch`로 키를 발급하고
+같은 조건·부분 입력과 `Idempotency-Key`로 `PATCH /apps/{id}`를 실행한다. 승인 full 소유자만
+가능하며 관리자도 자기 앱만 편집한다. 생략 필드는 유지하고 기술 스택의 명시적 null은
+삭제한다. 같은 값·공개 여부만의 편집도 version을 1 증가시키며, 실행 충돌은 앱을 바꾸지
+않고 `rejected` 최소 결과로 확정한다. 확정된 같은 요청의 재전송은 409
+`OPERATION_ALREADY_RESOLVED`이며 기존 키 결과 조회로 복구한다. 응답 유실·일시 장애는
+새 키로 자동 제출하지 않는다. URL 저장 문자열에서 fragment 이외가 바뀌면 url_version을
+1 증가시키고 연결 결과를 unchecked·검사 시각/신선도 null로 초기화한다. fragment만의 변경은
+연결 결과를 유지한다. 공개 전환은 같은 PATCH이며 공개 목록·상세 권한에 즉시 반영된다.
 
 개발 환경에서는 로그인 후 `/apps/new`에서 공개 앱(예: `https://www.naver.com`)을 등록하고
 상세·새로고침·비로그인 갤러리를 확인할 수 있다. 비공개 앱은 작성자·관리자만 상세를 볼 수
-있고 공개 목록·검색·facets·total에는 나타나지 않는다. 운영 환경 등록은 계속 비활성이다.
-앱 생성 본문과 `app_create` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
+있고 공개 목록·검색·facets·total에는 나타나지 않는다. `/apps/{id}/edit`에서 편집·공개 전환을
+확인한다. 운영 환경 등록·편집은 계속 비활성이고 Phase 4 전체 수락은 별도 검수다.
+앱 생성·PATCH 본문과 `app_create`·`app_update` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
 스트리밍 수신 단계에서 제한한다. 기본 포트(`http:80`, `https:443`)는 허용하고 사용자 정보,
 localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. IPv4-mapped/compatible IPv6의 내장
 IPv4에도 기존 IPv4 차단 대역을 적용하며 공개 내장 IPv4는 허용한다. 빈 사용자 정보는
 파서가 authority로 해석하는 모든 표기에서 거부하되 경로·query·fragment의 `@`는 허용한다.
 DNS·HTTP 연결 검사는 하지 않는다.
 
-`0007_app_create` 마이그레이션은 기존 승인 작업 행을 보존하며 앱 입력 해시·결과 버전을
-추가한다. 개발 DB는 유효한 SQLite 백업을 만든 뒤 `alembic upgrade head`로 갱신하고
-`/readyz`·`/meta`의 `apps_create`를 확인한다. head가 아니면 서버는 시작하지 않는다.
+`0008_app_update` 마이그레이션은 기존 승인·등록 작업 행과 앱 데이터를 보존하며 편집의
+버전 조건·최소 결과 제약을 추가한다. 병합 후 개발 DB는 서버와 쓰기 작업을 멈추고 유효한
+SQLite 백업을 만든 뒤 `alembic upgrade head`로 갱신한다. `foreign_key_check`, head, 기존
+데이터와 `/readyz`·`/meta`의 `apps_create`·`apps_update_own`을 확인한다. 실제 개발 DB는
+테스트 대상으로 사용하지 않는다. head가 아니면 서버는 시작하지 않는다.
 스키마 downgrade로 작업 이력을 버릴 수 없으며, 복구는 검증된 백업과 독립 삭제 원장,
 기존 복원 인증 무효화 절차를 따른다.
 

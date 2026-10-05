@@ -8,7 +8,7 @@ from fastapi import APIRouter, Body, Depends, Query, Request
 from pydantic import Field
 from sqlalchemy import text
 
-from app.app_input import AppInput
+from app.app_input import AppInput, AppPatch
 from app.auth import Db, StrictModel, Unlocked, open_session
 from app.auth_boundary import (
     AuthError,
@@ -59,8 +59,18 @@ class CreateAppOperation(StrictModel):
     input: AppInput
 
 
+class CreateAppUpdateOperation(StrictModel):
+    kind: Literal["app_update"]
+    target_id: UUID
+    expected_version: Version
+    input: AppPatch
+
+
 def operation_input(
-    body: Annotated[CreateApproval | CreateAppOperation, Body(discriminator="kind")],
+    body: Annotated[
+        CreateApproval | CreateAppOperation | CreateAppUpdateOperation,
+        Body(discriminator="kind"),
+    ],
 ):
     return body
 
@@ -124,6 +134,10 @@ def create_operation(request: Request, body=OperationBody, db=OperationDb):
         from app.app_create import issue_app_operation
 
         return issue_app_operation(db, request, body.input)
+    if body.kind == "app_update":
+        from app.app_update import issue_update_operation
+
+        return issue_update_operation(db, request, body)
     item, actor = administrator(db, request, write=True)
     ordinary_target(db, body.target_id, body.expected_account_version)
     stamp = now()

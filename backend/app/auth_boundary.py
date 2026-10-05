@@ -623,6 +623,10 @@ def transition_summary(db, item, transition_id):
     }
 
 
+def app_patch_path(path):
+    return re.fullmatch(r"/api/v1/apps/[^/]+", path) is not None
+
+
 class AuthBodyLimit:
     """Bound streamed auth and administrator write bodies."""
 
@@ -633,6 +637,9 @@ class AuthBodyLimit:
         app_write = scope.get("method") == "POST" and scope.get("path") in (
             "/api/v1/apps",
             "/api/v1/write-operations",
+        )
+        app_write |= scope.get("method") == "PATCH" and app_patch_path(
+            scope.get("path", "")
         )
         if (
             scope["type"] != "http"
@@ -672,8 +679,9 @@ class AuthBodyLimit:
 
             try:
                 parsed = json.loads(body, object_pairs_hook=unique_fields)
-                allowed = (
-                    isinstance(parsed, dict) and parsed.get("kind") == "app_create"
+                allowed = isinstance(parsed, dict) and parsed.get("kind") in (
+                    "app_create",
+                    "app_update",
                 )
             except (ValueError, UnicodeError, AuthError, RecursionError):
                 allowed = False

@@ -112,6 +112,7 @@ export function SubmitView({
   onSaved,
   onLatest,
   onCancel,
+  readLatest = (id) => appsService.get(id),
 }) {
   const editing = Boolean(app);
   const initialDraft = app ? draftFromApp(app) : emptyDraft;
@@ -325,7 +326,7 @@ export function SubmitView({
         );
       if (operation.state === "succeeded" && operation.targetId) {
         if (editing) {
-          const latest = await appsService.get(operation.targetId);
+          const latest = await readLatest(operation.targetId);
           if (latest.version < operation.resultVersion)
             throw new ServiceError(
               "CONTRACT_ERROR",
@@ -392,7 +393,7 @@ export function SubmitView({
           "현재 회원의 수정 권한을 확인할 수 없어요.",
           { outcome: "rejected" },
         );
-      const latest = await appsService.get(app.id);
+      const latest = await readLatest(app.id);
       if (latest.ownerId !== user.id)
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.");
       const latestDraft = draftFromApp(latest);
