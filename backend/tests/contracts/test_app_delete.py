@@ -91,6 +91,31 @@ def test_delete_route_and_key_boundary_before_target(member_app):
         error(delete(owner, item["id"], str(uuid4())), 404, "OPERATION_NOT_FOUND")
 
 
+def test_delete_stale_version_message_at_both_boundaries(member_app):
+    app, _ = member_app()
+    with TestClient(app) as client:
+        owner = signed_in(client)
+        item = registered(owner)
+        key = delete_key(owner, item["id"])
+        assert (
+            update(owner, item["id"], update_key(owner, item["id"])).status_code == 200
+        )
+        for response in (
+            issue_delete(owner, item["id"]),
+            delete(owner, item["id"], key),
+        ):
+            error(response, 409, "VERSION_CONFLICT")
+            assert response.json()["error"]["message"] == (
+                "다른 곳에서 먼저 바뀌었어요. 최신 내용을 확인해 주세요."
+            )
+            assert response.headers["Cache-Control"] == "no-store"
+            assert "Retry-After" not in response.headers
+        assert detail(owner, item["id"]).json()["item"]["version"] == 2
+        result = read(owner, key).json()
+        assert result["state"] == "rejected"
+        assert result["rejection_code"] == "VERSION_CONFLICT"
+
+
 @pytest.mark.parametrize("public", [True, False])
 @pytest.mark.parametrize("actor", ["hangul", "admin"])
 def test_delete_ownership_private_absence_parity_and_key_isolation(
