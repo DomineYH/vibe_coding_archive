@@ -76,6 +76,154 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+it.each([
+  ["deletion", false],
+  ["deletion", true],
+  ["result lookup", false],
+  ["result lookup", true],
+])(
+  "fences a same-member session replacement learned on navigation for %s (pending auth: %s)",
+  async (request, pendingAuth) => {
+    await setup();
+    const before = await authService.getCurrentAuthState();
+    let resolveResult;
+    if (request === "deletion") {
+      vi.spyOn(appsService, "delete").mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolveResult = resolve;
+          }),
+      );
+      await confirm();
+    } else {
+      vi.spyOn(appsService, "delete").mockRejectedValue(
+        new ServiceError("SERVICE_UNAVAILABLE", "pending", {
+          outcome: "unknown",
+        }),
+      );
+      await confirm();
+      await screen.findByRole("button", { name: "삭제 결과 확인" });
+      vi.spyOn(appsService, "getDeleteOperation").mockImplementation(
+        (key) =>
+          new Promise((resolve) => {
+            resolveResult = () =>
+              resolve({
+                key,
+                kind: "app_delete",
+                targetId: item.id,
+                state: "succeeded",
+              });
+          }),
+      );
+      await userEvent.click(
+        screen.getByRole("button", { name: "삭제 결과 확인" }),
+      );
+    }
+    await waitFor(() => expect(resolveResult).toBeTypeOf("function"));
+    await authService.logout();
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
+    const after = await authService.getCurrentAuthState();
+    expect(after.user.id).toBe(before.user.id);
+    expect(after.flow.flowId).toBe(before.flow.flowId);
+    expect(after.flow.sessionGeneration).not.toBe(
+      before.flow.sessionGeneration,
+    );
+    expect(after.flow.lastIdentityChangeRevision).not.toBe(
+      before.flow.lastIdentityChangeRevision,
+    );
+    let resolveAuth;
+    if (pendingAuth) {
+      vi.spyOn(authService, "getCurrentAuthState").mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveAuth = resolve;
+          }),
+      );
+    }
+    await act(async () => router.navigate("/"));
+    await act(async () => resolveResult());
+    if (pendingAuth) {
+      expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+      await act(async () => resolveAuth(after));
+    }
+    expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+    expect(router.state.location.pathname).toBe("/");
+    await act(async () => router.navigate(`/apps/${item.id}`));
+    await screen.findByText(/인증 상태가 바뀌었어요/);
+    expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+  },
+);
+
+it.each(["approval revocation", "password change requirement", "concealment"])(
+  "fences a parked deletion after %s",
+  async (change) => {
+    await setup();
+    const observed = await authService.getCurrentAuthState();
+    let resolveDelete;
+    let resolveAuth;
+    vi.spyOn(appsService, "delete").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveDelete = resolve;
+        }),
+    );
+    await confirm();
+    vi.spyOn(authService, "getCurrentAuthState").mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveAuth = resolve;
+        }),
+    );
+    await act(async () => router.navigate("/"));
+    await act(async () => resolveDelete());
+    if (change === "approval revocation") observed.user.approved = false;
+    if (change === "password change requirement")
+      observed.user.mustChangePassword = true;
+    if (change === "concealment")
+      await act(async () => window.dispatchEvent(new Event("blur")));
+    await act(async () => resolveAuth(observed));
+    expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
+  },
+);
+
+it("returns to the admin health tab after deleting an admin-owned app from admin", async () => {
+  await setup("admin");
+  await act(async () =>
+    router.navigate(`/apps/${item.id}`, { state: { fromAdmin: true } }),
+  );
+  await confirm();
+  await screen.findByText("앱을 삭제했어요.");
+  expect(router.state.location.pathname).toBe("/admin");
+  expect(router.state.location.search).toBe("?tab=health");
+});
+
+it("applies a late successful result lookup after navigation and keeps the gallery route", async () => {
+  await setup();
+  vi.spyOn(appsService, "delete").mockRejectedValue(
+    new ServiceError("SERVICE_UNAVAILABLE", "pending", { outcome: "unknown" }),
+  );
+  await confirm();
+  await screen.findByRole("button", { name: "삭제 결과 확인" });
+  let resolveLookup;
+  vi.spyOn(appsService, "getDeleteOperation").mockImplementation(
+    (key) =>
+      new Promise((resolve) => {
+        resolveLookup = () =>
+          resolve({
+            key,
+            kind: "app_delete",
+            targetId: item.id,
+            state: "succeeded",
+          });
+      }),
+  );
+  await userEvent.click(screen.getByRole("button", { name: "삭제 결과 확인" }));
+  await act(async () => router.navigate("/"));
+  await act(async () => resolveLookup());
+  await screen.findByText("앱을 삭제했어요.");
+  expect(router.state.location.pathname).toBe("/");
+});
+
 it("allows an admin to delete their own app with other-owner management disabled", async () => {
   await setup("admin");
   expect(

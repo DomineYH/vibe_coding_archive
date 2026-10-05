@@ -2106,6 +2106,10 @@ export default function App() {
     const sameScope =
       auth.user?.id === request.state.user.id &&
       auth.user?.role === request.state.user.role &&
+      auth.flow?.flowId === request.state.flow.flowId &&
+      auth.flow?.sessionGeneration === request.state.flow.sessionGeneration &&
+      auth.flow?.lastIdentityChangeRevision ===
+        request.state.flow.lastIdentityChangeRevision &&
       auth.user?.sessionKind === "full" &&
       auth.user?.approved &&
       !auth.user?.mustChangePassword;
