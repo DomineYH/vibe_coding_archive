@@ -137,6 +137,40 @@ it("retires confirmed DB-applied content while preserving same-key confirmation"
   expect(get).toHaveBeenCalledTimes(1);
 });
 
+it("shows same-key resend while confirming deletion and resends the original key", async () => {
+  await setup();
+  const issue = vi.spyOn(appsService, "issueDeleteOperation");
+  const execute = vi.spyOn(appsService, "delete").mockRejectedValue(
+    new ServiceError(
+      "DELETION_CONFIRMATION_PENDING",
+      "앱 삭제가 반영되었어요.",
+      {
+        outcome: "unknown",
+      },
+    ),
+  );
+  await confirm();
+  await screen.findByRole("button", { name: "삭제 결과 확인" });
+  const [id, deleteInput, key] = execute.mock.calls[0];
+  vi.spyOn(appsService, "getDeleteOperation").mockResolvedValue({
+    key,
+    kind: "app_delete",
+    targetId: item.id,
+    state: "confirming_deletion",
+    dbAppliedAt: "2026-10-05T00:00:00Z",
+  });
+  await userEvent.click(screen.getByRole("button", { name: "삭제 결과 확인" }));
+  await userEvent.click(
+    screen.getByRole("button", { name: "같은 삭제 요청 다시 보내기" }),
+  );
+  await waitFor(() => expect(execute).toHaveBeenCalledTimes(2));
+  expect(execute).toHaveBeenLastCalledWith(id, deleteInput, key);
+  expect(issue).toHaveBeenCalledTimes(1);
+  expect(
+    screen.queryByRole("heading", { name: input.name }),
+  ).not.toBeInTheDocument();
+});
+
 it("does not execute a late issued key after a new authentication observation", async () => {
   await setup();
   let resolve;

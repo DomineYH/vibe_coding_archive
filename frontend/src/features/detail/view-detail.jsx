@@ -472,7 +472,7 @@ export function AppDetailView({
             >
               삭제 결과 확인
             </button>
-            {deletePhase === "unknown" ? (
+            {deleteState.operation?.key ? (
               <Btn size="sm" variant="danger" onClick={onRetryDelete}>
                 같은 삭제 요청 다시 보내기
               </Btn>
