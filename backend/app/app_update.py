@@ -91,6 +91,17 @@ def update_app(id: UUID, request: Request, body=PatchBody, db=PatchDb):
         raise AuthError("OPERATION_KEY_MISMATCH")
     if row["state"] != "unresolved":
         raise AuthError("OPERATION_ALREADY_RESOLVED")
+    if db.scalar(select(App.id).where(App.id == str(id))) is None:
+        db.execute(
+            text(
+                "UPDATE write_operations SET state='rejected',failure_code='NOT_FOUND',applied_at=:stamp WHERE key=:key"
+            ),
+            {"key": key, "stamp": now()},
+        )
+        protected_member(db, request, write=True)
+        operation(db, key, actor)
+        db.commit()
+        raise AuthError("NOT_FOUND", 404, message="아카이브 앱을 찾을 수 없어요.")
     app = owned_target(db, id, actor)
     if app.version != body.expected_version:
         db.execute(

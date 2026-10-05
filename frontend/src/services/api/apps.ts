@@ -446,8 +446,6 @@ export const appsService: AppsService = {
       idempotencyKey: operationKey,
       requestBody: { expected_version: expectedVersion },
     });
-    const operation = await appsService.getDeleteOperation(operationKey);
-    requireSucceededOperation(operation, "app_delete", id);
   },
 
   async getDeleteOperation(key, { signal } = {}) {

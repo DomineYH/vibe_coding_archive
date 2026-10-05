@@ -215,7 +215,7 @@ def error_response(error):
         status_code=error.status,
         headers={
             "Cache-Control": "no-store",
-            **({"Retry-After": "1"} if error.code == "AUTH_BUSY" else {}),
+            **({"Retry-After": "1"} if error.code in ("AUTH_BUSY", "DB_BUSY") else {}),
         },
     )
 
@@ -638,12 +638,12 @@ class AuthBodyLimit:
             "/api/v1/apps",
             "/api/v1/write-operations",
         )
-        app_write |= scope.get("method") == "PATCH" and app_patch_path(
+        app_write |= scope.get("method") in ("PATCH", "DELETE") and app_patch_path(
             scope.get("path", "")
         )
         if (
             scope["type"] != "http"
-            or scope["method"] not in ("POST", "PATCH")
+            or scope["method"] not in ("POST", "PATCH", "DELETE")
             or not (
                 app_write
                 or scope["path"].startswith(
@@ -682,6 +682,7 @@ class AuthBodyLimit:
                 allowed = isinstance(parsed, dict) and parsed.get("kind") in (
                     "app_create",
                     "app_update",
+                    "app_delete",
                 )
             except (ValueError, UnicodeError, AuthError, RecursionError):
                 allowed = False

@@ -252,9 +252,12 @@ def main() -> int:
             if args.command == "invalidate-restored-auth":
                 reconcile(make_session_factory(engine), restored=True)
             else:
+                from app.app_deletion_ledger import retry_delivery
                 from app.pending_retention import sweep_pending
 
-                sweep_pending(make_session_factory(engine))
+                factory = make_session_factory(engine)
+                retry_delivery(factory)
+                sweep_pending(factory)
         except (RuntimeError, SQLAlchemyError, OSError):
             print(
                 "Pending maintenance or restore verification failed; service must remain unavailable.",

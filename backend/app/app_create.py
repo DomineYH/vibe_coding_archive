@@ -24,7 +24,9 @@ def app_operation_body(row):
         "issued_at": row["created_at"],
         "expires_at": row["expires_at"],
         "state": row["state"],
-        "db_applied_at": None
+        "db_applied_at": row["db_applied_at"]
+        if row["kind"] == "app_delete"
+        else None
         if row["kind"] == "app_update" and row["state"] != "succeeded"
         else row["applied_at"],
         "finalized_at": row["applied_at"],

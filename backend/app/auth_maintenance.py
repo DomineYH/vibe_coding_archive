@@ -2,6 +2,7 @@
 
 from sqlalchemy import text
 
+from app.app_deletion_ledger import prepare, replay, retry_delivery
 from app.auth_boundary import (
     SEQUENCE,
     advance,
@@ -16,6 +17,11 @@ from app.pending_retention import sweep_pending
 
 
 def reconcile(factory, *, restored=False):
+    if restored:
+        events = prepare(factory, restored=True)
+        replay(factory, events)
+    else:
+        retry_delivery(factory)
     sweep_pending(factory, restored=restored)
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))
@@ -67,6 +73,7 @@ def reconcile(factory, *, restored=False):
 
 
 def sweep(factory):
+    retry_delivery(factory)
     sweep_pending(factory)
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))

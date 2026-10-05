@@ -61,7 +61,7 @@ read twice without echo and stored as a hash.
 
 `APP_ENV=development`에서는 검증된 T01~T05 실제 인증을 기본 활성화한다.
 `auth_login`, `auth_logout`, `auth_password_change`, `auth_register`,
-`admin_users_read`, `admin_approval`, `admin_summary`, `apps_create`, `apps_update_own` 아홉 capability를 켠다.
+`admin_users_read`, `admin_approval`, `admin_summary`, `apps_create`, `apps_update_own`, `apps_delete_own` 열 capability를 켠다.
 `APP_ENV=test`는 기존 factory의 `auth_testing=True`일 때만 켜며 이 인자는
 시험 환경에서만 허용한다. `APP_ENV=production`은 인증을 계속 비활성화한다.
 T07/G01~G18 운영 공개 검수는 보류 상태다.
@@ -116,7 +116,6 @@ minutes of inactivity; `me`, `csrf` and `flow-state` never extend it.
 Synthetic Argon2 members for tests live in `tests/support.py`
 (`populate_auth_members`); the API E2E runner inserts them once with the other
 fixtures. Their shared password is a test-only constant, never a seed default.
-
 
 ## T03 administrator credentials and own password change
 
@@ -268,24 +267,56 @@ full 발급 회원만 가능하며 입력·해시를 공개하지 않는다. 작
 1 증가시키고 연결 결과를 unchecked·검사 시각/신선도 null로 초기화한다. fragment만의 변경은
 연결 결과를 유지한다. 공개 전환은 같은 PATCH이며 공개 목록·상세 권한에 즉시 반영된다.
 
+삭제는 `POST /write-operations`에 `{kind:"app_delete", target_id, expected_version}`을 보내
+24시간 키를 발급한 뒤, `DELETE /apps/{id}`에 `{expected_version}`과 단일 `Idempotency-Key`를
+보낸다. Origin·CSRF·flow·revision·세대 검증은 편집과 같다. 승인 full 소유자(관리자 자기 앱 포함)만
+가능하다. 타인 공개 앱은 403, 비공개 앱과 없는 앱은 같은 404이며 소유권을 버전보다 먼저 검사한다.
+버전 충돌은 409 VERSION_CONFLICT, 실행 충돌과 실제 없는 대상은 rejected 최소 결과로 확정한다.
+삭제 선행 후 대기 편집 키도 이후 실행 시 rejected/NOT_FOUND가 되며 과거 성공 결과는 보존한다.
+확정 키 replay는 409 OPERATION_ALREADY_RESOLVED 후 기존 키 조회, 다른 조건은 409 mismatch,
+타인/없는 키는 404, 남아 있는 만료 소유 키는 410이다. DB_BUSY는 503과 Retry-After: 1(#13 Q12)이다.
+
+대화형 삭제는 최초 대기 정리의 intent-first 경로와 별도로 DB-first로 처리한다. 앱·학년·연결 결과,
+최소 db_applied 감사, FK 없는 영속 outbox, confirming_deletion 결과를 한 번에 커밋한다.
+잠금을 놓은 뒤 같은 독립 원장의 completed_app_delete_events에 최대 5초 동안 FULL commit과
+운영 acknowledgement를 확인한다. 확인 완료는 빈 204·succeeded·최종 확정 시각, 지연은
+503 DELETION_CONFIRMATION_PENDING·confirming_deletion·DB 반영 시각이며 최종 확정 시각은 null이다.
+503이어도 앱은 이미 삭제됐고 목록·통계·상세에 없다. 삭제 result_version은 항상 null이다.
+기존 60초 유지관리와 시작 조정이 전달만 재시도하며 키/발급 회원 정리 후에도 outbox는 남는다.
+이벤트 중복 전달은 원래 DB 반영 시각을 보존한다. 원장/outbox의 최소 증거는 자동 제거하지 않는다.
+
+프런트는 기존 인라인 취소/확인을 유지하며 응답 유실·조회 404/410을 성공/실패로 추정하지 않는다.
+같은 키의 명시적 확인/재시도만 허용하고 DB 반영이 확인되면 본문·편집·연결 결과 캐시를 퇴역시킨다.
+VERSION_CONFLICT는 최신 앱을 명시적으로 읽고 다시 확인한 뒤 새 키를 발급한다. 탭 메모리 문맥은
+같은 회원 재로그인에서 유지하고 명시적 로그아웃/다른 회원에서는 제거한다. 저장소/새로고침 복원은 없다.
+
 개발 환경에서는 로그인 후 `/apps/new`에서 공개 앱(예: `https://www.naver.com`)을 등록하고
 상세·새로고침·비로그인 갤러리를 확인할 수 있다. 비공개 앱은 작성자·관리자만 상세를 볼 수
 있고 공개 목록·검색·facets·total에는 나타나지 않는다. `/apps/{id}/edit`에서 편집·공개 전환을
-확인한다. 운영 환경 등록·편집은 계속 비활성이고 Phase 4 전체 수락은 별도 검수다.
-앱 생성·PATCH 본문과 `app_create`·`app_update` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
+확인한다. 운영 환경 등록·편집·삭제는 계속 비활성이고 Phase 4 전체 수락은 별도 검수다.
+앱 생성·PATCH·DELETE 본문과 `app_create`·`app_update`·`app_delete` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
 스트리밍 수신 단계에서 제한한다. 기본 포트(`http:80`, `https:443`)는 허용하고 사용자 정보,
 localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. IPv4-mapped/compatible IPv6의 내장
 IPv4에도 기존 IPv4 차단 대역을 적용하며 공개 내장 IPv4는 허용한다. 빈 사용자 정보는
 파서가 authority로 해석하는 모든 표기에서 거부하되 경로·query·fragment의 `@`는 허용한다.
 DNS·HTTP 연결 검사는 하지 않는다.
 
-`0008_app_update` 마이그레이션은 기존 승인·등록 작업 행과 앱 데이터를 보존하며 편집의
-버전 조건·최소 결과 제약을 추가한다. 병합 후 개발 DB는 서버와 쓰기 작업을 멈추고 유효한
-SQLite 백업을 만든 뒤 `alembic upgrade head`로 갱신한다. `foreign_key_check`, head, 기존
-데이터와 `/readyz`·`/meta`의 `apps_create`·`apps_update_own`을 확인한다. 실제 개발 DB는
+`0009_app_delete`는 0008의 승인·등록·편집 행과 앱 데이터를 보존하며 삭제 종류·상태·DB 반영 시각과
+영속 전달 outbox를 추가한다. 병합 후 개발 DB는 서버와 쓰기 작업을 멈추고 유효한
+SQLite 백업과 **현재 독립 원장**을 각각 보존한 뒤 `alembic upgrade head`로 0008→0009를 갱신한다. `foreign_key_check`, head, 기존
+데이터와 `/readyz`·`/meta`의 `apps_create`·`apps_update_own`·`apps_delete_own`을 확인한다.
+정상 시작 조정이 기존 sibling 원장에 새 이벤트 테이블을 추가하며 기존 원장을 교체하지 않는다. 실제 개발 DB는
 테스트 대상으로 사용하지 않는다. head가 아니면 서버는 시작하지 않는다.
 스키마 downgrade로 작업 이력을 버릴 수 없으며, 복구는 검증된 백업과 독립 삭제 원장,
 기존 복원 인증 무효화 절차를 따른다.
+
+복원 preflight는 원장 테이블 생성·outbox 전달·기존 대기 정리보다 먼저 실행된다. 복원 DB의
+전달/미전달 outbox 모두 현재 독립 원장의 동일 완료 이벤트가 있어야 하며 누락을 복원 DB에서
+보충하지 않는다. 이후 모든 독립 완료 앱 삭제를 현재 소유자/시계와 무관하게 재적용하고 모든
+과거 키와 인증 권한을 무효화한다. 복원 전에 쓰기를 멈추고 현재 DB/outbox 전달을 완료·검증한다.
+전달이 막히면 현재 DB/outbox를 보존하고 서비스 재개를 차단한다. 과거 DB와 과거 원장 양쪽에서
+사라진 이벤트의 존재를 추론할 수 없으므로 현재 원장과 운영 사본 목록의 검증이 복원 전제다.
+빈 원장 생성은 요구 이력이 없는 검증된 새 lineage에만 허용한다. 공급자 RPO/RTO는 보증하지 않는다.
 
 비밀번호 초기화·회원 삭제·관리자 재인증·아카이브 앱 관리 실행은 후속 범위다.
 [T05 검수 원장](../docs/evidence/phase-3/issue119/2026-10-02/README.md)에 실제 HTTP,

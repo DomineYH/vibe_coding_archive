@@ -228,3 +228,27 @@ describe("prompt copying", () => {
     ).toBeInTheDocument();
   });
 });
+
+it("keeps deletion confirmation recovery available without a deleted app body", async () => {
+  const check = vi.fn();
+  render(
+    <AppDetailView
+      app={null}
+      meta={meta}
+      error={new ServiceError("NOT_FOUND", "없는 앱")}
+      deleteState={{
+        id: app.id,
+        phase: "confirming",
+        dbApplied: true,
+        message: "앱 삭제가 반영되었어요.",
+        operation: { key: app.id },
+      }}
+      onCheckDeleteResult={check}
+    />,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "삭제 결과 확인" }),
+  );
+  expect(check).toHaveBeenCalledOnce();
+  expect(screen.queryByText(app.prompt)).not.toBeInTheDocument();
+});

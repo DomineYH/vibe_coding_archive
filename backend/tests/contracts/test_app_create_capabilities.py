@@ -47,7 +47,7 @@ def test_edit_capability_has_exactly_the_create_readiness_boundary(
             == capabilities["apps_create"]
             == {"enabled": True, "reasons": []}
         )
-        assert not capabilities["apps_delete_own"]["enabled"]
+        assert capabilities["apps_delete_own"] == capabilities["apps_update_own"]
         assert not capabilities["admin_apps_manage"]["enabled"]
     for environment in ("development", "production", "test"):
         settings = prepared.state.settings.model_copy(update={"app_env": environment})

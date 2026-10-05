@@ -333,7 +333,7 @@ describe("app write API", () => {
       new Headers(fetch.mock.calls[1][1]?.headers).get("Idempotency-Key"),
     ).toBe(key);
     expect(fetch.mock.calls[2][0]).toBe(`/api/v1/write-operations/${key}`);
-    expect(fetch).toHaveBeenCalledTimes(4);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   it("preserves a pending deletion result as unknown rather than rejection", async () => {
@@ -842,6 +842,107 @@ it.each([
       code,
       httpStatus: status,
       outcome: status >= 500 ? "unknown" : "not_applicable",
+    });
+  },
+);
+
+it("finishes confirmed DELETE204 even when later result lookup is unavailable", async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(new Response(null, { status: 204 }));
+  vi.stubGlobal("fetch", fetch);
+  await expect(appsService.delete(appId, 1, key)).resolves.toBeUndefined();
+  expect(fetch).toHaveBeenCalledTimes(1);
+});
+
+it.each([
+  [400, "BAD_REQUEST"],
+  [413, "PAYLOAD_TOO_LARGE"],
+])("maps DELETE %i %s at the API boundary", async (status, code) => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { code, message: "요청을 확인해 주세요.", request_id: key },
+        }),
+        { status: Number(status) },
+      ),
+    ),
+  );
+  await expect(appsService.delete(appId, 1, key)).rejects.toMatchObject({
+    code,
+  });
+});
+
+it.each([
+  [401, "AUTH_REQUIRED"],
+  [503, "DB_BUSY"],
+  [503, "SERVICE_UNAVAILABLE"],
+  [503, "DELETION_CONFIRMATION_PENDING"],
+  [409, "OPERATION_ALREADY_RESOLVED"],
+])(
+  "preserves uncertain DELETE %i %s for existing-key recovery",
+  async (status, code) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: { code, message: "결과 확인 필요", request_id: key },
+          }),
+          { status: Number(status) },
+        ),
+      ),
+    );
+    await expect(appsService.delete(appId, 1, key)).rejects.toMatchObject({
+      code,
+      outcome: "unknown",
+    });
+  },
+);
+
+it.each([
+  [404, "OPERATION_NOT_FOUND"],
+  [410, "OPERATION_EXPIRED"],
+])("keeps deletion lookup %i %s uncertain", async (status, code) => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: { code, message: "확인할 수 없음", request_id: key },
+        }),
+        { status: Number(status) },
+      ),
+    ),
+  );
+  await expect(appsService.getDeleteOperation(key)).rejects.toMatchObject({
+    code,
+    outcome: "unknown",
+  });
+});
+
+it.each([{ key: appId }, { kind: "app_update" }])(
+  "rejects a mismatched deletion lookup %o",
+  async (mismatch) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ...issued,
+            kind: "app_delete",
+            target_id: appId,
+            ...mismatch,
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+    await expect(appsService.getDeleteOperation(key)).rejects.toMatchObject({
+      code: "CONTRACT_ERROR",
+      outcome: "unknown",
     });
   },
 );

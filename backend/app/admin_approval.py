@@ -33,7 +33,7 @@ def unique_fields(pairs):
 
 
 async def check_json(request: Request):
-    if request.method in ("POST", "PATCH") and (raw := await request.body()):
+    if request.method in ("POST", "PATCH", "DELETE") and (raw := await request.body()):
         try:
             json.loads(raw, object_pairs_hook=unique_fields)
         except (ValueError, UnicodeError):
@@ -66,9 +66,18 @@ class CreateAppUpdateOperation(StrictModel):
     input: AppPatch
 
 
+class CreateAppDeleteOperation(StrictModel):
+    kind: Literal["app_delete"]
+    target_id: UUID
+    expected_version: Version
+
+
 def operation_input(
     body: Annotated[
-        CreateApproval | CreateAppOperation | CreateAppUpdateOperation,
+        CreateApproval
+        | CreateAppOperation
+        | CreateAppUpdateOperation
+        | CreateAppDeleteOperation,
         Body(discriminator="kind"),
     ],
 ):
@@ -138,6 +147,10 @@ def create_operation(request: Request, body=OperationBody, db=OperationDb):
         from app.app_update import issue_update_operation
 
         return issue_update_operation(db, request, body)
+    if body.kind == "app_delete":
+        from app.app_delete import issue_delete_operation
+
+        return issue_delete_operation(db, request, body)
     item, actor = administrator(db, request, write=True)
     ordinary_target(db, body.target_id, body.expected_account_version)
     stamp = now()
