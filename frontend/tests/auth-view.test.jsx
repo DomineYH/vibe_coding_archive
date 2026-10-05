@@ -86,6 +86,10 @@ describe("login failure messages", () => {
       new ServiceError("FORBIDDEN", "관리자 권한이 필요해요."),
       /관리자 권한이 필요해요/,
     ],
+    [
+      new ServiceError("FORBIDDEN", "이 작업을 수행할 권한이 없어요."),
+      "이 작업을 수행할 권한이 없어요.",
+    ],
   ])("tells %s apart from a credential error", async (error, expected) => {
     await submitWith(error);
     expect(await screen.findByText(expected)).toBeInTheDocument();

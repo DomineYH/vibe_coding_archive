@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
@@ -137,6 +138,20 @@ def test_approval_key_commits_history_version_audit_and_result_once(member_app):
         assert (
             execute(admin, same.json()["key"], version=2).json()["account_version"] == 3
         )
+
+
+def test_approved_member_admin_users_permission_message(member_app):
+    app, _ = member_app()
+    with TestClient(app) as client:
+        member = signed_in(client)
+        result = client.get(f"{API}/admin/users", headers=headers(member))
+
+        assert result.status_code == 403
+        error = result.json()["error"]
+        assert error["code"] == "FORBIDDEN"
+        assert error["message"] == "이 작업을 수행할 권한이 없어요."
+        assert str(UUID(error["request_id"])) == error["request_id"]
+        assert result.headers["Cache-Control"] == "no-store"
 
 
 def test_admin_reads_current_members_and_full_statistics_without_contact(member_app):
