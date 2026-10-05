@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import sqlite3
 import sys
 from datetime import UTC, datetime
 from getpass import getpass
@@ -252,10 +253,13 @@ def main() -> int:
             if args.command == "invalidate-restored-auth":
                 reconcile(make_session_factory(engine), restored=True)
             else:
+                from app.app_deletion_ledger import retry_delivery
                 from app.pending_retention import sweep_pending
 
-                sweep_pending(make_session_factory(engine))
-        except (RuntimeError, SQLAlchemyError, OSError):
+                factory = make_session_factory(engine)
+                retry_delivery(factory)
+                sweep_pending(factory)
+        except (RuntimeError, SQLAlchemyError, OSError, sqlite3.Error):
             print(
                 "Pending maintenance or restore verification failed; service must remain unavailable.",
                 file=sys.stderr,

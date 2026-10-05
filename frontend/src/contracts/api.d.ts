@@ -2448,6 +2448,7 @@ export interface operations {
             404: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
             410: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             /** @description Includes DELETION_CONFIRMATION_PENDING when the app deletion is committed but its related deletion record is not yet confirmed. Check the existing operation key; do not submit a new key. */

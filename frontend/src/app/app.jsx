@@ -497,6 +497,8 @@ function DetailRoute({
   isCurrentObservation,
   onRetryAuth,
   onDeleted,
+  onDbDeleted,
+  isAppRetired,
   deletionState,
   setDeletionState,
 }) {
@@ -517,8 +519,14 @@ function DetailRoute({
           outcome: "rejected",
         })
       : null;
-  const currentActorId = useRef(auth.user?.id ?? null);
-  currentActorId.current = auth.user?.id ?? null;
+  const deletionAttempt = useRef(0);
+  useEffect(
+    () => () => {
+      deletionAttempt.current += 1;
+    },
+    [],
+  );
+  const retired = isAppRetired(id);
   const deletionBusy = useRef(false);
   const eligible =
     auth.status === "ready" &&
@@ -528,13 +536,14 @@ function DetailRoute({
     !auth.user.mustChangePassword;
   const publicDetail = useQuery({
     queryKey: [__DATA_MODE__, "apps", "detail", id, "public"],
-    enabled: !routeError && access.canRead,
+    enabled: !routeError && access.canRead && !retired,
     queryFn: async ({ signal }) => {
       const app = await appsService.get(id, { signal });
       if (!app.isPublic)
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
           httpStatus: 404,
         });
+      if (isAppRetired(id)) throw new DOMException("App deleted", "AbortError");
       assertThemeIds(access.meta, [app]);
       return app;
     },
@@ -551,7 +560,8 @@ function DetailRoute({
       "member",
       memberCacheScope(auth),
     ],
-    enabled: !routeError && access.canRead && eligible && !publicApp,
+    enabled:
+      !routeError && access.canRead && eligible && !publicApp && !retired,
     queryFn: async ({ signal }) => {
       const context = captureAuthObservation(auth, () =>
         isCurrentObservation(auth.observationId),
@@ -566,6 +576,7 @@ function DetailRoute({
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
           httpStatus: 404,
         });
+      if (isAppRetired(id)) throw new DOMException("App deleted", "AbortError");
       assertThemeIds(access.meta, [app]);
       return app;
     },
@@ -576,7 +587,12 @@ function DetailRoute({
     : eligible
       ? memberDetail
       : publicDetail;
-  const app = publicApp ?? (eligible ? memberDetail.data : undefined);
+  const app = retired
+    ? undefined
+    : (publicApp ??
+      (eligible && memberDetail.error?.code !== "NOT_FOUND"
+        ? memberDetail.data
+        : undefined));
   const healthReadEnabled =
     access.meta?.capabilities.health_read.enabled === true;
   const healthCheckEnabled =
@@ -736,9 +752,7 @@ function DetailRoute({
     Boolean(app) &&
     auth.status === "ready" &&
     !auth.concealed &&
-    ((auth.user?.role === "user" &&
-      ownsApp &&
-      access.meta?.capabilities.apps_delete_own.enabled === true) ||
+    ((ownsApp && access.meta?.capabilities.apps_delete_own.enabled === true) ||
       adminCanManage) &&
     auth.user.approved &&
     auth.user.sessionKind === "full" &&
@@ -748,15 +762,61 @@ function DetailRoute({
     deletionState?.id === id && deletionState.actorId === auth.user?.id
       ? deletionState
       : null;
-  const setCurrentDeletion = (next) =>
+  useEffect(() => {
+    if (
+      !eligible ||
+      currentDeletion?.phase !== "pending" ||
+      currentDeletion.authObservationId === auth.observationId
+    )
+      return;
     setDeletionState((current) => {
-      if (auth.user?.id !== currentActorId.current) return current;
-      if (current && (current.id !== id || current.actorId !== auth.user?.id))
+      if (
+        current?.id !== id ||
+        current.actorId !== auth.user.id ||
+        current.phase !== "pending" ||
+        current.authObservationId === auth.observationId
+      )
         return current;
-      return next;
+      return {
+        ...current,
+        authObservationId: auth.observationId,
+        phase: current.dbApplied
+          ? "confirming"
+          : current.operation
+            ? "unknown"
+            : "rejected",
+        message: current.operation
+          ? "인증 상태가 바뀌었어요. 기존 작업 키로 삭제 결과를 확인해 주세요."
+          : "인증 상태가 바뀌어 삭제를 실행하지 않았어요. 다시 확인해 주세요.",
+      };
     });
+  }, [
+    auth.observationId,
+    auth.user?.id,
+    currentDeletion,
+    eligible,
+    id,
+    setDeletionState,
+  ]);
+  const canRecover = eligible && Boolean(currentDeletion?.operation);
+  const deletionContext = () => {
+    const attempt = ++deletionAttempt.current;
+    return captureAuthObservation(
+      auth,
+      () =>
+        isCurrentObservation(auth.observationId) &&
+        deletionAttempt.current === attempt,
+    );
+  };
+  const setCurrentDeletion = (next, context) => {
+    assertAuthObservation(context);
+    setDeletionState(next);
+  };
   const runDelete = async () => {
-    if (!canDelete || !app || deletionBusy.current) return;
+    if ((!canDelete && !canRecover) || deletionBusy.current) return;
+    if (currentDeletion?.phase === "rejected" && currentDeletion.operation)
+      return;
+    const context = deletionContext();
     const actorId = auth.user.id;
     const existing = currentDeletion;
     const expectedVersion = existing?.operation
@@ -764,95 +824,211 @@ function DetailRoute({
       : app.version;
     let operation = existing?.operation ?? null;
     deletionBusy.current = true;
-    setCurrentDeletion({
+    const state = () => ({
       id,
       actorId,
       expectedVersion,
       operation,
-      phase: "pending",
-      message: null,
+      dbApplied: existing?.dbApplied ?? false,
+      authObservationId: auth.observationId,
     });
+    setCurrentDeletion(
+      { ...state(), phase: "pending", message: null },
+      context,
+    );
     try {
       operation ??= await appsService.issueDeleteOperation(id, expectedVersion);
-      setCurrentDeletion({
-        id,
-        actorId,
-        expectedVersion,
-        operation,
-        phase: "pending",
-        message: null,
-      });
+      assertAuthObservation(context);
+      setCurrentDeletion(
+        { ...state(), phase: "pending", message: null },
+        context,
+      );
       await appsService.delete(id, expectedVersion, operation.key);
-      setCurrentDeletion(null);
-      onDeleted(id, actorId, fromAdmin);
+      assertAuthObservation(context);
+      await onDeleted(id, context, fromAdmin);
     } catch (error) {
+      if (!context.isCurrent()) return;
       const expired = error?.code === "OPERATION_EXPIRED";
-      setCurrentDeletion({
-        id,
-        actorId,
-        expectedVersion,
-        operation,
-        phase: expired
-          ? "expired"
-          : error?.outcome === "unknown" ||
-              error?.code === "OPERATION_ALREADY_RESOLVED"
-            ? "unknown"
-            : "rejected",
-        message: expired
-          ? "삭제 결과 확인 기간이 지나 확인할 수 없어요. 앱이 없는 상태만으로 삭제 성공을 판단할 수 없습니다."
-          : (error?.message ??
-            "삭제 결과를 확인하지 못했어요. 작업 결과를 확인해 주세요."),
-      });
+      const applied =
+        existing?.dbApplied || error?.code === "DELETION_CONFIRMATION_PENDING";
+      if (applied || error?.code === "NOT_FOUND") {
+        await onDbDeleted(id, context);
+        if (!context.isCurrent()) return;
+      }
+      setCurrentDeletion(
+        {
+          ...state(),
+          dbApplied: Boolean(applied),
+          phase: applied
+            ? "confirming"
+            : expired
+              ? "expired"
+              : error?.outcome === "unknown" ||
+                  error?.code === "OPERATION_ALREADY_RESOLVED"
+                ? "unknown"
+                : "rejected",
+          rejectionCode: error?.code,
+          message: expired
+            ? "삭제 결과 확인 기간이 지나 확인할 수 없어요. 앱이 없는 상태만으로 삭제 성공을 판단할 수 없습니다."
+            : (error?.message ??
+              "삭제 결과를 확인하지 못했어요. 작업 결과를 확인해 주세요."),
+        },
+        context,
+      );
     } finally {
       deletionBusy.current = false;
     }
   };
   const checkDeleteResult = async () => {
     const existing = currentDeletion;
-    if (!existing?.operation || deletionBusy.current) return;
+    if (!canRecover || deletionBusy.current) return;
+    const context = deletionContext();
     deletionBusy.current = true;
-    setCurrentDeletion({
-      ...existing,
-      phase: "pending",
-      message: "삭제 결과를 확인하고 있어요.",
-    });
+    setCurrentDeletion(
+      {
+        ...existing,
+        phase: "pending",
+        message: "삭제 결과를 확인하고 있어요.",
+        authObservationId: auth.observationId,
+      },
+      context,
+    );
     try {
       const operation = await appsService.getDeleteOperation(
         existing.operation.key,
       );
+      assertAuthObservation(context);
+      if (
+        operation.key !== existing.operation.key ||
+        operation.kind !== "app_delete" ||
+        operation.targetId !== id
+      )
+        throw contractError();
       if (operation.state === "succeeded") {
-        setCurrentDeletion(null);
-        onDeleted(id, existing.actorId, fromAdmin);
-      } else if (operation.state === "rejected") {
-        setCurrentDeletion({
-          ...existing,
-          operation,
-          phase: "rejected",
-          message:
-            operation.rejectionCode === "VERSION_CONFLICT"
-              ? "앱 정보가 바뀌어 삭제하지 않았어요. 최신 상태를 확인해 주세요."
-              : "삭제 요청이 거절되어 앱은 삭제되지 않았어요.",
-        });
+        await onDeleted(id, context, fromAdmin);
       } else {
-        setCurrentDeletion({
-          ...existing,
-          operation,
-          phase: "unknown",
-          message:
-            operation.state === "confirming_deletion"
+        const applied =
+          existing.dbApplied ||
+          operation.state === "confirming_deletion" ||
+          Boolean(operation.dbAppliedAt);
+        if (applied || operation.rejectionCode === "NOT_FOUND") {
+          await onDbDeleted(id, context);
+          assertAuthObservation(context);
+        }
+        setCurrentDeletion(
+          {
+            ...existing,
+            operation,
+            dbApplied: Boolean(applied),
+            phase: applied
+              ? "confirming"
+              : operation.state === "rejected"
+                ? "rejected"
+                : "unknown",
+            rejectionCode: operation.rejectionCode,
+            message: applied
               ? "앱 삭제가 반영되었고 삭제 결과 확인을 기다리고 있어요."
-              : "삭제 결과가 아직 확정되지 않았어요. 같은 작업 키로 결과를 확인하거나 다시 요청해 주세요.",
-        });
+              : operation.rejectionCode === "VERSION_CONFLICT"
+                ? "앱 정보가 바뀌어 삭제하지 않았어요. 최신 상태를 확인해 주세요."
+                : operation.state === "rejected"
+                  ? "삭제 요청이 거절되었어요."
+                  : "삭제 결과가 아직 확정되지 않았어요. 같은 작업 키로 결과를 확인하거나 다시 요청해 주세요.",
+          },
+          context,
+        );
       }
     } catch (error) {
+      if (!context.isCurrent()) return;
       const expired = error?.code === "OPERATION_EXPIRED";
-      setCurrentDeletion({
+      setCurrentDeletion(
+        {
+          ...existing,
+          phase: existing.dbApplied
+            ? "confirming"
+            : expired
+              ? "expired"
+              : "unknown",
+          message: expired
+            ? "삭제 결과 확인 기간이 지나 확인할 수 없어요. 앱이 없는 상태만으로 삭제 성공을 판단할 수 없습니다."
+            : `삭제 결과를 확인할 수 없어요. ${error?.message ?? "같은 작업 키로 다시 확인해 주세요."}`,
+        },
+        context,
+      );
+    } finally {
+      deletionBusy.current = false;
+    }
+  };
+  const loadLatestForDelete = async () => {
+    if (
+      !eligible ||
+      deletionBusy.current ||
+      currentDeletion?.rejectionCode !== "VERSION_CONFLICT"
+    )
+      return;
+    const context = deletionContext();
+    deletionBusy.current = true;
+    const existing = currentDeletion;
+    setCurrentDeletion(
+      {
         ...existing,
-        phase: expired ? "expired" : "unknown",
-        message: expired
-          ? "삭제 결과 확인 기간이 지나 확인할 수 없어요. 앱이 없는 상태만으로 삭제 성공을 판단할 수 없습니다."
-          : `삭제 결과를 확인할 수 없어요. ${error?.message ?? "같은 작업 키로 다시 확인해 주세요."}`,
+        phase: "pending",
+        message: "최신 앱을 확인하고 있어요.",
+        authObservationId: auth.observationId,
+      },
+      context,
+    );
+    try {
+      const latest = await queryClient.fetchQuery({
+        queryKey: [
+          __DATA_MODE__,
+          "apps",
+          "detail",
+          id,
+          "member",
+          memberCacheScope(auth),
+        ],
+        staleTime: 0,
+        queryFn: ({ signal }) =>
+          appsService.get(id, { signal, readContext: context }),
       });
+      assertAuthObservation(context);
+      if (isAppRetired(id)) throw new DOMException("App deleted", "AbortError");
+      if (latest.isPublic)
+        queryClient.setQueryData(
+          [__DATA_MODE__, "apps", "detail", id, "public"],
+          latest,
+        );
+      else
+        queryClient.removeQueries({
+          queryKey: [__DATA_MODE__, "apps", "detail", id, "public"],
+        });
+      setCurrentDeletion(
+        {
+          id,
+          actorId: auth.user.id,
+          expectedVersion: latest.version,
+          operation: null,
+          phase: "idle",
+          message: null,
+        },
+        context,
+      );
+    } catch (error) {
+      if (!context.isCurrent()) return;
+      if (error?.code === "NOT_FOUND") {
+        await onDbDeleted(id, context);
+        if (!context.isCurrent()) return;
+      }
+      setCurrentDeletion(
+        {
+          ...existing,
+          phase: "rejected",
+          rejectionCode:
+            error?.code === "NOT_FOUND" ? "NOT_FOUND" : existing.rejectionCode,
+          message: `최신 앱을 확인하지 못했어요. ${error?.message ?? "다시 확인해 주세요."}`,
+        },
+        context,
+      );
     } finally {
       deletionBusy.current = false;
     }
@@ -861,10 +1037,11 @@ function DetailRoute({
     if (
       currentDeletion?.phase === "pending" ||
       currentDeletion?.phase === "unknown" ||
-      currentDeletion?.phase === "expired"
+      currentDeletion?.phase === "expired" ||
+      currentDeletion?.phase === "confirming"
     )
       return;
-    setCurrentDeletion(null);
+    setDeletionState(null);
   };
   const authError = protectedDetail && auth.status === "error";
   return (
@@ -875,9 +1052,15 @@ function DetailRoute({
       authError={authError ? auth.error : null}
       concealed={protectedDetail && auth.concealed}
       loading={
-        !routeError && (access.loading || (!authError && detail.isPending))
+        !retired &&
+        !routeError &&
+        (access.loading || (!authError && detail.isPending))
       }
-      error={routeError ?? access.error ?? detail.error}
+      error={
+        retired && !currentDeletion
+          ? new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.")
+          : (routeError ?? access.error ?? detail.error)
+      }
       retry={
         invalidQuery && !invalidId
           ? () => navigate(location.pathname, { replace: true })
@@ -890,11 +1073,12 @@ function DetailRoute({
       }
       canEdit={canEdit}
       canDelete={canDelete}
-      deleteState={currentDeletion}
+      deleteState={eligible ? currentDeletion : null}
       onDelete={runDelete}
       onCheckDeleteResult={checkDeleteResult}
       onRetryDelete={runDelete}
       onCancelDelete={cancelDelete}
+      onLoadLatestDelete={loadLatestForDelete}
       fromGallery={location.state?.fromGallery === true}
       fromAdmin={fromAdmin}
       health={displayedHealth}
@@ -916,23 +1100,38 @@ function DetailRoute({
       onRetryHealthRead={() => healthQuery.refetch()}
       jobReadError={jobQueryError ? jobQuery.error : null}
       onRetryJobRead={refetchJob}
-      onBack={() =>
-        fromAdmin
-          ? navigate("/admin?tab=health")
-          : navigate(
-              location.state?.fromEdit === true &&
-                location.state?.fromGallery === true
-                ? -2
-                : location.state?.fromGallery === true
-                  ? -1
-                  : "/",
-            )
-      }
+      onBack={() => {
+        if (
+          ["pending", "unknown", "expired", "confirming"].includes(
+            currentDeletion?.phase,
+          ) &&
+          !window.confirm(
+            "삭제 결과가 아직 확정되지 않았어요. 이 화면을 떠날까요?",
+          )
+        )
+          return;
+        if (fromAdmin) navigate("/admin?tab=health");
+        else
+          navigate(
+            location.state?.fromEdit === true &&
+              location.state?.fromGallery === true
+              ? -2
+              : location.state?.fromGallery === true
+                ? -1
+                : "/",
+          );
+      }}
     />
   );
 }
 
-function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
+function EditRoute({
+  auth,
+  isCurrentObservation,
+  isAppRetired,
+  onRetryAuth,
+  onSaved,
+}) {
   const { id = "" } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -958,7 +1157,7 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
       "member",
       memberCacheScope(auth),
     ],
-    enabled: access.canRead && readyMember,
+    enabled: access.canRead && readyMember && !isAppRetired(id),
     queryFn: async ({ signal }) => {
       const context = captureAuthObservation(auth, () =>
         isCurrentObservation(auth.observationId),
@@ -977,6 +1176,7 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
   const ownsApp = detail.data?.ownerId === member?.id;
   const canEdit =
     readyMember &&
+    !isAppRetired(id) &&
     Boolean(detail.data) &&
     (ownsApp
       ? access.meta?.capabilities.apps_update_own.enabled === true
@@ -988,14 +1188,15 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
   if (detail.data) lastApp.current = detail.data;
   if (canEdit) ownerScope.current = continuity;
   if (
-    readyMember &&
-    ([
-      "NOT_FOUND",
-      "FORBIDDEN",
-      "AUTH_REQUIRED",
-      "PASSWORD_CHANGE_REQUIRED",
-    ].includes(detail.error?.code) ||
-      (detail.data && !ownsApp && !adminCanManage))
+    isAppRetired(id) ||
+    (readyMember &&
+      ([
+        "NOT_FOUND",
+        "FORBIDDEN",
+        "AUTH_REQUIRED",
+        "PASSWORD_CHANGE_REQUIRED",
+      ].includes(detail.error?.code) ||
+        (detail.data && !ownsApp && !adminCanManage)))
   ) {
     ownerScope.current = null;
     lastApp.current = null;
@@ -1006,12 +1207,13 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
     if (canEdit) setWasEditable(true);
   }, [canEdit]);
   const keepDraft =
-    canEdit ||
-    (wasEditable &&
-      continuity &&
-      continuity === ownerScope.current &&
-      (access.meta?.capabilities.apps_update_own.enabled === true ||
-        adminCanManage));
+    !isAppRetired(id) &&
+    (canEdit ||
+      (wasEditable &&
+        continuity &&
+        continuity === ownerScope.current &&
+        (access.meta?.capabilities.apps_update_own.enabled === true ||
+          adminCanManage)));
   const form = keepDraft ? (
     <div
       hidden={!canEdit}
@@ -1027,7 +1229,21 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
           const context = captureAuthObservation(auth, () =>
             isCurrentObservation(auth.observationId),
           );
-          const latest = await appsService.get(appId, { readContext: context });
+          const latest = await queryClient.fetchQuery({
+            queryKey: [
+              __DATA_MODE__,
+              "apps",
+              "detail",
+              appId,
+              "member",
+              memberCacheScope(auth),
+            ],
+            staleTime: 0,
+            queryFn: ({ signal }) =>
+              appsService.get(appId, { signal, readContext: context }),
+          });
+          if (isAppRetired(appId))
+            throw new DOMException("App deleted", "AbortError");
           assertAuthObservation(context);
           return latest;
         }}
@@ -1101,6 +1317,11 @@ function EditRoute({ auth, isCurrentObservation, onRetryAuth, onSaved }) {
     return message(
       "승인된 회원만 앱을 수정할 수 있어요",
       "앱 등록·수정에는 전체 회원 권한이 필요해요.",
+    );
+  if (isAppRetired(id))
+    return message(
+      "아카이브 앱을 찾을 수 없어요",
+      "삭제된 앱은 수정할 수 없습니다.",
     );
   if (access.loading || detail.isPending)
     return (
@@ -1567,6 +1788,8 @@ export default function App() {
   });
   const [logoutPending, setLogoutPending] = useState(false);
   const [deletion, setDeletion] = useState(null);
+  const retiredApps = useRef(new Set());
+  const isAppRetired = useCallback((id) => retiredApps.current.has(id), []);
   useEffect(() => {
     if (
       (location.pathname !== "/" && location.state?.fromGallery !== true) ||
@@ -1626,37 +1849,43 @@ export default function App() {
     },
     [location.state, navigate, queryClient],
   );
-  const onAppDeleted = useCallback(
-    (id, actorId, fromAdmin = false) => {
-      setDeletion((current) =>
-        current?.id === id && current.actorId === actorId ? null : current,
-      );
-      queryClient.removeQueries({
-        queryKey: [__DATA_MODE__, "apps", "detail", id],
+  const onDbDeleted = useCallback(
+    async (id, context) => {
+      assertAuthObservation(context);
+      retiredApps.current.add(id);
+      const target = (query) => {
+        const key = query.queryKey;
+        return (
+          key[0] === __DATA_MODE__ &&
+          ((key[1] === "apps" && key[2] === "detail" && key[3] === id) ||
+            (key[1] === "health" &&
+              ((key[2] === "app" && key[3] === id) ||
+                (key[2] === "job" && key[4] === id))))
+        );
+      };
+      const lists = (query) =>
+        query.queryKey[0] === __DATA_MODE__ &&
+        ((query.queryKey[1] === "apps" && query.queryKey[2] === "list") ||
+          query.queryKey[1] === "admin");
+      await queryClient.cancelQueries({
+        predicate: (query) => target(query) || lists(query),
       });
-      queryClient.removeQueries({
-        predicate: (query) => {
-          const key = query.queryKey;
-          return (
-            key[0] === __DATA_MODE__ &&
-            key[1] === "health" &&
-            ((key[2] === "app" && key[3] === id) ||
-              (key[2] === "job" && key[4] === id))
-          );
-        },
-      });
-      void queryClient.invalidateQueries({
-        queryKey: [__DATA_MODE__, "apps", "list"],
-      });
-      void queryClient.invalidateQueries({
-        queryKey: [__DATA_MODE__, "admin"],
-      });
-      if (authSnapshot.current.user?.id === actorId) {
-        navigate(fromAdmin ? "/admin?tab=health" : "/", { replace: true });
-        setToast("앱을 삭제했어요.");
-      }
+      if (!context.isCurrent()) return;
+      queryClient.removeQueries({ predicate: target });
+      void queryClient.invalidateQueries({ predicate: lists });
     },
-    [navigate, queryClient],
+    [queryClient],
+  );
+  const onAppDeleted = useCallback(
+    async (id, context, fromAdmin = false) => {
+      assertAuthObservation(context);
+      await onDbDeleted(id, context);
+      assertAuthObservation(context);
+      setDeletion(null);
+      navigate(fromAdmin ? "/admin?tab=health" : "/", { replace: true });
+      setToast("앱을 삭제했어요.");
+    },
+    [navigate, onDbDeleted],
   );
 
   const isProtectedQuery = useCallback((query) => {
@@ -1979,6 +2208,7 @@ export default function App() {
   const logout = useCallback(async () => {
     if (logoutPending) return;
     setLogoutPending(true);
+    setDeletion(null);
     try {
       await beginAuthTransition();
       await authService.logout();
@@ -2226,14 +2456,18 @@ export default function App() {
     if (
       deletion &&
       auth.status === "ready" &&
-      deletion.actorId !== auth.user?.id
+      auth.user &&
+      deletion.actorId !== auth.user.id
     )
       setDeletion(null);
-  }, [auth.status, auth.user?.id, deletion]);
+  }, [auth.status, auth.user, deletion]);
 
-  const deletionNeedsConfirmation = ["pending", "unknown", "expired"].includes(
-    deletion?.phase,
-  );
+  const deletionNeedsConfirmation = [
+    "pending",
+    "unknown",
+    "expired",
+    "confirming",
+  ].includes(deletion?.phase);
   useEffect(() => {
     if (!deletionNeedsConfirmation) return undefined;
     const warnBeforeUnload = (event) => {
@@ -2243,6 +2477,29 @@ export default function App() {
     window.addEventListener("beforeunload", warnBeforeUnload);
     return () => window.removeEventListener("beforeunload", warnBeforeUnload);
   }, [deletionNeedsConfirmation]);
+
+  useEffect(() => {
+    if (!deletionNeedsConfirmation) return undefined;
+    const warnOnLink = (event) => {
+      const link = event.target.closest?.("a[href]");
+      if (
+        !link ||
+        link.origin !== window.location.origin ||
+        link.pathname === location.pathname
+      )
+        return;
+      if (
+        !window.confirm(
+          "삭제 결과가 아직 확정되지 않았어요. 이 화면을 떠날까요?",
+        )
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+    document.addEventListener("click", warnOnLink, true);
+    return () => document.removeEventListener("click", warnOnLink, true);
+  }, [deletionNeedsConfirmation, location.pathname]);
 
   const active =
     location.pathname === "/apps/new" ||
@@ -2294,6 +2551,7 @@ export default function App() {
             <EditRoute
               auth={auth}
               isCurrentObservation={isCurrentObservation}
+              isAppRetired={isAppRetired}
               onRetryAuth={recheckAuth}
               onSaved={onAppUpdated}
             />
@@ -2307,6 +2565,8 @@ export default function App() {
               isCurrentObservation={isCurrentObservation}
               onRetryAuth={recheckAuth}
               onDeleted={onAppDeleted}
+              onDbDeleted={onDbDeleted}
+              isAppRetired={isAppRetired}
               deletionState={deletion}
               setDeletionState={setDeletion}
             />

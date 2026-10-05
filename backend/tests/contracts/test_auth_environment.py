@@ -25,6 +25,7 @@ AUTH_BUNDLE = {
     "admin_summary",
     "apps_create",
     "apps_update_own",
+    "apps_delete_own",
 }
 PREPARE_COMMAND = (
     "APP_ENV=development uv run --frozen python -m app.cli prepare-password-blocklist"

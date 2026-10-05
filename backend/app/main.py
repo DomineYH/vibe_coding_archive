@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 import sys
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -17,6 +18,7 @@ from starlette.responses import JSONResponse
 
 from app.admin_approval import router as admin_approval_router
 from app.app_create import router as app_create_router
+from app.app_delete import router as app_delete_router
 from app.app_input import AppInput
 from app.app_update import router as app_update_router
 from app.auth import router as auth_router
@@ -207,7 +209,7 @@ def create_app(
             app.state.auth_ready = True
         except RuntimeError:
             verification_failed = True
-        except (SQLAlchemyError, AuthError):
+        except (SQLAlchemyError, AuthError, sqlite3.Error):
             app.state.auth_ready = False
 
         async def maintain_auth():
@@ -269,7 +271,10 @@ def create_app(
                 ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
             )
             or (request.method == "POST" and request.url.path == "/api/v1/apps")
-            or (request.method == "PATCH" and app_patch_path(request.url.path))
+            or (
+                request.method in ("PATCH", "DELETE")
+                and app_patch_path(request.url.path)
+            )
         ):
             return error_response(
                 AuthError("BAD_REQUEST", 400)
@@ -291,7 +296,10 @@ def create_app(
                         for item in error.errors()
                     }
                     if request.url.path in ("/api/v1/apps", "/api/v1/write-operations")
-                    or (request.method == "PATCH" and app_patch_path(request.url.path))
+                    or (
+                        request.method in ("PATCH", "DELETE")
+                        and app_patch_path(request.url.path)
+                    )
                     else None,
                 )
             )
@@ -306,7 +314,10 @@ def create_app(
                 ("/api/v1/auth/", "/api/v1/admin/", "/api/v1/write-operations")
             )
             or (request.method == "POST" and request.url.path == "/api/v1/apps")
-            or (request.method == "PATCH" and app_patch_path(request.url.path))
+            or (
+                request.method in ("PATCH", "DELETE")
+                and app_patch_path(request.url.path)
+            )
         ) and error.status_code == 400:
             return error_response(AuthError("BAD_REQUEST", 400))
         from fastapi.exception_handlers import http_exception_handler
@@ -336,6 +347,7 @@ def create_app(
                 "admin_summary",
                 "apps_create",
                 "apps_update_own",
+                "apps_delete_own",
             ):
                 capabilities[key] = {"enabled": True, "reasons": []}
         return {
@@ -360,6 +372,7 @@ def create_app(
     api.include_router(public_apps_router)
     api.include_router(app_create_router)
     api.include_router(app_update_router)
+    api.include_router(app_delete_router)
     app.include_router(api)
 
     @app.get("/healthz", response_model=LivenessResponse)

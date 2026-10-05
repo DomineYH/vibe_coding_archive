@@ -228,3 +228,52 @@ describe("prompt copying", () => {
     ).toBeInTheDocument();
   });
 });
+
+it("keeps deletion confirmation recovery available without a deleted app body", async () => {
+  const check = vi.fn();
+  render(
+    <AppDetailView
+      app={null}
+      meta={meta}
+      error={new ServiceError("NOT_FOUND", "없는 앱")}
+      deleteState={{
+        id: app.id,
+        phase: "confirming",
+        dbApplied: true,
+        message: "앱 삭제가 반영되었어요.",
+        operation: { key: app.id },
+      }}
+      onCheckDeleteResult={check}
+    />,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "삭제 결과 확인" }),
+  );
+  expect(check).toHaveBeenCalledOnce();
+  expect(screen.queryByText(app.prompt)).not.toBeInTheDocument();
+});
+
+it("hides deletion retry without an app or operation key", async () => {
+  const retry = vi.fn();
+  render(
+    <AppDetailView
+      app={null}
+      meta={meta}
+      deleteState={{
+        id: app.id,
+        phase: "rejected",
+        rejectionCode: "NOT_FOUND",
+        message: "아카이브 앱을 찾을 수 없어요.",
+        operation: null,
+      }}
+      onDelete={retry}
+    />,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "아카이브 앱을 찾을 수 없어요.",
+  );
+  expect(
+    screen.queryByRole("button", { name: "다시 시도", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(retry).not.toHaveBeenCalled();
+});

@@ -150,7 +150,7 @@ def test_unknown_code_retains_fallback(fixed_metadata):
     "code,message,retry_after",
     [
         ("AUTH_BUSY", "요청이 몰려 있어요. 잠시 뒤에 다시 시도해 주세요.", "1"),
-        ("DB_BUSY", "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.", None),
+        ("DB_BUSY", "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.", "1"),
     ],
 )
 def test_existing_defaults_and_retry_headers_stay_unchanged(
