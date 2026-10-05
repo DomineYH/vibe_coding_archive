@@ -131,10 +131,14 @@ def test_other_member_and_admin_cannot_edit_foreign_target(member_app, public, a
         if not public:
             absent = issue_update(other, str(uuid4()))
             denied = issue_update(other, item["id"])
+            assert denied.status_code == absent.status_code == 404
             left, right = denied.json(), absent.json()
             left["error"].pop("request_id")
             right["error"].pop("request_id")
             assert left == right
+            assert denied.headers == absent.headers
+            assert denied.headers["Cache-Control"] == "no-store"
+            assert denied.headers["Content-Type"] == "application/json"
         own_key = update_key(owner, item["id"])
         error(update(other, item["id"], own_key), 404, "OPERATION_NOT_FOUND")
         error(read(other, own_key), 404, "OPERATION_NOT_FOUND")

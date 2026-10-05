@@ -298,6 +298,47 @@ it("retires cached public detail after a private edit produces public 404 and fe
   ).toBe(true);
 });
 
+it("falls back to current owner detail after public 404 without an identity change", async () => {
+  const original = fetch.getMockImplementation();
+  const publicName = "공개 상태였던 이전 이름";
+  const publicKey = [__DATA_MODE__, "apps", "detail", id, "public"];
+  let madePrivate = false;
+  fetch.mockImplementation(async (url, options) => {
+    const response = await original(url, options);
+    if (url === `/api/v1/apps/${id}` && !madePrivate)
+      return new Response(
+        JSON.stringify({
+          item: { ...item, is_public: true, name: publicName },
+          server_time: "2026-10-02T00:00:00Z",
+        }),
+        { headers: response.headers },
+      );
+    return response;
+  });
+  visit();
+  await screen.findByRole("heading", { name: publicName });
+  await screen.findByRole("button", { name: "로그아웃", exact: true });
+  await waitFor(() =>
+    expect(client.getQueryData(publicKey)?.name).toBe(publicName),
+  );
+  madePrivate = true;
+  fetch.mockClear();
+  await act(async () =>
+    client.invalidateQueries({ queryKey: publicKey, exact: true }),
+  );
+  expect(client.getQueryData(publicKey)?.name).toBe(publicName);
+  expect(client.getQueryState(publicKey)?.error?.code).toBe("NOT_FOUND");
+  expect(
+    await screen.findByRole("heading", { name: item.name }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(publicName)).not.toBeInTheDocument();
+  expect(
+    fetch.mock.calls.some(([, options]) =>
+      options?.headers.has("X-EduVibe-Flow-Id"),
+    ),
+  ).toBe(true);
+});
+
 it("does not reveal an obsolete public body after the owner logs out", async () => {
   const { mapAppDetailResponse } = await import("../src/contracts/mappers");
   client.setQueryData(
