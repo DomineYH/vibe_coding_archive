@@ -428,6 +428,66 @@ async function recoverySelection() {
   return { target, operation };
 }
 
+it.each([false, true])(
+  "discards retry inputs and validation on cancel before confirmation and a fresh decision (invalid: %s)",
+  async (invalid) => {
+    const { operation } = await recoverySelection();
+    let confirmCancel;
+    vi.spyOn(adminService, "cancelPasswordResetOperation").mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          confirmCancel = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    await user.type(
+      screen.getByLabelText("임시 비밀번호", { exact: true }),
+      "Synthetic temporary password 167!",
+    );
+    await user.type(
+      screen.getByLabelText("임시 비밀번호 확인"),
+      invalid ? "Different confirmation" : "Synthetic temporary password 167!",
+    );
+    if (invalid) {
+      await user.click(
+        screen.getByRole("button", { name: "같은 초기화 요청 다시 제출" }),
+      );
+      expect(screen.getByLabelText("임시 비밀번호 확인")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+    }
+    await user.click(
+      screen.getByRole("button", { name: "초기화 요청 취소", exact: true }),
+    );
+    for (const label of ["임시 비밀번호", "임시 비밀번호 확인"]) {
+      const input = screen.getByLabelText(label, { exact: true });
+      expect(input.value.length).toBe(0);
+      expect(input).not.toHaveAttribute("aria-invalid");
+    }
+    await act(async () =>
+      confirmCancel({
+        ...operation,
+        state: "rejected",
+        rejectionCode: "OPERATION_CANCELLED",
+      }),
+    );
+    await screen.findByText("초기화 요청 취소가 확정됐어요.");
+    expect(
+      screen.queryByLabelText("임시 비밀번호", { exact: true }),
+    ).not.toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "현재 회원 확인 후 새 초기화 판단" }),
+    );
+    await screen.findByLabelText("임시 비밀번호", { exact: true });
+    for (const label of ["임시 비밀번호", "임시 비밀번호 확인"]) {
+      const input = screen.getByLabelText(label, { exact: true });
+      expect(input.value.length).toBe(0);
+      expect(input).not.toHaveAttribute("aria-invalid");
+    }
+  },
+);
+
 it("expired result refresh preserves the key and does not offer a new reset", async () => {
   await recoverySelection();
   const { ServiceError } = await import("../src/services/service-error");
@@ -494,16 +554,22 @@ it("a cancel that observes prior success refreshes lists even if target lookup f
 it.each(["OPERATION_NOT_FOUND", "SERVICE_UNAVAILABLE"])(
   "an unavailable result %s blocks secret entry and execution until a successful lookup",
   async (code) => {
-    await recoverySelection();
+    const { operation } = await recoverySelection();
     const { ServiceError } = await import("../src/services/service-error");
-    vi.spyOn(adminService, "getPasswordResetOperation").mockRejectedValue(
-      new ServiceError(code, "unknown"),
-    );
+    vi.spyOn(adminService, "getPasswordResetOperation")
+      .mockRejectedValueOnce(new ServiceError(code, "unknown"))
+      .mockResolvedValue(operation);
     const execute = vi.spyOn(adminService, "setPasswordReset");
     const create = vi.spyOn(adminService, "createPasswordResetOperation");
-    await userEvent
-      .setup()
-      .click(screen.getByRole("button", { name: "결과 확인", exact: true }));
+    const user = userEvent.setup();
+    for (const label of ["임시 비밀번호", "임시 비밀번호 확인"])
+      await user.type(
+        screen.getByLabelText(label, { exact: true }),
+        "Synthetic temporary password 167!",
+      );
+    await user.click(
+      screen.getByRole("button", { name: "결과 확인", exact: true }),
+    );
     await waitFor(() =>
       expect(
         screen.queryByLabelText("임시 비밀번호", { exact: true }),
@@ -511,6 +577,14 @@ it.each(["OPERATION_NOT_FOUND", "SERVICE_UNAVAILABLE"])(
     );
     expect(execute).not.toHaveBeenCalled();
     expect(create).not.toHaveBeenCalled();
+    await user.click(
+      screen.getByRole("button", { name: "결과 확인", exact: true }),
+    );
+    await screen.findByLabelText("임시 비밀번호", { exact: true });
+    for (const label of ["임시 비밀번호", "임시 비밀번호 확인"])
+      expect(screen.getByLabelText(label, { exact: true }).value.length).toBe(
+        0,
+      );
   },
 );
 

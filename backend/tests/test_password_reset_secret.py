@@ -68,6 +68,21 @@ def test_verified_file_and_repository_file_rejection(tmp_path):
     assert load_secret(None) is None
 
 
+@pytest.mark.parametrize("shape", ["array_of_pairs", "duplicate_property"])
+def test_secret_supply_requires_an_object_with_unique_properties(tmp_path, shape):
+    from app.password_reset_secret import load_secret
+
+    path = supply(tmp_path / "secret.json")
+    value = json.loads(path.read_text())
+    if shape == "array_of_pairs":
+        raw = json.dumps(list(value.items()))
+    else:
+        raw = json.dumps(value)[:-1] + ',"key_id":' + json.dumps(value["key_id"]) + "}"
+    path.write_text(raw)
+    available = load_secret(path) is not None
+    assert not available
+
+
 def test_identifier_and_request_binding_use_constant_time_comparison(
     make_test_app, tmp_path, monkeypatch
 ):

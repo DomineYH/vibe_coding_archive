@@ -16,6 +16,15 @@ from app.auth_boundary import AuthError, now
 from app.settings import ROOT
 
 
+def unique_object(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError("Duplicate secret property")
+        value[key] = item
+    return value
+
+
 def load_secret(path):
     try:
         if path is None:
@@ -34,10 +43,9 @@ def load_secret(path):
         if len(raw) > 1024:
             return None
         # Duplicate properties are invalid supply, even if the last value looks valid.
-        pairs = json.loads(raw.decode("utf-8"), object_pairs_hook=lambda values: values)
-        if not isinstance(pairs, list) or len(pairs) != 2:
+        value = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_object)
+        if not isinstance(value, dict):
             return None
-        value = dict(pairs)
         if set(value) != {"secret_hex", "key_id"} or any(
             not isinstance(v, str) or not re.fullmatch("[0-9a-f]{64}", v)
             for v in value.values()

@@ -2130,7 +2130,8 @@ export function AdminView({
   const resetPanel =
     active && resetSelection ? (
       <PasswordResetPanel
-        key={`${scopeKey}:${resetSelection.id}`}
+        // Secret inputs belong to this attempt, including lookup/cancel/refresh boundaries.
+        key={`${scopeKey}:${resetSelection.id}:${resetDetailRequest.current}`}
         target={resetSelection.target}
         loading={resetSelection.loading}
         busy={resetBusy}
