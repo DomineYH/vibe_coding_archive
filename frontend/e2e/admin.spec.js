@@ -653,9 +653,18 @@ test("unknown password-reset results require explicit query, same-key retry, or 
   await expect(panel.getByRole("status")).toContainText(
     "처리 결과가 아직 확정되지 않았어요",
   );
-  await expect(panel.getByLabel("임시 비밀번호", { exact: true })).toHaveValue(
-    "",
+  await expect(panel.getByLabel("임시 비밀번호", { exact: true })).toHaveCount(
+    0,
   );
+  await expect(
+    panel.getByLabel("임시 비밀번호 확인", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", {
+      name: "같은 초기화 요청 다시 제출",
+      exact: true,
+    }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(
       ({ key, password }) => localStorage.getItem(key).includes(password),
@@ -667,6 +676,12 @@ test("unknown password-reset results require explicit query, same-key retry, or 
   await expect(panel.getByRole("status")).toContainText(
     "처리 결과가 아직 확정되지 않았어요",
   );
+  await expect(panel.getByLabel("임시 비밀번호", { exact: true })).toHaveValue(
+    "",
+  );
+  await expect(
+    panel.getByLabel("임시 비밀번호 확인", { exact: true }),
+  ).toHaveValue("");
   await panel
     .getByLabel("임시 비밀번호", { exact: true })
     .fill(temporaryPassword);
@@ -741,9 +756,18 @@ test("a lost reset response stays unknown until the member operation is read", a
       exact: true,
     }),
   ).toBeDisabled();
-  await expect(panel.getByLabel("임시 비밀번호", { exact: true })).toHaveValue(
-    "",
+  await expect(panel.getByLabel("임시 비밀번호", { exact: true })).toHaveCount(
+    0,
   );
+  await expect(
+    panel.getByLabel("임시 비밀번호 확인", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    panel.getByRole("button", {
+      name: "같은 초기화 요청 다시 제출",
+      exact: true,
+    }),
+  ).toHaveCount(0);
 
   await panel.getByRole("button", { name: "결과 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText(
@@ -861,6 +885,30 @@ test("reauthenticating an expired recent-auth reset preserves its key without re
     .click();
   await expect(page).toHaveURL("/admin");
 
+  await page.evaluate(async () => {
+    const { adminService } = await import("/src/services/mock/admin.ts");
+    const trace = { issued: [], executed: [], reads: [] };
+    window.resetTrace = trace;
+    const issue = adminService.createPasswordResetOperation;
+    adminService.createPasswordResetOperation = async (...args) => {
+      const operation = await issue(...args);
+      trace.issued.push(operation.key);
+      return operation;
+    };
+    const execute = adminService.setPasswordReset;
+    adminService.setPasswordReset = (...args) => {
+      trace.executed.push(args[3]);
+      return execute(...args);
+    };
+    for (const name of ["getPasswordResetOperation", "getUser"]) {
+      const read = adminService[name];
+      adminService[name] = (...args) => {
+        trace.reads.push(name);
+        return read(...args);
+      };
+    }
+  });
+
   const panel = page.getByRole("region", { name: /임시 비밀번호 초기화 확인/ });
   const resetForm = panel.locator("form");
   await expect(resetForm).toBeVisible();
@@ -889,6 +937,9 @@ test("reauthenticating an expired recent-auth reset preserves its key without re
   await secondReauth
     .getByLabel("현재 관리자 비밀번호", { exact: true })
     .fill("admin123");
+  await page.evaluate(() => {
+    window.resetTrace.reads = [];
+  });
   await secondForm
     .getByRole("button", { name: "본인 확인", exact: true })
     .click();
@@ -904,10 +955,34 @@ test("reauthenticating an expired recent-auth reset preserves its key without re
     resumed.getByLabel("임시 비밀번호", { exact: true }),
   ).toHaveValue("");
   await expect(row).toContainText("버전 1");
-  await page.evaluate(async () => {
-    const { setMockScenario } = await import("/src/services/mock/state.ts");
-    setMockScenario("original");
-  });
+  await expect(
+    resumed.getByLabel("임시 비밀번호 확인", { exact: true }),
+  ).toHaveValue("");
+  await expect(
+    resumed.getByRole("button", {
+      name: "같은 초기화 요청 다시 제출",
+      exact: true,
+    }),
+  ).toBeEnabled();
+  const beforeRetry = await page.evaluate(() => window.resetTrace);
+  expect(beforeRetry.issued).toHaveLength(1);
+  expect(beforeRetry.executed).toEqual(beforeRetry.issued);
+  const targetRead = beforeRetry.reads.indexOf("getUser");
+  expect(targetRead).toBeGreaterThan(0);
+  expect(beforeRetry.reads.slice(0, targetRead)).toEqual(
+    Array(targetRead).fill("getPasswordResetOperation"),
+  );
+  expect(
+    await page.evaluate(
+      (password) =>
+        JSON.stringify({
+          local: { ...localStorage },
+          session: { ...sessionStorage },
+          state: history.state,
+        }).includes(password),
+      temporaryPassword,
+    ),
+  ).toBe(false);
   await resumed
     .getByLabel("임시 비밀번호", { exact: true })
     .fill(temporaryPassword);
@@ -917,10 +992,21 @@ test("reauthenticating an expired recent-auth reset preserves its key without re
   await resumed
     .getByRole("button", { name: "같은 초기화 요청 다시 제출", exact: true })
     .click();
+  await expect(resumed).toHaveAttribute("aria-busy", "true");
+  await page.clock.fastForward(1000);
   await expect(resumed.getByRole("status")).toContainText(
     "임시 비밀번호 설정이 확정됐어요",
   );
   await expect(row).toContainText("버전 2");
+  const afterRetry = await page.evaluate(() => window.resetTrace);
+  expect(afterRetry.issued).toEqual(beforeRetry.issued);
+  expect(afterRetry.executed).toEqual([
+    beforeRetry.issued[0],
+    beforeRetry.issued[0],
+  ]);
+  await expect(
+    resumed.getByLabel("임시 비밀번호", { exact: true }),
+  ).toHaveCount(0);
 });
 
 test("unknown approval results require explicit query, same-key resubmit, or cancel", async ({

@@ -1,7 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { blockExternalRequests, deferred, query } from "./helpers.js";
 import {
-  fixtures,
+  test,
   openAdmin,
   openReset,
   submit,
@@ -20,8 +20,8 @@ test.describe("password reset recovery over real HTTP", () => {
 
   test("lost committed response resolves by original key lookup without another POST", async ({
     page,
+    members,
   }) => {
-    const members = fixtures();
     await openAdmin(page, members);
     await openReset(page, members);
     let writes = 0,
@@ -70,8 +70,8 @@ test.describe("password reset recovery over real HTTP", () => {
 
   test("unresolved lookup permits explicit same-input retry and cancel permits a new decision", async ({
     page,
+    members,
   }) => {
-    const members = fixtures();
     await openAdmin(page, members);
     await openReset(page, members);
     let writes = 0;
@@ -129,8 +129,8 @@ test.describe("password reset recovery over real HTTP", () => {
 
   test("version conflict requires a refreshed target and explicit new decision", async ({
     page,
+    members,
   }) => {
-    const members = fixtures();
     await openAdmin(page, members);
     await openReset(page, members);
     let issues = 0;
@@ -177,8 +177,8 @@ test.describe("password reset recovery over real HTTP", () => {
 
   test("reauth preserves only the key and looks it up before reconfirming the target", async ({
     page,
+    members,
   }) => {
-    const members = fixtures();
     await openAdmin(page, members);
     await openReset(page, members);
     let writes = 0;
@@ -230,8 +230,8 @@ test.describe("password reset recovery over real HTTP", () => {
 
   test("expired lookup and refresh retain unknown history without issuing another key", async ({
     page,
+    members,
   }) => {
-    const members = fixtures();
     await openAdmin(page, members);
     await openReset(page, members);
     let issues = 0;
@@ -267,8 +267,8 @@ test.describe("password reset recovery over real HTTP", () => {
 
   test("late issuance after tab departure does not execute", async ({
     page,
+    members,
   }) => {
-    const members = fixtures();
     await openAdmin(page, members);
     await openReset(page, members);
     const entered = deferred(),

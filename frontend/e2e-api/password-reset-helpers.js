@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, test as base } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { approvalHeaders, login, userRow } from "./approval-helpers.js";
@@ -8,7 +8,7 @@ export const ORIGINAL = "Synthetic original password 167!";
 export const TEMPORARY = "  Synthetic temporary é password 167!  ";
 export const FINAL = "Synthetic final own password 167!";
 
-export function fixtures() {
+function fixtures() {
   const result = spawnSync(
     "uv",
     ["run", "--frozen", "python", "-m", "tests.password_reset_fixtures"],
@@ -22,6 +22,51 @@ export function fixtures() {
   expect(result.status, "isolated reset fixture creation").toBe(0);
   return JSON.parse(result.stdout);
 }
+
+// Each case owns its browser flow and database rows, including failed cases.
+export const test = base.extend({
+  members: async ({ context }, runTest) => {
+    const members = fixtures();
+    try {
+      await runTest(members);
+    } finally {
+      await context.close();
+      const cleanup = spawnSync(
+        "uv",
+        [
+          "run",
+          "--frozen",
+          "python",
+          "-c",
+          `import json, os, sqlite3, sys
+ids = json.load(sys.stdin)
+marks = ','.join('?' for _ in ids)
+with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
+    db.execute('PRAGMA foreign_keys=ON')
+    flows = [row[0] for row in db.execute(f'SELECT DISTINCT flow_id FROM sessions WHERE member_id IN ({marks})', ids)]
+    for flow in flows:
+        for table in ('auth_transitions', 'recovery_credentials', 'auth_retired_credentials', 'sessions'):
+            db.execute(f'DELETE FROM {table} WHERE flow_id=?', (flow,))
+        db.execute('DELETE FROM auth_flows WHERE id=?', (flow,))
+    db.execute(f'DELETE FROM write_operations WHERE actor_id IN ({marks}) OR target_id IN ({marks})', ids + ids)
+    db.execute(f'DELETE FROM audit_logs WHERE actor_id IN ({marks}) OR target_id IN ({marks})', ids + ids)
+    db.execute(f'DELETE FROM members WHERE id IN ({marks})', ids)
+    assert not db.execute('PRAGMA foreign_key_check').fetchall()
+`,
+        ],
+        {
+          cwd: "../backend",
+          env: process.env,
+          input: JSON.stringify(
+            Object.values(members).map((member) => member.id),
+          ),
+          encoding: "utf8",
+        },
+      );
+      expect(cleanup.status, "isolated reset fixture cleanup").toBe(0);
+    }
+  },
+});
 
 export async function openAdmin(page, members) {
   await login(page, members.admin.login, ORIGINAL);

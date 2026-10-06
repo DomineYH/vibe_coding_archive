@@ -1,9 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { blockExternalRequests, query } from "./helpers.js";
 import {
   approvalHeaders,
   change,
-  fixtures,
+  test,
   login,
   openAdmin,
   openReset,
@@ -22,9 +22,9 @@ test.describe("real administrator password reset", () => {
 
   test("reauth → row reset → old session revoked → temporary change_only → own change → full", async ({
     page,
+    members,
     browser,
   }) => {
-    const members = fixtures();
     const oldContext = await browser.newContext();
     const tempContext = await browser.newContext();
     const secondContext = await browser.newContext();
@@ -103,9 +103,9 @@ test.describe("real administrator password reset", () => {
 
   test("pending and revoked targets remain unapproved; existing temporary sessions are revoked", async ({
     page,
+    members,
     browser,
   }) => {
-    const members = fixtures();
     const temporaryContext = await browser.newContext();
     try {
       const temporary = await temporaryContext.newPage();
