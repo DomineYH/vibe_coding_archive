@@ -196,6 +196,10 @@ it("keeps unavailable deletion disabled without preparation text and protects ad
   const rows = within(
     screen.getByRole("list", { name: "회원 목록" }),
   ).getAllByRole("listitem");
+  const memberRows = rows.filter((row) =>
+    within(row).queryByRole("button", { name: "삭제", exact: true }),
+  );
+  expect(memberRows.length).toBeGreaterThanOrEqual(2);
   for (const row of rows) {
     const button = within(row).queryByRole("button", {
       name: "삭제",
@@ -211,6 +215,9 @@ it("keeps unavailable deletion disabled without preparation text and protects ad
     .getByText("보호된 계정")
     .closest('[role="listitem"]');
   expect(within(protectedRow).queryByRole("button")).not.toBeInTheDocument();
+  expect(
+    within(protectedRow).queryByText(/아직 준비 중이에요/),
+  ).not.toBeInTheDocument();
 });
 
 it("does not show preparation notes while an approval request alone locks actions", async () => {
@@ -420,7 +427,7 @@ async function recoverySelection() {
   return { target, operation };
 }
 
-it.each([false, false])(
+it.each([false, true])(
   "discards retry inputs and validation on cancel before confirmation and a fresh decision (invalid: %s)",
   async (invalid) => {
     const { operation } = await recoverySelection();
