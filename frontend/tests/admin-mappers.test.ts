@@ -329,3 +329,28 @@ describe("admin contract mappers", () => {
     ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 });
+
+it.each([
+  "reset_key_id",
+  "reset_request_hmac",
+  "new_password",
+  "input",
+  "user",
+])("rejects secret or historical DTO field %s in reset results", (field) => {
+  expect(() =>
+    mapPasswordResetOperation({
+      key: "00000000-0000-4000-8000-000000000201",
+      kind: "user_password_reset",
+      target_id: adminUser.id,
+      issued_at: "2026-09-22T00:12:00.000Z",
+      expires_at: "2026-09-23T00:12:00.000Z",
+      state: "unresolved",
+      applied_account_version: null,
+      temporary_password_expires_at: null,
+      finalized_at: null,
+      rejection_code: null,
+      server_time: "2026-09-22T00:12:00.000Z",
+      [field]: "forbidden",
+    }),
+  ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+});

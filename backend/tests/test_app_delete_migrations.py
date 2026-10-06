@@ -5,7 +5,7 @@ from app.database import current_head
 
 def test_delete_migration_is_current_and_durable_outbox_has_no_cascading_fk(member_app):
     _app, path = member_app()
-    assert current_head() == "0009_app_delete"
+    assert current_head() == "0010_password_reset"
     with sqlite3.connect(path) as db:
         assert "db_applied_at" in [
             r[1] for r in db.execute("PRAGMA table_info(write_operations)")
@@ -145,5 +145,5 @@ def test_upgrade_preserves_all_predecessor_columns_and_delete_checks(
         command.downgrade(config, "0008_app_update")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0009_app_delete",
+            "0010_password_reset",
         )

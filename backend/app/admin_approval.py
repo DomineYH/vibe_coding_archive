@@ -2,10 +2,11 @@
 
 import json
 from typing import Annotated, Literal
+from unicodedata import normalize
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Body, Depends, Query, Request
-from pydantic import Field
+from pydantic import BeforeValidator, Field
 from sqlalchemy import text
 
 from app.app_input import AppInput, AppPatch
@@ -54,6 +55,30 @@ class CreateApproval(SetApproval):
     target_id: UUID
 
 
+def normalize_reset_password(value):
+    if isinstance(value, str):
+        value = normalize("NFC", value)
+        try:
+            value.encode("utf-8")
+        except UnicodeError:
+            raise ValueError("Invalid password text") from None
+    return value
+
+
+class SetPasswordReset(StrictModel):
+    expected_account_version: Version
+    new_password: Annotated[
+        str,
+        Field(strict=True, min_length=15, max_length=128),
+        BeforeValidator(normalize_reset_password),
+    ]
+
+
+class CreatePasswordResetOperation(SetPasswordReset):
+    kind: Literal["user_password_reset"]
+    target_id: UUID
+
+
 class CreateAppOperation(StrictModel):
     kind: Literal["app_create"]
     input: AppInput
@@ -77,7 +102,8 @@ def operation_input(
         CreateApproval
         | CreateAppOperation
         | CreateAppUpdateOperation
-        | CreateAppDeleteOperation,
+        | CreateAppDeleteOperation
+        | CreatePasswordResetOperation,
         Body(discriminator="kind"),
     ],
 ):
@@ -88,7 +114,7 @@ OperationBody = Depends(operation_input)
 
 
 def operation_database(request: Request, body=OperationBody):
-    yield from open_session(request, immediate=True)
+    yield from open_session(request, immediate=body.kind != "user_password_reset")
 
 
 OperationDb = Depends(operation_database)
@@ -139,6 +165,10 @@ def operation(db, key, actor):
 
 @router.post("/write-operations")
 def create_operation(request: Request, body=OperationBody, db=OperationDb):
+    if body.kind == "user_password_reset":
+        from app.admin_password_reset import issue_reset_operation
+
+        return issue_reset_operation(db, request, body)
     if body.kind == "app_create":
         from app.app_create import issue_app_operation
 
@@ -186,6 +216,20 @@ def get_operation(key: UUID, request: Request, db=Unlocked):
     kind = db.execute(
         text("SELECT kind FROM write_operations WHERE key=:key"), {"key": str(key)}
     ).scalar_one_or_none()
+    if kind == "user_password_reset":
+        from app.admin_password_reset import (
+            password_reset_operation_body,
+            reset_administrator,
+        )
+
+        item, actor = reset_administrator(db, request)
+        return response(
+            db,
+            request,
+            password_reset_operation_body(operation(db, key, actor)),
+            private=True,
+            metadata=item,
+        )
     if kind != "user_approval":
         from app.app_create import app_operation_body
 
@@ -211,8 +255,17 @@ def get_operation(key: UUID, request: Request, db=Unlocked):
 def cancel_operation(key: UUID, request: Request, db=Db):
     item, actor = administrator(db, request, write=True)
     row = operation(db, key, actor)
-    if row["kind"] != "user_approval":
-        raise AuthError("OPERATION_KEY_MISMATCH")
+    serialize = operation_body
+    if row["kind"] == "user_password_reset":
+        from app.admin_password_reset import (
+            password_reset_operation_body,
+            reset_administrator,
+        )
+
+        item, actor = reset_administrator(db, request, write=True)
+        serialize = password_reset_operation_body
+    elif row["kind"] != "user_approval":
+        raise AuthError("OPERATION_KIND_NOT_CANCELLABLE")
     if row["state"] == "unresolved":
         stamp = now()
         db.execute(
@@ -223,15 +276,22 @@ def cancel_operation(key: UUID, request: Request, db=Db):
         )
         db.execute(
             text(
-                "INSERT INTO audit_logs(action,actor_id,target_id,occurred_at,outcome) VALUES ('cancel_user_approval',:actor,:target,:now,'rejected')"
+                "INSERT INTO audit_logs(action,actor_id,target_id,occurred_at,outcome) VALUES (:action,:actor,:target,:now,'rejected')"
             ),
-            {"actor": actor["id"], "target": row["target_id"], "now": stamp},
+            {
+                "actor": actor["id"],
+                "target": row["target_id"],
+                "now": stamp,
+                "action": "cancel_" + row["kind"],
+            },
         )
     administrator(db, request, write=True)
+    if row["kind"] == "user_password_reset":
+        reset_administrator(db, request, write=True)
     return response(
         db,
         request,
-        operation_body(operation(db, key, actor)),
+        serialize(operation(db, key, actor)),
         private=True,
         metadata=item,
     )

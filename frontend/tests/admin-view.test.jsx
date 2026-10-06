@@ -8,7 +8,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AdminView } from "../src/features/admin/view-admin";
 import { adminService } from "../src/services/mock/admin";
@@ -82,13 +82,13 @@ it("keeps mock actions enabled without preparation notes for unimplemented metad
 });
 
 it.each([
-  [unimplemented, unimplemented, true, true],
-  [unimplemented, enabled, true, false],
+  [unimplemented, unimplemented, false, true],
+  [unimplemented, enabled, false, false],
   [enabled, unimplemented, false, true],
   [
     { enabled: false, reasons: ["operational_restriction", "not_implemented"] },
     unimplemented,
-    true,
+    false,
     true,
   ],
 ])(
@@ -112,7 +112,9 @@ it.each([
         ).toBeNull();
       } else {
         expect(note).not.toBeInTheDocument();
-        expect(button).toBeEnabled();
+        expect(button.disabled).toBe(
+          name === "임시 비밀번호 설정" ? !reset.enabled : !deletion.enabled,
+        );
         expect(button).not.toHaveAttribute("aria-describedby");
       }
     }
@@ -200,10 +202,7 @@ it("uses distinct description ids across member rows and preserves the protected
   expect(memberRows.length).toBeGreaterThanOrEqual(2);
   const ids = [];
   for (const row of memberRows) {
-    for (const [name, copy] of [
-      ["임시 비밀번호 설정", resetNote],
-      ["삭제", deleteNote],
-    ]) {
+    for (const [name, copy] of [["삭제", deleteNote]]) {
       const button = within(row).getByRole("button", { name, exact: true });
       const note = within(row).getByText(copy);
       ids.push(note.id);
@@ -355,3 +354,215 @@ it.each(["original", "admin_write_unknown"])(
     }
   },
 );
+
+it("does not execute a late issued reset after the protected view becomes inactive", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (user) => user.nickname === "비기너개발자",
+  );
+  let release;
+  const issue = vi
+    .spyOn(adminService, "createPasswordResetOperation")
+    .mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+  const execute = vi.spyOn(adminService, "setPasswordReset");
+  const resumeState = { adminReset: { targetId: target.id } };
+  const tree = (active) => (
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <AdminView
+          scopeKey="late-reset"
+          active={active}
+          resumeState={resumeState}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+  const view = render(tree(true));
+  const user = userEvent.setup();
+  await user.type(
+    await screen.findByLabelText("임시 비밀번호", { exact: true }),
+    "Synthetic temporary password 167!",
+  );
+  await user.type(
+    screen.getByLabelText("임시 비밀번호 확인"),
+    "Synthetic temporary password 167!",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "초기화 확인", exact: true }),
+  );
+  await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+  view.rerender(tree(false));
+  await act(async () => release({ key: "late-key", state: "unresolved" }));
+  expect(execute).not.toHaveBeenCalled();
+  expect(
+    screen.queryByLabelText("임시 비밀번호", { exact: true }),
+  ).not.toBeInTheDocument();
+});
+
+async function recoverySelection() {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (user) => user.nickname === "비기너개발자",
+  );
+  const operation = await adminService.createPasswordResetOperation({
+    targetId: target.id,
+    expectedAccountVersion: target.accountVersion,
+    newPassword: "Synthetic temporary password 167!",
+  });
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: {
+      adminReset: {
+        targetId: target.id,
+        operationKey: operation.key,
+        expectedAccountVersion: target.accountVersion,
+      },
+    },
+  });
+  await screen.findByLabelText("임시 비밀번호", { exact: true });
+  return { target, operation };
+}
+
+it("expired result refresh preserves the key and does not offer a new reset", async () => {
+  await recoverySelection();
+  const { ServiceError } = await import("../src/services/service-error");
+  vi.spyOn(adminService, "getPasswordResetOperation").mockRejectedValue(
+    new ServiceError("OPERATION_EXPIRED", "expired"),
+  );
+  const create = vi.spyOn(adminService, "createPasswordResetOperation");
+  const execute = vi.spyOn(adminService, "setPasswordReset");
+  const user = userEvent.setup();
+  await user.click(
+    screen.getByRole("button", { name: "결과 확인", exact: true }),
+  );
+  await user.click(
+    await screen.findByRole("button", { name: "현재 회원 상태 다시 확인" }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.queryByLabelText("임시 비밀번호", { exact: true }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(
+    screen.getByText("작업 키가 만료되어 과거 결과를 확인할 수 없어요."),
+  ).toBeVisible();
+  expect(create).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+});
+
+it("a cancel that observes prior success refreshes lists even if target lookup fails", async () => {
+  const { operation } = await recoverySelection();
+  const { ServiceError } = await import("../src/services/service-error");
+  vi.spyOn(adminService, "cancelPasswordResetOperation").mockResolvedValue({
+    ...operation,
+    state: "succeeded",
+    appliedAccountVersion: 2,
+    finalizedAt: "2026-10-01T00:00:00Z",
+    temporaryPasswordExpiresAt: "2026-10-02T00:00:00Z",
+  });
+  vi.spyOn(adminService, "getUser").mockRejectedValue(
+    new ServiceError("USER_NOT_FOUND", "deleted"),
+  );
+  const list = vi.spyOn(adminService, "listUsers");
+  await userEvent
+    .setup()
+    .click(
+      screen.getByRole("button", { name: "초기화 요청 취소", exact: true }),
+    );
+  await screen.findByText(
+    "임시 비밀번호 설정이 확정됐어요. 승인 상태는 그대로 유지됩니다.",
+  );
+  expect(list).toHaveBeenCalled();
+  expect(
+    screen.queryByText("초기화 요청 취소가 확정됐어요."),
+  ).not.toBeInTheDocument();
+  expect(
+    JSON.stringify(
+      client
+        .getQueryCache()
+        .getAll()
+        .map((query) => query.state.data),
+    ),
+  ).not.toContain("Synthetic temporary password 167!");
+});
+
+it.each(["OPERATION_NOT_FOUND", "SERVICE_UNAVAILABLE"])(
+  "an unavailable result %s blocks secret entry and execution until a successful lookup",
+  async (code) => {
+    await recoverySelection();
+    const { ServiceError } = await import("../src/services/service-error");
+    vi.spyOn(adminService, "getPasswordResetOperation").mockRejectedValue(
+      new ServiceError(code, "unknown"),
+    );
+    const execute = vi.spyOn(adminService, "setPasswordReset");
+    const create = vi.spyOn(adminService, "createPasswordResetOperation");
+    await userEvent
+      .setup()
+      .click(screen.getByRole("button", { name: "결과 확인", exact: true }));
+    await waitFor(() =>
+      expect(
+        screen.queryByLabelText("임시 비밀번호", { exact: true }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(execute).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
+  },
+);
+
+it("does not execute a late issuance after navigation conceals the mounted member view", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (user) => user.nickname === "비기너개발자",
+  );
+  let release;
+  vi.spyOn(adminService, "createPasswordResetOperation").mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  const execute = vi.spyOn(adminService, "setPasswordReset");
+  const resumeState = { adminReset: { targetId: target.id } };
+  function MountedView() {
+    const navigate = useNavigate();
+    return (
+      <>
+        <button onClick={() => navigate("/admin?tab=invalid")}>
+          Conceal member view
+        </button>
+        <AdminView scopeKey="hidden-route" resumeState={resumeState} />
+      </>
+    );
+  }
+  render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <MountedView />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  const user = userEvent.setup();
+  await user.type(
+    await screen.findByLabelText("임시 비밀번호", { exact: true }),
+    "Synthetic temporary password 167!",
+  );
+  await user.type(
+    screen.getByLabelText("임시 비밀번호 확인"),
+    "Synthetic temporary password 167!",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "초기화 확인", exact: true }),
+  );
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  await user.click(screen.getByRole("button", { name: "Conceal member view" }));
+  await act(async () => release({ key: "late-key", state: "unresolved" }));
+  expect(execute).not.toHaveBeenCalled();
+  expect(
+    screen.queryByLabelText("임시 비밀번호", { exact: true }),
+  ).not.toBeInTheDocument();
+});

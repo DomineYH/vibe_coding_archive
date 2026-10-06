@@ -263,10 +263,10 @@ def test_mismatch_conflict_and_registration_replay_are_distinct(member_app):
             update(owner, item["id"], key, version=2),
             update(owner, item["id"], create_key),
             create(owner, key),
-            cancel(owner, key),
             execute(owner, key),
         ):
             error(result, 409, "OPERATION_KEY_MISMATCH")
+        error(cancel(owner, key), 409, "OPERATION_KIND_NOT_CANCELLABLE")
         assert read(owner, key).json()["state"] == "unresolved"
         second = update_key(owner, item["id"])
         assert update(owner, item["id"], key).status_code == 200

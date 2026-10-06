@@ -508,6 +508,7 @@ function PasswordResetPanel({
   onReadResult,
   onCancelOperation,
   onRetryTarget,
+  onFreshTarget,
   onClose,
 }) {
   const [password, setPassword] = useState("");
@@ -650,6 +651,17 @@ function PasswordResetPanel({
           {error}
         </p>
       ) : null}
+      {operation?.state === "rejected" ? (
+        <Btn
+          className="mt-3"
+          size="sm"
+          variant="line"
+          onClick={onFreshTarget}
+          disabled={busy}
+        >
+          현재 회원 확인 후 새 초기화 판단
+        </Btn>
+      ) : null}
       {operationExpired ? (
         <Btn
           className="mt-3"
@@ -783,7 +795,8 @@ function PasswordResetPanel({
           ) : null}
         </div>
       ) : null}
-      {operation?.state !== "unresolved" && !hasPendingKey ? (
+      {operationExpired ||
+      (operation?.state !== "unresolved" && !hasPendingKey) ? (
         <div className="mt-3">
           <Btn size="sm" variant="line" onClick={onClose} disabled={busy}>
             닫기
@@ -979,10 +992,6 @@ export function AdminView({
   const canDelete =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_user_delete.enabled === true;
-  const resetNotImplemented =
-    !canReset &&
-    meta?.capabilities.admin_password_reset.enabled === false &&
-    meta.capabilities.admin_password_reset.reasons.includes("not_implemented");
   const deleteNotImplemented =
     !canDelete &&
     meta?.capabilities.admin_user_delete.enabled === false &&
@@ -1015,6 +1024,25 @@ export function AdminView({
   const pendingSelection = useRef(selection);
   pendingSelection.current = selection;
   const resetDetailRequest = useRef(0);
+  const resetOwner = useRef({ active, scopeKey });
+  resetOwner.current = {
+    active: active && !route.invalid && tab === "users",
+    scopeKey,
+  };
+  function ownsReset(request, owner) {
+    return (
+      alive.current &&
+      resetOwner.current.active &&
+      resetOwner.current.scopeKey === owner &&
+      request === resetDetailRequest.current
+    );
+  }
+  useEffect(() => {
+    ++resetDetailRequest.current;
+    setResetSelection(null);
+    setResetBusy(false);
+    setResetError("");
+  }, [active, scopeKey, route.invalid, tab]);
   const deleteDetailRequest = useRef(0);
   useEffect(() => {
     const request = ++detailRequest.current;
@@ -1080,6 +1108,7 @@ export function AdminView({
         ? lastPage.pagination.offset + lastPage.pagination.limit
         : undefined,
   });
+  const refetchResetList = query.refetch;
   const pages = query.data?.pages ?? [];
   const users = pages.flatMap((page) => page.items);
   const stats = pages[0]?.stats;
@@ -1157,6 +1186,7 @@ export function AdminView({
 
   function changeTab(nextTab) {
     if (deletePending || deleteBusy) return;
+    ++resetDetailRequest.current;
     setSelection(null);
     setResetSelection(null);
     setDeleteSelection(null);
@@ -1194,7 +1224,10 @@ export function AdminView({
 
   useEffect(() => {
     if (!active) ++resetDetailRequest.current;
-    const resume = active ? resumeState?.adminReset : null;
+    const resume =
+      active && !route.invalid && tab === "users"
+        ? resumeState?.adminReset
+        : null;
     if (!resume || typeof resume.targetId !== "string") return;
     const targetId = resume.targetId;
     const operationKey =
@@ -1229,6 +1262,7 @@ export function AdminView({
           operationError = error;
         }
       }
+      if (!alive.current || request !== resetDetailRequest.current) return;
       try {
         const target = await adminService.getUser(targetId);
         if (!alive.current || request !== resetDetailRequest.current) return;
@@ -1241,6 +1275,8 @@ export function AdminView({
           expectedAccountVersion,
           operation,
         });
+        if (operation?.state === "succeeded") await refetchResetList();
+        if (!alive.current || request !== resetDetailRequest.current) return;
         if (operationError) {
           if (
             operationError instanceof ServiceError &&
@@ -1262,6 +1298,8 @@ export function AdminView({
           error:
             error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
         });
+        if (operation?.state === "succeeded") await refetchResetList();
+        if (!alive.current || request !== resetDetailRequest.current) return;
         if (operationError) {
           if (
             operationError instanceof ServiceError &&
@@ -1272,7 +1310,14 @@ export function AdminView({
         }
       }
     })();
-  }, [active, resumeState, onConsumeResume]);
+  }, [
+    active,
+    resumeState,
+    onConsumeResume,
+    refetchResetList,
+    route.invalid,
+    tab,
+  ]);
 
   useEffect(() => {
     if (!active) ++deleteDetailRequest.current;
@@ -1380,6 +1425,7 @@ export function AdminView({
     operationKey = null,
     expectedAccountVersion = null,
   ) {
+    ++resetDetailRequest.current;
     ++detailRequest.current;
     setBusy(false);
     setResetBusy(false);
@@ -1645,30 +1691,33 @@ export function AdminView({
     }
   }
 
-  async function retryResetTarget() {
-    if (!resetSelection) return;
+  async function retryResetTarget(fresh = false) {
+    if (!resetSelection || resetBusy) return;
     const request = ++resetDetailRequest.current;
-    const id = resetSelection.id;
+    const owner = scopeKey;
+    const { id } = resetSelection;
     setResetSelection({ ...resetSelection, loading: true, error: "" });
     try {
       const target = await adminService.getUser(id);
-      if (alive.current && request === resetDetailRequest.current) {
-        const operationExpired = resetOperationExpired;
+      if (!ownsReset(request, owner)) return;
+      setResetSelection({
+        ...resetSelection,
+        target,
+        loading: false,
+        ...(fresh
+          ? {
+              operationKey: null,
+              operation: null,
+              expectedAccountVersion: target.accountVersion,
+            }
+          : {}),
+      });
+      if (fresh) {
         setResetOperationExpired(false);
         setResetError("");
-        setResetSelection({
-          id,
-          target,
-          loading: false,
-          operationKey: operationExpired ? null : resetSelection.operationKey,
-          expectedAccountVersion: operationExpired
-            ? target.accountVersion
-            : resetSelection.expectedAccountVersion,
-          operation: operationExpired ? null : resetSelection.operation,
-        });
       }
     } catch (error) {
-      if (alive.current && request === resetDetailRequest.current)
+      if (ownsReset(request, owner))
         setResetSelection({
           ...resetSelection,
           target: null,
@@ -1679,70 +1728,86 @@ export function AdminView({
     }
   }
 
-  async function refreshResetCurrent(targetId, operation) {
+  async function refreshResetCurrent(targetId, operation, request, owner) {
+    let target = null;
+    let failed = false;
     try {
-      const target = await adminService.getUser(targetId);
-      if (!alive.current) return;
+      target = await adminService.getUser(targetId);
+    } catch {
+      failed = true;
+    }
+    if (!ownsReset(request, owner)) return;
+    setResetSelection((current) => ({
+      ...current,
+      target,
+      loading: false,
+      operationKey: operation.key,
+      operation,
+    }));
+    try {
+      await query.refetch({ throwOnError: true });
+    } catch {
+      failed = true;
+    }
+    if (ownsReset(request, owner) && failed)
+      setResetError(
+        "임시 비밀번호 설정 결과는 확정됐지만 회원 정보를 다시 불러오지 못했어요.",
+      );
+  }
+
+  async function installResetResult(operation, targetId, request, owner) {
+    if (!ownsReset(request, owner)) return;
+    if (operation.state === "succeeded")
+      await refreshResetCurrent(targetId, operation, request, owner);
+    else
       setResetSelection((current) => ({
         ...current,
-        id: targetId,
-        target,
-        loading: false,
         operationKey: operation.key,
-        expectedAccountVersion:
-          current?.expectedAccountVersion ?? target.accountVersion,
         operation,
       }));
-      await query.refetch();
-    } catch {
-      if (alive.current) {
-        setResetSelection((current) => ({
-          ...current,
-          loading: false,
-          operation,
-        }));
-        setResetError(
-          "임시 비밀번호 설정 결과는 확정됐지만 회원 정보를 다시 불러오지 못했어요.",
-        );
-      }
-    }
   }
 
   async function readResetResult() {
     const key = resetSelection?.operation?.key ?? resetSelection?.operationKey;
     if (!key || resetBusy) return;
+    const request = ++resetDetailRequest.current;
+    const owner = scopeKey;
+    const id = resetSelection.id;
     setResetBusy(true);
     setResetError("");
     try {
       const operation = await adminService.getPasswordResetOperation(key);
-      if (!alive.current) return;
-      if (operation.state === "succeeded")
-        await refreshResetCurrent(resetSelection.id, operation);
-      else
+      await installResetResult(operation, id, request, owner);
+    } catch (error) {
+      if (ownsReset(request, owner)) {
+        if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
+          setResetOperationExpired(true);
         setResetSelection((current) => ({
           ...current,
           operationKey: key,
-          operation,
+          operation: null,
         }));
-    } catch (error) {
-      if (alive.current) {
-        if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
-          setResetOperationExpired(true);
         setResetError(resetOperationMessage(error));
       }
     } finally {
-      if (alive.current) setResetBusy(false);
+      if (ownsReset(request, owner)) setResetBusy(false);
     }
   }
 
   async function submitPasswordReset(newPassword) {
-    if (!resetSelection?.target || resetBusy) return;
+    if (
+      !resetSelection?.target ||
+      resetBusy ||
+      (resetSelection.operationKey && !resetSelection.operation)
+    )
+      return;
     const { target } = resetSelection;
     const expectedAccountVersion =
       resetSelection.expectedAccountVersion ?? target.accountVersion;
+    const request = ++resetDetailRequest.current;
+    const owner = scopeKey;
     setResetBusy(true);
     setResetError("");
-    setResetOperationExpired(false);
     let operation = resetSelection.operation;
     try {
       if (!operation) {
@@ -1751,7 +1816,7 @@ export function AdminView({
           expectedAccountVersion,
           newPassword,
         });
-        if (!alive.current) return;
+        if (!ownsReset(request, owner)) return;
         setResetSelection((current) => ({
           ...current,
           operationKey: operation.key,
@@ -1759,21 +1824,20 @@ export function AdminView({
           operation,
         }));
       }
+      if (!ownsReset(request, owner)) return;
       await adminService.setPasswordReset(
         target.id,
         newPassword,
         expectedAccountVersion,
         operation.key,
       );
+      if (!ownsReset(request, owner)) return;
       const result = await adminService.getPasswordResetOperation(
         operation.key,
       );
-      if (!alive.current) return;
-      if (result.state === "succeeded")
-        await refreshResetCurrent(target.id, result);
-      else setResetSelection((current) => ({ ...current, operation: result }));
+      await installResetResult(result, target.id, request, owner);
     } catch (error) {
-      if (!alive.current) return;
+      if (!ownsReset(request, owner)) return;
       if (error instanceof ServiceError && error.code === "REAUTH_REQUIRED") {
         startResetReauthentication(
           target.id,
@@ -1783,18 +1847,20 @@ export function AdminView({
         return;
       }
       if (
+        operation &&
         error instanceof ServiceError &&
         (error.code === "OPERATION_ALREADY_RESOLVED" ||
-          error.outcome === "rejected") &&
-        operation
+          error.outcome === "rejected")
       ) {
         try {
           const result = await adminService.getPasswordResetOperation(
             operation.key,
           );
-          if (alive.current)
-            setResetSelection((current) => ({ ...current, operation: result }));
+          if (!ownsReset(request, owner)) return;
+          await installResetResult(result, target.id, request, owner);
+          if (result.state === "succeeded") return;
         } catch (resultError) {
+          if (!ownsReset(request, owner)) return;
           if (
             resultError instanceof ServiceError &&
             resultError.code === "OPERATION_EXPIRED"
@@ -1802,35 +1868,53 @@ export function AdminView({
             setResetOperationExpired(true);
         }
       }
+      if (!ownsReset(request, owner)) return;
       if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
         setResetOperationExpired(true);
-      setResetError(resetOperationMessage(error));
+      if (
+        operation &&
+        (!(error instanceof ServiceError) || error.outcome === "unknown")
+      )
+        setResetSelection((current) => ({
+          ...current,
+          operationKey: operation.key,
+          operation: null,
+        }));
+      setResetError(
+        operation ||
+          (error instanceof ServiceError && error.outcome === "rejected")
+          ? resetOperationMessage(error)
+          : "작업 키 발급 결과를 확인하지 못했어요. 초기화 실행은 제출하지 않았습니다. 다시 확인한 뒤 직접 제출해 주세요.",
+      );
     } finally {
-      if (alive.current) setResetBusy(false);
+      if (ownsReset(request, owner)) setResetBusy(false);
     }
   }
 
   async function cancelResetOperation() {
     const key = resetSelection?.operation?.key ?? resetSelection?.operationKey;
     if (!key || resetBusy) return;
+    const request = ++resetDetailRequest.current;
+    const owner = scopeKey;
+    const id = resetSelection.id;
     setResetBusy(true);
     setResetError("");
     try {
       const operation = await adminService.cancelPasswordResetOperation(key);
-      if (alive.current)
+      await installResetResult(operation, id, request, owner);
+    } catch (error) {
+      if (ownsReset(request, owner)) {
+        if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
+          setResetOperationExpired(true);
         setResetSelection((current) => ({
           ...current,
           operationKey: key,
-          operation,
+          operation: null,
         }));
-    } catch (error) {
-      if (alive.current) {
-        if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
-          setResetOperationExpired(true);
         setResetError(resetOperationMessage(error));
       }
     } finally {
-      if (alive.current) setResetBusy(false);
+      if (ownsReset(request, owner)) setResetBusy(false);
     }
   }
 
@@ -2042,6 +2126,31 @@ export function AdminView({
       if (alive.current) setBusy(false);
     }
   }
+
+  const resetPanel =
+    active && resetSelection ? (
+      <PasswordResetPanel
+        key={`${scopeKey}:${resetSelection.id}`}
+        target={resetSelection.target}
+        loading={resetSelection.loading}
+        busy={resetBusy}
+        error={resetError || resetSelection.error}
+        operation={resetSelection.operation}
+        operationKey={resetSelection.operationKey}
+        expectedAccountVersion={resetSelection.expectedAccountVersion}
+        operationExpired={resetOperationExpired}
+        onSubmit={(password) => submitPasswordReset(password)}
+        onReadResult={() => void readResetResult()}
+        onCancelOperation={() => void cancelResetOperation()}
+        onRetryTarget={() => void retryResetTarget()}
+        onFreshTarget={() => void retryResetTarget(true)}
+        onClose={() => {
+          ++resetDetailRequest.current;
+          setResetSelection(null);
+          setResetError("");
+        }}
+      />
+    ) : null;
 
   const approvalPanel = selection ? (
     <ApprovalPanel
@@ -2267,11 +2376,6 @@ export function AdminView({
                           size="sm"
                           variant="line"
                           onClick={() => beginPasswordReset(user.id)}
-                          aria-describedby={
-                            resetNotImplemented
-                              ? `admin-password-reset-reason-${user.id}`
-                              : undefined
-                          }
                           disabled={
                             !canReset ||
                             busy ||
@@ -2321,14 +2425,8 @@ export function AdminView({
                       </div>
                     )}
                   </div>
-                  {user.role !== "admin" &&
-                  (resetNotImplemented || deleteNotImplemented) ? (
+                  {user.role !== "admin" && deleteNotImplemented ? (
                     <div className="space-y-1 px-5 pb-4 pl-[68px] text-[12px] text-neutral-500 sm:pl-[72px] sm:pr-6">
-                      {resetNotImplemented ? (
-                        <p id={`admin-password-reset-reason-${user.id}`}>
-                          임시 비밀번호 설정 기능은 아직 준비 중이에요.
-                        </p>
-                      ) : null}
                       {deleteNotImplemented ? (
                         <p id={`admin-user-delete-reason-${user.id}`}>
                           회원 삭제 기능은 아직 준비 중이에요.
@@ -2337,29 +2435,7 @@ export function AdminView({
                     </div>
                   ) : null}
                   {selection?.id === user.id ? approvalPanel : null}
-                  {resetSelection?.id === user.id ? (
-                    <PasswordResetPanel
-                      target={resetSelection.target}
-                      loading={resetSelection.loading}
-                      busy={resetBusy}
-                      error={resetError || resetSelection.error}
-                      operation={resetSelection.operation}
-                      operationKey={resetSelection.operationKey}
-                      expectedAccountVersion={
-                        resetSelection.expectedAccountVersion
-                      }
-                      operationExpired={resetOperationExpired}
-                      onSubmit={(password) => submitPasswordReset(password)}
-                      onReadResult={() => void readResetResult()}
-                      onCancelOperation={() => void cancelResetOperation()}
-                      onRetryTarget={() => void retryResetTarget()}
-                      onClose={() => {
-                        ++resetDetailRequest.current;
-                        setResetSelection(null);
-                        setResetError("");
-                      }}
-                    />
-                  ) : null}
+                  {resetSelection?.id === user.id ? resetPanel : null}
                   {deleteSelection?.id === user.id ? (
                     <UserDeletePanel
                       target={deleteSelection.target}
@@ -2385,6 +2461,10 @@ export function AdminView({
                 </div>
               ))}
             </div>
+            {resetSelection &&
+            !users.some((user) => user.id === resetSelection.id)
+              ? resetPanel
+              : null}
             {query.isFetchNextPageError ? (
               <div className="px-6 py-4" role="alert">
                 <p className="text-[13px] text-rose-700">

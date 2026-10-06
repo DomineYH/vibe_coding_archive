@@ -52,7 +52,9 @@ def normalize_schema():
 
 @pytest.fixture
 def make_test_app(migrate_test_database, request):
-    def make(database_path: Path, *, auth_testing=False) -> FastAPI:
+    def make(
+        database_path: Path, *, auth_testing=False, password_reset_hmac_path=None
+    ) -> FastAPI:
         migrate_test_database(database_path)
         env = {
             **os.environ,
@@ -64,6 +66,9 @@ def make_test_app(migrate_test_database, request):
             env["PASSWORD_BLOCKLIST_PATH"] = str(
                 request.getfixturevalue("password_blocklist")
             )
+        env.pop("PASSWORD_RESET_HMAC_PATH", None)
+        if password_reset_hmac_path is not None:
+            env["PASSWORD_RESET_HMAC_PATH"] = str(password_reset_hmac_path)
         settings = Settings.from_environment(env, repo_root=ROOT)
         return create_app(settings, auth_testing=auth_testing)
 

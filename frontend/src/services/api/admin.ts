@@ -47,6 +47,8 @@ const TARGET_READ_ERRORS: ErrorCodesByStatus = {
 };
 const KEY_READ_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
+  403: ["FORBIDDEN", "PASSWORD_CHANGE_REQUIRED", "SESSION_KIND_NOT_ALLOWED"],
+  422: ["VALIDATION_ERROR"],
   404: ["OPERATION_NOT_FOUND"],
   410: ["OPERATION_EXPIRED"],
 };
@@ -87,7 +89,6 @@ const EXECUTE_ERRORS: ErrorCodesByStatus = {
 };
 const RESET_ERRORS: ErrorCodesByStatus = {
   ...EXECUTE_ERRORS,
-  413: ["VALIDATION_ERROR"],
 };
 const USER_DELETE_ERRORS: ErrorCodesByStatus = {
   ...EXECUTE_ERRORS,
@@ -110,13 +111,13 @@ const USER_DELETE_ERRORS: ErrorCodesByStatus = {
 };
 const CANCEL_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
+  422: ["VALIDATION_ERROR"],
   400: ["BAD_REQUEST"],
   413: ["PAYLOAD_TOO_LARGE"],
   403: [
     "FORBIDDEN",
     "PASSWORD_CHANGE_REQUIRED",
     "SESSION_KIND_NOT_ALLOWED",
-    "REAUTH_REQUIRED",
     "CSRF_INVALID",
     "ORIGIN_REJECTED",
   ],

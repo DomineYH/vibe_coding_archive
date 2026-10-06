@@ -686,7 +686,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Set a current ordinary member password to an administrator supplied temporary password */
+        /**
+         * Set a current ordinary member password to an administrator supplied temporary password
+         * @description Requires a current full administrator with recent authentication at admission and commit. A missing or unverifiable dedicated HMAC secret returns 503 SERVICE_UNAVAILABLE.
+         */
         post: operations["resetAdminUserPassword"];
         delete?: never;
         options?: never;
@@ -701,7 +704,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Read the minimal result for a write operation key */
+        /**
+         * Read the minimal result for a write operation key
+         * @description Reset results require the current full issuing administrator, without recent authentication, password, or HMAC readiness.
+         */
         get: operations["getWriteOperation"];
         put?: never;
         post?: never;
@@ -720,7 +726,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel an unresolved approval or password reset key */
+        /**
+         * Cancel an unresolved approval or password reset key
+         * @description Reset cancellation requires the current full issuing administrator and write context, without recent authentication or HMAC readiness. Other kinds return 409 OPERATION_KIND_NOT_CANCELLABLE without changing the key.
+         */
         post: operations["cancelWriteOperation"];
         delete?: never;
         options?: never;
@@ -821,7 +830,7 @@ export interface components {
             expected_account_version: number;
             approved: boolean;
         };
-        /** @description The new_password is included only in this key-issuance request and is never echoed or stored in the operation result. The implementation enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point password policy. The versioned local common-password blocklist applies to the real API; Phase 1 mock does not apply that check. */
+        /** @description The new_password is included only in this key-issuance request and is never echoed or stored in the operation result. The implementation enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point password policy after NFC normalization, preserving spaces and case. A dedicated versioned HMAC binds the input; unavailable secret verification returns 503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies to the real API; Phase 1 mock does not apply that check. */
         CreatePasswordResetOperation: {
             /** @constant */
             kind: "user_password_reset";
@@ -896,7 +905,7 @@ export interface components {
             approved: boolean;
             expected_account_version: number;
         };
-        /** @description The new_password is matched against the same key-issuance input and is never echoed or stored in the operation result. The implementation enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point password policy. The versioned local common-password blocklist applies to the real API; Phase 1 mock does not apply that check. */
+        /** @description The new_password is matched against the same key-issuance input and is never echoed or stored in the operation result. The implementation enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point password policy after NFC normalization, preserving spaces and case. A dedicated versioned HMAC binds the input; unavailable secret verification returns 503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies to the real API; Phase 1 mock does not apply that check. */
         SetPasswordResetInput: {
             new_password: string;
             expected_account_version: number;
@@ -2962,6 +2971,7 @@ export interface operations {
             404: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
             410: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -3002,6 +3012,7 @@ export interface operations {
             409: components["responses"]["ServiceError"];
             410: components["responses"]["ServiceError"];
             413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

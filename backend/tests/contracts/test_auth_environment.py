@@ -224,3 +224,49 @@ def test_development_private_detail_allows_owner_only(development_settings):
         assert result.json()["item"]["is_public"] is False
         assert result.headers["Cache-Control"] == "private, no-store"
         assert client.get(f"/api/v1/apps/{PRIVATE}").status_code == 404
+
+
+@pytest.mark.parametrize(
+    "environment,testing,valid,expected",
+    [
+        ("development", False, True, True),
+        ("development", False, False, False),
+        ("test", False, True, False),
+        ("test", True, True, True),
+        ("production", False, True, False),
+    ],
+)
+def test_reset_capability_requires_verified_supply_and_explicit_auth_boundary(
+    tmp_path,
+    migrate_test_database,
+    password_blocklist,
+    environment,
+    testing,
+    valid,
+    expected,
+):
+    from tests.password_reset_client import supply
+
+    path = tmp_path / "reset-environment.sqlite3"
+    migrate_test_database(path)
+    secret = supply(tmp_path / "reset.json")
+    if not valid:
+        secret.unlink()
+    settings = Settings(
+        app_env=environment,
+        database_path=path,
+        public_origin="http://localhost:5174"
+        if environment != "production"
+        else "https://archive.example.test",
+        password_blocklist_path=password_blocklist,
+        password_reset_hmac_path=secret,
+    )
+    with TestClient(create_app(settings, auth_testing=testing)) as client:
+        capabilities = client.get("/api/v1/meta").json()["capabilities"]
+        assert capabilities["admin_password_reset"] == {
+            "enabled": expected,
+            "reasons": [] if expected else ["operational_restriction"],
+        }
+        assert capabilities["admin_user_delete"]["enabled"] is False
+        assert capabilities["admin_apps_manage"]["enabled"] is False
+        assert client.get("/readyz").status_code == 200
