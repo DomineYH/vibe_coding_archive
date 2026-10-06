@@ -593,6 +593,82 @@ it("does not promote an older reauthentication result when a newer same-member r
   ).not.toBeInTheDocument();
 });
 
+it.each([
+  ["PUSH", "success"],
+  ["REPLACE", "success"],
+  ["PUSH", "failed"],
+  ["REPLACE", "failed"],
+  ["PUSH", "lost"],
+  ["REPLACE", "lost"],
+])(
+  "same-path %s departure during pending reauth %s leaves the new entry usable",
+  async (navigation, outcome) => {
+    let release;
+    let failure;
+    const real = authService.reauthenticate.bind(authService);
+    const execute = vi
+      .spyOn(authService, "reauthenticate")
+      .mockImplementation(async (input) => {
+        let result;
+        try {
+          result = await real(input);
+        } catch (error) {
+          failure = error;
+        }
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+        if (failure) throw failure;
+        if (outcome === "lost")
+          throw new ServiceError("SERVICE_UNAVAILABLE", "Response lost", {
+            outcome: "unknown",
+          });
+        return result;
+      });
+    const router = await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: outcome === "failed" ? "wrong-password" : "admin123" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    await act(async () =>
+      router.navigate("/auth?mode=login", {
+        replace: navigation === "REPLACE",
+      }),
+    );
+    await act(async () => release());
+    await waitFor(() =>
+      expect(
+        screen.queryByText("로그인 상태를 확인하고 있어요"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toBe("?mode=login");
+    expect(screen.getByLabelText("로그인 아이디")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "로그인", exact: true }),
+    ).toBeEnabled();
+    expect(
+      await within(screen.getByRole("banner")).findByText(
+        DEMO_ACCOUNTS[0].nickname,
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "결과 확인" })).toBeNull();
+    expect(screen.queryByText("Response lost")).not.toBeInTheDocument();
+    if (outcome === "failed") {
+      expect(failure).toMatchObject({
+        code: "INVALID_CREDENTIALS",
+        httpStatus: 401,
+      });
+      expect(screen.queryByText(failure.message)).not.toBeInTheDocument();
+    }
+    expect(execute).toHaveBeenCalledTimes(1);
+  },
+);
+
 it.each(["PUSH", "REPLACE", "POP"])(
   "same-path %s navigation supersedes pending reauth success",
   async (navigation) => {

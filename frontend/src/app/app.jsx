@@ -2535,8 +2535,8 @@ export default function App() {
       previous.pathname === location.pathname &&
       (navigationType !== "POP" || previous.key === location.key)
     ) {
-      // Supersede an in-flight reauth restore with recovery for the new entry.
-      if (reauthDeparted && authController.current) void restoreAuth();
+      // Recover the new entry even if reauth execution has not started a restore.
+      if (reauthDeparted) void restoreAuth();
       return;
     }
     if (__DATA_MODE__ === "mock") {
