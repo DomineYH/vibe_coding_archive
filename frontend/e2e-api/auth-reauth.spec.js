@@ -87,11 +87,8 @@ test("admin reauth follows the prepared capability boundary", async ({
   const { capabilities } = await meta.json();
   expect(capabilities.admin_reauth.enabled).toBe(prepared);
   expect(capabilities.admin_password_reset.enabled).toBe(prepared);
-  for (const key of [
-    "admin_user_delete",
-    "admin_apps_read",
-    "admin_apps_manage",
-  ])
+  expect(capabilities.admin_user_delete.enabled).toBe(prepared);
+  for (const key of ["admin_apps_read", "admin_apps_manage"])
     expect(capabilities[key].enabled).toBe(false);
 });
 

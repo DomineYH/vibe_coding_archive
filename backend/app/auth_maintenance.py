@@ -1,7 +1,10 @@
 """Reconcile before readiness; sweep on a bounded schedule; invalidate restored authority."""
 
+import time
+
 from sqlalchemy import text
 
+from app import user_deletion_ledger
 from app.app_deletion_ledger import prepare, replay, retry_delivery
 from app.auth_boundary import (
     SEQUENCE,
@@ -19,9 +22,11 @@ from app.pending_retention import sweep_pending
 def reconcile(factory, *, restored=False):
     if restored:
         events = prepare(factory, restored=True)
+        account_events = user_deletion_ledger.prepare(factory, restored=True)
         replay(factory, events)
+        user_deletion_ledger.replay(factory, account_events)
     else:
-        retry_delivery(factory)
+        deliver_deletions(factory)
     sweep_pending(factory, restored=restored)
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))
@@ -73,7 +78,7 @@ def reconcile(factory, *, restored=False):
 
 
 def sweep(factory):
-    retry_delivery(factory)
+    deliver_deletions(factory)
     sweep_pending(factory)
     with factory() as db:
         db.execute(text("BEGIN IMMEDIATE"))
@@ -172,3 +177,27 @@ def sweep(factory):
                 )
             db.execute(text("DELETE FROM auth_flows WHERE id=:id"), {"id": flow_id})
         db.commit()
+
+
+def deliver_deletions(factory):
+    deadline = time.monotonic() + 5
+    account_events = user_deletion_ledger.prepare(factory, deadline=deadline)
+    # Validate both sources before delivery can mutate either ledger.
+    app_events = prepare(factory, deadline=deadline)
+    deliveries = []
+    if app_events is not None:
+        deliveries.append(
+            lambda: retry_delivery(factory, deadline=deadline, verified=True)
+        )
+    if account_events is not None:
+        deliveries.append(
+            lambda: user_deletion_ledger.retry_delivery(factory, deadline=deadline)
+        )
+    # Alternating first access prevents either bounded queue monopolizing every pass.
+    if int(time.time() // 60) % 2:
+        deliveries.reverse()
+    for deliver in deliveries:
+        if time.monotonic() >= deadline:
+            break
+        deliver()
+    return account_events is not None

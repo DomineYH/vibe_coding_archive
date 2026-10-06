@@ -36,7 +36,7 @@ if (prepared)
       ).toBeEnabled();
       await expect(
         page.getByRole("button", { name: "삭제", exact: true }).first(),
-      ).toBeDisabled();
+      ).toBeEnabled();
       await expect(
         page.getByRole("tab", { name: "Health Monitor" }),
       ).toBeDisabled();
@@ -44,6 +44,15 @@ if (prepared)
       await expect
         .poll(() => page.getByRole("listitem").count())
         .toBeGreaterThan(24);
+      await expect(userRow(page, "approval-admin")).toContainText(
+        "보호된 계정",
+      );
+      await expect(
+        userRow(page, "approval-admin").getByRole("button", {
+          name: "삭제",
+          exact: true,
+        }),
+      ).toHaveCount(0);
       const headers = await approvalHeaders(page);
       const result = await page.request.get("/api/v1/admin/users?limit=1", {
         headers,

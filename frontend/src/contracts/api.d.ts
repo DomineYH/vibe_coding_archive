@@ -635,7 +635,7 @@ export interface paths {
         post?: never;
         /**
          * Delete an ordinary member and all owned archive apps
-         * @description Requires current administrator reauthentication. The expected app count is checked when the operation key is issued and again when deletion is committed. A same-count change in app composition does not block the deletion. A 503 DELETION_CONFIRMATION_PENDING means account and app deletion committed; read the existing operation key and never infer failure or issue a new deletion.
+         * @description Requires a current approved full administrator with recent authentication within 900 seconds, current flow/revision/generation, Origin and CSRF. Administrator accounts are protected. No account-version precondition is used. The actor-bound user_delete key expires 24 hours after issue without renewal. Matching terminal replays return OPERATION_ALREADY_RESOLVED; differing target/count returns OPERATION_KEY_MISMATCH before checking target existence. Confirmation uses one total five-second budget for the complete member/app group and acknowledgement outside the business transaction. Maintenance retries delivery each minute without reexecuting deletion. The expected app count is checked when the operation key is issued and again when deletion is committed. A same-count change in app composition does not block the deletion. A 503 DELETION_CONFIRMATION_PENDING means account and app deletion committed; read the existing operation key and never infer failure or issue a new deletion.
          */
         delete: operations["deleteAdminUser"];
         options?: never;
@@ -2791,9 +2791,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description The member and all owned archive apps were deleted. */
+            /** @description Definitive deletion success after the complete independent group and operational finalization. Empty body; no result GET is required to establish success. */
             204: {
                 headers: {
+                    "Cache-Control"?: "no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content?: never;
@@ -2804,6 +2808,7 @@ export interface operations {
             404: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
             410: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             /** @description Includes DELETION_CONFIRMATION_PENDING after account and app deletion commit. Read the existing operation key; do not delete again or use a new key. */
             503: components["responses"]["ServiceError"];
@@ -2953,7 +2958,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Unresolved is not success; the result does not expose input. */
+            /** @description Unresolved is not success; the result does not expose input. Account deletion results require the current approved full administrator who issued the key, without recent authentication or target existence. db_applied_at is present while confirming and finalized_at remains null until the complete independent group is confirmed. user_delete cannot be cancelled. */
             200: {
                 headers: {
                     "Cache-Control"?: "private, no-store";

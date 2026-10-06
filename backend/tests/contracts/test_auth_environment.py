@@ -23,6 +23,7 @@ AUTH_BUNDLE = {
     "auth_register",
     "admin_users_read",
     "admin_approval",
+    "admin_user_delete",
     "admin_summary",
     "apps_create",
     "apps_update_own",
@@ -267,6 +268,8 @@ def test_reset_capability_requires_verified_supply_and_explicit_auth_boundary(
             "enabled": expected,
             "reasons": [] if expected else ["operational_restriction"],
         }
-        assert capabilities["admin_user_delete"]["enabled"] is False
+        assert capabilities["admin_user_delete"]["enabled"] is (
+            environment == "development" or testing
+        )
         assert capabilities["admin_apps_manage"]["enabled"] is False
         assert client.get("/readyz").status_code == 200

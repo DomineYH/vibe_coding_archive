@@ -97,13 +97,26 @@ class CreateAppDeleteOperation(StrictModel):
     expected_version: Version
 
 
+Count = Annotated[int, Field(strict=True, ge=0, le=9007199254740991)]
+
+
+class DeleteAdminUserInput(StrictModel):
+    expected_app_count: Count
+
+
+class CreateUserDeleteOperation(DeleteAdminUserInput):
+    kind: Literal["user_delete"]
+    target_id: UUID
+
+
 def operation_input(
     body: Annotated[
         CreateApproval
         | CreateAppOperation
         | CreateAppUpdateOperation
         | CreateAppDeleteOperation
-        | CreatePasswordResetOperation,
+        | CreatePasswordResetOperation
+        | CreateUserDeleteOperation,
         Body(discriminator="kind"),
     ],
 ):
@@ -165,6 +178,10 @@ def operation(db, key, actor):
 
 @router.post("/write-operations")
 def create_operation(request: Request, body=OperationBody, db=OperationDb):
+    if body.kind == "user_delete":
+        from app.admin_user_delete import issue_user_delete_operation
+
+        return issue_user_delete_operation(db, request, body)
     if body.kind == "user_password_reset":
         from app.admin_password_reset import issue_reset_operation
 
@@ -216,6 +233,20 @@ def get_operation(key: UUID, request: Request, db=Unlocked):
     kind = db.execute(
         text("SELECT kind FROM write_operations WHERE key=:key"), {"key": str(key)}
     ).scalar_one_or_none()
+    if kind == "user_delete":
+        from app.admin_user_delete import (
+            delete_administrator,
+            user_delete_operation_body,
+        )
+
+        item, actor = delete_administrator(db, request)
+        return response(
+            db,
+            request,
+            user_delete_operation_body(operation(db, key, actor)),
+            private=True,
+            metadata=item,
+        )
     if kind == "user_password_reset":
         from app.admin_password_reset import (
             password_reset_operation_body,

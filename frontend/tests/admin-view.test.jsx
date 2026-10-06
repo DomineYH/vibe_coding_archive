@@ -82,14 +82,14 @@ it("keeps mock actions enabled without preparation notes for unimplemented metad
 });
 
 it.each([
-  [unimplemented, unimplemented, false, true],
+  [unimplemented, unimplemented, false, false],
   [unimplemented, enabled, false, false],
-  [enabled, unimplemented, false, true],
+  [enabled, unimplemented, false, false],
   [
     { enabled: false, reasons: ["operational_restriction", "not_implemented"] },
     unimplemented,
     false,
-    true,
+    false,
   ],
 ])(
   "connects only unavailable member actions to visible preparation notes: %j / %j",
@@ -191,34 +191,26 @@ it("keeps unresolved metadata free of preparation notes", async () => {
   expect(within(row).queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
 });
 
-it("uses distinct description ids across member rows and preserves the protected administrator", async () => {
+it("keeps unavailable deletion disabled without preparation text and protects administrators", async () => {
   await renderApiMembers(unimplemented, unimplemented);
   const rows = within(
     screen.getByRole("list", { name: "회원 목록" }),
   ).getAllByRole("listitem");
-  const memberRows = rows.filter((row) =>
-    within(row).queryByRole("button", { name: "삭제", exact: true }),
-  );
-  expect(memberRows.length).toBeGreaterThanOrEqual(2);
-  const ids = [];
-  for (const row of memberRows) {
-    for (const [name, copy] of [["삭제", deleteNote]]) {
-      const button = within(row).getByRole("button", { name, exact: true });
-      const note = within(row).getByText(copy);
-      ids.push(note.id);
-      expect(
-        document.getElementById(button.getAttribute("aria-describedby")),
-      ).toBe(note);
+  for (const row of rows) {
+    const button = within(row).queryByRole("button", {
+      name: "삭제",
+      exact: true,
+    });
+    if (button) {
+      expect(button).toBeDisabled();
+      expect(button).not.toHaveAttribute("aria-describedby");
+      expect(within(row).queryByText(deleteNote)).not.toBeInTheDocument();
     }
   }
-  expect(new Set(ids).size).toBe(ids.length);
   const protectedRow = screen
     .getByText("보호된 계정")
     .closest('[role="listitem"]');
   expect(within(protectedRow).queryByRole("button")).not.toBeInTheDocument();
-  expect(
-    within(protectedRow).queryByText(/아직 준비 중이에요/),
-  ).not.toBeInTheDocument();
 });
 
 it("does not show preparation notes while an approval request alone locks actions", async () => {
@@ -428,7 +420,7 @@ async function recoverySelection() {
   return { target, operation };
 }
 
-it.each([false, true])(
+it.each([false, false])(
   "discards retry inputs and validation on cancel before confirmation and a fresh decision (invalid: %s)",
   async (invalid) => {
     const { operation } = await recoverySelection();
@@ -639,4 +631,179 @@ it("does not execute a late issuance after navigation conceals the mounted membe
   expect(
     screen.queryByLabelText("임시 비밀번호", { exact: true }),
   ).not.toBeInTheDocument();
+});
+
+it("does not execute a late issued deletion after the view becomes inactive", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.nickname === "비기너개발자",
+  );
+  let release;
+  const issue = vi
+    .spyOn(adminService, "createUserDeleteOperation")
+    .mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+  const execute = vi.spyOn(adminService, "deleteUser");
+  const resumeState = { adminDelete: { targetId: target.id } };
+  const tree = (active) => (
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <AdminView
+          scopeKey="late-delete"
+          active={active}
+          resumeState={resumeState}
+        />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+  const view = render(tree(true));
+  await userEvent
+    .setup()
+    .click(
+      await screen.findByRole("button", { name: "삭제 확인", exact: true }),
+    );
+  await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+  view.rerender(tree(false));
+  await act(async () =>
+    release({ key: "late-key", targetId: target.id, state: "unresolved" }),
+  );
+  expect(execute).not.toHaveBeenCalled();
+});
+
+it("keeps definitive deletion success visible after row removal without requiring GET", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.nickname === "비기너개발자",
+  );
+  const read = vi
+    .spyOn(adminService, "getUserDeleteOperation")
+    .mockRejectedValue(new Error("lookup unavailable"));
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: { adminDelete: { targetId: target.id } },
+  });
+  await userEvent
+    .setup()
+    .click(
+      await screen.findByRole("button", { name: "삭제 확인", exact: true }),
+    );
+  await waitFor(() =>
+    expect(
+      screen.getByRole("region", { name: /계정.*삭제/ }),
+    ).toHaveTextContent("삭제가 확정됐어요"),
+  );
+  expect(read).not.toHaveBeenCalled();
+});
+
+it("keeps an expired original deletion key when refreshing the target", async () => {
+  const { ServiceError } = await import("../src/services/service-error");
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.nickname === "비기너개발자",
+  );
+  const operation = await adminService.createUserDeleteOperation({
+    targetId: target.id,
+    expectedAppCount: target.appCount,
+  });
+  const read = vi
+    .spyOn(adminService, "getUserDeleteOperation")
+    .mockRejectedValue(
+      new ServiceError("OPERATION_EXPIRED", "expired", { httpStatus: 410 }),
+    );
+  const issue = vi.spyOn(adminService, "createUserDeleteOperation");
+  const execute = vi.spyOn(adminService, "deleteUser");
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: {
+      adminDelete: {
+        targetId: target.id,
+        operationKey: operation.key,
+        expectedAppCount: target.appCount,
+      },
+    },
+  });
+  await screen.findByText(/작업 키가 만료되어/);
+  await userEvent.setup().click(
+    screen.getByRole("button", {
+      name: "현재 회원 정보 다시 확인",
+      exact: true,
+    }),
+  );
+  expect(
+    screen.queryByRole("button", { name: "삭제 확인", exact: true }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "같은 삭제 요청 다시 제출" }),
+  ).not.toBeInTheDocument();
+  expect(issue).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+  expect(read).toHaveBeenCalledWith(operation.key);
+});
+
+it("retires a pending deletion even when result lookup fails", async () => {
+  const { ServiceError } = await import("../src/services/service-error");
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.nickname === "비기너개발자",
+  );
+  vi.spyOn(adminService, "deleteUser").mockRejectedValue(
+    new ServiceError("DELETION_CONFIRMATION_PENDING", "pending", {
+      httpStatus: 503,
+      outcome: "unknown",
+    }),
+  );
+  vi.spyOn(adminService, "getUserDeleteOperation").mockRejectedValue(
+    new Error("lookup unavailable"),
+  );
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: { adminDelete: { targetId: target.id } },
+  });
+  await userEvent
+    .setup()
+    .click(
+      await screen.findByRole("button", { name: "삭제 확인", exact: true }),
+    );
+  await waitFor(() =>
+    expect(
+      screen.getByRole("region", { name: /계정.*삭제/ }),
+    ).toHaveTextContent("삭제는 반영됐고 별도 확인을 기다리고 있어요"),
+  );
+  expect(
+    screen.queryByRole("button", { name: "같은 삭제 요청 다시 제출" }),
+  ).not.toBeInTheDocument();
+});
+
+it("does not enable same-key execution while deletion lookup is unknown", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.nickname === "비기너개발자",
+  );
+  const operation = await adminService.createUserDeleteOperation({
+    targetId: target.id,
+    expectedAppCount: target.appCount,
+  });
+  vi.spyOn(adminService, "getUserDeleteOperation").mockRejectedValue(
+    new Error("unknown"),
+  );
+  const execute = vi.spyOn(adminService, "deleteUser");
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: {
+      adminDelete: {
+        targetId: target.id,
+        operationKey: operation.key,
+        expectedAppCount: target.appCount,
+      },
+    },
+  });
+  await screen.findByText(/삭제 결과가 아직 확정되지 않았어요/);
+  expect(
+    screen.queryByRole("button", { name: "같은 삭제 요청 다시 제출" }),
+  ).not.toBeInTheDocument();
+  expect(execute).not.toHaveBeenCalled();
 });

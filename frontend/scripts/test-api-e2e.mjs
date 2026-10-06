@@ -58,7 +58,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(approval|password-reset)|app-(create|edit|delete)/.test(
+      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
         arg,
       ),
     );
@@ -156,6 +156,8 @@ raise SystemExit(status)`,
       "e2e-api/admin-approval.spec.js",
       "e2e-api/admin-password-reset.spec.js",
       "e2e-api/admin-password-reset-recovery.spec.js",
+      "e2e-api/admin-user-delete.spec.js",
+      "e2e-api/admin-user-delete-recovery.spec.js",
       "e2e-api/auth-lifecycle.spec.js",
       "e2e-api/auth-access.spec.js",
       "e2e-api/app-create.spec.js",

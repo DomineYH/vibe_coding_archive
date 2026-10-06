@@ -64,7 +64,10 @@ test("the T01–T03 capability bundle follows the test boundary", async ({
   ])
     expect(capabilities[name].enabled).toBe(prepared);
   expect(capabilities.admin_password_reset.enabled).toBe(prepared);
-  expect(capabilities.admin_user_delete.enabled).toBe(false);
+  expect(capabilities.admin_user_delete).toEqual({
+    enabled: prepared,
+    reasons: prepared ? [] : ["operational_restriction"],
+  });
 });
 
 test.describe("administrator own password change over real HTTP and cookies", () => {
