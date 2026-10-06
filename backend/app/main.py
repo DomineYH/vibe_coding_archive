@@ -17,6 +17,7 @@ from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
 from app.admin_approval import router as admin_approval_router
+from app.admin_password_reset import router as password_reset_router
 from app.app_create import router as app_create_router
 from app.app_delete import router as app_delete_router
 from app.app_input import AppInput
@@ -46,6 +47,7 @@ from app.database import (
     make_session_factory,
 )
 from app.password_policy import load_blocklist
+from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
 from app.settings import ConfigurationError, Settings
@@ -213,10 +215,17 @@ def create_app(
         except (SQLAlchemyError, AuthError, sqlite3.Error):
             app.state.auth_ready = False
 
+        app.state.password_reset_gate = ResetSecretGate(
+            resolved.password_reset_hmac_path,
+            app.state.session_factory,
+            app.state.auth_enabled,
+        )
+
         async def maintain_auth():
             nonlocal verification_failed
             while True:
                 await asyncio.sleep(60)
+                await asyncio.to_thread(app.state.password_reset_gate.maintain)
                 try:
                     await asyncio.to_thread(sweep, app.state.session_factory)
                     if not app.state.auth_ready and not verification_failed:
@@ -336,6 +345,20 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         read_context(request)
         capabilities = _capabilities()
+        gate = request.app.state.password_reset_gate
+        gate.maintain()
+        capabilities["admin_password_reset"] = {
+            "enabled": bool(
+                request.app.state.auth_enabled
+                and request.app.state.auth_ready
+                and gate.ready
+            ),
+            "reasons": []
+            if request.app.state.auth_enabled
+            and request.app.state.auth_ready
+            and gate.ready
+            else ["operational_restriction"],
+        }
         if request.app.state.auth_enabled and request.app.state.auth_ready:
             # #113: the T01–T05 bundle; operating release remains behind T07.
             for key in (
@@ -372,6 +395,7 @@ def create_app(
     api.include_router(reauth_router)
     api.include_router(register_router)
     api.include_router(admin_approval_router)
+    api.include_router(password_reset_router)
     api.include_router(public_apps_router)
     api.include_router(app_create_router)
     api.include_router(app_update_router)

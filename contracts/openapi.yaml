@@ -1444,6 +1444,7 @@ paths:
     post:
       operationId: resetAdminUserPassword
       summary: Set a current ordinary member password to an administrator supplied temporary password
+      description: Requires a current full administrator with recent authentication at admission and commit. A missing or unverifiable dedicated HMAC secret returns 503 SERVICE_UNAVAILABLE.
       security:
         - SessionCookie: []
       parameters:
@@ -1487,6 +1488,7 @@ paths:
     get:
       operationId: getWriteOperation
       summary: Read the minimal result for a write operation key
+      description: Reset results require the current full issuing administrator, without recent authentication, password, or HMAC readiness.
       security:
         - SessionCookie: []
       parameters:
@@ -1520,11 +1522,13 @@ paths:
         "404": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
         "410": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
   /write-operations/{key}/cancel:
     post:
       operationId: cancelWriteOperation
       summary: Cancel an unresolved approval or password reset key
+      description: Reset cancellation requires the current full issuing administrator and write context, without recent authentication or HMAC readiness. Other kinds return 409 OPERATION_KIND_NOT_CANCELLABLE without changing the key.
       security:
         - SessionCookie: []
       parameters:
@@ -1560,6 +1564,7 @@ paths:
         "409": { $ref: "#/components/responses/ServiceError" }
         "410": { $ref: "#/components/responses/ServiceError" }
         "413": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
 components:
   parameters:
@@ -1842,7 +1847,9 @@ components:
         The new_password is included only in this key-issuance request and is
         never echoed or stored in the operation result. The implementation
         enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point
-        password policy. The versioned local common-password blocklist applies
+        password policy after NFC normalization, preserving spaces and case. A dedicated
+        versioned HMAC binds the input; unavailable secret verification returns
+        503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies
         to the real API; Phase 1 mock does not apply that check.
       properties:
         kind: { type: string, const: user_password_reset }
@@ -1975,7 +1982,9 @@ components:
         The new_password is matched against the same key-issuance input and is
         never echoed or stored in the operation result. The implementation
         enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point
-        password policy. The versioned local common-password blocklist applies
+        password policy after NFC normalization, preserving spaces and case. A dedicated
+        versioned HMAC binds the input; unavailable secret verification returns
+        503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies
         to the real API; Phase 1 mock does not apply that check.
       properties:
         new_password: { type: string, minLength: 15, maxLength: 128 }

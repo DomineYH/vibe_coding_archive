@@ -50,6 +50,7 @@ class Settings(BaseModel):
     database_path: Path
     public_origin: str
     password_blocklist_path: Path | None = None
+    password_reset_hmac_path: Path | None = None
 
     @classmethod
     def from_environment(
@@ -193,6 +194,9 @@ class Settings(BaseModel):
                 app_env=app_env,
                 database_path=path,
                 public_origin=origin,
+                password_reset_hmac_path=Path(environment["PASSWORD_RESET_HMAC_PATH"])
+                if environment.get("PASSWORD_RESET_HMAC_PATH")
+                else None,
                 password_blocklist_path=Path(
                     values.get("PASSWORD_BLOCKLIST_PATH")
                     or path.parent / "password-blocklist-ncsc.txt"

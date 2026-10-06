@@ -36,6 +36,7 @@ DEFAULT_MESSAGES = [
     ("OPERATION_NOT_FOUND", 404, "작업 키를 찾을 수 없어 결과를 확인할 수 없어요."),
     ("OPERATION_EXPIRED", 410, "작업 키의 확인 기간이 지나 결과를 확인할 수 없어요."),
     ("OPERATION_KEY_MISMATCH", 409, "작업 키와 요청 내용이 일치하지 않아요."),
+    ("OPERATION_KIND_NOT_CANCELLABLE", 409, "이 종류의 작업은 취소할 수 없어요."),
     (
         "OPERATION_ALREADY_RESOLVED",
         409,

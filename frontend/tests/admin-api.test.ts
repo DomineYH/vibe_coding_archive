@@ -494,3 +494,29 @@ it("keeps an approval reply unknown when its authentication metadata belongs to 
     adminService.setApproval(target.id, true, 1, operation.key),
   ).rejects.toMatchObject({ code: "CONTRACT_ERROR", outcome: "unknown" });
 });
+
+it("maps reset 413 to PAYLOAD_TOO_LARGE without claiming a contract failure", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      adminResponse(
+        JSON.stringify({
+          error: {
+            code: "PAYLOAD_TOO_LARGE",
+            message: "Too large",
+            request_id: null,
+          },
+        }),
+        { status: 413 },
+      ),
+    ),
+  );
+  await expect(
+    adminService.setPasswordReset(
+      target.id,
+      "A temporary passphrase 2026",
+      1,
+      resetOperation.key,
+    ),
+  ).rejects.toMatchObject({ code: "PAYLOAD_TOO_LARGE", httpStatus: 413 });
+});

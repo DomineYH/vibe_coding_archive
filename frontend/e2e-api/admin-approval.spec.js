@@ -26,14 +26,14 @@ if (prepared)
       await blockExternalRequests(context);
     });
 
-    test("real paging and aggregate stats; future actions disabled; list error preserves explicit retry", async ({
+    test("real paging and aggregate stats; reset enabled; list error preserves explicit retry", async ({
       page,
     }) => {
       await openAdmin(page);
       expect(await page.getByRole("listitem").count()).toBe(24);
       await expect(
         page.getByRole("button", { name: "임시 비밀번호 설정" }).first(),
-      ).toBeDisabled();
+      ).toBeEnabled();
       await expect(
         page.getByRole("button", { name: "삭제", exact: true }).first(),
       ).toBeDisabled();

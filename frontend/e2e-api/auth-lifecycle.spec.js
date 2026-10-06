@@ -21,8 +21,8 @@ test("registration and administrator approval activate as one bundle; future fea
     "apps_delete_own",
   ])
     expect(capabilities[key].enabled).toBe(prepared);
+  expect(capabilities.admin_password_reset.enabled).toBe(prepared);
   for (const key of [
-    "admin_password_reset",
     "admin_user_delete",
     "admin_apps_read",
     "admin_apps_manage",

@@ -202,6 +202,7 @@ def error_response(error):
                     "OPERATION_NOT_FOUND": "작업 키를 찾을 수 없어 결과를 확인할 수 없어요.",
                     "OPERATION_EXPIRED": "작업 키의 확인 기간이 지나 결과를 확인할 수 없어요.",
                     "OPERATION_KEY_MISMATCH": "작업 키와 요청 내용이 일치하지 않아요.",
+                    "OPERATION_KIND_NOT_CANCELLABLE": "이 종류의 작업은 취소할 수 없어요.",
                     "OPERATION_ALREADY_RESOLVED": "이미 결과가 확정된 작업이에요. 기존 작업 결과를 확인해 주세요.",
                     "SERVICE_UNAVAILABLE": "현재 서비스를 이용할 수 없어요.",
                 }.get(error.code, "인증 준비를 완료할 수 없어요. 다시 확인해 주세요."),

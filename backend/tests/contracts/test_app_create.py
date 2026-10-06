@@ -185,7 +185,7 @@ def test_key_expiry_and_other_kind_guards(member_app, monkeypatch):
     with TestClient(app) as client, TestClient(app) as fresh_client:
         admin = signed_in(client, "admin")
         app_key = issued_key(admin)
-        error(cancel(admin, app_key), 409, "OPERATION_KEY_MISMATCH")
+        error(cancel(admin, app_key), 409, "OPERATION_KIND_NOT_CANCELLABLE")
         error(execute(admin, app_key), 409, "OPERATION_KEY_MISMATCH")
         approval_key = approval_issue(admin).json()["key"]
         error(create(admin, approval_key), 409, "OPERATION_KEY_MISMATCH")

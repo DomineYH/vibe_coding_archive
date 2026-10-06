@@ -63,8 +63,8 @@ test("the T01–T03 capability bundle follows the test boundary", async ({
     "admin_reauth",
   ])
     expect(capabilities[name].enabled).toBe(prepared);
-  for (const name of ["admin_password_reset", "admin_user_delete"])
-    expect(capabilities[name].enabled).toBe(false);
+  expect(capabilities.admin_password_reset.enabled).toBe(prepared);
+  expect(capabilities.admin_user_delete.enabled).toBe(false);
 });
 
 test.describe("administrator own password change over real HTTP and cookies", () => {

@@ -1,5 +1,13 @@
 import { spawn, spawnSync } from "node:child_process";
-import { chmod, copyFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { createHash, randomBytes } from "node:crypto";
+import {
+  chmod,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -50,7 +58,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-approval|app-(create|edit|delete)/.test(
+      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(approval|password-reset)|app-(create|edit|delete)/.test(
         arg,
       ),
     );
@@ -61,6 +69,7 @@ async function run() {
     API_E2E_TEMP_ROOT: temporary,
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
+    PASSWORD_RESET_HMAC_PATH: path.join(temporary, "reset-hmac.json"),
     PUBLIC_ORIGIN: "http://localhost:5174",
     AUTH_FAULT_CONTROL: path.join(temporary, "auth-control.sock"),
     AUTH_PROXY_CONTROL: path.join(temporary, "proxy-control.sock"),
@@ -68,6 +77,15 @@ async function run() {
   };
 
   try {
+    const secret = randomBytes(32);
+    await writeFile(
+      env.PASSWORD_RESET_HMAC_PATH,
+      JSON.stringify({
+        secret_hex: secret.toString("hex"),
+        key_id: createHash("sha256").update(secret).digest("hex"),
+      }),
+      { mode: 0o600, flag: "wx" },
+    );
     const migration = spawnSync(
       "uv",
       ["run", "--frozen", "alembic", "upgrade", "head"],
@@ -136,6 +154,8 @@ raise SystemExit(status)`,
       "e2e-api/auth-password.spec.js",
       "e2e-api/auth-register.spec.js",
       "e2e-api/admin-approval.spec.js",
+      "e2e-api/admin-password-reset.spec.js",
+      "e2e-api/admin-password-reset-recovery.spec.js",
       "e2e-api/auth-lifecycle.spec.js",
       "e2e-api/auth-access.spec.js",
       "e2e-api/app-create.spec.js",
