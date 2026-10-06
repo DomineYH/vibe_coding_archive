@@ -243,15 +243,35 @@ def issue_member_session(
 ):
     timestamp = now()
     restricted = bool(member["must_change_password"])
+    reauth = transition["kind"] == "reauthenticate"
     seq = increment(item["issued_seq"])
     token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
     name = cookie_name(request, "session", item["id"], seq)
     cookie_budget(request, name, token)
+    if reauth:
+        timestamp = now()
+        # Recheck at allocation time: a grant must never mint an expired S.
+        if (
+            item["expires_at"] <= timestamp
+            or session["expires_at"] <= timestamp
+            or session["absolute_expires_at"] <= timestamp
+        ):
+            raise AuthError("AUTH_REQUIRED", 401)
+        if transition["permit_expires_at"] <= timestamp:
+            refuse_expired_permit(db, item, transition)
+        if (
+            restricted
+            or session["kind"] != "full"
+            or session["member_id"] != member["id"]
+        ):
+            raise AuthError("AUTH_STATE_CHANGED")
     absolute = (
         min(after(timestamp, 900), member["temporary_password_expires_at"])
         if restricted
         else after(timestamp, FULL_ABSOLUTE)
     )
+    if reauth:
+        absolute = session["absolute_expires_at"]
     row = {
         "hash": digest(token),
         "flow": item["id"],
@@ -260,10 +280,12 @@ def issue_member_session(
         "csrf": csrf,
         "now": timestamp,
         "kind": "change_only" if restricted else "full",
-        "expires_at": absolute if restricted else after(timestamp, FULL_IDLE),
+        "expires_at": absolute
+        if restricted
+        else min(after(timestamp, FULL_IDLE), absolute),
         "absolute_expires_at": absolute,
         "recent_auth_until": after(timestamp, 900)
-        if recent_auth and member["is_admin"]
+        if recent_auth and member["is_admin"] and not restricted
         else None,
     }
     db.execute(
@@ -277,7 +299,8 @@ def issue_member_session(
         row,
     )
     item.update(issued_seq=seq, current_session_generation=seq)
-    item["last_identity_change_revision"] = increment(item["revision"])
+    if not reauth:
+        item["last_identity_change_revision"] = increment(item["revision"])
     advance(db, item, activity=True)
     db.execute(
         text(
@@ -377,16 +400,19 @@ def login(request: Request, body: LoginBody, db=Unlocked):
             )
         if member["must_change_password"] and not temporary_valid(member, timestamp):
             fail(db, item, transition, AuthError("TEMP_PASSWORD_EXPIRED", 403))
-        return issue_member_session(db, request, item, session, transition, member)
+        return issue_member_session(
+            db, request, item, session, transition, member, recent_auth=True
+        )
 
 
-def member_session(db, request):
+def member_session(db, request, *, flow_id=None):
     """Current full or change_only member session, checked against the member row.
 
     Protected operations must additionally require kind == 'full'; change_only
     grants only restricted Self, logout and the member's own password change.
+    Admission supplies its validated body flow ID; execution uses the flow header.
     """
-    item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
+    item = flow(db, flow_id or request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session")
     if session["member_id"] is None:
         raise AuthError("AUTH_REQUIRED", 401)

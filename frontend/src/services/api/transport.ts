@@ -703,19 +703,26 @@ function mapApiError(
     ALREADY_AUTHENTICATED: 409,
     LOGIN_ID_TAKEN: 409,
   };
-  // The server recorded these as failed attempts: the write definitely did not apply.
-  const definitive = [
-    "INVALID_CREDENTIALS",
-    "ACCOUNT_NOT_APPROVED",
-    "TEMP_PASSWORD_EXPIRED",
-    "ALREADY_AUTHENTICATED",
-    "LOGIN_ID_TAKEN",
-    "RATE_LIMITED",
-  ].includes(authCode);
+  const reauthAuthorization =
+    ["POST /auth/reauth", "POST /auth/transitions"].includes(endpoint) &&
+    httpStatus === 403 &&
+    ["FORBIDDEN", "PASSWORD_CHANGE_REQUIRED"].includes(authCode);
+  // These errors definitively reject this attempt before a write can apply.
+  const definitive =
+    reauthAuthorization ||
+    [
+      "INVALID_CREDENTIALS",
+      "ACCOUNT_NOT_APPROVED",
+      "TEMP_PASSWORD_EXPIRED",
+      "ALREADY_AUTHENTICATED",
+      "LOGIN_ID_TAKEN",
+      "RATE_LIMITED",
+    ].includes(authCode);
   const accepted =
     allowed ??
     (endpoint.includes(" /auth/") &&
-    (authStatuses[authCode] === httpStatus ||
+    (reauthAuthorization ||
+      authStatuses[authCode] === httpStatus ||
       (authCode === "VALIDATION_ERROR" && [400, 413].includes(httpStatus)))
       ? { code: authCode }
       : undefined);

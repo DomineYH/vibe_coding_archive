@@ -141,7 +141,7 @@ threading.Thread(target=control.serve_forever, daemon=True).start()
 # Hooks live in tests/, never in product routes or public request headers.
 # The native Argon2 verifier still runs. hash_return holds its actual worker
 # after native verification, before the real verifier callable returns.
-from app import auth_boundary, auth_login, auth_password
+from app import auth_boundary, auth_login, auth_password, auth_reauth
 
 original_datetime = auth_boundary.datetime
 
@@ -171,7 +171,11 @@ def execution_context(db, request, kind, state):
 
 
 def response(*args, **kwargs):
-    target = args[1].url.path in {"/api/v1/auth/login", "/api/v1/auth/password"}
+    target = args[1].url.path in {
+        "/api/v1/auth/login",
+        "/api/v1/auth/password",
+        "/api/v1/auth/reauth",
+    }
     if target:
         barrier.hit("before_commit")
     result = respond(*args, **kwargs)
@@ -183,4 +187,5 @@ def response(*args, **kwargs):
 auth_login.argon2_verify = verified
 auth_login.execution_context = execution_context
 auth_password.execution_context = execution_context
+auth_reauth.execution_context = execution_context
 auth_login.response = response

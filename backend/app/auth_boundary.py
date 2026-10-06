@@ -190,6 +190,7 @@ def error_response(error):
                     "ALREADY_AUTHENTICATED": "다른 계정으로 로그인하려면 먼저 로그아웃해 주세요.",
                     "AUTH_BUSY": "요청이 몰려 있어요. 잠시 뒤에 다시 시도해 주세요.",
                     "DB_BUSY": "서버가 바빠요. 잠시 뒤에 다시 시도해 주세요.",
+                    "REAUTH_REQUIRED": "관리자 본인 확인이 필요해요.",
                     "FORBIDDEN": "이 작업을 수행할 권한이 없어요.",
                     "PASSWORD_CHANGE_REQUIRED": "먼저 본인 계정의 비밀번호를 변경해 주세요.",
                     "SESSION_KIND_NOT_ALLOWED": "현재 세션으로는 이 작업을 수행할 수 없어요.",

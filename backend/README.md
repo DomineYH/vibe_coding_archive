@@ -159,10 +159,15 @@ contact fields and recent auth. The existing password card submits no confirmati
 A successful own change consumes the credential, increments the member version,
 revokes all restricted sessions and issues full S only to the completing browser.
 Its 8-hour absolute/30-minute inactivity and administrator 15-minute recent-auth
-windows begin at the change; ordinary later login does not open recent auth.
+windows begin at the change; normal full administrator login also grants
+15 minutes of recent auth.
+Administrator reauthentication rotates S and CSRF while inheriting the original
+absolute expiry and preserving identity continuity. It is available only at the
+auth-ready development or explicit isolated-test boundary; production and the
+remaining Phase 5 sensitive actions stay disabled.
 A lost reply uses the original transition and cookie observation, never replays
 the change, and discards only that unreceived result S. 개발 및 prepared 시험 환경은
-가입까지 활성화하며 운영 인증과 관리자 재인증/초기화/삭제는 계속 비활성이다.
+가입까지 활성화하며 운영 인증과 관리자 초기화/삭제는 계속 비활성이다.
 
 ### T04 가입과 최초 승인 대기 정리
 

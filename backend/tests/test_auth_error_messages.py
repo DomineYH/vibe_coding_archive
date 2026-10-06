@@ -12,6 +12,7 @@ from app.auth_boundary import AuthError, error_response
 
 FALLBACK = "인증 준비를 완료할 수 없어요. 다시 확인해 주세요."
 DEFAULT_MESSAGES = [
+    ("REAUTH_REQUIRED", 403, "관리자 본인 확인이 필요해요."),
     ("FORBIDDEN", 403, "이 작업을 수행할 권한이 없어요."),
     (
         "PASSWORD_CHANGE_REQUIRED",

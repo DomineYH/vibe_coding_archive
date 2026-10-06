@@ -377,7 +377,7 @@ export async function prepareApiAuthFlow(
  */
 export async function runApiTransition<T>(
   service: AuthService,
-  kind: "login" | "logout" | "password_change",
+  kind: "login" | "logout" | "password_change" | "reauthenticate",
   execute: (
     permit: AuthTransitionPermit | null,
     state: AuthFlowState,

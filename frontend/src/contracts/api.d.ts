@@ -2260,6 +2260,7 @@ export interface operations {
             409: components["responses"]["ServiceError"];
             413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
+            429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
