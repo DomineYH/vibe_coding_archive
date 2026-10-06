@@ -311,9 +311,7 @@ def admit(request: Request, body: Admission, db=Db):
         str(body.flow_id),
         proof_kind="recovery" if body.kind == "anonymous_session" else None,
     )
-    if body.kind == "reauthenticate":
-        raise AuthError("FEATURE_UNAVAILABLE", 503)
-    member_kind = body.kind in ("login", "logout", "password_change")
+    member_kind = body.kind in ("login", "logout", "password_change", "reauthenticate")
     session = None
     if member_kind:
         # Member operations spend the current S and its CSRF, not R.
@@ -339,6 +337,10 @@ def admit(request: Request, body: Admission, db=Db):
             raise AuthError("SESSION_KIND_NOT_ALLOWED", 403)
     elif current_session(db, item) or body.expected_session_generation is not None:
         raise AuthError("AUTH_STATE_CHANGED")
+    if body.kind == "reauthenticate":
+        from app.auth_reauth import current_admin
+
+        current_admin(db, request, flow_id=item["id"])
     if body.transition_id != f"{item['id']}.{item['revision']}":
         raise AuthError("AUTH_STATE_CHANGED")
     row = insert_transition(db, item, body, session["issued_seq"] if session else None)
@@ -582,8 +584,3 @@ def reset(flow_id: str, request: Request, body: ResetFlow, db=Db):
     )
     revoke_flow(db, item)
     return response(db, request, {"restart_eligible": True})
-
-
-@router.post("/reauth")
-def member_execution(db=Db):
-    raise AuthError("FEATURE_UNAVAILABLE", 503)

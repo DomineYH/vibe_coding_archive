@@ -176,3 +176,36 @@ def test_a_locked_database_is_a_controlled_db_busy_after_the_five_second_cap(
             blocker.close()
         assert (busy.status_code, code(busy)) == (503, "DB_BUSY")
         assert browser.execute_login(permit, APPROVED).status_code == 200
+
+
+def test_shared_ip_limit_includes_reauth_and_survives_rolling_restart(
+    member_app, server_clock, fast_hasher
+):
+    from tests.auth_client import signed_in
+    from tests.contracts.test_auth_reauth import ADMIN, reauth
+
+    app, path = member_app()
+    with TestClient(app) as client, TestClient(app) as other:
+        admin = signed_in(client, "admin")
+        anonymous = Browser(other).prepare().anonymous()
+        for index in range(190):
+            assert anonymous.login(f"nobody-{index}", WRONG).status_code == 401
+        for _ in range(10):
+            assert reauth(admin, WRONG).status_code == 401
+        blocked = anonymous.login(AUTH_MEMBERS["hangul"][1])
+        assert blocked.status_code == 429
+        assert blocked.json()["error"]["retry_at"] == "2026-10-01T00:15:00.000000Z"
+        assert reauth(admin).status_code == 429
+        cookies = dict(client.cookies)
+    with TestClient(app) as restarted:
+        restarted.cookies.update(cookies)
+        admin.client = restarted
+        assert reauth(admin).status_code == 429
+        server_clock[0] += timedelta(seconds=900)
+        assert reauth(admin).status_code == 200
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT count(*) FROM rate_limit_events WHERE purpose='login_ip'"
+            ).fetchone() == (200,)
+        # Success does not delete even the now-expired persisted failure events.
+        assert admin.me().json()["login_id"] == ADMIN

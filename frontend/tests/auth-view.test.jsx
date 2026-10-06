@@ -142,3 +142,20 @@ it("announces the registration retry time from the server rolling limit", async 
     ),
   ).toBeInTheDocument();
 });
+
+it("offers the existing missing-session discard action on the reauthentication card", () => {
+  render(
+    <MemoryRouter>
+      <AuthView
+        mode="reauth"
+        authStatus="unresolved"
+        authUser={null}
+        canDiscardMissingSession={true}
+        onDiscardMissingSession={() => {}}
+      />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("button", { name: "받지 못한 세션 버리기" }),
+  ).toBeVisible();
+});

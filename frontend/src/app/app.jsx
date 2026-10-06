@@ -294,6 +294,7 @@ function adminReauthResumeState(value) {
     const operationKey = pendingReset.operationKey;
     const expectedAccountVersion = pendingReset.expectedAccountVersion;
     return {
+      tab: value.tab === "health" ? "health" : "users",
       adminReset: {
         targetId: pendingReset.targetId,
         ...(isUuid(operationKey) &&
@@ -310,6 +311,7 @@ function adminReauthResumeState(value) {
   const operationKey = pendingDelete.operationKey;
   const expectedAppCount = pendingDelete.expectedAppCount;
   return {
+    tab: value.tab === "health" ? "health" : "users",
     adminDelete: {
       targetId: pendingDelete.targetId,
       ...(isUuid(operationKey) &&
@@ -1576,16 +1578,16 @@ function AuthRoute({
   onResolveAuth,
   onResetAuth,
   onDiscardMissingSession,
+  meta,
 }) {
   const route = readAuthRoute(location.search);
-  const reauthState = adminReauthResumeState(location.state);
   const authUser =
     auth.status === "ready" && !auth.concealed ? auth.user : null;
   const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
   return (
     <AuthView
       key={
-        mode === "password-change"
+        ["password-change", "reauth"].includes(mode)
           ? `${mode}:${JSON.stringify([
               auth.user?.id,
               auth.user?.role,
@@ -1599,7 +1601,10 @@ function AuthRoute({
       authUser={authUser}
       routeError={route.invalid}
       authStatus={
-        auth.status === "unavailable"
+        auth.status === "unavailable" ||
+        (__DATA_MODE__ === "api" &&
+          mode === "reauth" &&
+          meta?.capabilities.admin_reauth.enabled !== true)
           ? "unavailable"
           : auth.concealed
             ? "checking"
@@ -1612,7 +1617,6 @@ function AuthRoute({
       onChangePassword={(input) => onChangePassword(input, route.returnTo)}
       onReauthenticate={onReauthenticate}
       returnTo={route.returnTo}
-      reauthState={reauthState}
       onResolveAuth={onResolveAuth}
       onResetAuth={onResetAuth}
       onDiscardMissingSession={onDiscardMissingSession}
@@ -1627,7 +1631,14 @@ function AuthRoute({
   );
 }
 
-function AdminRoute({ auth, onRetry, meta }) {
+function AdminRoute({
+  auth,
+  onRetry,
+  meta,
+  resumeState,
+  onConsumeResume,
+  onSaveResume,
+}) {
   const continuity = draftContinuityScope(auth);
   const scopeKey = memberCacheScope(auth);
   const active =
@@ -1655,6 +1666,9 @@ function AdminRoute({ auth, onRetry, meta }) {
             scopeKey={scopeKey}
             active={active}
             meta={meta}
+            resumeState={resumeState}
+            onConsumeResume={onConsumeResume}
+            onSaveResume={onSaveResume}
           />
         </div>
       ) : null}
@@ -1771,6 +1785,14 @@ export default function App() {
     !authMetadata.error;
   const authRequest = useRef(0);
   const authObservation = useRef(0);
+  const pendingReauth = useRef(null);
+  const [adminResume, setAdminResume] = useState(null);
+  const consumeAdminResume = useCallback(() => setAdminResume(null), []);
+  const saveAdminResume = useCallback((value) => {
+    const owner = draftContinuityScope(authSnapshot.current);
+    const resume = adminReauthResumeState(value);
+    if (owner && resume) setAdminResume({ owner, resume });
+  }, []);
   const authController = useRef(null);
   const pageAway = useRef(document.visibilityState === "hidden");
   const authSnapshot = useRef({
@@ -2214,7 +2236,7 @@ export default function App() {
   );
 
   const reauthenticate = useCallback(
-    async (input, returnTo, resumeState) => {
+    async (input, returnTo) => {
       const previous = authSnapshot.current;
       const actor = previous.user;
       if (
@@ -2228,13 +2250,52 @@ export default function App() {
         throw new ServiceError(
           "FORBIDDEN",
           "현재 로그인한 관리자가 필요해요.",
-          { httpStatus: 403, outcome: "rejected" },
+          {
+            httpStatus: 403,
+            outcome: "rejected",
+          },
         );
-      await beginAuthTransition();
+      // Own both the observation and the originating route entry.
+      const starting = authObservation.current;
+      const begin = beginAuthTransition();
+      let owned = authObservation.current;
+      const attempt = {
+        actorId: actor.id,
+        flowId: previous.flow.flowId,
+        identityRevision: previous.flow.lastIdentityChangeRevision,
+        sourceGeneration: previous.flow.sessionGeneration,
+        transitionId: `${previous.flow.flowId}.${previous.flow.revision}`,
+        locationKey: currentLocation.current.key,
+        returnTo,
+      };
+      const owns = () =>
+        isCurrentObservation(owned) &&
+        pendingReauth.current === attempt &&
+        currentLocation.current.key === attempt.locationKey;
+      pendingReauth.current = attempt;
+      await begin;
+      if (!owns() || owned !== starting + 1) return;
       let confirmed = false;
       try {
         const result = await authService.reauthenticate(input);
-        const current = await restoreAuth();
+        if (!owns()) return;
+        const proof = await authService.getFlowState(attempt.transitionId);
+        if (!owns()) return;
+        const restoring = restoreAuth();
+        owned = authObservation.current;
+        const current = await restoring;
+        if (!owns()) return;
+        confirmed = true;
+        const committed = proof.requestedTransition;
+        if (
+          committed?.availability !== "available" ||
+          committed.kind !== "reauthenticate" ||
+          committed.state !== "succeeded" ||
+          current?.flow?.sessionGeneration !== committed.resultSessionGeneration
+        ) {
+          pendingReauth.current = null;
+          return;
+        }
         if (
           current?.status !== "ready" ||
           current.user?.id !== actor.id ||
@@ -2255,26 +2316,53 @@ export default function App() {
             new ServiceError(
               "AUTH_STATE_CHANGED",
               "관리자 인증 상태를 다시 확인해 주세요.",
-              { httpStatus: 409, outcome: "rejected" },
             )
           );
-        confirmed = true;
-        const safeResumeState = adminReauthResumeState(resumeState);
-        navigate(returnTo, {
-          replace: true,
-          state: safeResumeState,
-        });
+        const destination = await recheckReturnDestination(
+          returnTo,
+          current,
+          appsService,
+          owns,
+        );
+        if (!owns()) return;
+        pendingReauth.current = null;
+        navigate(destination, { replace: true });
       } catch (error) {
-        if (!confirmed) await restoreAuth();
+        if (!owns()) return;
+        if (
+          !confirmed &&
+          error instanceof ServiceError &&
+          error.outcome === "unknown"
+        ) {
+          // Keep the original transition for explicit confirmation; never repeat the POST.
+          setAuth({
+            ...previous,
+            status: "unresolved",
+            error,
+            concealed: false,
+            observationId: owned,
+            unresolvedTransitionId: attempt.transitionId,
+          });
+          throw error;
+        }
+        if (!confirmed) {
+          const restoring = restoreAuth();
+          owned = authObservation.current;
+          await restoring;
+          if (!owns()) return;
+        }
+        pendingReauth.current = null;
         throw error;
       }
     },
-    [beginAuthTransition, navigate, restoreAuth],
+    [beginAuthTransition, navigate, restoreAuth, isCurrentObservation],
   );
 
   const logout = useCallback(async () => {
     if (logoutPending) return;
     setLogoutPending(true);
+    pendingReauth.current = null;
+    setAdminResume(null);
     setDeletion(null);
     try {
       await beginAuthTransition();
@@ -2291,30 +2379,65 @@ export default function App() {
   }, [beginAuthTransition, logoutPending, navigate, restoreAuth]);
 
   const resolveAuth = useCallback(async () => {
-    if (__DATA_MODE__ === "api") {
-      try {
-        await recoverApiAuth("settle");
-      } catch (error) {
-        setToast(error.message);
-      }
-      await restoreAuth();
-      return;
-    }
+    const attempt = pendingReauth.current;
+    let owned = authObservation.current;
+    const owns = () =>
+      isCurrentObservation(owned) &&
+      (!attempt ||
+        (pendingReauth.current === attempt &&
+          currentLocation.current.key === attempt.locationKey));
     try {
-      const current = authSnapshot.current;
-      const transitionId = current.unresolvedTransitionId;
-      if (transitionId) {
-        const flow = await authService.getFlowState(transitionId);
+      const transitionId =
+        attempt?.transitionId ?? authSnapshot.current.unresolvedTransitionId;
+      const flow = transitionId
+        ? await authService.getFlowState(transitionId)
+        : null;
+      if (!owns()) return;
+      const result = flow?.requestedTransition;
+      if (__DATA_MODE__ === "api") await recoverApiAuth("settle");
+      else if (transitionId && flow)
         await authService.settleTransition(transitionId, {
           flowId: flow.flowId,
           expectedRevision: flow.revision,
         });
+      if (!owns()) return;
+      const restoring = restoreAuth();
+      owned = authObservation.current;
+      const current = await restoring;
+      if (!owns()) return;
+      if (
+        attempt &&
+        result?.availability === "available" &&
+        result.kind === "reauthenticate" &&
+        result.state === "succeeded" &&
+        current?.status === "ready" &&
+        current.sessionCookiePresent &&
+        current.user?.id === attempt.actorId &&
+        current.user.role === "admin" &&
+        current.user.approved &&
+        current.user.sessionKind === "full" &&
+        !current.user.mustChangePassword &&
+        current.flow.flowId === attempt.flowId &&
+        current.flow.lastIdentityChangeRevision === attempt.identityRevision &&
+        current.flow.sessionGeneration === result.resultSessionGeneration &&
+        current.flow.sessionGeneration !== attempt.sourceGeneration
+      ) {
+        const destination = await recheckReturnDestination(
+          attempt.returnTo,
+          current,
+          appsService,
+          owns,
+        );
+        if (!owns()) return;
+        pendingReauth.current = null;
+        navigate(destination, { replace: true });
       }
-    } catch {
-      setToast("인증 결과를 확인하지 못했어요. 인증 흐름을 초기화해 주세요.");
+    } catch (error) {
+      if (!owns()) return;
+      setToast(error.message);
+      await restoreAuth();
     }
-    await restoreAuth();
-  }, [restoreAuth]);
+  }, [restoreAuth, isCurrentObservation, navigate]);
 
   const discardMissingSession = useCallback(async () => {
     if (__DATA_MODE__ === "api") {
@@ -2347,6 +2470,8 @@ export default function App() {
   }, [restoreAuth]);
 
   const resetAuth = useCallback(async () => {
+    pendingReauth.current = null;
+    setAdminResume(null);
     if (__DATA_MODE__ === "api") {
       try {
         await recoverApiAuth("reset");
@@ -2395,6 +2520,10 @@ export default function App() {
   }, [restoreAuth]);
 
   useLayoutEffect(() => {
+    const reauthDeparted =
+      pendingReauth.current &&
+      pendingReauth.current.locationKey !== location.key;
+    if (reauthDeparted) pendingReauth.current = null;
     const previous = previousAuthEntry.current;
     previousAuthEntry.current = {
       key: location.key,
@@ -2405,8 +2534,11 @@ export default function App() {
       previous?.restoreAuth === restoreAuth &&
       previous.pathname === location.pathname &&
       (navigationType !== "POP" || previous.key === location.key)
-    )
+    ) {
+      // Recover the new entry even if reauth execution has not started a restore.
+      if (reauthDeparted) void restoreAuth();
       return;
+    }
     if (__DATA_MODE__ === "mock") {
       void restoreAuth();
       if (
@@ -2546,6 +2678,36 @@ export default function App() {
       setDeletion(null);
   }, [auth.status, auth.user, deletion]);
 
+  const resumeOwner = draftContinuityScope(auth);
+  const ownedAdminResume =
+    adminResume?.owner === resumeOwner ? adminResume.resume : null;
+  useEffect(() => {
+    const attempt = pendingReauth.current;
+    if (
+      auth.status === "ready" &&
+      !auth.concealed &&
+      attempt &&
+      (auth.user?.id !== attempt.actorId ||
+        auth.flow?.flowId !== attempt.flowId ||
+        auth.flow?.lastIdentityChangeRevision !== attempt.identityRevision)
+    )
+      pendingReauth.current = null;
+    if (
+      auth.status === "ready" &&
+      !auth.concealed &&
+      adminResume &&
+      adminResume.owner !== resumeOwner
+    )
+      setAdminResume(null);
+  }, [
+    auth.status,
+    auth.concealed,
+    auth.user,
+    auth.flow,
+    adminResume,
+    resumeOwner,
+  ]);
+
   const deletionNeedsConfirmation = [
     "pending",
     "unknown",
@@ -2673,6 +2835,7 @@ export default function App() {
               onResolveAuth={resolveAuth}
               onResetAuth={resetAuth}
               onDiscardMissingSession={discardMissingSession}
+              meta={authMetadata.meta}
             />
           }
         />
@@ -2683,6 +2846,9 @@ export default function App() {
               auth={auth}
               onRetry={recheckAuth}
               meta={authMetadata.meta}
+              resumeState={ownedAdminResume}
+              onConsumeResume={consumeAdminResume}
+              onSaveResume={saveAdminResume}
             />
           }
         />

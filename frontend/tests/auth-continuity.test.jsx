@@ -16,6 +16,7 @@ import {
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
+import { adminService } from "../src/services/mock/admin";
 import { healthService } from "../src/services/mock/health";
 import { DEMO_ACCOUNTS } from "../src/services/mock/accounts";
 import { MOCK_STORAGE_KEY, resetMockState } from "../src/services/mock/state";
@@ -40,15 +41,15 @@ async function visit(path, index) {
     loginId: account.loginId,
     password: account.password,
   });
+  const router = createMemoryRouter([{ path: "*", element: <App /> }], {
+    initialEntries: [path],
+  });
   render(
     <QueryClientProvider client={client}>
-      <RouterProvider
-        router={createMemoryRouter([{ path: "*", element: <App /> }], {
-          initialEntries: [path],
-        })}
-      />
+      <RouterProvider router={router} />
     </QueryClientProvider>,
   );
+  return router;
 }
 async function recheck(identityChanged = false) {
   await act(async () => window.dispatchEvent(new Event("blur")));
@@ -476,3 +477,377 @@ it.each([
     ).toBeInTheDocument();
   },
 );
+
+it("discards reauthentication drafts when actor identity history changes", async () => {
+  await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+  const field = await screen.findByLabelText("현재 관리자 비밀번호");
+  fireEvent.change(field, { target: { value: "synthetic secret password" } });
+  await recheck();
+  expect(await screen.findByLabelText("현재 관리자 비밀번호")).toHaveValue(
+    "synthetic secret password",
+  );
+  await recheck(true);
+  expect(await screen.findByLabelText("현재 관리자 비밀번호")).toHaveValue("");
+});
+
+it.each(["success", "failure"])(
+  "ignores a late reauthentication %s after a newer observation",
+  async (outcome) => {
+    let release;
+    const real = authService.reauthenticate.bind(authService);
+    vi.spyOn(authService, "reauthenticate").mockImplementation(
+      async (input) => {
+        const result = await real(input);
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+        if (outcome === "failure")
+          throw new ServiceError(
+            "INVALID_CREDENTIALS",
+            "obsolete reauth failure",
+          );
+        return result;
+      },
+    );
+    await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: "admin123" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    await recheck(true);
+    const spy = vi.spyOn(authService, "getCurrentAuthState");
+    await act(async () => release());
+    expect(spy).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText("obsolete reauth failure"),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "관리자 본인 확인" }),
+    ).toBeVisible();
+  },
+);
+
+it("keeps pending reauthentication return context in this tab memory and refetches before fresh confirmation", async () => {
+  const router = await visit("/admin", 0);
+  const row = (await screen.findByText("비기너개발자")).closest(
+    '[role="listitem"]',
+  );
+  const create = vi.spyOn(adminService, "createPasswordResetOperation");
+  const writes = vi.spyOn(adminService, "setPasswordReset");
+  fireEvent.click(
+    within(row).getByRole("button", {
+      name: "임시 비밀번호 설정",
+      exact: true,
+    }),
+  );
+  await screen.findByLabelText("현재 관리자 비밀번호");
+  expect(router.state.location.state).toBeNull();
+  expect(
+    JSON.stringify([{ ...localStorage }, { ...sessionStorage }]),
+  ).not.toContain("adminReset");
+  const read = vi.spyOn(adminService, "getUser");
+  fireEvent.change(screen.getByLabelText("현재 관리자 비밀번호"), {
+    target: { value: "admin123" },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: "본인 확인", exact: true }),
+  );
+  await screen.findByRole("heading", { name: /임시 비밀번호 초기화 확인/ });
+  expect(read).toHaveBeenCalled();
+  expect(screen.getByLabelText("임시 비밀번호", { exact: true })).toHaveValue(
+    "",
+  );
+  expect(
+    screen.getByLabelText("임시 비밀번호 확인", { exact: true }),
+  ).toHaveValue("");
+  expect(create).not.toHaveBeenCalled();
+  expect(writes).not.toHaveBeenCalled();
+  expect(router.state.location.state).toBeNull();
+});
+
+it("does not promote an older reauthentication result when a newer same-member rotation has already committed", async () => {
+  const real = authService.reauthenticate.bind(authService);
+  vi.spyOn(authService, "reauthenticate").mockImplementation(async (input) => {
+    const first = await real(input);
+    await real(input);
+    return first;
+  });
+  const router = await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+  fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+    target: { value: "admin123" },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: "본인 확인", exact: true }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    ).toBeEnabled(),
+  );
+  expect(router.state.location.pathname).toBe("/auth");
+  expect(
+    screen.queryByRole("list", { name: "회원 목록" }),
+  ).not.toBeInTheDocument();
+});
+
+it.each([
+  ["PUSH", "success"],
+  ["REPLACE", "success"],
+  ["PUSH", "failed"],
+  ["REPLACE", "failed"],
+  ["PUSH", "lost"],
+  ["REPLACE", "lost"],
+])(
+  "same-path %s departure during pending reauth %s leaves the new entry usable",
+  async (navigation, outcome) => {
+    let release;
+    let failure;
+    const real = authService.reauthenticate.bind(authService);
+    const execute = vi
+      .spyOn(authService, "reauthenticate")
+      .mockImplementation(async (input) => {
+        let result;
+        try {
+          result = await real(input);
+        } catch (error) {
+          failure = error;
+        }
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+        if (failure) throw failure;
+        if (outcome === "lost")
+          throw new ServiceError("SERVICE_UNAVAILABLE", "Response lost", {
+            outcome: "unknown",
+          });
+        return result;
+      });
+    const router = await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: outcome === "failed" ? "wrong-password" : "admin123" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    await act(async () =>
+      router.navigate("/auth?mode=login", {
+        replace: navigation === "REPLACE",
+      }),
+    );
+    await act(async () => release());
+    await waitFor(() =>
+      expect(
+        screen.queryByText("로그인 상태를 확인하고 있어요"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toBe("?mode=login");
+    expect(screen.getByLabelText("로그인 아이디")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "로그인", exact: true }),
+    ).toBeEnabled();
+    expect(
+      await within(screen.getByRole("banner")).findByText(
+        DEMO_ACCOUNTS[0].nickname,
+        { exact: true },
+      ),
+    ).toBeVisible();
+    expect(screen.queryByRole("button", { name: "결과 확인" })).toBeNull();
+    expect(screen.queryByText("Response lost")).not.toBeInTheDocument();
+    if (outcome === "failed") {
+      expect(failure).toMatchObject({
+        code: "INVALID_CREDENTIALS",
+        httpStatus: 401,
+      });
+      expect(screen.queryByText(failure.message)).not.toBeInTheDocument();
+    }
+    expect(execute).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each(["PUSH", "REPLACE", "POP"])(
+  "same-path %s navigation supersedes pending reauth success",
+  async (navigation) => {
+    let release;
+    const real = authService.reauthenticate.bind(authService);
+    vi.spyOn(authService, "reauthenticate").mockImplementation(
+      async (input) => {
+        const result = await real(input);
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+        return result;
+      },
+    );
+    const router = await visit("/auth?mode=login", 0);
+    await act(async () =>
+      router.navigate("/auth?mode=reauth&return_to=%2Fadmin"),
+    );
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: "admin123" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    await act(async () =>
+      navigation === "POP"
+        ? router.navigate(-1)
+        : router.navigate("/auth?mode=login", {
+            replace: navigation === "REPLACE",
+          }),
+    );
+    expect(router.state.location.search).toBe("?mode=login");
+    await act(async () => release());
+    await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+    expect(router.state.location.search).toBe("?mode=login");
+  },
+);
+
+it.each(["PUSH", "REPLACE", "POP"])(
+  "same-path %s navigation supersedes pending reauth result confirmation",
+  async (navigation) => {
+    const real = authService.reauthenticate.bind(authService);
+    const execute = vi
+      .spyOn(authService, "reauthenticate")
+      .mockImplementation(async (input) => {
+        await real(input);
+        throw new ServiceError("SERVICE_UNAVAILABLE", "Response lost", {
+          outcome: "unknown",
+        });
+      });
+    const router = await visit("/auth?mode=login", 0);
+    await act(async () =>
+      router.navigate("/auth?mode=reauth&return_to=%2Fadmin"),
+    );
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: "admin123" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    const confirm = await screen.findByRole("button", { name: "결과 확인" });
+    const read = authService.getFlowState.bind(authService);
+    let release;
+    vi.spyOn(authService, "getFlowState").mockImplementation(async (id) => {
+      const result = await read(id);
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+      return result;
+    });
+    fireEvent.click(confirm);
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    await act(async () =>
+      navigation === "POP"
+        ? router.navigate(-1)
+        : router.navigate("/auth?mode=login", {
+            replace: navigation === "REPLACE",
+          }),
+    );
+    expect(router.state.location.search).toBe("?mode=login");
+    await act(async () => release());
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toBe("?mode=login");
+    expect(execute).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each([false, true])(
+  "same-path navigation ignores an in-flight reauth restore (confirmation=%s)",
+  async (confirmation) => {
+    const real = authService.reauthenticate.bind(authService);
+    vi.spyOn(authService, "reauthenticate").mockImplementation(
+      async (input) => {
+        const result = await real(input);
+        if (confirmation)
+          throw new ServiceError("SERVICE_UNAVAILABLE", "Response lost", {
+            outcome: "unknown",
+          });
+        return result;
+      },
+    );
+    const router = await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: "admin123" },
+    });
+    const observe = authService.getCurrentAuthState.bind(authService);
+    let release;
+    const holdRestore = () =>
+      vi
+        .spyOn(authService, "getCurrentAuthState")
+        .mockImplementationOnce(async (options) => {
+          const observed = await observe(options);
+          await new Promise((resolve) => {
+            release = resolve;
+          });
+          return {
+            ...observed,
+            user: { ...observed.user, nickname: "obsolete reauth restore" },
+          };
+        });
+    if (!confirmation) holdRestore();
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    if (confirmation) {
+      const confirm = await screen.findByRole("button", { name: "결과 확인" });
+      holdRestore();
+      fireEvent.click(confirm);
+    }
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    await act(async () => router.navigate("/auth?mode=login"));
+    await act(async () => release());
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toBe("?mode=login");
+    expect(
+      screen.queryByText("obsolete reauth restore"),
+    ).not.toBeInTheDocument();
+    expect(
+      await within(screen.getByRole("banner")).findByText(
+        DEMO_ACCOUNTS[0].nickname,
+        { exact: true },
+      ),
+    ).toBeVisible();
+  },
+);
+
+it("same-path navigation suppresses a late result-confirmation error toast", async () => {
+  const real = authService.reauthenticate.bind(authService);
+  vi.spyOn(authService, "reauthenticate").mockImplementation(async (input) => {
+    await real(input);
+    throw new ServiceError("SERVICE_UNAVAILABLE", "Response lost", {
+      outcome: "unknown",
+    });
+  });
+  const router = await visit("/auth?mode=reauth&return_to=%2Fadmin", 0);
+  fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+    target: { value: "admin123" },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: "본인 확인", exact: true }),
+  );
+  const confirm = await screen.findByRole("button", { name: "결과 확인" });
+  let release;
+  vi.spyOn(authService, "getFlowState").mockImplementationOnce(async () => {
+    await new Promise((resolve) => {
+      release = resolve;
+    });
+    throw new ServiceError(
+      "SERVICE_UNAVAILABLE",
+      "obsolete confirmation error",
+    );
+  });
+  fireEvent.click(confirm);
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  await act(async () => router.navigate("/auth?mode=login"));
+  await act(async () => release());
+  expect(router.state.location.search).toBe("?mode=login");
+  expect(
+    screen.queryByText("obsolete confirmation error"),
+  ).not.toBeInTheDocument();
+});

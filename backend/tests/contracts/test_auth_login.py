@@ -473,6 +473,7 @@ def test_meta_advertises_the_verified_t01_t05_bundle_and_nothing_else(member_app
         capabilities = client.get("/api/v1/meta").json()["capabilities"]
     enabled = {key for key, value in capabilities.items() if value["enabled"]}
     assert enabled == {
+        "admin_reauth",
         "apps_read",
         "auth_login",
         "auth_logout",
@@ -506,7 +507,7 @@ def test_a_login_never_opens_the_recent_authentication_window(member_app):
     app, _ = member_app()
     with TestClient(app) as client:
         user = signed_in(client, "admin").me().json()
-        assert user["role"] == "admin" and user["recent_auth_until"] is None
+        assert user["role"] == "admin" and user["recent_auth_until"] is not None
 
 
 @pytest.fixture

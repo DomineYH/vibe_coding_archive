@@ -757,6 +757,7 @@ paths:
         "400": { $ref: "#/components/responses/ServiceError" }
         "422": { $ref: "#/components/responses/ServiceError" }
         "413": { $ref: "#/components/responses/ServiceError" }
+        "429": { $ref: "#/components/responses/ServiceError" }
   /meta:
     get:
       operationId: getMeta

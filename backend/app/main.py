@@ -35,6 +35,7 @@ from app.auth_login import HashGate
 from app.auth_login import router as login_router
 from app.auth_maintenance import reconcile, sweep
 from app.auth_password import router as password_router
+from app.auth_reauth import router as reauth_router
 from app.auth_register import router as register_router
 from app.catalog import CATALOG
 from app.database import (
@@ -342,6 +343,7 @@ def create_app(
                 "auth_logout",
                 "auth_password_change",
                 "auth_register",
+                "admin_reauth",
                 "admin_users_read",
                 "admin_approval",
                 "admin_summary",
@@ -367,6 +369,7 @@ def create_app(
     api.include_router(auth_router)
     api.include_router(login_router)
     api.include_router(password_router)
+    api.include_router(reauth_router)
     api.include_router(register_router)
     api.include_router(admin_approval_router)
     api.include_router(public_apps_router)

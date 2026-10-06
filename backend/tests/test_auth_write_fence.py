@@ -2,19 +2,23 @@
 
 import sqlite3
 
+import pytest
+
 from tests.auth_client import API, signed_in
 from tests.contracts.test_admin_approval import PENDING_ID, execute, issue
 
 
+@pytest.mark.parametrize("kind", ["logout", "reauthenticate"])
 def test_pending_then_cancelled_transition_never_replays_an_old_approval(
     process_server,
+    kind,
 ):
     server, database = process_server
     with server.client() as client:
         admin = signed_in(client, "admin")
         key = issue(admin).json()["key"]
         generation = admin.generation
-        permit = admin.admit("logout").json()
+        permit = admin.admit(kind).json()
         for result in (issue(admin), execute(admin, key)):
             assert result.status_code == 409
             assert result.json()["error"]["code"] == "AUTH_TRANSITION_PENDING"

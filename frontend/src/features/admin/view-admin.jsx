@@ -965,7 +965,14 @@ function UserDeletePanel({
   );
 }
 
-export function AdminView({ scopeKey, meta, active = true }) {
+export function AdminView({
+  scopeKey,
+  meta,
+  active = true,
+  resumeState,
+  onConsumeResume,
+  onSaveResume,
+}) {
   const canReset =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_password_reset.enabled === true;
@@ -1186,7 +1193,8 @@ export function AdminView({ scopeKey, meta, active = true }) {
   }, []);
 
   useEffect(() => {
-    const resume = location.state?.adminReset;
+    if (!active) ++resetDetailRequest.current;
+    const resume = active ? resumeState?.adminReset : null;
     if (!resume || typeof resume.targetId !== "string") return;
     const targetId = resume.targetId;
     const operationKey =
@@ -1197,7 +1205,6 @@ export function AdminView({ scopeKey, meta, active = true }) {
       ? resume.expectedAccountVersion
       : null;
     const request = ++resetDetailRequest.current;
-    navigate("/admin", { replace: true, state: null });
     setSelection(null);
     setResetError("");
     setResetBusy(false);
@@ -1225,6 +1232,7 @@ export function AdminView({ scopeKey, meta, active = true }) {
       try {
         const target = await adminService.getUser(targetId);
         if (!alive.current || request !== resetDetailRequest.current) return;
+        onConsumeResume?.();
         setResetSelection({
           id: targetId,
           target,
@@ -1243,6 +1251,7 @@ export function AdminView({ scopeKey, meta, active = true }) {
         }
       } catch (error) {
         if (!alive.current || request !== resetDetailRequest.current) return;
+        onConsumeResume?.();
         setResetSelection({
           id: targetId,
           target: null,
@@ -1263,10 +1272,11 @@ export function AdminView({ scopeKey, meta, active = true }) {
         }
       }
     })();
-  }, [location.key, location.state, navigate]);
+  }, [active, resumeState, onConsumeResume]);
 
   useEffect(() => {
-    const resume = location.state?.adminDelete;
+    if (!active) ++deleteDetailRequest.current;
+    const resume = active ? resumeState?.adminDelete : null;
     if (!resume || typeof resume.targetId !== "string") return;
     const targetId = resume.targetId;
     const operationKey =
@@ -1275,7 +1285,6 @@ export function AdminView({ scopeKey, meta, active = true }) {
       ? resume.expectedAppCount
       : null;
     const request = ++deleteDetailRequest.current;
-    navigate("/admin", { replace: true, state: null });
     setSelection(null);
     setResetSelection(null);
     setDeleteError("");
@@ -1303,6 +1312,7 @@ export function AdminView({ scopeKey, meta, active = true }) {
       try {
         const target = await adminService.getUser(targetId);
         if (!alive.current || request !== deleteDetailRequest.current) return;
+        onConsumeResume?.();
         setDeleteSelection({
           id: targetId,
           target,
@@ -1314,6 +1324,7 @@ export function AdminView({ scopeKey, meta, active = true }) {
         });
       } catch (error) {
         if (!alive.current || request !== deleteDetailRequest.current) return;
+        onConsumeResume?.();
         setDeleteSelection({
           id: targetId,
           target: null,
@@ -1325,12 +1336,13 @@ export function AdminView({ scopeKey, meta, active = true }) {
             error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
         });
       }
+      if (!alive.current || request !== deleteDetailRequest.current) return;
       if (operationError) {
         markDeleteExpired(operationError);
         setDeleteError(deleteOperationMessage(operationError));
       }
     })();
-  }, [location.key, location.state, navigate]);
+  }, [active, resumeState, onConsumeResume]);
 
   async function openApproval(user) {
     if (resetPending) return;
@@ -1375,14 +1387,14 @@ export function AdminView({ scopeKey, meta, active = true }) {
     setResetSelection(null);
     setResetError("");
     setResetOperationExpired(false);
-    navigate("/auth?mode=reauth&return_to=%2Fadmin", {
-      state: {
-        adminReset: {
-          targetId,
-          ...(operationKey ? { operationKey, expectedAccountVersion } : {}),
-        },
+    onSaveResume?.({
+      tab,
+      adminReset: {
+        targetId,
+        ...(operationKey ? { operationKey, expectedAccountVersion } : {}),
       },
     });
+    navigate("/auth?mode=reauth&return_to=%2Fadmin");
   }
 
   function startDeleteReauthentication(
@@ -1400,14 +1412,14 @@ export function AdminView({ scopeKey, meta, active = true }) {
     setDeleteSelection(null);
     setDeleteError("");
     setDeleteOperationExpired(false);
-    navigate("/auth?mode=reauth&return_to=%2Fadmin", {
-      state: {
-        adminDelete: {
-          targetId,
-          ...(operationKey ? { operationKey, expectedAppCount } : {}),
-        },
+    onSaveResume?.({
+      tab,
+      adminDelete: {
+        targetId,
+        ...(operationKey ? { operationKey, expectedAppCount } : {}),
       },
     });
+    navigate("/auth?mode=reauth&return_to=%2Fadmin");
   }
 
   function beginPasswordReset(targetId) {

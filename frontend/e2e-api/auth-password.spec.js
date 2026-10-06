@@ -56,13 +56,14 @@ test("the T01–T03 capability bundle follows the test boundary", async ({
 }) => {
   const meta = await request.get("/api/v1/meta");
   const { capabilities } = await meta.json();
-  for (const name of ["auth_login", "auth_logout", "auth_password_change"])
-    expect(capabilities[name].enabled).toBe(prepared);
   for (const name of [
+    "auth_login",
+    "auth_logout",
+    "auth_password_change",
     "admin_reauth",
-    "admin_password_reset",
-    "admin_user_delete",
   ])
+    expect(capabilities[name].enabled).toBe(prepared);
+  for (const name of ["admin_password_reset", "admin_user_delete"])
     expect(capabilities[name].enabled).toBe(false);
 });
 

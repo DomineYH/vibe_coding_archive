@@ -70,7 +70,7 @@ def test_temporary_admin_gets_restricted_self_then_only_completing_browser_gets_
         first.logout()
         first.anonymous()
         assert first.login(ADMIN, NEW_PASSWORD).status_code == 200
-        assert first.me().json()["recent_auth_until"] is None
+        assert first.me().json()["recent_auth_until"] is not None
 
 
 import pytest

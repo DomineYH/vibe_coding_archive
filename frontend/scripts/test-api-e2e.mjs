@@ -50,7 +50,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|password|register|lifecycle|access|races|recovery)|admin-approval|app-(create|edit|delete)/.test(
+      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-approval|app-(create|edit|delete)/.test(
         arg,
       ),
     );
@@ -132,6 +132,7 @@ raise SystemExit(status)`,
     const normal = [
       "e2e-api/auth-prepare.spec.js",
       "e2e-api/auth-login.spec.js",
+      "e2e-api/auth-reauth.spec.js",
       "e2e-api/auth-password.spec.js",
       "e2e-api/auth-register.spec.js",
       "e2e-api/admin-approval.spec.js",

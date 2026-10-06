@@ -16,6 +16,7 @@ from tests.support import (
 )
 
 AUTH_BUNDLE = {
+    "admin_reauth",
     "auth_login",
     "auth_logout",
     "auth_password_change",

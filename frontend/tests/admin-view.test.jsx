@@ -42,7 +42,11 @@ async function renderApiMembers(reset, deletion, entry = "/admin") {
   render(
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[entry]}>
-        <AdminView scopeKey="disabled-reasons" meta={meta} />
+        <AdminView
+          scopeKey="disabled-reasons"
+          meta={meta}
+          resumeState={typeof entry === "object" ? entry.state : null}
+        />
       </MemoryRouter>
     </QueryClientProvider>,
   );

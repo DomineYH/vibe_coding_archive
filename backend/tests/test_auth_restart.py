@@ -26,12 +26,20 @@ def server_clock(monkeypatch):
     return value
 
 
+@pytest.mark.parametrize("reauthenticated", [False, True])
 def test_normal_restart_keeps_the_success_the_session_and_the_original_clock(
-    member_app, server_clock
+    member_app, server_clock, reauthenticated
 ):
     app, _ = member_app()
     with TestClient(app) as client:
-        browser = signed_in(client)
+        browser = signed_in(client, "admin" if reauthenticated else "approved")
+        transition_id = f"{browser.flow}.4"
+        if reauthenticated:
+            from tests.contracts.test_auth_reauth import execute
+
+            permit = browser.admit("reauthenticate").json()
+            transition_id = permit["transition_id"]
+            assert execute(browser, permit).status_code == 200
         expires_at = browser.me().json()["expires_at"]
         cookies = dict(client.cookies)
         generation = browser.generation
@@ -41,7 +49,7 @@ def test_normal_restart_keeps_the_success_the_session_and_the_original_clock(
         browser.client = restarted
         me = browser.me()
         assert me.status_code == 200 and me.json()["expires_at"] == expires_at
-        state = browser.state(transition_id=f"{browser.flow}.4")
+        state = browser.state(transition_id=transition_id)
         assert state["session_generation"] == generation
         assert state["requested_transition"]["state"] == "succeeded"
         assert state["requested_transition"]["result_session_generation"] == generation

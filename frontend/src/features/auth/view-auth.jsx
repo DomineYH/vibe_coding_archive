@@ -196,16 +196,24 @@ function ReauthenticationCard({
   authStatus,
   authError,
   returnTo,
-  resumeState,
   onRetry,
   onResolveAuth,
   onResetAuth,
   onReauthenticate,
+  canDiscardMissingSession,
+  onDiscardMissingSession,
 }) {
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const submitting = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const canReauthenticate =
     authUser?.role === "admin" &&
     authUser.approved &&
@@ -225,12 +233,9 @@ function ReauthenticationCard({
     submitting.current = true;
     setPending(true);
     try {
-      await onReauthenticate(
-        { password: currentPassword },
-        returnTo,
-        resumeState,
-      );
+      await onReauthenticate({ password: currentPassword }, returnTo);
     } catch (error) {
+      if (!mounted.current) return;
       setMessage(
         error instanceof ServiceError && error.code === "INVALID_CREDENTIALS"
           ? "관리자 비밀번호를 확인해 주세요. 현재 로그인은 유지됩니다."
@@ -240,7 +245,7 @@ function ReauthenticationCard({
       );
     } finally {
       submitting.current = false;
-      setPending(false);
+      if (mounted.current) setPending(false);
     }
   }
 
@@ -277,6 +282,11 @@ function ReauthenticationCard({
               ) : (
                 <Btn onClick={onRetry}>다시 확인</Btn>
               )}
+              {canDiscardMissingSession ? (
+                <Btn variant="line" onClick={onDiscardMissingSession}>
+                  받지 못한 세션 버리기
+                </Btn>
+              ) : null}
               <Btn variant="line" onClick={onResetAuth}>
                 인증 흐름 초기화
               </Btn>
@@ -366,12 +376,6 @@ function ReauthenticationCard({
         </Btn>
         <Link
           to={returnTo}
-          state={
-            resumeState?.adminReset?.operationKey ||
-            resumeState?.adminDelete?.operationKey
-              ? resumeState
-              : null
-          }
           className="inline-flex min-h-10 items-center justify-center rounded-full text-[12.5px] font-semibold text-neutral-500"
         >
           취소하고 돌아가기
@@ -393,7 +397,6 @@ export function AuthView({
   onChangePassword,
   onReauthenticate,
   returnTo,
-  reauthState,
   onResolveAuth,
   onResetAuth,
   onDiscardMissingSession,
@@ -511,11 +514,12 @@ export function AuthView({
         authStatus={authStatus}
         authError={authError}
         returnTo={returnTo}
-        resumeState={reauthState}
         onRetry={onRetry}
         onResolveAuth={onResolveAuth}
         onResetAuth={onResetAuth}
         onReauthenticate={onReauthenticate}
+        canDiscardMissingSession={canDiscardMissingSession}
+        onDiscardMissingSession={onDiscardMissingSession}
       />
     );
 

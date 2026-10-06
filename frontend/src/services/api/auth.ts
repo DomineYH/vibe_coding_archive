@@ -111,8 +111,8 @@ async function recoveryToken(id: string) {
 }
 
 async function memberTransition(
-  kind: "login" | "password_change",
-  path: "/auth/login" | "/auth/password",
+  kind: "login" | "password_change" | "reauthenticate",
+  path: "/auth/login" | "/auth/password" | "/auth/reauth",
   body: unknown,
 ) {
   return runApiTransition(authService, kind, async (permit, state) => {
@@ -243,7 +243,9 @@ export const authService: AuthService = {
         expected_revision: input.expectedRevision,
         expected_session_generation: input.expectedSessionGeneration,
       },
-      ["login", "logout", "password_change"].includes(input.kind)
+      ["login", "logout", "password_change", "reauthenticate"].includes(
+        input.kind,
+      )
         ? (await authService.getCsrf()).csrfToken
         : await recoveryToken(input.flowId),
     );
@@ -420,8 +422,10 @@ export const authService: AuthService = {
       password: input.password,
     });
   },
-  async reauthenticate() {
-    throw unavailable();
+  async reauthenticate(input) {
+    return memberTransition("reauthenticate", "/auth/reauth", {
+      password: input.password,
+    });
   },
   async logout() {
     return runApiTransition(authService, "logout", async (permit, state) => {

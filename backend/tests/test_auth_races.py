@@ -9,19 +9,32 @@ import pytest
 
 from tests.auth_client import API, Browser
 from tests.contracts.test_auth_password import NEW_PASSWORD, temporary_admin
-from tests.support import AUTH_MEMBERS
+from tests.support import AUTH_MEMBERS, AUTH_PASSWORD
 
 
 @pytest.mark.parametrize("stage", ["before_claim", "hash_return"])
-def test_settle_fences_the_actual_worker_before_it_can_commit(process_server, stage):
+@pytest.mark.parametrize("operation", ["login", "reauthenticate"])
+def test_settle_fences_the_actual_worker_before_it_can_commit(
+    process_server, stage, operation
+):
     server, database = process_server
     with server.client() as client, ThreadPoolExecutor() as workers:
         browser = Browser(client).prepare().anonymous()
-        permit = browser.admit("login").json()
+        if operation == "reauthenticate":
+            assert browser.login(AUTH_MEMBERS["admin"][1]).status_code == 200
+        permit = browser.admit(operation).json()
         server.command(action="arm", stage=stage)
-        pending = workers.submit(
-            browser.execute_login, permit, AUTH_MEMBERS["approved"][1]
-        )
+
+        def execute():
+            if operation == "login":
+                return browser.execute_login(permit, AUTH_MEMBERS["approved"][1])
+            return client.post(
+                f"{API}/reauth",
+                json={"password": AUTH_PASSWORD},
+                headers=browser.session_headers(permit),
+            )
+
+        pending = workers.submit(execute)
         try:
             server.wait()
             state = browser.state(transition_id=permit["transition_id"])
@@ -44,7 +57,7 @@ def test_settle_fences_the_actual_worker_before_it_can_commit(process_server, st
         with sqlite3.connect(database) as db:
             assert db.execute(
                 "SELECT count(*) FROM sessions WHERE kind='full'"
-            ).fetchone() == (0,)
+            ).fetchone() == (1 if operation == "reauthenticate" else 0,)
 
 
 @pytest.mark.parametrize("offset", [-1, 0, 1])
@@ -82,8 +95,10 @@ def test_actual_hashing_cannot_finalize_at_or_after_the_permit_boundary(
             ).fetchone() == (1 if offset < 0 else 0,)
 
 
-@pytest.mark.parametrize("operation", ["login", "password_change"])
-@pytest.mark.parametrize("stage", ["hash_return", "before_commit", "committed"])
+@pytest.mark.parametrize("operation", ["login", "password_change", "reauthenticate"])
+@pytest.mark.parametrize(
+    "stage", ["before_claim", "hash_return", "before_commit", "committed"]
+)
 def test_process_death_distinguishes_rollback_from_committed_success(
     process_server, stage, operation
 ):
@@ -92,7 +107,7 @@ def test_process_death_distinguishes_rollback_from_committed_success(
         temporary_admin(database)
     with server.client() as client, ThreadPoolExecutor() as workers:
         browser = Browser(client).prepare().anonymous()
-        if operation == "password_change":
+        if operation in ("password_change", "reauthenticate"):
             assert browser.login(AUTH_MEMBERS["admin"][1]).status_code == 200
         permit = browser.admit(operation).json()
         cookies = dict(client.cookies)
@@ -102,8 +117,12 @@ def test_process_death_distinguishes_rollback_from_committed_success(
             if operation == "login":
                 return browser.execute_login(permit, AUTH_MEMBERS["approved"][1])
             return client.post(
-                f"{API}/password",
-                json={"password": NEW_PASSWORD},
+                f"{API}/reauth" if operation == "reauthenticate" else f"{API}/password",
+                json={
+                    "password": AUTH_PASSWORD
+                    if operation == "reauthenticate"
+                    else NEW_PASSWORD
+                },
                 headers=browser.session_headers(permit),
             )
 
@@ -113,7 +132,13 @@ def test_process_death_distinguishes_rollback_from_committed_success(
             assert db.execute(
                 "SELECT state FROM auth_transitions WHERE transition_id=?",
                 (permit["transition_id"],),
-            ).fetchone() == ("succeeded" if stage == "committed" else "executing",)
+            ).fetchone() == (
+                "succeeded"
+                if stage == "committed"
+                else "admitted"
+                if stage == "before_claim"
+                else "executing",
+            )
         server.kill()
         with pytest.raises(httpx.TransportError):
             pending.result(timeout=5)
@@ -129,7 +154,11 @@ def test_process_death_distinguishes_rollback_from_committed_success(
         with sqlite3.connect(database) as db:
             assert db.execute(
                 "SELECT count(*) FROM sessions WHERE kind='full'"
-            ).fetchone() == (1 if stage == "committed" else 0,)
+            ).fetchone() == (
+                (2 if stage == "committed" else 1)
+                if operation == "reauthenticate"
+                else (1 if stage == "committed" else 0),
+            )
         if operation == "password_change":
             with sqlite3.connect(database) as db:
                 assert db.execute(
@@ -141,7 +170,7 @@ def test_process_death_distinguishes_rollback_from_committed_success(
 
 
 @pytest.mark.parametrize("winner", ["worker", "rotate"])
-@pytest.mark.parametrize("operation", ["login", "password_change"])
+@pytest.mark.parametrize("operation", ["login", "password_change", "reauthenticate"])
 def test_rotation_and_real_worker_have_one_serialized_winner(
     process_server, winner, operation
 ):
@@ -150,7 +179,7 @@ def test_rotation_and_real_worker_have_one_serialized_winner(
         temporary_admin(database)
     with server.client() as client, ThreadPoolExecutor() as workers:
         browser = Browser(client).prepare().anonymous()
-        if operation == "password_change":
+        if operation in ("password_change", "reauthenticate"):
             assert browser.login(AUTH_MEMBERS["admin"][1]).status_code == 200
         permit = browser.admit(operation).json()
         old_generation = browser.generation
@@ -161,8 +190,12 @@ def test_rotation_and_real_worker_have_one_serialized_winner(
             if operation == "login":
                 return browser.execute_login(permit, AUTH_MEMBERS["approved"][1])
             return client.post(
-                f"{API}/password",
-                json={"password": NEW_PASSWORD},
+                f"{API}/reauth" if operation == "reauthenticate" else f"{API}/password",
+                json={
+                    "password": AUTH_PASSWORD
+                    if operation == "reauthenticate"
+                    else NEW_PASSWORD
+                },
                 headers=browser.session_headers(permit),
             )
 

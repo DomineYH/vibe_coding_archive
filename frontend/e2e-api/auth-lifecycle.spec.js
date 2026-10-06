@@ -12,6 +12,7 @@ test("registration and administrator approval activate as one bundle; future fea
   const { capabilities } = await (await request.get("/api/v1/meta")).json();
   for (const key of [
     "auth_register",
+    "admin_reauth",
     "admin_users_read",
     "admin_approval",
     "admin_summary",
@@ -21,7 +22,6 @@ test("registration and administrator approval activate as one bundle; future fea
   ])
     expect(capabilities[key].enabled).toBe(prepared);
   for (const key of [
-    "admin_reauth",
     "admin_password_reset",
     "admin_user_delete",
     "admin_apps_read",
