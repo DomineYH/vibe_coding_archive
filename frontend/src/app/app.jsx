@@ -2255,7 +2255,7 @@ export default function App() {
             outcome: "rejected",
           },
         );
-      // Ownership includes the observation, so even a newer same-member result wins.
+      // Own both the observation and the originating route entry.
       const starting = authObservation.current;
       const begin = beginAuthTransition();
       let owned = authObservation.current;
@@ -2265,10 +2265,13 @@ export default function App() {
         identityRevision: previous.flow.lastIdentityChangeRevision,
         sourceGeneration: previous.flow.sessionGeneration,
         transitionId: `${previous.flow.flowId}.${previous.flow.revision}`,
+        locationKey: currentLocation.current.key,
         returnTo,
       };
       const owns = () =>
-        isCurrentObservation(owned) && pendingReauth.current === attempt;
+        isCurrentObservation(owned) &&
+        pendingReauth.current === attempt &&
+        currentLocation.current.key === attempt.locationKey;
       pendingReauth.current = attempt;
       await begin;
       if (!owns() || owned !== starting + 1) return;
@@ -2380,7 +2383,9 @@ export default function App() {
     let owned = authObservation.current;
     const owns = () =>
       isCurrentObservation(owned) &&
-      (!attempt || pendingReauth.current === attempt);
+      (!attempt ||
+        (pendingReauth.current === attempt &&
+          currentLocation.current.key === attempt.locationKey));
     try {
       const transitionId =
         attempt?.transitionId ?? authSnapshot.current.unresolvedTransitionId;
@@ -2515,6 +2520,10 @@ export default function App() {
   }, [restoreAuth]);
 
   useLayoutEffect(() => {
+    const reauthDeparted =
+      pendingReauth.current &&
+      pendingReauth.current.locationKey !== location.key;
+    if (reauthDeparted) pendingReauth.current = null;
     const previous = previousAuthEntry.current;
     previousAuthEntry.current = {
       key: location.key,
@@ -2525,8 +2534,11 @@ export default function App() {
       previous?.restoreAuth === restoreAuth &&
       previous.pathname === location.pathname &&
       (navigationType !== "POP" || previous.key === location.key)
-    )
+    ) {
+      // Supersede an in-flight reauth restore with recovery for the new entry.
+      if (reauthDeparted && authController.current) void restoreAuth();
       return;
+    }
     if (__DATA_MODE__ === "mock") {
       void restoreAuth();
       if (
