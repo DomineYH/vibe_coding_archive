@@ -288,6 +288,11 @@ test.describe("account deletion recovery over real HTTP", () => {
         ? route.abort("failed")
         : route.continue(),
     );
+    const failed = page.waitForEvent("requestfailed", {
+      predicate: (request) =>
+        request.method() === "DELETE" &&
+        request.url().endsWith(`/admin/users/${owned.member.id}`),
+    });
     const issued = page.waitForResponse(
       (response) =>
         response.request().method() === "POST" &&
@@ -295,10 +300,15 @@ test.describe("account deletion recovery over real HTTP", () => {
         response.status() === 201,
     );
     await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
-    await expect(panel).toContainText("삭제 결과가 아직 확정되지 않았어요");
     const originalKey = (await (await issued).json()).key;
+    const originalDelete = await failed;
+    await expect(panel).toHaveAttribute("aria-busy", "false");
+    await expect(panel).toContainText("삭제 결과가 아직 확정되지 않았어요");
     const submitted = keys.length;
-    expect(submitted).toBeLessThanOrEqual(1);
+    expect(submitted).toBe(1);
+    expect(await originalDelete.headerValue("idempotency-key")).toBe(
+      originalKey,
+    );
     query(
       `UPDATE sessions SET revoked_at='2000-01-01T00:00:00Z' WHERE member_id='${owned.admin.id}'`,
     );
@@ -309,6 +319,14 @@ test.describe("account deletion recovery over real HTTP", () => {
     await expect(
       page.getByLabel("로그인 아이디", { exact: true }),
     ).toBeVisible();
+    expect(keys).toHaveLength(submitted);
+    expect(issues).toBe(1);
+    const recovered = page.waitForResponse(
+      (response) =>
+        response.request().method() === "GET" &&
+        response.url().endsWith(`/write-operations/${originalKey}`) &&
+        response.status() === 200,
+    );
     await page
       .getByLabel("로그인 아이디", { exact: true })
       .fill(owned.admin.login);
@@ -319,6 +337,8 @@ test.describe("account deletion recovery over real HTTP", () => {
       .click();
     await findRow(page, owned.member.login);
     panel = page.getByRole("region", { name: /계정.*삭제/ });
+    expect((await (await recovered).json()).key).toBe(originalKey);
+    await expect(panel).toHaveAttribute("aria-busy", "false");
     await expect(panel).toContainText("삭제 결과가 아직 확정되지 않았어요");
     expect(originalKey).toMatch(/^[0-9a-f-]{36}$/);
     expect(reads.at(-1)).toContain(originalKey);

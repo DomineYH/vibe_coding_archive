@@ -878,7 +878,9 @@ it.each(["same", "other", "explicit"])(
     fireEvent.click(
       await screen.findByRole("button", { name: "삭제 확인", exact: true }),
     );
-    await screen.findByText(/삭제 결과가 아직 확정되지 않았어요/);
+    await screen.findByText(
+      "삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지 않았습니다.",
+    );
     const operation = await issue.mock.results[0].value;
     if (departure === "explicit") {
       await act(async () => {
@@ -890,7 +892,9 @@ it.each(["same", "other", "explicit"])(
         });
         window.dispatchEvent(new Event("focus"));
       });
-      await screen.findByText(/삭제 결과가 아직 확정되지 않았어요/);
+      await screen.findByText(
+        "삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지 않았습니다.",
+      );
       await waitFor(() => expect(read).toHaveBeenLastCalledWith(operation.key));
       fireEvent.click(
         screen.getByRole("button", { name: "로그아웃", exact: true }),
@@ -923,7 +927,9 @@ it.each(["same", "other", "explicit"])(
     }
     await screen.findByRole("list", { name: "회원 목록" });
     if (departure === "same") {
-      await screen.findByText(/삭제 결과가 아직 확정되지 않았어요/);
+      await screen.findByText(
+        "삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지 않았습니다.",
+      );
       expect(read).toHaveBeenLastCalledWith(operation.key);
     } else {
       expect(

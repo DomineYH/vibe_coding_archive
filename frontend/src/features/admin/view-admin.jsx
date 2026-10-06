@@ -908,7 +908,7 @@ function UserDeletePanel({
             삭제는 반영됐고 별도 확인을 기다리고 있어요. 이 상태는 삭제 실패나
             롤백이 아니며 계정과 앱을 되살리지 않습니다.
           </p>
-        ) : unresolved || hasPendingKey ? (
+        ) : !busy && (unresolved || hasPendingKey) ? (
           <p
             role="status"
             className="mt-2 text-[12px] font-semibold text-amber-800"

@@ -681,6 +681,47 @@ it("does not execute a late issued deletion after the view becomes inactive", as
   expect(execute).not.toHaveBeenCalled();
 });
 
+it("shows deletion recovery only after the submitted attempt settles", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.nickname === "비기너개발자",
+  );
+  const issue = vi.spyOn(adminService, "createUserDeleteOperation");
+  let rejectExecution;
+  vi.spyOn(adminService, "deleteUser").mockImplementation(
+    () =>
+      new Promise((resolve, reject) => {
+        rejectExecution = reject;
+      }),
+  );
+  const read = vi.spyOn(adminService, "getUserDeleteOperation");
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: { adminDelete: { targetId: target.id } },
+  });
+  await userEvent
+    .setup()
+    .click(
+      await screen.findByRole("button", { name: "삭제 확인", exact: true }),
+    );
+  await waitFor(() => expect(rejectExecution).toBeTypeOf("function"));
+  const panel = screen.getByRole("region", { name: /계정.*삭제/ });
+  expect(panel).toHaveAttribute("aria-busy", "true");
+  expect(panel).not.toHaveTextContent("삭제 결과가 아직 확정되지 않았어요");
+  expect(
+    within(panel).queryByRole("button", { name: "결과 확인", exact: true }),
+  ).not.toBeInTheDocument();
+  await act(async () => rejectExecution(new Error("response lost")));
+  await waitFor(() => expect(panel).toHaveAttribute("aria-busy", "false"));
+  expect(panel).toHaveTextContent("삭제 결과가 아직 확정되지 않았어요");
+  expect(
+    within(panel).getByRole("button", { name: "결과 확인", exact: true }),
+  ).toBeEnabled();
+  expect(issue).toHaveBeenCalledTimes(1);
+  const operation = await issue.mock.results[0].value;
+  expect(read).toHaveBeenCalledWith(operation.key);
+});
+
 it("keeps definitive deletion success visible after row removal without requiring GET", async () => {
   await authService.reauthenticate({ password: "admin123" });
   const target = (await adminService.listUsers()).items.find(

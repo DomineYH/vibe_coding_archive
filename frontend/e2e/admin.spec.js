@@ -604,10 +604,11 @@ test("a delayed delete cannot apply after the admin permission changes", async (
   await login(page, "admin", "admin123");
   await page.goto("/admin");
   const { panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const pauseTime = await page.evaluate(() => Date.now() + 50);
+  await page.clock.pauseAt(pauseTime);
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
-  await expect(panel.getByRole("status")).toContainText(
-    "삭제 결과가 아직 확정되지 않았어요",
-  );
+  await expect(panel).toHaveAttribute("aria-busy", "true");
+  await expect(panel).not.toContainText("삭제 결과가 아직 확정되지 않았어요");
   await page.evaluate(async (memberId) => {
     const { setMockPrincipal } = await import("/src/services/mock/state.ts");
     setMockPrincipal(memberId);
