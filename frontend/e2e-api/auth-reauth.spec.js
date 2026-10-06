@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { spawnSync } from "node:child_process";
 import { blockExternalRequests, query } from "./helpers.js";
 import {
   admit as admitDirect,
@@ -7,7 +8,52 @@ import {
   state as directState,
 } from "./auth-race-helpers.js";
 const PASSWORD = "합성 로그인 비밀번호 1234";
+const TEMPORARY = "재인증 준비 임시 비밀번호 AbC 1234";
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
+
+async function prepareAdmin(browser) {
+  // Other prepared specs may leave this administrator in change-only state.
+  const script = `import json, os, sys
+from tests.admin_cli import run_admin_cli
+password = json.load(sys.stdin)
+answers = [('Login ID: ', 'admin-user'), ('Temporary password: ', password), ('Confirm temporary password: ', password), ('Type YES to confirm: ', 'YES')]
+status, output = run_admin_cli('recover-admin', os.environ['DATABASE_PATH'], os.environ['PASSWORD_BLOCKLIST_PATH'], answers)
+assert password not in output
+sys.exit(status)`;
+  const result = spawnSync("uv", ["run", "--frozen", "python", "-c", script], {
+    cwd: "../backend",
+    env: process.env,
+    input: JSON.stringify(TEMPORARY),
+    encoding: "utf8",
+  });
+  expect(result.status, "real administrator CLI completed").toBe(0);
+  // Use a separate device so each test still exercises an ordinary full login.
+  const context = await browser.newContext();
+  try {
+    await blockExternalRequests(context);
+    const page = await context.newPage();
+    await page.goto("/auth?mode=login&return_to=%2Fadmin");
+    await page.getByLabel("로그인 아이디", { exact: true }).fill("admin-user");
+    await page.getByLabel("비밀번호", { exact: true }).fill(TEMPORARY);
+    await page
+      .locator("form")
+      .getByRole("button", { name: "로그인", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
+    ).toBeVisible();
+    await page.getByLabel("새 비밀번호 (필수)", { exact: true }).fill(PASSWORD);
+    await page
+      .getByLabel("새 비밀번호 확인 (필수)", { exact: true })
+      .fill(PASSWORD);
+    await page
+      .getByRole("button", { name: "비밀번호 변경", exact: true })
+      .click();
+    await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
+  } finally {
+    await context.close();
+  }
+}
 
 async function login(page) {
   await page.goto("/auth?mode=login&return_to=%2Fadmin");
@@ -51,9 +97,10 @@ test("admin reauth follows the prepared capability boundary", async ({
 
 test.describe("existing administrator card over real cookies", () => {
   test.skip(!prepared, "requires isolated prepared authentication");
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, browser }) => {
     test.setTimeout(60000);
     await blockExternalRequests(page);
+    await prepareAdmin(browser);
   });
   test("login grants recent auth; card rotates only this device and returns without a sensitive write", async ({
     page,
@@ -166,10 +213,12 @@ test.describe("existing administrator card over real cookies", () => {
 test("late real reauth success cannot replace a different member or navigate its screen", async ({
   page,
   context,
+  browser,
 }) => {
   test.skip(!prepared, "requires prepared authentication");
   test.setTimeout(90000);
   await blockExternalRequests(context);
+  await prepareAdmin(browser);
   await login(page);
   await page.goto("/auth?mode=reauth&return_to=%2Fadmin");
   let release;
