@@ -4,10 +4,9 @@ import os
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
-
 from app.main import create_app
 from app.settings import Settings
+from fastapi import FastAPI
 
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -53,7 +52,11 @@ def normalize_schema():
 @pytest.fixture
 def make_test_app(migrate_test_database, request):
     def make(
-        database_path: Path, *, auth_testing=False, password_reset_hmac_path=None
+        database_path: Path,
+        *,
+        auth_testing=False,
+        health_testing=False,
+        password_reset_hmac_path=None,
     ) -> FastAPI:
         migrate_test_database(database_path)
         env = {
@@ -70,6 +73,8 @@ def make_test_app(migrate_test_database, request):
         if password_reset_hmac_path is not None:
             env["PASSWORD_RESET_HMAC_PATH"] = str(password_reset_hmac_path)
         settings = Settings.from_environment(env, repo_root=ROOT)
-        return create_app(settings, auth_testing=auth_testing)
+        return create_app(
+            settings, auth_testing=auth_testing, health_testing=health_testing
+        )
 
     return make

@@ -9,6 +9,7 @@ from fastapi import APIRouter, Body, Depends, Query, Request
 from pydantic import BeforeValidator, Field
 from sqlalchemy import text
 
+from app import health_store
 from app.app_input import AppInput, AppPatch
 from app.auth import Db, StrictModel, Unlocked, open_session
 from app.auth_boundary import (
@@ -525,8 +526,7 @@ def list_users(
                 "total_apps": total_apps,
                 "healthy_apps": healthy,
                 "next_health_expiry_at": expiry,
-                "active_health_batch_id": None,
-                "latest_health_batch_id": None,
+                **health_store.batch_ids(db, now()),
             },
             "server_time": now(),
         },

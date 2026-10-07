@@ -3,6 +3,7 @@
 import hashlib
 import ipaddress
 import json
+import math
 import re
 import secrets
 from datetime import UTC, datetime, timedelta
@@ -166,13 +167,14 @@ class AuthError(Exception):
 
 
 def error_response(error):
+    timestamp = now()
     return JSONResponse(
         {
             "error": {
                 "code": error.code,
                 "message": error.message
                 or {
-                    "FEATURE_UNAVAILABLE": "인증 기능을 아직 사용할 수 없어요.",
+                    "FEATURE_UNAVAILABLE": "이 기능을 현재 사용할 수 없어요.",
                     "AUTH_REQUIRED": "인증 흐름의 유효한 증명이 필요해요.",
                     "RECOVERY_REQUIRED": "인증 흐름의 복구 증명이 필요해요.",
                     "BAD_REQUEST": "요청 본문 형식을 확인해 주세요.",
@@ -196,6 +198,7 @@ def error_response(error):
                     "SESSION_KIND_NOT_ALLOWED": "현재 세션으로는 이 작업을 수행할 수 없어요.",
                     "ADMIN_ACCOUNT_PROTECTED": "관리자 계정에는 이 작업을 수행할 수 없어요.",
                     "USER_NOT_FOUND": "회원을 찾을 수 없어요.",
+                    "NOT_FOUND": "요청한 자료를 찾을 수 없습니다.",
                     "APP_COUNT_CONFLICT": "소유 앱 수가 바뀌었어요. 현재 회원 정보를 다시 확인해 주세요.",
                     "USER_STATE_CONFLICT": "회원 상태가 바뀌었어요. 현재 상태를 다시 확인해 주세요.",
                     "LOGIN_ID_TAKEN": "이미 사용 중인 로그인 아이디예요.",
@@ -210,7 +213,12 @@ def error_response(error):
                 "request_id": str(uuid4()),
                 **({"fields": error.fields} if error.fields else {}),
                 **(
-                    {"retry_at": error.retry_at, "server_time": now()}
+                    {"reasons": error.reasons}
+                    if getattr(error, "reasons", None)
+                    else {}
+                ),
+                **(
+                    {"retry_at": error.retry_at, "server_time": timestamp}
                     if error.retry_at is not None
                     else {}
                 ),
@@ -220,6 +228,23 @@ def error_response(error):
         headers={
             "Cache-Control": "no-store",
             **({"Retry-After": "1"} if error.code in ("AUTH_BUSY", "DB_BUSY") else {}),
+            **(
+                {
+                    "Retry-After": str(
+                        max(
+                            0,
+                            math.ceil(
+                                (
+                                    datetime.fromisoformat(error.retry_at)
+                                    - datetime.fromisoformat(timestamp)
+                                ).total_seconds()
+                            ),
+                        )
+                    )
+                }
+                if error.status == 429 and error.retry_at is not None
+                else {}
+            ),
         },
     )
 
@@ -650,6 +675,8 @@ class AuthBodyLimit:
             or scope["method"] not in ("POST", "PATCH", "DELETE")
             or not (
                 app_write
+                or re.fullmatch(r"/api/v1/apps/[^/]+/health-checks", scope["path"])
+                or scope["path"] == "/api/v1/admin/health-check-batches"
                 or scope["path"].startswith(
                     (
                         "/api/v1/auth/",
