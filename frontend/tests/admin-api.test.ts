@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { adminService } from "../src/services/api/admin";
+import { authService } from "../src/services/api/auth";
+import { captureAuthObservation } from "../src/services/auth-state";
 
 vi.mock("../src/services/api/auth", () => ({
   authService: {
@@ -178,6 +180,238 @@ describe("admin API service", () => {
     expect(new Headers(init?.headers).get("X-EduVibe-Session-Generation")).toBe(
       "2",
     );
+  });
+
+  describe("captured administrator app reads", () => {
+    const flow = {
+      flowId: "00000000-0000-4000-8000-000000000300",
+      revision: "9",
+      sessionGeneration: "5",
+    };
+    const echoed = {
+      "X-EduVibe-Flow-Id": flow.flowId,
+      "X-EduVibe-Auth-Revision": "9",
+      "X-EduVibe-Session-Generation": "5",
+      "Cache-Control": "private, no-store",
+    };
+    const state = (overrides = {}) =>
+      ({
+        status: "ready",
+        user: {
+          id: "00000000-0000-4000-8000-000000000100",
+          role: "admin",
+          approved: true,
+          sessionKind: "full",
+          mustChangePassword: false,
+        },
+        flow,
+        ...overrides,
+      }) as never;
+    const body = JSON.stringify({
+      items: [monitorApp],
+      pagination: { limit: 24, offset: 0, total: 1, has_more: false },
+      server_time: "2026-09-22T00:12:00.000Z",
+    });
+    const page = (init: ResponseInit = { status: 200 }) =>
+      new Response(body, {
+        ...init,
+        headers: { ...echoed, ...init.headers },
+      });
+
+    it("uses only the captured context, no-store and no CSRF material", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(page()));
+      const context = captureAuthObservation(state(), () => true);
+      const result = await adminService.listApps(
+        { limit: 24 },
+        { readContext: context },
+      );
+      expect(result.items).toHaveLength(1);
+      expect(authService.getCurrentAuthState).not.toHaveBeenCalled();
+      expect(authService.getCsrf).not.toHaveBeenCalled();
+      const [url, init] = vi.mocked(fetch).mock.calls[0];
+      expect(url).toBe("/api/v1/admin/apps?limit=24&offset=0");
+      expect(init?.cache).toBe("no-store");
+      expect(init?.method ?? "GET").toBe("GET");
+      const headers = new Headers(init?.headers);
+      expect(headers.get("X-EduVibe-Flow-Id")).toBe(flow.flowId);
+      expect(headers.get("X-EduVibe-Auth-Revision")).toBe("9");
+      expect(headers.get("X-EduVibe-Session-Generation")).toBe("5");
+      expect(headers.has("X-CSRF-Token")).toBe(false);
+      expect(headers.has("Idempotency-Key")).toBe(false);
+    });
+
+    it("never sends a retired observation", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(page()));
+      const context = captureAuthObservation(state(), () => false);
+      await expect(
+        adminService.listApps({}, { readContext: context }),
+      ).rejects.toMatchObject({ name: "AbortError" });
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ["anonymous", { user: null }],
+      [
+        "ordinary member",
+        {
+          user: {
+            id: "00000000-0000-4000-8000-000000000100",
+            role: "user",
+            approved: true,
+            sessionKind: "full",
+            mustChangePassword: false,
+          },
+        },
+      ],
+      [
+        "must change password",
+        {
+          user: {
+            id: "00000000-0000-4000-8000-000000000100",
+            role: "admin",
+            approved: true,
+            sessionKind: "full",
+            mustChangePassword: true,
+          },
+        },
+      ],
+      [
+        "change only",
+        {
+          user: {
+            id: "00000000-0000-4000-8000-000000000100",
+            role: "admin",
+            approved: true,
+            sessionKind: "change_only",
+            mustChangePassword: false,
+          },
+        },
+      ],
+      ["no session generation", { flow: { ...flow, sessionGeneration: null } }],
+    ])("refuses a captured %s without a request", async (_name, overrides) => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(page()));
+      const context = captureAuthObservation(state(overrides), () => true);
+      await expect(
+        adminService.listApps({}, { readContext: context }),
+      ).rejects.toMatchObject({ httpStatus: expect.any(Number) });
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("drops a valid page when the observation retires during body parsing", async () => {
+      let current = true;
+      let release: (value: unknown) => void = () => undefined;
+      const response = page();
+      vi.spyOn(response, "json").mockImplementation(
+        () => new Promise((resolve) => (release = resolve)),
+      );
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+      const context = captureAuthObservation(state(), () => current);
+      const pending = adminService.listApps({}, { readContext: context });
+      const settled = expect(pending).rejects.toMatchObject({
+        name: "AbortError",
+      });
+      await Promise.resolve();
+      current = false;
+      release(JSON.parse(body));
+      await settled;
+    });
+
+    it("drops a late error from a retired observation instead of reporting it", async () => {
+      let current = true;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockImplementation(async () => {
+          current = false;
+          return new Response(
+            JSON.stringify({
+              error: {
+                code: "FORBIDDEN",
+                message: "권한 없음",
+                request_id: null,
+              },
+            }),
+            { status: 403 },
+          );
+        }),
+      );
+      const context = captureAuthObservation(state(), () => current);
+      await expect(
+        adminService.listApps({}, { readContext: context }),
+      ).rejects.toMatchObject({ name: "AbortError" });
+    });
+
+    it("honors an aborted signal even when fetch ignores it", async () => {
+      const controller = new AbortController();
+      vi.stubGlobal(
+        "fetch",
+        vi.fn().mockImplementation(async () => {
+          controller.abort();
+          return page();
+        }),
+      );
+      const context = captureAuthObservation(state(), () => true);
+      await expect(
+        adminService.listApps(
+          {},
+          { readContext: context, signal: controller.signal },
+        ),
+      ).rejects.toMatchObject({ name: "AbortError" });
+    });
+
+    it("treats an echoed context from another observation as stale", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(
+            page({ status: 200, headers: { "X-EduVibe-Auth-Revision": "10" } }),
+          ),
+      );
+      const context = captureAuthObservation(state(), () => true);
+      await expect(
+        adminService.listApps({}, { readContext: context }),
+      ).rejects.toMatchObject({ name: "AbortError" });
+    });
+
+    it("requires the protected private no-store cache header", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(
+            page({ status: 200, headers: { "Cache-Control": "no-store" } }),
+          ),
+      );
+      const context = captureAuthObservation(state(), () => true);
+      await expect(
+        adminService.listApps({}, { readContext: context }),
+      ).rejects.toMatchObject({ code: "CONTRACT_ERROR" });
+    });
+  });
+
+  it("maps the safe 422 paging error for the list read only", async () => {
+    const error = {
+      error: {
+        code: "VALIDATION_ERROR",
+        message: "요청 형식을 확인해 주세요.",
+        request_id: "r",
+      },
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          adminResponse(JSON.stringify(error), { status: 422 }),
+        ),
+    );
+    await expect(adminService.listApps()).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 422,
+    });
+    await expect(adminService.listUsers()).rejects.toMatchObject({
+      code: "CONTRACT_ERROR",
+    });
   });
 
   it("issues a CSRF-bound explicit approval request with its idempotency key", async () => {

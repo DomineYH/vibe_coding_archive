@@ -13,6 +13,14 @@ import { healthService } from "@services/health";
 import { ServiceError } from "../../services/service-error";
 
 const PAGE_SIZE = 24;
+const APPS_DENIED_CODES = new Set([
+  "AUTH_REQUIRED",
+  "FORBIDDEN",
+  "PASSWORD_CHANGE_REQUIRED",
+  "SESSION_KIND_NOT_ALLOWED",
+  "AUTH_STATE_CHANGED",
+  "AUTH_TRANSITION_PENDING",
+]);
 
 function readAdminTab(search) {
   if (!search || search === "?") return { tab: "users", invalid: false };
@@ -993,6 +1001,8 @@ export function AdminView({
   onConsumeResume,
   onSaveResume,
   onRememberDelete,
+  readContext,
+  onAuthRecheck,
 }) {
   const canReset =
     __DATA_MODE__ === "mock" ||
@@ -1135,20 +1145,69 @@ export function AdminView({
         : undefined,
   });
   const appsKey = [__DATA_MODE__, "admin", "apps", scopeKey];
+  const [deniedScope, setDeniedScope] = useState(null);
+  const appsOwner = useRef(null);
+  appsOwner.current = { active: active && canReadApps, scopeKey };
+  const authRecheck = useRef(onAuthRecheck);
+  authRecheck.current = onAuthRecheck;
+  const retireApps = useCallback(
+    (scope) => {
+      const key = [__DATA_MODE__, "admin", "apps", scope];
+      void queryClient
+        .cancelQueries({ queryKey: key, exact: true })
+        .then(() => queryClient.removeQueries({ queryKey: key, exact: true }));
+    },
+    [queryClient],
+  );
   const appsQuery = useInfiniteQuery({
     queryKey: appsKey,
-    enabled: active && !route.invalid && tab === "health" && canReadApps,
-    queryFn: ({ pageParam, signal }) =>
-      adminService.listApps(
-        { limit: PAGE_SIZE, offset: pageParam },
-        { signal },
-      ),
+    enabled:
+      active &&
+      !route.invalid &&
+      tab === "health" &&
+      canReadApps &&
+      deniedScope !== scopeKey,
+    queryFn: async ({ pageParam, signal }) => {
+      const owns = () =>
+        alive.current &&
+        appsOwner.current.active &&
+        appsOwner.current.scopeKey === scopeKey;
+      const stale = () =>
+        new DOMException("Admin app read ownership changed", "AbortError");
+      try {
+        const result = await adminService.listApps(
+          { limit: PAGE_SIZE, offset: pageParam },
+          { signal, readContext },
+        );
+        if (!owns()) throw stale();
+        return result;
+      } catch (error) {
+        if (!owns()) throw stale();
+        throw error;
+      }
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore
         ? lastPage.pagination.offset + lastPage.pagination.limit
         : undefined,
   });
+  const appsAuthDenied =
+    appsQuery.isError && APPS_DENIED_CODES.has(appsQuery.error?.code);
+  const appsDenied = deniedScope === scopeKey || appsAuthDenied;
+  const appsScope = useRef(null);
+  useEffect(() => {
+    const next = active && canReadApps ? scopeKey : null;
+    const previous = appsScope.current;
+    appsScope.current = next;
+    if (previous !== null && previous !== next) retireApps(previous);
+  }, [active, canReadApps, retireApps, scopeKey]);
+  useEffect(() => {
+    if (!appsAuthDenied) return;
+    setDeniedScope(scopeKey);
+    retireApps(scopeKey);
+    authRecheck.current?.();
+  }, [appsAuthDenied, retireApps, scopeKey]);
   const refetchResetList = query.refetch;
   const pages = query.data?.pages ?? [];
   const users = pages
@@ -1158,7 +1217,7 @@ export function AdminView({
   const statsServerTime = pages[0]?.serverTime;
   const total = pages[0]?.pagination.total ?? 0;
   const pending = stats?.pendingUsers ?? 0;
-  const appPages = appsQuery.data?.pages ?? [];
+  const appPages = appsDenied ? [] : (appsQuery.data?.pages ?? []);
   const appTotal = appPages[0]?.pagination.total ?? 0;
   const seenAppIds = new Set();
   const apps = [];
@@ -2619,7 +2678,12 @@ export function AdminView({
 
           {!canReadApps ? (
             <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
-              아카이브 앱 관리 기능은 아직 준비 중이에요.
+              앱 목록을 지금은 불러올 수 없어요.
+            </p>
+          ) : appsDenied ? (
+            <p role="alert" className="px-6 py-8 text-[13px] text-rose-700">
+              권한을 다시 확인하고 있어요. 확인이 끝나면 앱 목록을 다시 불러와
+              주세요.
             </p>
           ) : appsQuery.isPending ? (
             <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
@@ -2635,6 +2699,7 @@ export function AdminView({
                 size="sm"
                 variant="line"
                 onClick={() => void appsQuery.refetch()}
+                disabled={appsQuery.isFetching}
               >
                 다시 시도
               </Btn>
@@ -2645,6 +2710,23 @@ export function AdminView({
             </p>
           ) : (
             <>
+              {appsQuery.isRefetchError ? (
+                <div className="px-6 py-4" role="alert">
+                  <p className="text-[13px] text-rose-700">
+                    목록을 새로 고치지 못했어요. 이전에 불러온 목록을 보여 주고
+                    있어요.
+                  </p>
+                  <Btn
+                    className="mt-2"
+                    size="sm"
+                    variant="line"
+                    onClick={() => void appsQuery.refetch()}
+                    disabled={appsQuery.isFetching}
+                  >
+                    다시 시도
+                  </Btn>
+                </div>
+              ) : null}
               <div role="list" aria-label="전체 앱 목록">
                 {apps.map((app) => {
                   const theme = catalog.themes.find(
@@ -2751,6 +2833,7 @@ export function AdminView({
                     size="sm"
                     variant="line"
                     onClick={() => void appsQuery.fetchNextPage()}
+                    disabled={appsQuery.isFetchingNextPage}
                   >
                     추가 앱 다시 불러오기
                   </Btn>

@@ -1635,6 +1635,7 @@ function AuthRoute({
 function AdminRoute({
   auth,
   onRetry,
+  isCurrentObservation,
   meta,
   resumeState,
   onConsumeResume,
@@ -1649,6 +1650,18 @@ function AdminRoute({
     auth.user?.role === "admin" &&
     Boolean(continuity) &&
     meta?.capabilities.admin_users_read.enabled === true;
+  const observationId = auth.observationId;
+  // Bound to this scope's observation: any later auth observation retires it.
+  const readContext = useMemo(
+    () =>
+      active
+        ? captureAuthObservation(auth, () =>
+            isCurrentObservation(observationId),
+          )
+        : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [active, scopeKey],
+  );
   const owner = useRef(null);
   if (active) owner.current = continuity;
   const keepMounted =
@@ -1672,6 +1685,8 @@ function AdminRoute({
             onConsumeResume={onConsumeResume}
             onSaveResume={onSaveResume}
             onRememberDelete={onRememberDelete}
+            readContext={readContext}
+            onAuthRecheck={onRetry}
           />
         </div>
       ) : null}
@@ -2880,6 +2895,7 @@ export default function App() {
             <AdminRoute
               auth={auth}
               onRetry={recheckAuth}
+              isCurrentObservation={isCurrentObservation}
               meta={authMetadata.meta}
               resumeState={ownedAdminResume}
               onConsumeResume={consumeAdminResume}

@@ -23,6 +23,7 @@ AUTH_BUNDLE = {
     "auth_register",
     "admin_users_read",
     "admin_approval",
+    "admin_apps_read",
     "admin_user_delete",
     "admin_summary",
     "apps_create",

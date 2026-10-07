@@ -1240,10 +1240,16 @@ paths:
       operationId: listAdminApps
       summary: List all public and private apps for the administrator monitor
       description: >-
-        Returns only the app name, URL, visibility, theme, versions, creation
-        time, author nickname, and connection result summary. Prompts,
-        descriptions, and member contact fields are never included. Items sort
-        by creation time descending and app ID descending.
+        Read-only list for the current approved full administrator. Recent
+        authentication, Origin/CSRF and write-operation keys are not required;
+        the supplied flow, revision and session-generation context must be
+        complete when present. Returns only the app name, URL, visibility,
+        theme, versions, creation time, author nickname and internal ID, and
+        connection result summary. Prompts, descriptions, and member contact
+        fields are never included. Items sort by creation time descending and
+        app ID descending. pagination.total counts every authorized app, an
+        offset past the end returns an empty page with HTTP 200, and invalid or
+        repeated limit/offset or unknown query keys return 422.
       security:
         - SessionCookie: []
       parameters:
@@ -1255,7 +1261,7 @@ paths:
         - {
             name: offset,
             in: query,
-            schema: { type: integer, minimum: 0, default: 0 },
+            schema: { type: integer, minimum: 0, maximum: 9007199254740991, default: 0 },
           }
         - $ref: "#/components/parameters/AuthFlowId"
         - $ref: "#/components/parameters/AuthRevision"
@@ -1264,13 +1270,17 @@ paths:
         "200":
           description: A page of all authorized apps with only monitor fields.
           headers:
-            Cache-Control: { schema: { type: string, const: no-store } }
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+            X-EduVibe-Flow-Id: { schema: { type: string, format: uuid } }
+            X-EduVibe-Auth-Revision: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
+            X-EduVibe-Session-Generation: { schema: { type: string, pattern: "^(0|[1-9][0-9]*)$" } }
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AdminAppPage" }
         "401": { $ref: "#/components/responses/ServiceError" }
         "403": { $ref: "#/components/responses/ServiceError" }
         "409": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users/{id}:
     get:

@@ -6,11 +6,15 @@ import type {
   PasswordResetOperation,
   UserDeleteOperation,
 } from "../contracts/mappers";
+import type { ProtectedReadContext } from "./auth-state";
 import { ServiceError } from "./service-error";
 
 export type ListAdminUsersQuery = { limit?: number; offset?: number };
 export type ListAdminAppsQuery = ListAdminUsersQuery;
 export type AdminRequestOptions = { signal?: AbortSignal };
+export type AdminAppsRequestOptions = AdminRequestOptions & {
+  readContext?: ProtectedReadContext;
+};
 export type CreateApprovalOperationInput = {
   targetId: string;
   expectedAccountVersion: number;
@@ -33,7 +37,7 @@ export type AdminService = {
   ): Promise<AdminUserPage>;
   listApps(
     query?: ListAdminAppsQuery,
-    options?: AdminRequestOptions,
+    options?: AdminAppsRequestOptions,
   ): Promise<AdminAppPage>;
   getUser(id: string, options?: AdminRequestOptions): Promise<AdminUser>;
   createApprovalOperation(
