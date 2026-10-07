@@ -12,6 +12,9 @@ from app.auth_login import HASHER
 from app.catalog import CATALOG
 
 KINDS = ("admin", "admin2", "member", "member2")
+# Direct peers a browser run reaches the API from; per-client rows of these peers
+# created after setup belong to the fixture's own sign-ins.
+PEERS = ("127.0.0.1", "::1", "localhost", "testclient")
 SENTINEL = "e162-forbidden-sentinel"
 
 
@@ -55,6 +58,14 @@ def insert_app(db, id_, owner, name, public, created, health):
     )
 
 
+def owned_rate_subjects(members):
+    """Per-client subjects and the fixture logins' per-account subjects."""
+    peers = [digest(peer) for peer in PEERS]
+    return peers + [
+        digest(f"{member['login']}\n{peer}") for member in members for peer in peers
+    ]
+
+
 def create(value):
     password, prefix, count = value
     stamp = now()
@@ -62,7 +73,9 @@ def create(value):
     members, apps = {}, []
     with connect() as db:
         baseline = db.execute("SELECT count(*) FROM apps").fetchone()[0]
-        rates = db.execute("SELECT * FROM rate_limit_events").fetchall()
+        rate_floor = db.execute(
+            "SELECT coalesce(max(id),0) FROM rate_limit_events"
+        ).fetchone()[0]
         for kind in KINDS:
             id_ = str(uuid4())
             login = f"{prefix}-{kind}"
@@ -101,7 +114,12 @@ def create(value):
                 states[index % 3],
             )
             apps.append({"id": id_, "name": name, "public": index % 2 == 0})
-    return {"members": members, "apps": apps, "rates": rates, "baseline": baseline}
+    return {
+        "members": members,
+        "apps": apps,
+        "rate_floor": rate_floor,
+        "baseline": baseline,
+    }
 
 
 def add_app(value):
@@ -171,10 +189,12 @@ def cleanup(value):
         for id_ in apps:
             db.execute("DELETE FROM apps WHERE id=?", (id_,))
         db.execute(f"DELETE FROM members WHERE id IN ({marks})", ids)
-        old = {tuple(row) for row in value["rates"]}
-        for row in db.execute("SELECT * FROM rate_limit_events").fetchall():
-            if tuple(row) not in old:
-                db.execute("DELETE FROM rate_limit_events WHERE id=?", (row[0],))
+        subjects = owned_rate_subjects(value["members"].values())
+        marks_rate = ",".join("?" for _ in subjects)
+        db.execute(
+            f"DELETE FROM rate_limit_events WHERE id>? AND subject_hash IN ({marks_rate})",
+            [value["rate_floor"], *subjects],
+        )
         violations = db.execute("PRAGMA foreign_key_check").fetchall()
         assert not violations, violations
         db.commit()
@@ -205,6 +225,10 @@ def cleanup(value):
                     ("auth_retired_credentials", "flow_id"),
                 )
             ),
+            "rates": db.execute(
+                f"SELECT count(*) FROM rate_limit_events WHERE id>? AND subject_hash IN ({marks_rate})",
+                [value["rate_floor"], *subjects],
+            ).fetchone()[0],
             "grades_health": db.execute(
                 "SELECT (SELECT count(*) FROM app_grades WHERE app_id NOT IN (SELECT id FROM apps))"
                 "+(SELECT count(*) FROM health_results WHERE app_id NOT IN (SELECT id FROM apps))"

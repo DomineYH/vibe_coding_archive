@@ -229,4 +229,37 @@ test.describe("administrator app list over real HTTP", () => {
     expect(revoked.status()).toBe(403);
     expect(await revoked.text()).not.toContain('"items"');
   });
+
+  test("recorded health results with other freshness windows are listed, not rejected", async ({
+    page,
+    owned,
+  }) => {
+    // Fixture apps 21 (healthy) and 23 (http_error) sit on the first page.
+    const recorded = [owned.apps[21], owned.apps[23]];
+    for (const app of recorded)
+      fixture("mutate", [
+        "UPDATE health_results SET fresh_until=strftime('%Y-%m-%dT%H:%M:%S', checked_at, '+3600 seconds') || substr(checked_at, 20) WHERE app_id=?",
+        [app.id],
+      ]);
+    const lists = collectLists(page);
+    await openMonitor(page, owned.admin);
+    await expect.poll(() => lists.length).toBe(1);
+    expect(lists[0].status).toBe(200);
+    const items = JSON.parse(await lists[0].body).items;
+    const states = [];
+    for (const app of recorded) {
+      const { health } = items.find((item) => item.id === app.id);
+      expect(
+        Date.parse(health.fresh_until) - Date.parse(health.checked_at),
+      ).toBe(3600 * 1000);
+      states.push(health.state);
+    }
+    expect(states).toEqual(["healthy", "http_error"]);
+    expect(await appNames(page)).toHaveLength(24);
+    for (const app of recorded)
+      await expect(
+        page.getByRole("button", { name: `앱 관리: ${app.name}` }),
+      ).toBeVisible();
+    await expect(page.getByText("앱 목록을 불러오지 못했어요.")).toHaveCount(0);
+  });
 });

@@ -1086,7 +1086,7 @@ export function mapAdminApp(value: unknown): AdminApp {
     version: integer(item.version, 1),
     urlVersion: integer(item.url_version, 1),
     createdAt: dateTime(item.created_at),
-    health: mapHealthResult(item.health),
+    health: mapRecordedHealthResult(item.health),
   };
 }
 
@@ -1559,6 +1559,18 @@ function mapHealth(value: unknown): HealthView {
 }
 
 function mapHealthResult(value: unknown): HealthResult {
+  return mapHealthResultWindow(value, (window) => window === 15 * 60 * 1000);
+}
+
+// The admin app list keeps whatever freshness window the backend recorded.
+function mapRecordedHealthResult(value: unknown): HealthResult {
+  return mapHealthResultWindow(value, (window) => window > 0);
+}
+
+function mapHealthResultWindow(
+  value: unknown,
+  validWindow: (milliseconds: number) => boolean,
+): HealthResult {
   const result = record(value);
   if (
     !hasExactKeys(result, ["state", "checked_at", "fresh_until"]) ||
@@ -1571,7 +1583,7 @@ function mapHealthResult(value: unknown): HealthResult {
     (result.state === "unchecked") !== (checkedAt === null) ||
     (checkedAt === null) !== (freshUntil === null) ||
     (checkedAt !== null &&
-      Date.parse(freshUntil!) - Date.parse(checkedAt) !== 15 * 60 * 1000)
+      !validWindow(Date.parse(freshUntil!) - Date.parse(checkedAt)))
   )
     throw contractError();
   return {

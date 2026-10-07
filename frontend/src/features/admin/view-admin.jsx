@@ -1442,7 +1442,10 @@ export function AdminView({
           affected(query) &&
           (query.queryKey[1] === "health" ||
             query.queryKey[2] === "detail" ||
-            query.queryKey[2] === "edit"),
+            query.queryKey[2] === "edit" ||
+            // The monitor's pages may still list the deleted owner's apps;
+            // the invalidation below re-reads them from offset 0.
+            (query.queryKey[1] === "admin" && query.queryKey[2] === "apps")),
       });
       queryClient.setQueryData(
         [__DATA_MODE__, "admin", "users", scopeKey],
