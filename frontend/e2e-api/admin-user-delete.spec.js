@@ -68,6 +68,11 @@ test.describe("account deletion over real HTTP", () => {
         button.click();
       });
     await expect(panel).toContainText("삭제가 확정됐어요");
+    await expect(panel).toHaveAttribute("aria-busy", "false");
+    await expect(panel).not.toContainText("현재 대상을 불러오지 못했어요");
+    await expect(
+      panel.getByRole("button", { name: "닫기", exact: true }),
+    ).toBeEnabled();
     await expect(userRow(page, owned.member.login)).toHaveCount(0);
     expect(issues).toBe(1);
     expect(writes).toBe(1);
@@ -78,11 +83,25 @@ test.describe("account deletion over real HTTP", () => {
     expect(after.stats.total_users).toBe(before.stats.total_users - 1);
     expect(after.stats.total_apps).toBe(before.stats.total_apps - 2);
     expect(after.stats.healthy_apps).toBe(before.stats.healthy_apps - 2);
+    for (const [label, value] of [
+      ["전체 사용자", after.stats.total_users],
+      ["등록된 앱", after.stats.total_apps],
+    ])
+      await expect(
+        page.getByText(label, { exact: true }).locator("..").locator("dd"),
+      ).toHaveText(String(value));
     expect(
       (
         await targetPage.request.get("/api/v1/auth/me", { headers: oldHeaders })
       ).status(),
     ).toBe(401);
+    const reloginContext = await owned.newContext();
+    await blockExternalRequests(reloginContext);
+    const reloginPage = await reloginContext.newPage();
+    await login(reloginPage, owned.member.login, PASSWORD);
+    await expect(
+      reloginPage.getByText("로그인 아이디 또는 비밀번호를 확인해 주세요."),
+    ).toBeVisible();
     for (const id of owned.apps)
       expect(
         (
@@ -106,6 +125,8 @@ test.describe("account deletion over real HTTP", () => {
         `SELECT count(*) FROM apps WHERE owner_id='${owned.member.id}'`,
       )[0][0],
     ).toBe(0);
+    await panel.getByRole("button", { name: "닫기", exact: true }).click();
+    await expect(panel).toHaveCount(0);
     await page.reload();
     await expect(userRow(page, owned.member.login)).toHaveCount(0);
     for (const id of owned.apps) {
@@ -129,13 +150,39 @@ test.describe("account deletion over real HTTP", () => {
     const oldHeaders = await approvalHeaders(targetPage);
     await openAdmin(page, owned);
     for (const kind of ["zero", "temporary"]) {
+      const before = await (
+        await page.request.get("/api/v1/admin/users", {
+          headers: await approvalHeaders(page),
+        })
+      ).json();
       const panel = await openDelete(page, owned, kind);
       await expect(panel).toContainText("앱 0개도 함께 삭제");
       await panel
         .getByRole("button", { name: "삭제 확인", exact: true })
         .click();
-      await expect(panel).toContainText("삭제가 확정됐어요");
+      await expect(panel).toContainText("소유 앱 0개 삭제가 확정됐어요");
+      await expect(panel).toHaveAttribute("aria-busy", "false");
+      await expect(panel).not.toContainText("현재 대상을 불러오지 못했어요");
+      await expect(userRow(page, owned[kind].login)).toHaveCount(0);
+      const after = await (
+        await page.request.get("/api/v1/admin/users", {
+          headers: await approvalHeaders(page),
+        })
+      ).json();
+      expect(after.stats.total_users).toBe(before.stats.total_users - 1);
+      expect(after.stats.total_apps).toBe(before.stats.total_apps);
+      for (const [label, value] of [
+        ["전체 사용자", after.stats.total_users],
+        ["등록된 앱", after.stats.total_apps],
+      ])
+        await expect(
+          page.getByText(label, { exact: true }).locator("..").locator("dd"),
+        ).toHaveText(String(value));
+      await expect(
+        panel.getByRole("button", { name: "닫기", exact: true }),
+      ).toBeEnabled();
       await panel.getByRole("button", { name: "닫기", exact: true }).click();
+      await expect(panel).toHaveCount(0);
     }
     expect(
       (

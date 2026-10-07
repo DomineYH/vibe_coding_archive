@@ -744,8 +744,115 @@ it("keeps definitive deletion success visible after row removal without requirin
       screen.getByRole("region", { name: /계정.*삭제/ }),
     ).toHaveTextContent("삭제가 확정됐어요"),
   );
+  const panel = screen.getByRole("region", { name: /계정.*삭제/ });
+  await waitFor(() => expect(panel).toHaveAttribute("aria-busy", "false"));
+  expect(panel).not.toHaveTextContent("현재 대상을 불러오지 못했어요");
+  expect(screen.queryByText(target.nickname)).not.toBeInTheDocument();
   expect(read).not.toHaveBeenCalled();
+  const close = within(panel).getByRole("button", {
+    name: "닫기",
+    exact: true,
+  });
+  expect(close).toBeEnabled();
+  await userEvent.setup().click(close);
+  expect(panel).not.toBeInTheDocument();
 });
+
+it("shows operation-confirmed deletion success when the target is missing", async () => {
+  await authService.reauthenticate({ password: "admin123" });
+  const target = (await adminService.listUsers()).items.find(
+    (item) => item.role === "user" && item.nickname !== "비기너개발자",
+  );
+  const operation = await adminService.createUserDeleteOperation({
+    targetId: target.id,
+    expectedAppCount: target.appCount,
+  });
+  await adminService.deleteUser(target.id, target.appCount, operation.key);
+  const read = vi.spyOn(adminService, "getUserDeleteOperation");
+  await renderApiMembers(enabled, enabled, {
+    pathname: "/admin",
+    state: {
+      adminDelete: {
+        targetId: target.id,
+        operationKey: operation.key,
+        expectedAppCount: target.appCount,
+      },
+    },
+  });
+  const panel = await screen.findByRole("region", { name: /계정.*삭제/ });
+  await waitFor(() => expect(panel).toHaveAttribute("aria-busy", "false"));
+  expect(panel).toHaveTextContent(
+    `회원 계정과 소유 앱 ${target.appCount}개 삭제가 확정됐어요.`,
+  );
+  expect(panel).not.toHaveTextContent("현재 대상을 불러오지 못했어요");
+  expect(screen.queryByText(target.nickname)).not.toBeInTheDocument();
+  expect(read).toHaveBeenCalledWith(operation.key);
+  const close = within(panel).getByRole("button", {
+    name: "닫기",
+    exact: true,
+  });
+  expect(close).toBeEnabled();
+  await userEvent.setup().click(close);
+  expect(panel).not.toBeInTheDocument();
+});
+
+it.each([false, true])(
+  "keeps missing-target warnings without confirmed deletion (failed lookup: %s)",
+  async (failedLookup) => {
+    const { ServiceError } = await import("../src/services/service-error");
+    await authService.reauthenticate({ password: "admin123" });
+    const target = (await adminService.listUsers()).items.find(
+      (item) => item.nickname === "비기너개발자",
+    );
+    const operation = failedLookup
+      ? await adminService.createUserDeleteOperation({
+          targetId: target.id,
+          expectedAppCount: target.appCount,
+        })
+      : null;
+    vi.spyOn(adminService, "getUser").mockRejectedValue(
+      new ServiceError("USER_NOT_FOUND", "회원을 찾을 수 없어요."),
+    );
+    const read = vi
+      .spyOn(adminService, "getUserDeleteOperation")
+      .mockRejectedValue(new Error("lookup unavailable"));
+    await renderApiMembers(enabled, enabled, {
+      pathname: "/admin",
+      state: {
+        adminDelete: {
+          targetId: target.id,
+          operationKey: operation?.key,
+          expectedAppCount: target.appCount,
+        },
+      },
+    });
+    const panel = await screen.findByRole("region", { name: /계정.*삭제/ });
+    await waitFor(() => expect(panel).toHaveAttribute("aria-busy", "false"));
+    expect(panel).toHaveTextContent("현재 대상을 불러오지 못했어요");
+    expect(panel).not.toHaveTextContent("삭제가 확정됐어요");
+    if (failedLookup) {
+      expect(panel).toHaveTextContent("삭제 결과가 아직 확정되지 않았어요");
+      const result = within(panel).getByRole("button", {
+        name: "결과 확인",
+        exact: true,
+      });
+      expect(result).toBeEnabled();
+      await userEvent.setup().click(result);
+      expect(read).toHaveBeenCalledTimes(2);
+      expect(read).toHaveBeenLastCalledWith(operation.key);
+      expect(panel).toHaveTextContent("현재 대상을 불러오지 못했어요");
+      expect(panel).not.toHaveTextContent("삭제가 확정됐어요");
+    } else {
+      expect(read).not.toHaveBeenCalled();
+      expect(
+        within(panel).getByRole("button", {
+          name: "현재 회원 정보 다시 확인",
+          exact: true,
+        }),
+      ).toBeEnabled();
+    }
+  },
+);
 
 it("keeps an expired original deletion key when refreshing the target", async () => {
   const { ServiceError } = await import("../src/services/service-error");

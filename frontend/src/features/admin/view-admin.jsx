@@ -832,6 +832,7 @@ function UserDeletePanel({
   onRetryTarget,
   onClose,
 }) {
+  const succeeded = outcome === "succeeded" || operation?.state === "succeeded";
   const hasPendingKey = Boolean(operationKey && !operation);
   const unresolved = operation?.state === "unresolved";
   const confirming =
@@ -886,7 +887,7 @@ function UserDeletePanel({
             현재 회원 정보와 소유 앱 수를 다시 확인하고 있어요.
           </p>
         ) : null}
-        {outcome === "succeeded" || operation?.state === "succeeded" ? (
+        {succeeded ? (
           <p
             role="status"
             className="mt-2 text-[12px] font-semibold text-emerald-800"
@@ -935,7 +936,7 @@ function UserDeletePanel({
             이전 작업의 성공 여부를 증명하지 않습니다.
           </p>
         ) : null}
-        {!target && !loading && !operation ? (
+        {!target && !loading && !operation && !succeeded ? (
           <p role="alert" className="mt-1 text-[12px] text-red-700">
             현재 대상을 불러오지 못했어요. 대상이 없다는 이유만으로 삭제 성공을
             추정하지 않습니다.
