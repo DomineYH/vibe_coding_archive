@@ -462,9 +462,11 @@ function HealthBatchControls({ stats, scopeKey, readContext, canRequest }) {
       >
         {canRequest ? note : "현재 전체 연결 검사를 사용할 수 없어요."}
       </p>
-      <p className="border-b border-neutral-200/70 px-6 py-2 text-[11px] text-neutral-500">
-        개발용 합성 시연이며 외부 사이트에 요청을 보내지 않습니다.
-      </p>
+      {__DATA_MODE__ === "mock" ? (
+        <p className="border-b border-neutral-200/70 px-6 py-2 text-[11px] text-neutral-500">
+          개발용 합성 시연이며 외부 사이트에 요청을 보내지 않습니다.
+        </p>
+      ) : null}
       {requestError ? (
         <p
           role="alert"

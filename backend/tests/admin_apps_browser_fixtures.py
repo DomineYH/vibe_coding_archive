@@ -54,7 +54,8 @@ def insert_app(db, id_, owner, name, public, created, health):
     checked = None if state == "unchecked" else created
     fresh = None if checked is None else stamp_after(checked, 900)
     db.execute(
-        "INSERT INTO health_results VALUES (?,?,?,?)", (id_, state, checked, fresh)
+        "INSERT INTO health_results(app_id,state,checked_at,fresh_until) VALUES (?,?,?,?)",
+        (id_, state, checked, fresh),
     )
 
 

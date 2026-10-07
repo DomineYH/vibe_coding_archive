@@ -211,7 +211,16 @@ test("reads the real long detail, rejects query input, and reloads without priva
     false,
   );
   expect(apiRequests.some((route) => route.includes("csrf"))).toBe(false);
-  expect(apiRequests.some((route) => route.includes("health"))).toBe(false);
+  await expect
+    .poll(() => requests.includes(`/api/v1/apps/${detailId}/health`))
+    .toBe(true);
+  expect([
+    ...new Set(
+      requests.filter(
+        (route) => route.startsWith("/api/v1/") && route.includes("health"),
+      ),
+    ),
+  ]).toEqual([`/api/v1/apps/${detailId}/health`]);
   expect(apiRequests.some((route) => route.includes("admin"))).toBe(false);
   expect(apiRequests).not.toContain("/api/v1/apps");
   expect(writeRequests).toEqual([]);
@@ -312,10 +321,14 @@ test("keeps malformed detail responses as an explicit error until a real retry s
 }) => {
   let detailCalls = 0;
   const requests = [];
+  const writeRequests = [];
   await blockExternalRequests(context);
-  page.on("request", (request) =>
-    requests.push(new URL(request.url()).pathname),
-  );
+  page.on("request", (request) => {
+    const pathname = new URL(request.url()).pathname;
+    requests.push(pathname);
+    if (pathname.startsWith("/api/v1/") && request.method() !== "GET")
+      writeRequests.push(`${request.method()} ${pathname}`);
+  });
   await page.route(`**/api/v1/apps/${detailId}`, async (route) => {
     detailCalls += 1;
     if (detailCalls === 1) {
@@ -355,11 +368,15 @@ test("keeps malformed detail responses as an explicit error until a real retry s
     false,
   );
   expect(requests.some((route) => route.includes("csrf"))).toBe(false);
+  await expect
+    .poll(() => requests.includes(`/api/v1/apps/${detailId}/health`))
+    .toBe(true);
   expect(
-    requests.some(
+    requests.filter(
       (route) => route.startsWith("/api/v1/") && route.includes("health"),
     ),
-  ).toBe(false);
+  ).toEqual([`/api/v1/apps/${detailId}/health`]);
+  expect(writeRequests).toEqual([]);
 });
 
 test("copies a real detail prompt through the fallback and restores selection and focus", async ({
