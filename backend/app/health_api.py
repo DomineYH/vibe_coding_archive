@@ -14,7 +14,7 @@ from app.auth_boundary import (
     response,
     screen_read_context,
 )
-from app.health_runtime import boot_clock, runtime_enabled
+from app.health_runtime import checks_available
 from app.public_apps import UUID_PATTERN
 
 router = APIRouter()
@@ -69,16 +69,6 @@ def read_actor(db, request):
     db.execute(text("BEGIN"))
     item, _, member = screen_read_context(db, request, context)
     return item, member
-
-
-def checks_available(db, request):
-    state = request.app.state
-    if not state.auth_enabled or not state.auth_ready:
-        return False
-    if not state.health_testing and not runtime_enabled(state.settings):
-        return False
-    boot_id, mono = boot_clock()
-    return health_store.availability(db, boot_id=boot_id, mono=mono)
 
 
 @router.get("/apps/{id}/health", operation_id="getAppHealth")

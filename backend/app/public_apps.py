@@ -34,6 +34,7 @@ from app.auth_boundary import (
 )
 from app.catalog import CATALOG
 from app.database import get_session
+from app.health_runtime import checks_available
 from app.models import App, AppGrade, Member
 from app.models import HealthResult as HealthResultRow
 
@@ -436,8 +437,6 @@ def list_public_apps(
         subjects = session.scalars(
             select(App.subject).where(App.is_public.is_(True)).distinct()
         ).all()
-        from app.health_api import checks_available
-
         health_available = checks_available(session, request)
         page = AppPage.model_validate(
             {
@@ -537,8 +536,6 @@ def get_public_app(
         )
         if app is None:
             return _not_found()
-        from app.health_api import checks_available
-
         body = AppDetailResponse.model_validate(
             {
                 "item": _app_detail(

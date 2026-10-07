@@ -13,6 +13,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 
+from app import health_store
 from app.settings import Settings
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -31,6 +32,16 @@ VERIFICATION_GROUPS = (
 def boot_clock() -> tuple[str, float]:
     """Same-host boot identity and monotonic time; UTC never controls a lease."""
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip(), time.monotonic()
+
+
+def checks_available(db, request) -> bool:
+    state = request.app.state
+    if not state.auth_enabled or not state.auth_ready:
+        return False
+    if not state.health_testing and not runtime_enabled(state.settings):
+        return False
+    boot_id, mono = boot_clock()
+    return health_store.availability(db, boot_id=boot_id, mono=mono)
 
 
 def build_digest() -> str:

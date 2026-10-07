@@ -286,20 +286,18 @@ it("binds health polling to the captured member observation and drops a retired 
 it("preserves stale authentication errors from private health polling", async () => {
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse(
-          {
-            error: {
-              code: "AUTH_STATE_CHANGED",
-              message: "인증 상태가 바뀌었어요.",
-              request_id: "health-read",
-            },
+    vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          error: {
+            code: "AUTH_STATE_CHANGED",
+            message: "인증 상태가 바뀌었어요.",
+            request_id: "health-read",
           },
-          409,
-        ),
+        },
+        409,
       ),
+    ),
   );
   await expect(healthService.getAppHealth(appId)).rejects.toMatchObject({
     code: "AUTH_STATE_CHANGED",

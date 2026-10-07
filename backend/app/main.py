@@ -49,9 +49,8 @@ from app.database import (
     make_engine,
     make_session_factory,
 )
-from app.health_api import checks_available
 from app.health_api import router as health_router
-from app.health_runtime import boot_clock, runtime_enabled
+from app.health_runtime import boot_clock, checks_available, runtime_enabled
 from app.password_policy import load_blocklist
 from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
