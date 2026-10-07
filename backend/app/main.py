@@ -17,6 +17,7 @@ from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
 from app.admin_approval import router as admin_approval_router
+from app.admin_apps import router as admin_apps_router
 from app.admin_password_reset import router as password_reset_router
 from app.admin_user_delete import router as user_delete_router
 from app.app_create import router as app_create_router
@@ -384,6 +385,10 @@ def create_app(
             "enabled": delete_enabled,
             "reasons": [] if delete_enabled else ["operational_restriction"],
         }
+        capabilities["admin_apps_read"] = {
+            "enabled": False,
+            "reasons": ["operational_restriction"],
+        }
         if request.app.state.auth_enabled and request.app.state.auth_ready:
             # #113: the T01–T05 bundle; operating release remains behind T07.
             for key in (
@@ -394,6 +399,7 @@ def create_app(
                 "admin_reauth",
                 "admin_users_read",
                 "admin_approval",
+                "admin_apps_read",
                 "admin_summary",
                 "apps_create",
                 "apps_update_own",
@@ -420,6 +426,7 @@ def create_app(
     api.include_router(reauth_router)
     api.include_router(register_router)
     api.include_router(admin_approval_router)
+    api.include_router(admin_apps_router)
     api.include_router(password_reset_router)
     api.include_router(user_delete_router)
     api.include_router(public_apps_router)

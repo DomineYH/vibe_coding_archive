@@ -37,9 +37,10 @@ if (prepared)
       await expect(
         page.getByRole("button", { name: "삭제", exact: true }).first(),
       ).toBeEnabled();
+      // #162: admin_apps_read is on in this prepared environment.
       await expect(
         page.getByRole("tab", { name: "Health Monitor" }),
-      ).toBeDisabled();
+      ).toBeEnabled();
       await page.getByRole("button", { name: /추가 회원 불러오기/ }).click();
       await expect
         .poll(() => page.getByRole("listitem").count())

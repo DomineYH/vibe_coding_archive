@@ -9,6 +9,7 @@ import {
   userRow,
   approvalHeaders,
 } from "./user-delete-helpers.js";
+import { deferred, holdLists, monitorList } from "./admin-apps-helpers.js";
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
 test.describe("account deletion over real HTTP", () => {
   test.skip(!prepared, "requires isolated prepared authentication");
@@ -141,5 +142,67 @@ test.describe("account deletion over real HTTP", () => {
         await targetPage.request.get("/api/v1/auth/me", { headers: oldHeaders })
       ).status(),
     ).toBe(401);
+  });
+  test("a Health Monitor loaded before a confirmed deletion never shows the deleted owner's apps again", async ({
+    page,
+    owned,
+  }) => {
+    await openAdmin(page, owned);
+    // Keep the restored target unconsumed: its detail reads (React StrictMode
+    // issues two) are held, so the monitor is loaded under the
+    // post-reauthentication scope and the deletion panel resumes when the users
+    // tab is shown again.
+    const gate = deferred();
+    let holding = true;
+    await page.route(
+      `**/api/v1/admin/users/${owned.member.id}`,
+      async (route) => {
+        if (route.request().method() !== "GET" || !holding)
+          return route.continue();
+        await gate.promise;
+        await route.continue().catch(() => {});
+      },
+    );
+    try {
+      await openDelete(page, owned);
+      const memberApps = ["app-0", "app-1"].map(
+        (suffix) => `${owned.member.login.split("-member")[0]}-${suffix}`,
+      );
+      const monitorApp = (name) =>
+        page.getByRole("button", { name: `앱 관리: ${name}` });
+      await page.getByRole("tab", { name: "Health Monitor" }).click();
+      await expect(monitorList(page)).toBeVisible();
+      for (const name of memberApps)
+        await expect(monitorApp(name)).toBeVisible();
+      holding = false;
+      gate.resolve();
+      await page.getByRole("tab", { name: "사용자 관리" }).click();
+      const panel = page.getByRole("region", { name: /계정.*삭제/ });
+      await panel
+        .getByRole("button", { name: "삭제 확인", exact: true })
+        .click();
+      await expect(panel).toContainText("삭제가 확정됐어요");
+      await expect(panel).toHaveAttribute("aria-busy", "false");
+      const release = deferred();
+      const held = await holdLists(page, release);
+      await page.getByRole("tab", { name: "Health Monitor" }).click();
+      await expect.poll(() => held.contexts.length).toBeGreaterThan(0);
+      for (const name of memberApps)
+        await expect(monitorApp(name)).toHaveCount(0);
+      release.resolve();
+      await expect(monitorList(page)).toBeVisible();
+      for (const name of memberApps)
+        await expect(monitorApp(name)).toHaveCount(0);
+      const monitor = await (
+        await page.request.get("/api/v1/admin/apps?limit=100", {
+          headers: await approvalHeaders(page),
+        })
+      ).json();
+      expect(
+        monitor.items.filter((item) => item.owner.id === owned.member.id),
+      ).toEqual([]);
+    } finally {
+      gate.resolve();
+    }
   });
 });

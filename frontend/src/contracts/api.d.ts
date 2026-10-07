@@ -611,7 +611,7 @@ export interface paths {
         };
         /**
          * List all public and private apps for the administrator monitor
-         * @description Returns only the app name, URL, visibility, theme, versions, creation time, author nickname, and connection result summary. Prompts, descriptions, and member contact fields are never included. Items sort by creation time descending and app ID descending.
+         * @description Read-only list for the current approved full administrator. Recent authentication, Origin/CSRF and write-operation keys are not required; the supplied flow, revision and session-generation context must be complete when present. Returns only the app name, URL, visibility, theme, versions, creation time, author nickname and internal ID, and connection result summary. Prompts, descriptions, and member contact fields are never included. Items sort by creation time descending and app ID descending. pagination.total counts every authorized app, an offset past the end returns an empty page with HTTP 200, and invalid or repeated limit/offset or unknown query keys return 422.
          */
         get: operations["listAdminApps"];
         put?: never;
@@ -2721,7 +2721,10 @@ export interface operations {
             /** @description A page of all authorized apps with only monitor fields. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2731,6 +2734,7 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

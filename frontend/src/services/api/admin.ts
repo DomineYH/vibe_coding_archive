@@ -8,6 +8,10 @@ import {
   mapUserDeleteOperation,
 } from "../../contracts/mappers";
 import { authService } from "./auth";
+import {
+  assertAuthObservation,
+  type ProtectedReadContext,
+} from "../auth-state";
 import type { ServiceErrorCode } from "../service-error";
 import { ServiceError } from "../service-error";
 import {
@@ -40,6 +44,10 @@ const ADMIN_READ_ERRORS: ErrorCodesByStatus = {
   ],
   409: ["AUTH_STATE_CHANGED", "AUTH_TRANSITION_PENDING"],
   503: ["FEATURE_UNAVAILABLE", "SERVICE_UNAVAILABLE", "DB_BUSY", "AUTH_BUSY"],
+};
+const APP_LIST_ERRORS: ErrorCodesByStatus = {
+  ...ADMIN_READ_ERRORS,
+  422: ["VALIDATION_ERROR"],
 };
 const TARGET_READ_ERRORS: ErrorCodesByStatus = {
   ...ADMIN_READ_ERRORS,
@@ -131,7 +139,7 @@ const CANCEL_ERRORS: ErrorCodesByStatus = {
 
 const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "GET /admin/users": ADMIN_READ_ERRORS,
-  "GET /admin/apps": ADMIN_READ_ERRORS,
+  "GET /admin/apps": APP_LIST_ERRORS,
   "GET /admin/users/{id}": TARGET_READ_ERRORS,
   "POST /write-operations": ISSUE_ERRORS,
   "PATCH /admin/users/{id}/approval": EXECUTE_ERRORS,
@@ -140,6 +148,28 @@ const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "GET /write-operations/{key}": KEY_READ_ERRORS,
   "POST /write-operations/{key}/cancel": CANCEL_ERRORS,
 };
+
+function capturedHeaders({ state }: ProtectedReadContext) {
+  const { user, flow } = state;
+  if (
+    state.status !== "ready" ||
+    !user?.approved ||
+    user.role !== "admin" ||
+    user.sessionKind !== "full" ||
+    user.mustChangePassword ||
+    !flow.sessionGeneration
+  )
+    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+      httpStatus: user?.approved && user.role !== "admin" ? 403 : 401,
+      outcome: "rejected",
+    });
+  return new Headers({
+    Accept: "application/json",
+    "X-EduVibe-Flow-Id": flow.flowId,
+    "X-EduVibe-Auth-Revision": flow.revision,
+    "X-EduVibe-Session-Generation": flow.sessionGeneration,
+  });
+}
 
 async function requestHeaders(write: boolean, signal?: AbortSignal) {
   const auth = await authService.getCurrentAuthState({ signal });
@@ -247,6 +277,39 @@ function mapApiError(
 async function request(
   endpoint: ApiEndpoint,
   path: string,
+  options: RequestOptions = {},
+): Promise<unknown> {
+  const { readContext, signal } = options;
+  if (!readContext) return perform(endpoint, path, options);
+  assertAuthObservation(readContext);
+  // Ownership is asserted after every await: a retired observation is dropped
+  // silently, never reported as data or as an error for the new scope.
+  try {
+    const value = await perform(endpoint, path, options);
+    assertAuthObservation(readContext);
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    return value;
+  } catch (error) {
+    assertAuthObservation(readContext);
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    throw error;
+  }
+}
+
+type RequestOptions = {
+  method?: string;
+  body?: unknown;
+  signal?: AbortSignal;
+  idempotencyKey?: string;
+  write?: boolean;
+  uncertain?: boolean;
+  noContent?: boolean;
+  readContext?: ProtectedReadContext;
+};
+
+async function perform(
+  endpoint: ApiEndpoint,
+  path: string,
   {
     method = "GET",
     body,
@@ -255,17 +318,12 @@ async function request(
     write = false,
     uncertain = false,
     noContent = false,
-  }: {
-    method?: string;
-    body?: unknown;
-    signal?: AbortSignal;
-    idempotencyKey?: string;
-    write?: boolean;
-    uncertain?: boolean;
-    noContent?: boolean;
-  } = {},
+    readContext,
+  }: RequestOptions = {},
 ): Promise<unknown> {
-  const headers = await requestHeaders(write, signal);
+  const headers = readContext
+    ? capturedHeaders(readContext)
+    : await requestHeaders(write, signal);
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
   let response: Response;
@@ -273,6 +331,7 @@ async function request(
     response = await fetch(`/api/v1${path}`, {
       method,
       credentials: "include",
+      ...(readContext ? { cache: "no-store" as const } : {}),
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
@@ -306,9 +365,18 @@ async function request(
     "X-EduVibe-Auth-Revision",
     "X-EduVibe-Session-Generation",
   ]) {
-    if (response.headers.get(name) !== headers.get(name))
+    if (response.headers.get(name) !== headers.get(name)) {
+      // A well-formed echo of another context belongs to a different observation.
+      if (readContext && response.headers.get(name))
+        throw new DOMException("Authentication context changed", "AbortError");
       throw contractError(response.status, uncertain);
+    }
   }
+  if (
+    readContext &&
+    response.headers.get("Cache-Control") !== "private, no-store"
+  )
+    throw contractError(response.status, uncertain);
   if (noContent) {
     if (response.status !== 204)
       throw contractError(response.status, uncertain);
@@ -345,15 +413,20 @@ export const adminService: AdminService = {
     );
   },
 
-  async listApps(query, { signal } = {}) {
+  async listApps(query, { signal, readContext } = {}) {
     const normalized = normalizeAdminAppsQuery(query);
     const params = new URLSearchParams({
       limit: String(normalized.limit),
       offset: String(normalized.offset),
     });
-    return mapAdminAppPage(
-      await request("GET /admin/apps", `/admin/apps?${params}`, { signal }),
+    const page = mapAdminAppPage(
+      await request("GET /admin/apps", `/admin/apps?${params}`, {
+        signal,
+        readContext,
+      }),
     );
+    if (readContext) assertAuthObservation(readContext);
+    return page;
   },
 
   async getUser(id, { signal } = {}) {

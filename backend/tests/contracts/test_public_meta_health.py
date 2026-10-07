@@ -84,7 +84,8 @@ def test_meta_health_and_readiness_use_public_contract_and_file_database(
                     "collection_disabled"
                     if key.endswith("_collection")
                     else "operational_restriction"
-                    if key in ("admin_password_reset", "admin_user_delete")
+                    if key
+                    in ("admin_password_reset", "admin_user_delete", "admin_apps_read")
                     else "not_implemented"
                 ]
             )

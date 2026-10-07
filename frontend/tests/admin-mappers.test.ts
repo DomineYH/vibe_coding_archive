@@ -204,6 +204,43 @@ describe("admin contract mappers", () => {
     ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
 
+  it("keeps the recorded health window of the admin app list instead of a fixed 15 minutes", () => {
+    const page = (health: unknown) => ({
+      items: [{ ...adminApp, health }],
+      pagination: { limit: 24, offset: 0, total: 1, has_more: false },
+      server_time: "2026-09-22T00:12:00.000Z",
+    });
+    const hourly = {
+      state: "healthy",
+      checked_at: "2026-09-22T00:12:00.000Z",
+      fresh_until: "2026-09-22T01:12:00.000Z",
+    };
+    expect(mapAdminAppPage(page(hourly)).items[0].health).toEqual(hourly);
+    const failed = { ...hourly, state: "http_error" };
+    expect(mapAdminAppPage(page(failed)).items[0].health).toEqual(failed);
+    const unchecked = {
+      state: "unchecked",
+      checked_at: null,
+      fresh_until: null,
+    };
+    expect(mapAdminAppPage(page(unchecked)).items[0].health).toEqual(unchecked);
+    const rejected = [
+      { ...hourly, fresh_until: hourly.checked_at },
+      { ...hourly, fresh_until: "2026-09-22T00:11:59.000Z" },
+      { ...hourly, extra: "must never be returned" },
+      { ...hourly, state: "sleeping" },
+      { ...hourly, checked_at: null },
+      { ...hourly, fresh_until: null },
+      { ...unchecked, checked_at: hourly.checked_at },
+      { ...unchecked, state: "healthy" },
+      { ...hourly, checked_at: "yesterday" },
+    ];
+    for (const health of rejected)
+      expect(() => mapAdminAppPage(page(health))).toThrow(
+        expect.objectContaining({ code: "CONTRACT_ERROR" }),
+      );
+  });
+
   it("maps only the minimal approval operation result", () => {
     const result = mapApprovalOperation({
       key: "00000000-0000-4000-8000-000000000201",

@@ -391,9 +391,12 @@ def test_capability_is_prepared_only_and_other_phase_five_features_remain_off(
             "enabled": True,
             "reasons": [],
         }
+        assert meta.json()["capabilities"]["admin_apps_read"] == {
+            "enabled": True,
+            "reasons": [],
+        }
         for key in [
             "admin_password_reset",
-            "admin_apps_read",
             "admin_apps_manage",
         ]:
             assert not meta.json()["capabilities"][key]["enabled"]

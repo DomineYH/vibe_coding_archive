@@ -209,13 +209,18 @@ if (prepared) {
     expect(meta.capabilities.apps_create.enabled).toBe(true);
     expect(meta.capabilities.apps_update_own.enabled).toBe(true);
     expect(meta.capabilities.apps_delete_own.enabled).toBe(true);
-    for (const key of ["admin_apps_read", "admin_apps_manage"])
-      expect(meta.capabilities[key].enabled).toBe(false);
+    expect(meta.capabilities.admin_apps_read.enabled).toBe(true);
+    expect(meta.capabilities.admin_apps_manage.enabled).toBe(false);
+    const listed = await page.request.get("/api/v1/admin/apps?limit=1", {
+      headers: await approvalHeaders(page),
+    });
+    expect(listed.status()).toBe(200);
+    expect(listed.headers()["cache-control"]).toBe("private, no-store");
     for (const [method, url, expected] of [
       ["post", "/api/v1/apps", 422],
       ["patch", `/api/v1/apps/${A}`, 422],
       ["delete", `/api/v1/apps/${A}`, 422],
-      ["get", "/api/v1/admin/apps", 404],
+      ["get", "/api/v1/admin/apps", 422],
     ]) {
       const refused = await page.request[method](url);
       expect(refused.status()).toBe(expected);

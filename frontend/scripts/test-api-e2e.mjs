@@ -52,13 +52,16 @@ async function run() {
   await requireFreePort(5174, "localhost");
 
   const temporary = await mkdtemp(path.join(os.tmpdir(), "eduvibe-api-e2e-"));
+  const emptyOnly = process.argv.includes("--admin-apps-empty");
   const arguments_ = process.argv
     .slice(2)
-    .filter((arg) => arg !== "--auth-unavailable");
+    .filter(
+      (arg) => arg !== "--auth-unavailable" && arg !== "--admin-apps-empty",
+    );
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
         arg,
       ),
     );
@@ -124,20 +127,40 @@ raise SystemExit(status)`,
     );
     if (bootstrap.error || bootstrap.status !== 0)
       throw new Error("Test-owned administrator bootstrap failed.");
-    const fixtures = spawnSync(
+    // The monitor lists every app, so the true empty-list proof owns a separate
+    // zero-app database: the bootstrapped administrator only, no app fixtures.
+    const emptyTemplate = path.join(temporary, "empty-apps.sqlite3");
+    await copyFile(env.DATABASE_PATH, emptyTemplate);
+    const emptyCheck = spawnSync(
       "uv",
       [
         "run",
         "--frozen",
         "python",
         "-c",
-        "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path); from tests.approval_fixtures import populate_approval_members; populate_approval_members(database_path); from tests.access_fixtures import populate_access_apps; populate_access_apps(database_path)",
+        "import os, sqlite3, sys; c = sqlite3.connect(sys.argv[1]); sys.exit(0 if c.execute('SELECT count(*) FROM apps').fetchone()[0] == 0 else 1)",
+        emptyTemplate,
       ],
       { cwd: backend, env, stdio: "inherit" },
     );
-    if (fixtures.error) throw fixtures.error;
-    if (fixtures.status !== 0)
-      throw new Error("The isolated API E2E fixtures could not be created.");
+    if (emptyCheck.error || emptyCheck.status !== 0)
+      throw new Error("The zero-app API E2E database is not empty.");
+    if (!emptyOnly) {
+      const fixtures = spawnSync(
+        "uv",
+        [
+          "run",
+          "--frozen",
+          "python",
+          "-c",
+          "import os; from pathlib import Path; from tests.support import populate_auth_members, populate_public_and_private_apps, prepare_issue83_detail_fixture; database_path = Path(os.environ['DATABASE_PATH']); populate_public_and_private_apps(database_path, 27, include_search_edge_cases=True); prepare_issue83_detail_fixture(database_path); populate_auth_members(database_path); from tests.approval_fixtures import populate_approval_members; populate_approval_members(database_path); from tests.access_fixtures import populate_access_apps; populate_access_apps(database_path)",
+        ],
+        { cwd: backend, env, stdio: "inherit" },
+      );
+      if (fixtures.error) throw fixtures.error;
+      if (fixtures.status !== 0)
+        throw new Error("The isolated API E2E fixtures could not be created.");
+    }
     if (receivedSignal) {
       process.exitCode = signalExitCode();
       return;
@@ -146,7 +169,7 @@ raise SystemExit(status)`,
     // Each independent Playwright run starts from the same verified test-owned
     // database. In-process restart/restore drills never reinsert fixtures.
     const template = path.join(temporary, "prepared.sqlite3");
-    await copyFile(env.DATABASE_PATH, template);
+    if (!emptyOnly) await copyFile(env.DATABASE_PATH, template);
     const normal = [
       "e2e-api/auth-prepare.spec.js",
       "e2e-api/auth-login.spec.js",
@@ -158,6 +181,8 @@ raise SystemExit(status)`,
       "e2e-api/admin-password-reset-recovery.spec.js",
       "e2e-api/admin-user-delete.spec.js",
       "e2e-api/admin-user-delete-recovery.spec.js",
+      "e2e-api/admin-apps.spec.js",
+      "e2e-api/admin-apps-recovery.spec.js",
       "e2e-api/auth-lifecycle.spec.js",
       "e2e-api/auth-access.spec.js",
       "e2e-api/app-create.spec.js",
@@ -178,8 +203,21 @@ raise SystemExit(status)`,
     const selectedNormal = arguments_.filter((arg) => !isFault(arg));
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
-    const runs =
-      arguments_.length || process.argv.includes("--auth-unavailable")
+    const emptyRun = (files) => ({
+      arguments_: files,
+      prepared: true,
+      faults: false,
+      empty: true,
+    });
+    const runs = emptyOnly
+      ? [
+          emptyRun(
+            arguments_.length
+              ? arguments_
+              : ["e2e-api/admin-apps-empty.spec.js"],
+          ),
+        ]
+      : arguments_.length || process.argv.includes("--auth-unavailable")
         ? [
             ...(normalFiles.length || !selectedFaults.length
               ? [
@@ -204,6 +242,7 @@ raise SystemExit(status)`,
             { arguments_: [], prepared: false, faults: false },
             { arguments_: normal, prepared: true, faults: false },
             { arguments_: faults, prepared: true, faults: true },
+            emptyRun(["e2e-api/admin-apps-empty.spec.js"]),
           ];
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
@@ -258,7 +297,10 @@ raise SystemExit(status)`,
         AUTH_PROXY_CONTROL: path.join(runDirectory, "proxy-control.sock"),
         AUTH_PROCESS_CONTROL: path.join(runDirectory, "process-control.sock"),
       };
-      await copyFile(template, runEnv.DATABASE_PATH);
+      await copyFile(
+        run.empty ? emptyTemplate : template,
+        runEnv.DATABASE_PATH,
+      );
       playwright = spawn(
         path.join(frontend, "node_modules", ".bin", "playwright"),
         ["test", "--config=playwright.api.config.js", ...run.arguments_],
@@ -268,6 +310,7 @@ raise SystemExit(status)`,
             ...runEnv,
             API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
             API_E2E_FAULTS: run.faults ? "1" : "",
+            API_E2E_EMPTY_APPS: run.empty ? "1" : "",
             API_E2E_CLOCK: run.capture ? "2026-10-01T00:00:00Z" : "",
           },
           stdio: "inherit",
