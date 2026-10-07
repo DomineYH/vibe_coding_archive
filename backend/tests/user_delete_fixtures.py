@@ -61,7 +61,7 @@ def create(value):
                 "INSERT INTO app_grades VALUES (?,?)", (id_, CATALOG["grades"][0])
             )
             db.execute(
-                "INSERT INTO health_results VALUES (?,'healthy',?,?)",
+                "INSERT INTO health_results(app_id,state,checked_at,fresh_until) VALUES (?,'healthy',?,?)",
                 (id_, stamp, after(stamp, 3600)),
             )
     return {"members": members, "apps": app_ids, "rates": rates}

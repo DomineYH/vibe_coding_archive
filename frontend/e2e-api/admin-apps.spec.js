@@ -47,6 +47,11 @@ test.describe("administrator app list over real HTTP", () => {
     writes.length = 0;
     await page.goto("/admin?tab=health");
     await expect(monitorList(page)).toBeVisible();
+    await expect(
+      page.getByText(
+        "개발용 합성 시연이며 외부 사이트에 요청을 보내지 않습니다.",
+      ),
+    ).toHaveCount(0);
     const total = owned.baseline + owned.apps.length;
     expect(total).toBeGreaterThan(24);
     await expect.poll(() => lists.length).toBe(1);
@@ -167,8 +172,15 @@ test.describe("administrator app list over real HTTP", () => {
       enabled: true,
       reasons: [],
     });
-    for (const key of ["health_read", "health_check", "health_batch"])
-      expect(meta.capabilities[key].enabled).toBe(false);
+    expect(meta.capabilities.health_read).toEqual({
+      enabled: true,
+      reasons: [],
+    });
+    for (const key of ["health_check", "health_batch"])
+      expect(meta.capabilities[key]).toEqual({
+        enabled: false,
+        reasons: ["operational_restriction"],
+      });
     fixture("mutate", [
       "UPDATE sessions SET recent_auth_until=NULL WHERE member_id=?",
       [owned.admin.id],
@@ -182,7 +194,35 @@ test.describe("administrator app list over real HTTP", () => {
     });
     expect(result.status()).toBe(200);
     expect(result.headers()["cache-control"]).toBe("private, no-store");
-    expect((await result.json()).items).toHaveLength(3);
+    const { items } = await result.json();
+    expect(items).toHaveLength(3);
+    // The monitor list keeps its minimal result; the authorized snapshot owns measurements.
+    const snapshot = await page.request.get(
+      `/api/v1/apps/${items[0].id}/health`,
+      { headers },
+    );
+    expect(snapshot.status()).toBe(200);
+    expect(snapshot.headers()["cache-control"]).toBe("private, no-store");
+    const body = await snapshot.json();
+    expect(Object.keys(body).sort()).toEqual([
+      "app_id",
+      "health",
+      "server_time",
+      "url_version",
+    ]);
+    expect(body.app_id).toBe(items[0].id);
+    expect(body.url_version).toBe(items[0].url_version);
+    expect(body.health).toEqual({
+      result: {
+        ...items[0].health,
+        http_status: null,
+        response_ms: null,
+        error_kind: null,
+        error_stage: null,
+      },
+      latest_job: null,
+      next_check_at: null,
+    });
     expect([query(tables), query(session)]).toEqual(before);
     const writes = collectWrites(page);
     await page.reload();
@@ -190,6 +230,9 @@ test.describe("administrator app list over real HTTP", () => {
     const rows = monitorList(page).getByRole("listitem");
     const check = rows.first().getByRole("button", { name: "즉시 재검사" });
     await expect(check).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "전체 재검사" }),
+    ).toBeDisabled();
     expect(
       await page.getByRole("button", { name: "즉시 재검사" }).count(),
     ).toBe(await rows.count());
