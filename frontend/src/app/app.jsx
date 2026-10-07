@@ -1878,6 +1878,17 @@ export default function App() {
           [__DATA_MODE__, "admin"],
         ].map((queryKey) => queryClient.cancelQueries({ queryKey })),
       );
+      // A committed visibility change retires public data across auth observations.
+      queryClient.removeQueries({
+        queryKey: [...detailKey, "public"],
+        exact: true,
+      });
+      queryClient.removeQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
       if (
         authObservation.current !== observationId ||
         pageAway.current ||
@@ -1886,17 +1897,11 @@ export default function App() {
         return;
       queryClient.removeQueries({ queryKey: detailKey });
       queryClient.removeQueries({ queryKey: healthKey });
-      queryClient.removeQueries({
-        queryKey: [__DATA_MODE__, "apps", "list"],
-      });
       if (app.isPublic)
         queryClient.setQueryData(
           [__DATA_MODE__, "apps", "detail", app.id, "public"],
           app,
         );
-      void queryClient.invalidateQueries({
-        queryKey: [__DATA_MODE__, "apps", "list"],
-      });
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "admin"],
       });

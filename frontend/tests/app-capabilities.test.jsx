@@ -577,11 +577,35 @@ it("admin private saves cancel old member details and in-flight public lists", a
   for (const key of keys) expect(client.getQueryData(key)).toBeUndefined();
 });
 
-it.each(["navigation", "rotation", "other"])(
-  "does not apply an admin save to a newer %s while cache cancellation settles",
+it.each(["navigation", "rotation", "other", "hidden"])(
+  "retires public caches after a private admin save during %s without stale navigation",
   async (transition) => {
     await visit(ownEdit, DEMO_ACCOUNTS[0]);
     const form = await screen.findByRole("form", { name: "앱 수정 양식" });
+    const original = await appsService.get(
+      "00000000-0000-4000-8000-000000000001",
+    );
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    const saved = {
+      ...original,
+      isPublic: false,
+      version: 2,
+      name: "이전 관리자 저장 완료",
+    };
+    // API writes do not emit the mock storage event that also clears caches.
+    vi.spyOn(appsService, "issueUpdateOperation").mockResolvedValue({
+      key: "00000000-0000-4000-8000-000000000201",
+      kind: "app_update",
+      targetId: original.id,
+      state: "unresolved",
+    });
+    vi.spyOn(appsService, "update").mockResolvedValue(saved);
+    vi.spyOn(appsService, "get").mockResolvedValue(saved);
+    const publicKey = [__DATA_MODE__, "apps", "detail", original.id, "public"];
+    const listKey = [__DATA_MODE__, "apps", "list", "", null, null, 24];
+    client.setQueryData(publicKey, original);
+    client.setQueryData(listKey, { pages: [page], pageParams: [0] });
+    fireEvent.click(within(form).getByRole("switch", { name: "전체 공개" }));
     let release;
     const cancel = client.cancelQueries.bind(client);
     vi.spyOn(client, "cancelQueries").mockImplementation(async (filters) => {
@@ -601,6 +625,11 @@ it.each(["navigation", "rotation", "other"])(
     await waitFor(() => expect(release).toBeTypeOf("function"));
     if (transition === "navigation") {
       await act(async () => router.navigate(ownEdit, { replace: true }));
+    } else if (transition === "hidden") {
+      vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+      await act(async () =>
+        document.dispatchEvent(new Event("visibilitychange")),
+      );
     } else {
       await act(async () => {
         window.dispatchEvent(new Event("blur"));
@@ -617,16 +646,8 @@ it.each(["navigation", "rotation", "other"])(
     expect(router.state.location.key).toBe(locationKey);
     expect(router.state.location.pathname).toBe(ownEdit);
     expect(screen.queryByText("앱을 수정했어요.")).not.toBeInTheDocument();
-    if (transition !== "navigation")
-      expect(
-        client.getQueryData([
-          __DATA_MODE__,
-          "apps",
-          "detail",
-          "00000000-0000-4000-8000-000000000001",
-          "public",
-        ]),
-      ).toBeUndefined();
+    expect(client.getQueryData(publicKey)).toBeUndefined();
+    expect(client.getQueryData(listKey)).toBeUndefined();
   },
 );
 
