@@ -164,4 +164,12 @@ class HealthResult(Base):
     checked_at: Mapped[str | None] = mapped_column(String(40))
     fresh_until: Mapped[str | None] = mapped_column(String(40))
 
+    url_version: Mapped[int] = mapped_column(
+        nullable=False, default=1, server_default="1"
+    )
+    http_status: Mapped[int | None] = mapped_column()
+    response_ms: Mapped[int | None] = mapped_column()
+    error_kind: Mapped[str | None] = mapped_column(String(40))
+    error_stage: Mapped[str | None] = mapped_column(String(24))
+
     app: Mapped[App] = relationship(back_populates="health_result")
