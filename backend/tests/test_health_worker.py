@@ -30,10 +30,12 @@ def worker_database(tmp_path, migrate_test_database):
 
 def test_second_worker_cannot_acquire_the_same_os_lock(tmp_path):
     path = tmp_path / "worker.lock"
-    with WorkerLock(path):
-        with pytest.raises(RuntimeError, match="already running"):
-            with WorkerLock(path):
-                pass
+    with (
+        WorkerLock(path),
+        pytest.raises(RuntimeError, match="already running"),
+        WorkerLock(path),
+    ):
+        pass
     assert path.exists()
     with WorkerLock(path):
         pass

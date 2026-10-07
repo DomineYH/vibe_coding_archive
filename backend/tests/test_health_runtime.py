@@ -59,3 +59,34 @@ def test_health_environment_is_explicit_and_rejects_invalid_values(tmp_path):
     assert not configured.health_checks_enabled
     assert configured.health_activation_path is None
     assert configured.health_worker_lock_path == Path("/run/eduvibe/health-worker.lock")
+
+
+def test_matching_operator_record_enables_only_its_build_and_configuration(tmp_path):
+    from datetime import UTC, datetime
+
+    path = tmp_path / "approval.json"
+    configured = settings(
+        tmp_path,
+        health_checks_enabled=True,
+        health_dns_servers=("192.0.2.53",),
+        health_denied_ips=("198.51.100.1",),
+        health_worker_uid=1001,
+        health_activation_path=path,
+    ).model_copy(update={"app_env": "development"})
+    record = activation_template(configured)
+    record["approved_by"] = "DomineYH"
+    record["approved_at"] = datetime.now(UTC).isoformat()
+    for item in record["verification"].values():
+        item.update(status="pass", evidence="controlled fixture; never deployed")
+    path.write_text(json.dumps(record))
+    assert runtime_enabled(configured)
+    assert not runtime_enabled(
+        configured.model_copy(update={"health_dns_servers": ("192.0.2.54",)})
+    )
+    record["build_sha256"] = "0" * 64
+    path.write_text(json.dumps(record))
+    assert not runtime_enabled(configured)
+    record["build_sha256"] = activation_template(configured)["build_sha256"]
+    record["verification"]["clock_suspend"]["status"] = "not_run"
+    path.write_text(json.dumps(record))
+    assert not runtime_enabled(configured)
