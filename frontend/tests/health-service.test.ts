@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import uuidCases from "../../contracts/fixtures/uuid-cases.json";
 import type { CurrentAuthState } from "../src/services/auth-service";
 import { authService } from "../src/services/api/auth";
+import * as apiAuth from "../src/services/api/auth";
 import { healthService } from "../src/services/api/health";
 
 const appId = "00000000-0000-4000-8000-000000000001";
@@ -74,9 +75,7 @@ describe("health API service", () => {
   });
 
   it("sends an empty POST with the active anonymous session and maps 202", async () => {
-    vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
-      anonymousSession(),
-    );
+    vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
     vi.spyOn(authService, "getCsrf").mockResolvedValue({
       csrfToken: "csrf-test",
       expiresAt: "2026-09-22T01:12:00.000Z",
@@ -114,9 +113,7 @@ describe("health API service", () => {
   });
 
   it("rejects a 200 response that claims a newly created check", async () => {
-    vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
-      anonymousSession(),
-    );
+    vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
     vi.spyOn(authService, "getCsrf").mockResolvedValue({
       csrfToken: "csrf-test",
       expiresAt: "2026-09-22T01:12:00.000Z",
@@ -143,9 +140,7 @@ describe("health API service", () => {
   });
 
   it("preserves a rate limit and never retries the check automatically", async () => {
-    vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
-      anonymousSession(),
-    );
+    vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
     vi.spyOn(authService, "getCsrf").mockResolvedValue({
       csrfToken: "csrf-test",
       expiresAt: "2026-09-22T01:12:00.000Z",
@@ -286,20 +281,18 @@ it("binds health polling to the captured member observation and drops a retired 
 it("preserves stale authentication errors from private health polling", async () => {
   vi.stubGlobal(
     "fetch",
-    vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse(
-          {
-            error: {
-              code: "AUTH_STATE_CHANGED",
-              message: "인증 상태가 바뀌었어요.",
-              request_id: "health-read",
-            },
+    vi.fn().mockResolvedValue(
+      jsonResponse(
+        {
+          error: {
+            code: "AUTH_STATE_CHANGED",
+            message: "인증 상태가 바뀌었어요.",
+            request_id: "health-read",
           },
-          409,
-        ),
+        },
+        409,
       ),
+    ),
   );
   await expect(healthService.getAppHealth(appId)).rejects.toMatchObject({
     code: "AUTH_STATE_CHANGED",

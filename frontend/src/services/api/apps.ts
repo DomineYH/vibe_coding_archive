@@ -13,7 +13,7 @@ import {
   normalizeQueryForService,
   type AppsService,
 } from "../apps-service";
-import { authService } from "./auth";
+import { authService, prepareApiAuth } from "./auth";
 import { assertAuthObservation } from "../auth-state";
 import { isUuid } from "../../contracts/uuid";
 
@@ -49,7 +49,9 @@ export async function getJson(
   if (authenticated || write) {
     let auth;
     try {
-      auth = await authService.getCurrentAuthState({ signal });
+      auth = allowAnonymousWrite
+        ? await prepareApiAuth({ signal })
+        : await authService.getCurrentAuthState({ signal });
     } catch (error) {
       if (!uncertain) throw error;
       throw new ServiceError(
