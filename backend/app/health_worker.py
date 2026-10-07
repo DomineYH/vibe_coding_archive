@@ -78,6 +78,10 @@ def suspend_offset():
     return time.clock_gettime(time.CLOCK_BOOTTIME) - time.monotonic()
 
 
+class ExecutionDisabled(RuntimeError):
+    """Explicit stop invalidates execution writes but permits cancellation cleanup."""
+
+
 class ExecutionClockChanged(RuntimeError):
     """A confirmed clock discontinuity invalidates the old execution generation."""
 
@@ -133,17 +137,21 @@ class Worker:
             self.testing_probe is not None or runtime_enabled(self.settings)
         )
 
-    async def transaction(self, operation, *, clock=None):
+    async def transaction(self, operation, *, clock=None, require_enabled=False):
         def execute():
             with self.session_factory() as db:
                 db.execute(text("BEGIN IMMEDIATE"))
                 # Clocks and execution conditions are sampled after acquiring the lock.
                 if clock is not None:
                     clock.check()
+                if require_enabled and not self.enabled():
+                    raise ExecutionDisabled()
                 boot, mono = boot_clock()
                 value = operation(db, boot, mono, utc_stamp())
                 if clock is not None:
                     clock.check()
+                if require_enabled and not self.enabled():
+                    raise ExecutionDisabled()
                 db.commit()
                 return value
 
@@ -219,7 +227,7 @@ class Worker:
                 )
 
         try:
-            await self.transaction(reconcile, clock=clock)
+            await self.transaction(reconcile, clock=clock, require_enabled=True)
         except SQLAlchemyError:
             # Neither success nor failure could be confirmed: leave recovery to
             # the next OS-confirmed worker instance; never repeat result writes.
@@ -232,6 +240,8 @@ class Worker:
         try:
             # The snapshot predates claim's DB wait, unlike probe's own clock.
             clock.check()
+            if not self.enabled():
+                return
             result = await (self.testing_probe or probe)(
                 job["url"],
                 dns_servers=self.settings.health_dns_servers,
@@ -249,16 +259,16 @@ class Worker:
                     db, job, boot_id=boot, mono=mono, stamp=stamp
                 ),
                 clock=clock,
+                require_enabled=True,
             )
             return
         try:
             await self.transaction(
-                lambda db, boot, mono, stamp: (
-                    store.finish(db, job, result, boot_id=boot, mono=mono, stamp=stamp)
-                    if self.enabled()
-                    else False
+                lambda db, boot, mono, stamp: store.finish(
+                    db, job, result, boot_id=boot, mono=mono, stamp=stamp
                 ),
                 clock=clock,
+                require_enabled=True,
             )
         except SQLAlchemyError:
             await self.reconcile_failed_save(job, clock)
@@ -311,10 +321,19 @@ class Worker:
             clock = ExecutionClock.capture()
             self.clock.check()
             job = await self.transaction(
-                lambda db, boot, mono, stamp: store.claim(
-                    db, worker_id=self.worker_id, boot_id=boot, mono=mono, stamp=stamp
+                lambda db, boot, mono, stamp: (
+                    store.claim(
+                        db,
+                        worker_id=self.worker_id,
+                        boot_id=boot,
+                        mono=mono,
+                        stamp=stamp,
+                    )
+                    if not self.stopping.is_set()
+                    else None
                 ),
                 clock=clock,
+                require_enabled=True,
             )
             if job is None:
                 break
@@ -341,10 +360,6 @@ class Worker:
                 heartbeat_at = time.monotonic()
                 while not self.stopping.is_set():
                     if not self.enabled():
-                        await self.transaction(
-                            lambda db, boot, mono, stamp: store.cancel_all(db, stamp)
-                        )
-                        await self.cancel_running()
                         break
                     heartbeat_due = time.monotonic() - heartbeat_at >= 5
                     try:
@@ -352,12 +367,20 @@ class Worker:
                         await self.cycle(heartbeat_due)
                     except ExecutionClockChanged:
                         await self.recover_generation()
+                    except ExecutionDisabled:
+                        continue  # The next loop cancels all work before any new claim.
                     if heartbeat_due:
                         heartbeat_at = time.monotonic()
                     try:
                         await asyncio.wait_for(self.stopping.wait(), 0.1)
                     except TimeoutError:
                         pass
+                if not self.enabled():
+                    # Explicit disable wins even when SIGTERM ended the loop.
+                    await self.transaction(
+                        lambda db, boot, mono, stamp: store.cancel_all(db, stamp)
+                    )
+                    await self.cancel_running()
                 # Normal SIGTERM does not cancel queued jobs or extend deadlines.
                 await self.transaction(
                     lambda db, boot, mono, stamp: store.heartbeat(
