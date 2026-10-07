@@ -88,7 +88,7 @@ class HeaderStream(AsyncNetworkStream):
 
     async def write(self, buffer, timeout=None):
         self.backend.clock.check()
-        self.backend.stage = "request"
+        self.backend.stage = "response_headers"
         await self.stream.write(buffer, timeout)
         self.backend.clock.check()
         self.backend.stage = "response_headers"
@@ -110,7 +110,7 @@ class HeaderStream(AsyncNetworkStream):
             # succeeds, so this stream owns cleanup on handshake failure.
             await self.aclose()
             raise
-        self.backend.stage = "request"
+        self.backend.stage = "response_headers"
         return self
 
     async def aclose(self):

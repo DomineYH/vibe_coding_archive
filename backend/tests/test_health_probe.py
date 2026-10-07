@@ -1,4 +1,5 @@
 import pytest
+
 from app.health_probe import probe
 
 
@@ -10,6 +11,7 @@ async def test_forbidden_literal_never_connects(url):
     result = await probe(url, dns_servers=(), denied_ips=())
     assert result["state"] == "blocked"
     assert result["http_status"] is None
+    assert result["error_kind"] == "DESTINATION_BLOCKED"
 
 
 class Resolver:
@@ -215,7 +217,75 @@ async def test_invalid_loop_and_forbidden_redirect(location, state):
     )
     assert result["state"] == state
     assert result["http_status"] == (302 if state == "redirect_error" else None)
+    assert result["error_kind"] == (
+        "REDIRECT_ERROR" if state == "redirect_error" else "DESTINATION_BLOCKED"
+    )
+    assert result["error_stage"] == "redirect"
     assert len(network.calls) == 1
+
+
+@pytest.mark.parametrize(
+    "failure,kind,stage",
+    [
+        ("connect", "CONNECT_FAILURE", "connect"),
+        ("read", "HTTP_PROTOCOL_ERROR", "response_headers"),
+        ("write", "HTTP_PROTOCOL_ERROR", "response_headers"),
+        ("malformed", "HTTP_PROTOCOL_ERROR", "response_headers"),
+        ("tls", "TLS_FAILURE", "tls"),
+        ("connect_timeout", "TIMEOUT", "connect"),
+    ],
+)
+async def test_external_failure_uses_the_fixed_admin_taxonomy(failure, kind, stage):
+    import ssl
+
+    import httpcore
+
+    class FailingStream(Stream):
+        async def read(self, max_bytes, timeout=None):
+            if failure == "read":
+                raise httpcore.ReadError("private diagnostic")
+            return await super().read(max_bytes, timeout)
+
+        async def write(self, buffer, timeout=None):
+            if failure == "write":
+                raise httpcore.WriteError("private diagnostic")
+            await super().write(buffer, timeout)
+
+        async def start_tls(self, *args, **kwargs):
+            if failure == "tls":
+                raise ssl.SSLError("private diagnostic")
+            return self
+
+    class FailingNetwork(Network):
+        async def connect_tcp(self, host, port, **kwargs):
+            if failure == "connect":
+                raise httpcore.ConnectError("private diagnostic")
+            if failure == "connect_timeout":
+                raise httpcore.ConnectTimeout("private diagnostic")
+            return await super().connect_tcp(host, port, **kwargs)
+
+    network = FailingNetwork()
+    network.streams = [FailingStream(b"invalid\r\n\r\n")]
+    result = await probe(
+        "https://example.org",
+        dns_servers=(),
+        denied_ips=(),
+        resolver=Resolver(),
+        network_backend=network,
+    )
+    assert (result["error_kind"], result["error_stage"]) == (kind, stage)
+    assert result["http_status"] is None
+    assert result["response_ms"] is None
+    assert "private diagnostic" not in str(result)
+
+
+async def test_invalid_initial_url_is_blocked_at_url_stage():
+    result = await probe("file:///private", dns_servers=(), denied_ips=())
+    assert (result["state"], result["error_kind"], result["error_stage"]) == (
+        "blocked",
+        "DESTINATION_BLOCKED",
+        "url",
+    )
 
 
 async def test_dns_partial_failure_is_not_ignored():

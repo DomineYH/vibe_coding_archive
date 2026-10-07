@@ -3,7 +3,7 @@
 import asyncio
 import ssl
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import dns.asyncresolver
 import httpcore
@@ -34,8 +34,9 @@ async def probe(
     clock = ProbeClock()
     started = time.monotonic()
     deadline = started + 10
-    stage, transport = "policy", None
+    stage, transport = "url", None
     state, code, elapsed, kind = "network_error", None, None, None
+    redirects = 0
     try:
         async with asyncio.timeout_at(deadline):
             target = validate_url(url)
@@ -43,7 +44,7 @@ async def probe(
                 resolver = dns.asyncresolver.Resolver(configure=False)
                 resolver.nameservers = list(dns_servers)
                 resolver.lifetime = 10
-            method, redirects, visited = "HEAD", 0, {str(target)}
+            method, visited = "HEAD", {str(target)}
             while True:
                 stage, transport = "dns", None
                 clock.check()
@@ -68,6 +69,7 @@ async def probe(
                     elapsed = int((time.monotonic() - started) * 1000)
                     location = response.headers.get("location")
                 if time.monotonic() >= deadline:
+                    stage, transport = "overall", None
                     raise TimeoutError()
                 if method == "HEAD" and code in (405, 501):
                     method = "GET"
@@ -75,7 +77,7 @@ async def probe(
                 if code not in (301, 302, 303, 307, 308):
                     state = "healthy" if 200 <= code < 300 else "http_error"
                     break
-                state, kind, stage = "redirect_error", "INVALID_REDIRECT", "redirect"
+                state, kind, stage = "redirect_error", "REDIRECT_ERROR", "redirect"
                 transport = None
                 if not location or redirects == 5:
                     break
@@ -89,8 +91,10 @@ async def probe(
                 redirects += 1
                 target = next_target
                 state, kind = "network_error", None
-    except DestinationBlocked as exc:
-        state, kind = "blocked", str(exc)
+    except DestinationBlocked:
+        state, kind = "blocked", "DESTINATION_BLOCKED"
+        if redirects:
+            stage, transport = "redirect", None
     except HeadersTooLarge:
         state, kind = "blocked", "RESPONSE_HEADERS_TOO_LARGE"
     except (TimeoutError, httpcore.TimeoutException):
@@ -98,15 +102,15 @@ async def probe(
     except DNSFailure:
         kind = "DNS_FAILURE"
     except (httpcore.NetworkError, httpcore.ProtocolError, ssl.SSLError, OSError):
-        kind = (
-            "TLS_FAILURE"
-            if transport and transport.backend.stage == "tls"
-            else "NETWORK_FAILURE"
-        )
+        failure_stage = transport.backend.stage if transport else stage
+        kind = {
+            "tls": "TLS_FAILURE",
+            "connect": "CONNECT_FAILURE",
+        }.get(failure_stage, "HTTP_PROTOCOL_ERROR")
     except httpx.InvalidURL:
-        state, kind = "blocked", "URL_POLICY"
+        state, kind = "blocked", "DESTINATION_BLOCKED"
     clock.check()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if state not in ("healthy", "http_error", "redirect_error"):
         code, elapsed = None, None
     return {

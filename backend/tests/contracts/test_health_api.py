@@ -1,6 +1,7 @@
 """HTTP health boundaries over migrated SQLite and the real auth flow."""
 
 from fastapi.testclient import TestClient
+
 from tests.admin_apps_fixtures import APPROVED_ID, STAMP, app_id, seed_apps
 
 

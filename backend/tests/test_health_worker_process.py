@@ -12,10 +12,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from app import health_store as store
-from app.database import make_engine, make_session_factory
 from sqlalchemy import text
 
+from app import health_store as store
+from app.database import make_engine, make_session_factory
 from tests.support import populate_public_and_private_apps
 
 

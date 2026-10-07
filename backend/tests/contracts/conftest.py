@@ -4,9 +4,10 @@ import os
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
+
 from app.main import create_app
 from app.settings import Settings
-from fastapi import FastAPI
 
 ROOT = Path(__file__).resolve().parents[3]
 
