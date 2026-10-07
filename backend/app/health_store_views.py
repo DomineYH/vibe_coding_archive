@@ -80,7 +80,7 @@ def result_row(db, app):
     )
 
 
-def snapshot(db, app_id, stamp, admin=False):
+def snapshot(db, app_id, stamp, admin=False, available=True):
     stamp = stamp_string(stamp)
     app = app_row(db, app_id)
     result = result_row(db, app)
@@ -103,7 +103,9 @@ def snapshot(db, app_id, stamp, admin=False):
                 for key in RESULT_FIELDS + (ADMIN_FIELDS if admin else ())
             },
             "latest_job": {key: latest[key] for key in JOB_FIELDS} if latest else None,
-            "next_check_at": cooldown(db, app_id, stamp),
+            "next_check_at": cooldown(db, app_id, stamp)
+            if available and not (latest and latest["status"] in ("queued", "running"))
+            else None,
         },
     }
 

@@ -19,12 +19,14 @@ from pydantic import (
 )
 from sqlalchemy import or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session, load_only, selectinload
+from sqlalchemy.orm import Session, load_only, object_session, selectinload
 from starlette.responses import JSONResponse
 
+from app import health_store
 from app.auth_boundary import (
     READ_CONTEXT_PARAMETERS,
     AuthError,
+    now,
     read_context,
     response,
     screen_activity,
@@ -225,20 +227,13 @@ def _utc_datetime(value: str | None) -> datetime | None:
     return parsed.astimezone(UTC)
 
 
-def _health_view(app: App) -> dict[str, object]:
-    result = app.health_result
-    return {
-        "result": {
-            "state": result.state if result else "unchecked",
-            "checked_at": _utc_datetime(result.checked_at) if result else None,
-            "fresh_until": _utc_datetime(result.fresh_until) if result else None,
-        },
-        "latest_job": None,
-        "next_check_at": None,
-    }
+def _health_view(app: App, available: bool = False) -> dict[str, object]:
+    return health_store.snapshot(
+        object_session(app), app.id, now(), available=available
+    )["health"]
 
 
-def _app_card(app: App) -> dict[str, object]:
+def _app_card(app: App, *, health_available: bool = False) -> dict[str, object]:
     grades = {grade.grade for grade in app.grades}
     return {
         "id": app.id,
@@ -250,14 +245,14 @@ def _app_card(app: App) -> dict[str, object]:
         "theme_id": app.theme_id,
         "version": app.version,
         "url_version": app.url_version,
-        "health": _health_view(app),
+        "health": _health_view(app, health_available),
     }
 
 
-def _app_detail(app: App) -> dict[str, object]:
+def _app_detail(app: App, *, health_available: bool = False) -> dict[str, object]:
     AnyUrl(app.url)
     return {
-        **_app_card(app),
+        **_app_card(app, health_available=health_available),
         "url": app.url,
         "prompt": app.prompt,
         "description": app.description,
@@ -441,9 +436,14 @@ def list_public_apps(
         subjects = session.scalars(
             select(App.subject).where(App.is_public.is_(True)).distinct()
         ).all()
+        from app.health_api import checks_available
+
+        health_available = checks_available(session, request)
         page = AppPage.model_validate(
             {
-                "items": [_app_card(app) for app in apps],
+                "items": [
+                    _app_card(app, health_available=health_available) for app in apps
+                ],
                 "pagination": {
                     "limit": limit,
                     "offset": offset,
@@ -537,9 +537,13 @@ def get_public_app(
         )
         if app is None:
             return _not_found()
+        from app.health_api import checks_available
+
         body = AppDetailResponse.model_validate(
             {
-                "item": _app_detail(app),
+                "item": _app_detail(
+                    app, health_available=checks_available(session, request)
+                ),
                 "server_time": datetime.now(UTC),
             }
         )

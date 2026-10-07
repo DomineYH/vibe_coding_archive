@@ -76,10 +76,10 @@ def test_meta_health_and_readiness_use_public_contract_and_file_database(
             "reasons": [],
         }
         for key, capability in meta["capabilities"].items():
-            assert capability["enabled"] is (key == "apps_read")
+            assert capability["enabled"] is (key in ("apps_read", "health_read"))
             expected_reasons = (
                 []
-                if key == "apps_read"
+                if key in ("apps_read", "health_read")
                 else [
                     "collection_disabled"
                     if key.endswith("_collection")
@@ -90,6 +90,8 @@ def test_meta_health_and_readiness_use_public_contract_and_file_database(
                         "admin_user_delete",
                         "admin_apps_read",
                         "admin_apps_manage",
+                        "health_check",
+                        "health_batch",
                     )
                     else "not_implemented"
                 ]
