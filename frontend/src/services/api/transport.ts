@@ -19,6 +19,37 @@ export type ApiEndpoint =
 
 const API_ERROR_TRIPLES = [
   { endpoint: "GET /meta", status: 422, code: "VALIDATION_ERROR" },
+  ...(["GET /apps/{id}/health", "GET /health-checks/{id}"] as const).flatMap(
+    (endpoint) => [
+      { endpoint, status: 409, code: "AUTH_STATE_CHANGED" as const },
+      { endpoint, status: 409, code: "AUTH_TRANSITION_PENDING" as const },
+      { endpoint, status: 503, code: "DB_BUSY" as const },
+    ],
+  ),
+  ...(
+    [
+      "GET /apps/{id}/health",
+      "GET /health-checks/{id}",
+      "POST /apps/{id}/health-checks",
+      "POST /admin/health-check-batches",
+      "GET /admin/health-check-batches/{id}",
+    ] as const
+  ).map((endpoint) => ({
+    endpoint,
+    status: 422,
+    code: "VALIDATION_ERROR" as const,
+  })),
+  ...(
+    [
+      "POST /apps/{id}/health-checks",
+      "POST /admin/health-check-batches",
+    ] as const
+  ).map((endpoint) => ({
+    endpoint,
+    status: 413,
+    code: "PAYLOAD_TOO_LARGE" as const,
+  })),
+  { endpoint: "POST /apps/{id}/health-checks", status: 503, code: "DB_BUSY" },
   ...(["GET /apps", "GET /apps/{id}"] as const).flatMap((endpoint) => [
     { endpoint, status: 409, code: "AUTH_STATE_CHANGED" as const },
     { endpoint, status: 409, code: "AUTH_TRANSITION_PENDING" as const },

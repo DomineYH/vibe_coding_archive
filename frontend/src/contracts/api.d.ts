@@ -2669,7 +2669,7 @@ export interface operations {
             /** @description Current fixed-target batch counts and status. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
                     [name: string]: unknown;
                 };
                 content: {

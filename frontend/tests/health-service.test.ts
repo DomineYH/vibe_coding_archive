@@ -250,3 +250,59 @@ describe("health input UUID boundaries", () => {
     },
   );
 });
+
+it("binds health polling to the captured member observation and drops a retired response", async () => {
+  let current = true;
+  const state = anonymousSession();
+  const readContext = { state, isCurrent: () => current };
+  let resolveResponse!: (value: Response) => void;
+  const fetch = vi.fn().mockImplementation(
+    () =>
+      new Promise<Response>((resolve) => {
+        resolveResponse = resolve;
+      }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const pending = healthService.getAppHealth(appId, { readContext });
+  await Promise.resolve();
+  const headers = new Headers(fetch.mock.calls[0][1].headers);
+  expect(headers.get("X-EduVibe-Flow-Id")).toBe(state.flow.flowId);
+  expect(headers.get("X-EduVibe-Auth-Revision")).toBe(state.flow.revision);
+  expect(headers.get("X-EduVibe-Session-Generation")).toBe(
+    state.flow.sessionGeneration,
+  );
+  current = false;
+  resolveResponse(
+    jsonResponse({
+      app_id: appId,
+      url_version: 3,
+      server_time: time,
+      health: health(),
+    }),
+  );
+  await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+});
+
+it("preserves stale authentication errors from private health polling", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse(
+          {
+            error: {
+              code: "AUTH_STATE_CHANGED",
+              message: "인증 상태가 바뀌었어요.",
+              request_id: "health-read",
+            },
+          },
+          409,
+        ),
+      ),
+  );
+  await expect(healthService.getAppHealth(appId)).rejects.toMatchObject({
+    code: "AUTH_STATE_CHANGED",
+    httpStatus: 409,
+  });
+});

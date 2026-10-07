@@ -6,14 +6,22 @@ import type {
   HealthSnapshot,
 } from "../contracts/mappers";
 import type { RequestOptions } from "./apps-service";
+import type { ProtectedReadContext } from "./auth-state";
+
+export type HealthReadOptions = RequestOptions & {
+  readContext?: ProtectedReadContext;
+};
 
 export type HealthService = {
   getAppHealth(
     appId: string,
-    options?: RequestOptions,
+    options?: HealthReadOptions,
   ): Promise<HealthSnapshot>;
   requestCheck(appId: string): Promise<CheckAccepted>;
-  getJob(jobId: string, options?: RequestOptions): Promise<HealthJobResponse>;
+  getJob(
+    jobId: string,
+    options?: HealthReadOptions,
+  ): Promise<HealthJobResponse>;
   requestBatch(): Promise<BatchAccepted>;
-  getBatch(batchId: string, options?: RequestOptions): Promise<HealthBatch>;
+  getBatch(batchId: string, options?: HealthReadOptions): Promise<HealthBatch>;
 };
