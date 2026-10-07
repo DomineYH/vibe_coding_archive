@@ -1,0 +1,69 @@
+"""Controlled child process: real Worker, only AF_UNIX probe I/O (APP_ENV=test)."""
+
+import asyncio
+import json
+import os
+import signal
+import sys
+from pathlib import Path
+
+from app.database import make_engine, make_session_factory
+from app.health_worker import Worker, utc_stamp
+from app.settings import Settings
+
+
+async def main():
+    database, lock, control = map(Path, sys.argv[1:])
+    engine = make_engine(database)
+    settings = Settings(
+        app_env="test",
+        database_path=database,
+        public_origin="http://localhost:5174",
+        health_worker_lock_path=lock,
+    )
+
+    async def probe(url, **_):
+        # Socket EOF observed by the parent proves this specific probe's I/O
+        # ended. Each original probe owns its own real ten-second deadline.
+        reader, writer = await asyncio.open_unix_connection(control)
+        start = asyncio.get_running_loop().time()
+        try:
+            writer.write((json.dumps({"pid": os.getpid(), "url": url}) + "\n").encode())
+            await writer.drain()
+            async with asyncio.timeout_at(start + 10):
+                command = await reader.readline()
+            if command != b"complete\n":
+                raise RuntimeError("Controlled probe did not receive completion")
+            return {
+                "state": "healthy",
+                "http_status": 204,
+                "response_ms": 1,
+                "error_kind": None,
+                "error_stage": None,
+                "checked_at": utc_stamp(),
+            }
+        except TimeoutError:
+            return {
+                "state": "timeout",
+                "http_status": None,
+                "response_ms": None,
+                "error_kind": "TIMEOUT",
+                "error_stage": "overall",
+                "checked_at": utc_stamp(),
+            }
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    worker = Worker(settings, make_session_factory(engine), testing_probe=probe)
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGTERM, worker.stop)
+    loop.add_signal_handler(signal.SIGUSR1, worker.disable)
+    try:
+        await worker.run()
+    finally:
+        engine.dispose()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
