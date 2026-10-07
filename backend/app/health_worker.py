@@ -201,7 +201,7 @@ class Worker:
             ) from error
         except asyncio.CancelledError:
             raise
-        except Exception:
+        except Exception:  # noqa: BLE001 - A confirmed probe failure must terminalize its job.
             await self.transaction(
                 lambda db, boot, mono, stamp: store.fail(
                     db, job, boot_id=boot, mono=mono, stamp=stamp
@@ -220,6 +220,21 @@ class Worker:
             await self.reconcile_failed_save(job)
 
     async def cycle(self, heartbeat_due):
+        expired = await self.transaction(
+            lambda db, boot, mono, stamp: db.execute(
+                text(
+                    "SELECT 1 FROM health_jobs WHERE worker_id=:worker AND status='running' AND (boot_id<>:boot OR lease_deadline<=:mono) LIMIT 1"
+                ),
+                {"worker": self.worker_id, "boot": boot, "mono": mono},
+            ).scalar()
+        )
+        if expired:
+            # Recovery is fenced by execution generation. Close every execution
+            # in the old generation before the store receives its stopped ID.
+            await self.unavailable()
+            await self.cancel_running()
+            self.worker_id = str(uuid4())
+            await self.register()
         for job_id, task in list(self.tasks.items()):
             if task.done():
                 del self.tasks[job_id]
@@ -289,6 +304,7 @@ class Worker:
                     if suspend_offset() - offset > 0.05:
                         await self.unavailable()
                         await self.cancel_running()
+                        self.worker_id = str(uuid4())
                         await self.register()
                         offset = suspend_offset()
                     heartbeat_due = time.monotonic() - heartbeat_at >= 5
