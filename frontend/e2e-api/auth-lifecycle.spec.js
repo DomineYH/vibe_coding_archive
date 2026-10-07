@@ -24,7 +24,7 @@ test("registration and administrator approval activate as one bundle; future fea
   expect(capabilities.admin_password_reset.enabled).toBe(prepared);
   expect(capabilities.admin_user_delete.enabled).toBe(prepared);
   expect(capabilities.admin_apps_read.enabled).toBe(prepared);
-  expect(capabilities.admin_apps_manage.enabled).toBe(false);
+  expect(capabilities.admin_apps_manage.enabled).toBe(prepared);
 });
 
 if (prepared)

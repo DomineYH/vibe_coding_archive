@@ -15,7 +15,7 @@ def test_delete_capability_does_not_require_reset_secret(member_app):
         assert capabilities["admin_user_delete"] == {"enabled": True, "reasons": []}
         assert not capabilities["admin_password_reset"]["enabled"]
         assert capabilities["admin_apps_read"] == {"enabled": True, "reasons": []}
-        assert not capabilities["admin_apps_manage"]["enabled"]
+        assert capabilities["admin_apps_manage"] == {"enabled": True, "reasons": []}
         admin = signed_in(client, "admin")
         assert execute(admin, issue(admin).json()["key"]).status_code == 204
 

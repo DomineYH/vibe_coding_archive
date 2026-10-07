@@ -89,7 +89,7 @@ test("admin reauth follows the prepared capability boundary", async ({
   expect(capabilities.admin_password_reset.enabled).toBe(prepared);
   expect(capabilities.admin_user_delete.enabled).toBe(prepared);
   expect(capabilities.admin_apps_read.enabled).toBe(prepared);
-  expect(capabilities.admin_apps_manage.enabled).toBe(false);
+  expect(capabilities.admin_apps_manage.enabled).toBe(prepared);
 });
 
 test.describe("existing administrator card over real cookies", () => {

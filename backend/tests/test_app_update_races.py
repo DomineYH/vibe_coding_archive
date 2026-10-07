@@ -26,21 +26,23 @@ def snapshot(path):
 
 
 @pytest.mark.parametrize("mode", ["same", "different_keys", "different_body"])
+@pytest.mark.parametrize("writer", ["owner", "admin"])
 def test_concurrent_edits_apply_once_and_finalize_only_the_correct_key(
-    member_app, mode
+    member_app, mode, writer
 ):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        first = update_key(owner, item["id"])
-        second = update_key(owner, item["id"]) if mode == "different_keys" else first
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        first = update_key(actor, item["id"])
+        second = update_key(actor, item["id"]) if mode == "different_keys" else first
         barrier = Barrier(2)
 
         def submit(args):
             key, patch = args
             barrier.wait(5)
-            return update(owner, item["id"], key, patch)
+            return update(actor, item["id"], key, patch)
 
         with ThreadPoolExecutor(2) as pool:
             results = list(
@@ -65,8 +67,8 @@ def test_concurrent_edits_apply_once_and_finalize_only_the_correct_key(
                 "different_body": "OPERATION_KEY_MISMATCH",
             }[mode],
         )
-        assert detail(owner, item["id"]).json()["item"]["version"] == 2
-        states = [read(owner, key).json()["state"] for key in (first, second)]
+        assert detail(actor, item["id"]).json()["item"]["version"] == 2
+        states = [read(actor, key).json()["state"] for key in (first, second)]
         assert sorted(states) == (
             ["rejected", "succeeded"]
             if mode == "different_keys"

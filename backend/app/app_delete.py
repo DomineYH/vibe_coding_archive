@@ -1,4 +1,4 @@
-"""Owner-only atomic deletion followed by independent durable confirmation."""
+"""Owner or administrator deletion with independent durable confirmation."""
 
 import hashlib
 import json
@@ -11,7 +11,7 @@ from sqlalchemy import select, text
 from app.admin_approval import Version, check_json, operation, protected_member
 from app.app_create import app_operation_body, idempotency_key
 from app.app_deletion_ledger import confirm
-from app.app_update import owned_target
+from app.app_update import authorize_app_change, writable_target
 from app.auth import StrictModel, open_session
 from app.auth_boundary import AuthError, after, now, response
 from app.models import App
@@ -39,7 +39,7 @@ def request_hash(target_id, version):
 
 def issue_delete_operation(db, request, body):
     item, actor = protected_member(db, request, write=True)
-    app = owned_target(db, body.target_id, actor)
+    app = writable_target(db, body.target_id, actor)
     if app.version != body.expected_version:
         raise AuthError("VERSION_CONFLICT")
     stamp, key = now(), str(uuid4())
@@ -57,7 +57,8 @@ def issue_delete_operation(db, request, body):
             "expiry": after(stamp, 86400),
         },
     )
-    protected_member(db, request, write=True)
+    _, current_actor = protected_member(db, request, write=True)
+    authorize_app_change(app, current_actor)
     return response(
         db,
         request,
@@ -99,7 +100,7 @@ def delete_app(id: UUID, request: Request, body=DeleteBody, db=DeleteDb):
         raise AuthError("OPERATION_ALREADY_RESOLVED")
     if row["state"] == "unresolved":
         exists = db.scalar(select(App.id).where(App.id == str(id)))
-        app = owned_target(db, id, actor) if exists else None
+        app = writable_target(db, id, actor) if exists else None
         rejection = (
             "NOT_FOUND"
             if app is None
@@ -114,7 +115,9 @@ def delete_app(id: UUID, request: Request, body=DeleteBody, db=DeleteDb):
                 ),
                 {"code": rejection, "stamp": now(), "key": key},
             )
-            protected_member(db, request, write=True)
+            _, current_actor = protected_member(db, request, write=True)
+            if app is not None:
+                authorize_app_change(app, current_actor)
             operation(db, key, actor)
             db.commit()
             if rejection == "NOT_FOUND":
@@ -147,7 +150,9 @@ def delete_app(id: UUID, request: Request, body=DeleteBody, db=DeleteDb):
             text("SELECT event_id FROM app_delete_outbox WHERE operation_key=:key"),
             {"key": key},
         ).scalar_one()
-    protected_member(db, request, write=True)
+    _, current_actor = protected_member(db, request, write=True)
+    if row["state"] == "unresolved":
+        authorize_app_change(app, current_actor)
     operation(db, key, actor)
     # Prepare cookie cleanup and commit before independent storage I/O.
     result = response(db, request, None, status=204, metadata=item)

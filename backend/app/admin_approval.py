@@ -433,7 +433,7 @@ def protected_member(db, request, *, write=False, admin=False):
     elif not db.in_transaction():
         db.execute(text("BEGIN"))
     item, session, member = member_session(db, request)
-    if session["kind"] != "full":
+    if session["kind"] != "full" or member["must_change_password"]:
         raise AuthError("PASSWORD_CHANGE_REQUIRED", 403)
     if admin and not member["is_admin"]:
         raise AuthError("FORBIDDEN", 403)

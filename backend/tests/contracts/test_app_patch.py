@@ -122,24 +122,28 @@ def test_partial_input_strict_fields_catalog_unicode_and_limits(member_app, boun
         assert detail(owner, item["id"]).json()["item"] == item
 
 
-def test_omission_null_normalization_and_fragment_are_key_bound(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_omission_null_normalization_and_fragment_are_key_bound(member_app, writer):
     app, _ = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner, {**INPUT, "stack_db": "SQLite"})
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
         patch = {
             "name": " e\u0301 ",
             "prompt": "a\r\nb\u2028c",
             "grades": list(reversed(CATALOG["grades"])),
         }
-        key = update_key(owner, item["id"], patch)
+        key = update_key(actor, item["id"], patch)
         error(
-            update(owner, item["id"], key, {**patch, "stack_db": None}),
+            update(actor, item["id"], key, {**patch, "stack_db": None}),
             409,
             "OPERATION_KEY_MISMATCH",
         )
         result = update(
-            owner,
+            actor,
             item["id"],
             key,
             {**patch, "name": "é", "prompt": "a\nb\nc", "grades": CATALOG["grades"]},
@@ -151,21 +155,21 @@ def test_omission_null_normalization_and_fragment_are_key_bound(member_app):
             saved["stack_db"] == "SQLite"
             and saved["description"] == item["description"]
         )
-        key = update_key(owner, item["id"], {"stack_db": None}, 2)
+        key = update_key(actor, item["id"], {"stack_db": None}, 2)
         error(
-            update(owner, item["id"], key, {"name": "é"}, 2),
+            update(actor, item["id"], key, {"name": "é"}, 2),
             409,
             "OPERATION_KEY_MISMATCH",
         )
         assert (
-            update(owner, item["id"], key, {"stack_db": "   "}, 2).json()["item"][
+            update(actor, item["id"], key, {"stack_db": "   "}, 2).json()["item"][
                 "stack_db"
             ]
             is None
         )
-        key = update_key(owner, item["id"], {"url": INPUT["url"] + "#a"}, 3)
+        key = update_key(actor, item["id"], {"url": INPUT["url"] + "#a"}, 3)
         error(
-            update(owner, item["id"], key, {"url": INPUT["url"] + "#b"}, 3),
+            update(actor, item["id"], key, {"url": INPUT["url"] + "#b"}, 3),
             409,
             "OPERATION_KEY_MISMATCH",
         )
@@ -181,33 +185,43 @@ def test_omission_null_normalization_and_fragment_are_key_bound(member_app):
         ({"url": "https://example.com/next"}, True),
     ],
 )
+@pytest.mark.parametrize("writer", ["owner", "admin"])
 def test_url_literal_change_resets_health_but_fragment_and_same_values_preserve_it(
-    member_app, patch, reset
+    member_app, patch, reset, writer
 ):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
         with sqlite3.connect(path) as db:
             db.execute(
                 "UPDATE health_results SET state='healthy',checked_at='2026-10-01T00:00:00Z',fresh_until='2099-01-01T00:00:00Z'"
             )
-        before = detail(owner, item["id"]).json()["item"]
-        key = update_key(owner, item["id"], patch)
-        result = update(owner, item["id"], key, patch)
+        before = detail(actor, item["id"]).json()["item"]
+        key = update_key(actor, item["id"], patch)
+        result = update(actor, item["id"], key, patch)
         assert result.status_code == 200, result.text
         saved = result.json()["item"]
         assert saved["version"] == 2 and saved["url_version"] == (2 if reset else 1)
         assert saved["health"] == (item["health"] if reset else before["health"])
-        error(update(owner, item["id"], key, patch), 409, "OPERATION_ALREADY_RESOLVED")
-        assert detail(owner, item["id"]).json()["item"]["version"] == 2
+        error(update(actor, item["id"], key, patch), 409, "OPERATION_ALREADY_RESOLVED")
+        assert detail(actor, item["id"]).json()["item"]["version"] == 2
 
 
-def test_edit_large_unicode_body_duplicate_json_keys_and_key_validation(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_edit_large_unicode_body_duplicate_json_keys_and_key_validation(
+    member_app, writer
+):
     app, _ = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
         patch = {
             "name": "😀" * 100,
             "prompt": "😀" * 30000,
@@ -233,7 +247,7 @@ def test_edit_large_unicode_body_duplicate_json_keys_and_key_validation(member_a
                 },
                 ensure_ascii=True,
             ),
-            headers={**headers(owner), "Content-Type": "application/json"},
+            headers={**headers(actor), "Content-Type": "application/json"},
         )
         assert issued.status_code == 201, issued.text
         key = issued.json()["key"]
@@ -245,11 +259,11 @@ def test_edit_large_unicode_body_duplicate_json_keys_and_key_validation(member_a
         ):
             error(
                 update(
-                    owner,
+                    actor,
                     item["id"],
                     key,
                     patch,
-                    headers=[*headers(owner).items(), *keys],
+                    headers=[*headers(actor).items(), *keys],
                 ),
                 422,
                 "VALIDATION_ERROR",
@@ -263,7 +277,7 @@ def test_edit_large_unicode_body_duplicate_json_keys_and_key_validation(member_a
                 getattr(client, method)(
                     f"{API}{url}",
                     content=body,
-                    headers={**headers(owner), "Content-Type": "application/json"},
+                    headers={**headers(actor), "Content-Type": "application/json"},
                 ),
                 400,
                 "BAD_REQUEST",
@@ -272,7 +286,7 @@ def test_edit_large_unicode_body_duplicate_json_keys_and_key_validation(member_a
             f"{API}/apps/{item['id']}",
             content=json.dumps({"expected_version": 1, **patch}, ensure_ascii=True),
             headers={
-                **headers(owner),
+                **headers(actor),
                 "Idempotency-Key": key,
                 "Content-Type": "application/json",
             },

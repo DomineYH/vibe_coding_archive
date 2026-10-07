@@ -534,6 +534,102 @@ it.each(
   },
 );
 
+it("admin private saves cancel old member details and in-flight public lists", async () => {
+  await visit(ownEdit, DEMO_ACCOUNTS[0]);
+  const form = await screen.findByRole("form", { name: "앱 수정 양식" });
+  const stale = await appsService.get("00000000-0000-4000-8000-000000000001");
+  const keys = [
+    [__DATA_MODE__, "apps", "detail", stale.id, "member", "old-owner-scope"],
+    [__DATA_MODE__, "apps", "list", "held-public-page"],
+  ];
+  const held = keys.map((queryKey) => {
+    client.setQueryData(queryKey, stale);
+    let release;
+    let signal;
+    const pending = client.prefetchQuery({
+      queryKey,
+      queryFn: ({ signal: current }) => {
+        signal = current;
+        return new Promise((resolve) => {
+          release = resolve;
+        });
+      },
+    });
+    return { pending, release, signal };
+  });
+  const name = within(form).getByRole("textbox", {
+    name: "어플리케이션 이름",
+    exact: true,
+  });
+  fireEvent.change(name, { target: { value: "관리자 비공개 편집 결과" } });
+  fireEvent.click(within(form).getByRole("switch", { name: "전체 공개" }));
+  fireEvent.click(within(form).getByRole("button", { name: "변경사항 저장" }));
+  await screen.findByRole(
+    "heading",
+    { name: "관리자 비공개 편집 결과" },
+    { timeout: 5000 },
+  );
+  for (const entry of held) expect(entry.signal.aborted).toBe(true);
+  await act(async () => {
+    for (const entry of held) entry.release(stale);
+    await Promise.all(held.map((entry) => entry.pending));
+  });
+  for (const key of keys) expect(client.getQueryData(key)).toBeUndefined();
+});
+
+it.each(["navigation", "rotation", "other"])(
+  "does not apply an admin save to a newer %s while cache cancellation settles",
+  async (transition) => {
+    await visit(ownEdit, DEMO_ACCOUNTS[0]);
+    const form = await screen.findByRole("form", { name: "앱 수정 양식" });
+    let release;
+    const cancel = client.cancelQueries.bind(client);
+    vi.spyOn(client, "cancelQueries").mockImplementation(async (filters) => {
+      await cancel(filters);
+      if (!release && filters.queryKey?.[2] === "detail")
+        await new Promise((resolve) => {
+          release = resolve;
+        });
+    });
+    fireEvent.change(
+      within(form).getByRole("textbox", { name: "어플리케이션 이름" }),
+      { target: { value: "이전 관리자 저장 완료" } },
+    );
+    fireEvent.click(
+      within(form).getByRole("button", { name: "변경사항 저장" }),
+    );
+    await waitFor(() => expect(release).toBeTypeOf("function"));
+    if (transition === "navigation") {
+      await act(async () => router.navigate(ownEdit, { replace: true }));
+    } else {
+      await act(async () => {
+        window.dispatchEvent(new Event("blur"));
+        if (transition === "other") {
+          await authService.logout();
+          await authService.login(DEMO_ACCOUNTS[1]);
+        }
+        window.dispatchEvent(new Event("focus"));
+      });
+      await screen.findByRole("button", { name: "로그아웃" });
+    }
+    const locationKey = router.state.location.key;
+    await act(async () => release());
+    expect(router.state.location.key).toBe(locationKey);
+    expect(router.state.location.pathname).toBe(ownEdit);
+    expect(screen.queryByText("앱을 수정했어요.")).not.toBeInTheDocument();
+    if (transition !== "navigation")
+      expect(
+        client.getQueryData([
+          __DATA_MODE__,
+          "apps",
+          "detail",
+          "00000000-0000-4000-8000-000000000001",
+          "public",
+        ]),
+      ).toBeUndefined();
+  },
+);
+
 it.each(["/", "/apps/new"])(
   "hides creation for a real change-only admin at %s",
   async (path) => {
@@ -678,9 +774,13 @@ it("shows the updated private owner detail after saving an app with cached publi
   ).toBeUndefined();
 });
 
-it.each(["checkResult", "loadLatest"])(
-  "uses the captured owner observation when %s reads latest private detail",
-  async (action) => {
+it.each(
+  ["checkResult", "loadLatest"].flatMap((action) =>
+    [1, 0].map((account) => [action, account]),
+  ),
+)(
+  "uses the captured actor observation when %s reads latest private detail for account %s",
+  async (action, account) => {
     const { ServiceError } = await import("../src/services/service-error");
     const id = "00000000-0000-4000-8000-000000000001";
     const original = await appsService.get(id);
@@ -712,7 +812,8 @@ it.each(["checkResult", "loadLatest"])(
       state: "succeeded",
       resultVersion: 2,
     });
-    await visit(ownEdit);
+    await visit(ownEdit, DEMO_ACCOUNTS[account]);
+    const actor = (await authService.getCurrentAuthState()).user;
     await screen.findByRole("heading", { name: "앱 정보 편집", exact: true });
     const form = screen.getByRole("form", {
       name: "앱 수정 양식",
@@ -749,7 +850,7 @@ it.each(["checkResult", "loadLatest"])(
     const call = reader.mock.calls[0];
     expect(call?.[0]).toBe(id);
     expect(call?.[1]?.readContext).toMatchObject({
-      state: { user: { id: original.ownerId } },
+      state: { user: { id: actor.id } },
     });
     expect(call?.[1]?.readContext?.state.flow.sessionGeneration).toBeTruthy();
   },

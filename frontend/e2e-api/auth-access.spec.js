@@ -210,7 +210,7 @@ if (prepared) {
     expect(meta.capabilities.apps_update_own.enabled).toBe(true);
     expect(meta.capabilities.apps_delete_own.enabled).toBe(true);
     expect(meta.capabilities.admin_apps_read.enabled).toBe(true);
-    expect(meta.capabilities.admin_apps_manage.enabled).toBe(false);
+    expect(meta.capabilities.admin_apps_manage.enabled).toBe(true);
     const listed = await page.request.get("/api/v1/admin/apps?limit=1", {
       headers: await approvalHeaders(page),
     });

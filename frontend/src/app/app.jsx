@@ -1865,26 +1865,42 @@ export default function App() {
   );
   const onAppUpdated = useCallback(
     async (app) => {
+      const observationId = authObservation.current;
+      const locationKey = currentLocation.current.key;
       const fromAdmin = location.state?.fromAdmin === true;
+      const detailKey = [__DATA_MODE__, "apps", "detail", app.id];
+      const healthKey = [__DATA_MODE__, "health", "app", app.id];
+      await Promise.all(
+        [
+          detailKey,
+          healthKey,
+          [__DATA_MODE__, "apps", "list"],
+          [__DATA_MODE__, "admin"],
+        ].map((queryKey) => queryClient.cancelQueries({ queryKey })),
+      );
+      if (
+        authObservation.current !== observationId ||
+        pageAway.current ||
+        document.visibilityState === "hidden"
+      )
+        return;
+      queryClient.removeQueries({ queryKey: detailKey });
+      queryClient.removeQueries({ queryKey: healthKey });
+      queryClient.removeQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
       if (app.isPublic)
         queryClient.setQueryData(
           [__DATA_MODE__, "apps", "detail", app.id, "public"],
           app,
         );
-      else {
-        const publicKey = [__DATA_MODE__, "apps", "detail", app.id, "public"];
-        await queryClient.cancelQueries({ queryKey: publicKey, exact: true });
-        queryClient.removeQueries({ queryKey: publicKey, exact: true });
-      }
-      void queryClient.invalidateQueries({
-        queryKey: [__DATA_MODE__, "apps", "detail", app.id],
-      });
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
       });
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "admin"],
       });
+      if (currentLocation.current.key !== locationKey) return;
       navigate(
         fromAdmin ? "/admin?tab=health" : `/apps/${app.id}`,
         fromAdmin
@@ -1924,6 +1940,9 @@ export default function App() {
       });
       if (!context.isCurrent()) return;
       queryClient.removeQueries({ predicate: target });
+      queryClient.removeQueries({
+        queryKey: [__DATA_MODE__, "apps", "list"],
+      });
       void queryClient.invalidateQueries({ predicate: lists });
     },
     [queryClient],

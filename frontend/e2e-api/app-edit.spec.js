@@ -154,7 +154,7 @@ test("owner persists edits and toggles public private public with current owner 
   }
 });
 
-test("full admin edits only their own app", async ({ page }) => {
+test("full admin edits their own app", async ({ page }) => {
   await login(page, "approval-admin");
   const id = await register(page, "API 관리자 편집 원본 165");
   const form = await edit(page, id);

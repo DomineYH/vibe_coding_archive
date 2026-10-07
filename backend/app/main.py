@@ -389,6 +389,10 @@ def create_app(
             "enabled": False,
             "reasons": ["operational_restriction"],
         }
+        capabilities["admin_apps_manage"] = {
+            "enabled": False,
+            "reasons": ["operational_restriction"],
+        }
         if request.app.state.auth_enabled and request.app.state.auth_ready:
             # #113: the T01–T05 bundle; operating release remains behind T07.
             for key in (
@@ -400,6 +404,7 @@ def create_app(
                 "admin_users_read",
                 "admin_approval",
                 "admin_apps_read",
+                "admin_apps_manage",
                 "admin_summary",
                 "apps_create",
                 "apps_update_own",

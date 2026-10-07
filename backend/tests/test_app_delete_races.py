@@ -61,18 +61,20 @@ def test_writer_proceeds_during_confirmation_within_five_second_deadline(member_
 
 
 @pytest.mark.parametrize("same", [True, False])
-def test_concurrent_deletes_create_one_db_effect(member_app, same):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_concurrent_deletes_create_one_db_effect(member_app, same, writer):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        first = delete_key(owner, item["id"])
-        second = first if same else delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        first = delete_key(actor, item["id"])
+        second = first if same else delete_key(actor, item["id"])
         barrier = Barrier(2)
 
         def submit(key):
             barrier.wait(5)
-            return delete(owner, item["id"], key)
+            return delete(actor, item["id"], key)
 
         with ThreadPoolExecutor(2) as pool:
             results = list(pool.map(submit, [first, second]))
@@ -88,7 +90,7 @@ def test_concurrent_deletes_create_one_db_effect(member_app, same):
                 "SELECT count(*) FROM audit_logs WHERE action='app_delete'"
             ).fetchone() == (1,)
         if not same:
-            assert sorted(read(owner, k).json()["state"] for k in (first, second)) == [
+            assert sorted(read(actor, k).json()["state"] for k in (first, second)) == [
                 "rejected",
                 "succeeded",
             ]
@@ -121,12 +123,14 @@ def test_edit_delete_commit_order(member_app, edit_first):
         ("write_operations", "UPDATE"),
     ],
 )
-def test_delete_failure_rolls_back_every_effect(member_app, table, action):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_delete_failure_rolls_back_every_effect(member_app, table, action, writer):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        key = delete_key(actor, item["id"])
         tables = (
             "apps",
             "app_grades",
@@ -140,7 +144,7 @@ def test_delete_failure_rolls_back_every_effect(member_app, table, action):
             db.execute(
                 f"CREATE TRIGGER fail_delete BEFORE {action} ON {table} BEGIN SELECT RAISE(ABORT,'injected'); END"
             )
-        error(delete(owner, item["id"], key), 503, "SERVICE_UNAVAILABLE")
+        error(delete(actor, item["id"], key), 503, "SERVICE_UNAVAILABLE")
         with sqlite3.connect(path) as db:
             assert {
                 t: db.execute(f"SELECT * FROM {t}").fetchall() for t in tables

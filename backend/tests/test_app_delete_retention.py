@@ -10,18 +10,22 @@ from tests.app_update_client import registered
 from tests.auth_client import signed_in
 
 
-def test_confirmation_failure_is_db_applied_and_maintenance_delivers(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_confirmation_failure_is_db_applied_and_maintenance_delivers(
+    member_app, writer
+):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        key = delete_key(actor, item["id"])
         ledger_path = path.with_suffix(".deletions.sqlite3")
         with sqlite3.connect(ledger_path) as ledger:
             ledger.execute("BEGIN IMMEDIATE")
-            response = delete(owner, item["id"], key)
+            response = delete(actor, item["id"], key)
             error(response, 503, "DELETION_CONFIRMATION_PENDING")
-            result = read(owner, key).json()
+            result = read(actor, key).json()
             assert result["state"] == "confirming_deletion"
             assert (
                 result["db_applied_at"] is not None and result["finalized_at"] is None
@@ -30,7 +34,7 @@ def test_confirmation_failure_is_db_applied_and_maintenance_delivers(member_app)
                 db.execute("BEGIN IMMEDIATE")
                 assert db.execute("SELECT count(*) FROM apps").fetchone() == (0,)
         sweep(app.state.session_factory)
-        assert read(owner, key).json()["state"] == "succeeded"
+        assert read(actor, key).json()["state"] == "succeeded"
         with sqlite3.connect(ledger_path) as ledger:
             assert ledger.execute(
                 "SELECT count(*) FROM completed_app_delete_events"
@@ -41,16 +45,20 @@ def test_confirmation_failure_is_db_applied_and_maintenance_delivers(member_app)
             ).fetchone() == (1,)
 
 
-def test_restore_replays_interactive_delete_of_approved_owner(member_app, tmp_path):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_restore_replays_interactive_delete_of_approved_owner(
+    member_app, tmp_path, writer
+):
     app, path = member_app()
     backup = tmp_path / "before.sqlite3"
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        key = delete_key(actor, item["id"])
         with sqlite3.connect(path) as source, sqlite3.connect(backup) as target:
             source.backup(target)
-        assert delete(owner, item["id"], key).status_code == 204
+        assert delete(actor, item["id"], key).status_code == 204
         with sqlite3.connect(backup) as source, sqlite3.connect(path) as target:
             source.backup(target)
         reconcile(app.state.session_factory, restored=True)
@@ -97,17 +105,21 @@ def test_normal_undelivered_event_recovers_but_delivered_loss_is_corruption(memb
             reconcile(app.state.session_factory)
 
 
-def test_independent_committed_event_survives_ack_crash_and_key_removal(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_independent_committed_event_survives_ack_crash_and_key_removal(
+    member_app, writer
+):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        key = delete_key(actor, item["id"])
         with sqlite3.connect(path) as db:
             db.execute(
                 "CREATE TRIGGER fail_ack BEFORE UPDATE OF delivered_at ON app_delete_outbox BEGIN SELECT RAISE(ABORT,'ack lost'); END"
             )
-        error(delete(owner, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
+        error(delete(actor, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
         with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
             original = ledger.execute(
                 "SELECT * FROM completed_app_delete_events"
@@ -307,21 +319,25 @@ def test_confirmed_delete_response_does_not_reopen_operational_cookie_reads(memb
         assert read(owner, key).json()["state"] == "succeeded"
 
 
-def test_confirming_same_key_replay_confirms_without_reexecuting_deletion(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_confirming_same_key_replay_confirms_without_reexecuting_deletion(
+    member_app, writer
+):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        key = delete_key(actor, item["id"])
         with sqlite3.connect(path.with_suffix(".deletions.sqlite3")) as ledger:
             ledger.execute("BEGIN IMMEDIATE")
-            error(delete(owner, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
-            original = read(owner, key).json()
-            error(delete(owner, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
-            assert read(owner, key).json()["db_applied_at"] == original["db_applied_at"]
-        error(delete(owner, item["id"], key, 2), 409, "OPERATION_KEY_MISMATCH")
-        assert delete(owner, item["id"], key).status_code == 204
-        result = read(owner, key).json()
+            error(delete(actor, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
+            original = read(actor, key).json()
+            error(delete(actor, item["id"], key), 503, "DELETION_CONFIRMATION_PENDING")
+            assert read(actor, key).json()["db_applied_at"] == original["db_applied_at"]
+        error(delete(actor, item["id"], key, 2), 409, "OPERATION_KEY_MISMATCH")
+        assert delete(actor, item["id"], key).status_code == 204
+        result = read(actor, key).json()
         assert result["state"] == "succeeded"
         assert result["db_applied_at"] == original["db_applied_at"]
         with sqlite3.connect(path) as db:
@@ -331,7 +347,7 @@ def test_confirming_same_key_replay_confirms_without_reexecuting_deletion(member
             assert db.execute(
                 "SELECT count(*) FROM audit_logs WHERE action='app_delete'"
             ).fetchone() == (1,)
-        error(delete(owner, item["id"], key), 409, "OPERATION_ALREADY_RESOLVED")
+        error(delete(actor, item["id"], key), 409, "OPERATION_ALREADY_RESOLVED")
 
 
 def test_conflicting_independent_payload_never_acknowledges_deletion(member_app):
