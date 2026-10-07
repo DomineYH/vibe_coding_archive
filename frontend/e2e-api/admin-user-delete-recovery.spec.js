@@ -7,6 +7,8 @@ import {
   openDelete,
   PASSWORD,
   findRow,
+  userRow,
+  approvalHeaders,
 } from "./user-delete-helpers.js";
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
 test.describe("account deletion recovery over real HTTP", () => {
@@ -20,6 +22,11 @@ test.describe("account deletion recovery over real HTTP", () => {
     owned,
   }) => {
     await openAdmin(page, owned);
+    const before = await (
+      await page.request.get("/api/v1/admin/users", {
+        headers: await approvalHeaders(page),
+      })
+    ).json();
     const panel = await openDelete(page, owned);
     let issues = 0,
       writes = 0;
@@ -38,7 +45,29 @@ test.describe("account deletion recovery over real HTTP", () => {
       await route.abort("failed");
     });
     await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
-    await expect(panel).toContainText("삭제가 확정됐어요");
+    await expect(panel).toContainText("소유 앱 2개 삭제가 확정됐어요");
+    await expect(panel).toHaveAttribute("aria-busy", "false");
+    await expect(panel).not.toContainText("현재 대상을 불러오지 못했어요");
+    await expect(userRow(page, owned.member.login)).toHaveCount(0);
+    const after = await (
+      await page.request.get("/api/v1/admin/users", {
+        headers: await approvalHeaders(page),
+      })
+    ).json();
+    expect(after.stats.total_users).toBe(before.stats.total_users - 1);
+    expect(after.stats.total_apps).toBe(before.stats.total_apps - 2);
+    for (const [label, value] of [
+      ["전체 사용자", after.stats.total_users],
+      ["등록된 앱", after.stats.total_apps],
+    ])
+      await expect(
+        page.getByText(label, { exact: true }).locator("..").locator("dd"),
+      ).toHaveText(String(value));
+    await expect(
+      panel.getByRole("button", { name: "닫기", exact: true }),
+    ).toBeEnabled();
+    await panel.getByRole("button", { name: "닫기", exact: true }).click();
+    await expect(panel).toHaveCount(0);
     expect(issues).toBe(1);
     expect(writes).toBe(1);
     expect(
