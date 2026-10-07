@@ -393,14 +393,21 @@ class Worker:
                     )
                 )
                 if self.tasks:
-                    remaining = max(
-                        0,
-                        (self.stop_deadline or (time.monotonic() + 15))
-                        - time.monotonic()
-                        - 1,
+                    drain_deadline = (self.stop_deadline or (time.monotonic() + 15)) - 1
+                    pending = set(self.tasks.values())
+                    while pending and self.enabled():
+                        remaining = drain_deadline - time.monotonic()
+                        if remaining <= 0:
+                            break
+                        _, pending = await asyncio.wait(
+                            pending, timeout=min(0.1, remaining)
+                        )
+                # Off may arrive during drain or as its last task completes.
+                if not self.enabled():
+                    await self.transaction(
+                        lambda db, boot, mono, stamp: store.cancel_all(db, stamp)
                     )
-                    await asyncio.wait(list(self.tasks.values()), timeout=remaining)
-                    await self.cancel_running()
+                await self.cancel_running()
             except UncleanShutdown:
                 if self.testing_probe is None:
                     # Keep the lock until OS exit closes every socket. Releasing

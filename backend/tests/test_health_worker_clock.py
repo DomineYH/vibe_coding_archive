@@ -246,3 +246,77 @@ async def test_disable_as_claim_commits_prevents_probe_io(
     assert attempts == 1
     assert observed["health"]["latest_job"]["status"] == "cancelled"
     assert observed["health"]["result"]["state"] == "unchecked"
+
+
+async def test_disable_during_sigterm_drain_closes_execution_without_revival(
+    worker_database,  # noqa: F811 - shared worker DB fixture
+):
+    settings, factory = worker_database
+    with factory() as db:
+        request_check(
+            db, app_id(1), "disable-drain", None, datetime.now(UTC).isoformat()
+        )
+        db.commit()
+    entered, closed = asyncio.Event(), asyncio.Event()
+    calls = []
+
+    async def accept_socket(reader, writer):
+        try:
+            await reader.read()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+            closed.set()
+
+    server = await asyncio.start_server(accept_socket, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+
+    async def probe(url, **_kwargs):
+        calls.append(url)
+        reader, writer = await asyncio.open_connection("127.0.0.1", port)
+        entered.set()
+        try:
+            await reader.read()
+        finally:
+            writer.close()
+            await writer.wait_closed()
+
+    worker = Worker(settings, factory, testing_probe=probe)
+    running = asyncio.create_task(worker.run())
+    try:
+        await asyncio.wait_for(entered.wait(), 15)
+        worker.stop()
+
+        def draining():
+            with factory() as db:
+                return (
+                    db.execute(text("SELECT ready FROM health_worker")).scalar_one()
+                    == 0
+                )
+
+        await until(draining)
+        worker.disable()
+        await asyncio.wait_for(closed.wait(), 2)
+        await asyncio.wait_for(running, 5)
+        with factory() as db:
+            observed = snapshot(db, app_id(1), datetime.now(UTC).isoformat())
+        assert observed["health"]["latest_job"]["status"] == "cancelled"
+        assert observed["health"]["result"]["state"] == "unchecked"
+    finally:
+        worker.disable()
+        await asyncio.wait_for(running, 15)
+        server.close()
+        await server.wait_closed()
+
+    restarted = Worker(settings, factory, testing_probe=probe)
+    running = asyncio.create_task(restarted.run())
+    try:
+        await until(lambda: restarted.clock is not None)
+        await asyncio.sleep(0.2)
+        assert len(calls) == 1
+        with factory() as db:
+            observed = snapshot(db, app_id(1), datetime.now(UTC).isoformat())
+        assert observed["health"]["latest_job"]["status"] == "cancelled"
+    finally:
+        restarted.stop()
+        await asyncio.wait_for(running, 5)
