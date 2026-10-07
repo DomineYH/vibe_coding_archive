@@ -15,7 +15,7 @@ from app.health_address import (
     resolve_address,
     validate_url,
 )
-from app.health_transport import HeadersTooLarge, PinnedTransport
+from app.health_transport import HeadersTooLarge, PinnedTransport, ProbeClock
 
 
 async def probe(
@@ -31,6 +31,7 @@ async def probe(
     Injected resolver/network_backend replace I/O, never the destination/TLS policy.
     Configuration/implementation errors propagate as job failures, not site failures.
     """
+    clock = ProbeClock()
     started = time.monotonic()
     deadline = started + 10
     stage, transport = "policy", None
@@ -45,8 +46,10 @@ async def probe(
             method, redirects, visited = "HEAD", 0, {str(target)}
             while True:
                 stage, transport = "dns", None
+                clock.check()
                 ip = await resolve_address(target.host, resolver, denied_ips)
-                transport = PinnedTransport(ip, deadline, network_backend)
+                clock.check()
+                transport = PinnedTransport(ip, deadline, clock, network_backend)
                 async with (
                     httpx.AsyncClient(
                         transport=transport, trust_env=False, follow_redirects=False
@@ -102,6 +105,7 @@ async def probe(
         )
     except httpx.InvalidURL:
         state, kind = "blocked", "URL_POLICY"
+    clock.check()
     now = datetime.now(timezone.utc)
     if state not in ("healthy", "http_error", "redirect_error"):
         code, elapsed = None, None

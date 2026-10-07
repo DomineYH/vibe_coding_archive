@@ -449,3 +449,158 @@ async def test_cancellation_during_close_reports_unconfirmed_resources():
     task.cancel()
     with pytest.raises(ResourceCleanupError):
         await task
+
+
+async def test_resume_after_dns_aborts_before_connect(monkeypatch):
+    import time
+
+    from app.health_transport import ResourceCleanupError
+
+    actual_clock = time.clock_gettime
+    offset = 0
+    monkeypatch.setattr(
+        time, "clock_gettime", lambda clock: actual_clock(clock) + offset
+    )
+
+    class SuspendResolver(Resolver):
+        async def resolve(self, *args, **kwargs):
+            nonlocal offset
+            answer = await super().resolve(*args, **kwargs)
+            offset = 30
+            return answer
+
+    network = Network(b"HTTP/1.1 200 OK\r\n\r\n")
+    with pytest.raises(ResourceCleanupError):
+        await probe(
+            "https://example.org",
+            dns_servers=(),
+            denied_ips=(),
+            resolver=SuspendResolver(),
+            network_backend=network,
+        )
+    assert network.calls == []
+
+
+@pytest.mark.parametrize("stage", ["connect", "tls", "write", "read", "close"])
+async def test_clock_jump_during_io_closes_connection_without_result(
+    stage, monkeypatch
+):
+    import time
+
+    from app.health_transport import ResourceCleanupError
+
+    actual_clock = time.clock_gettime
+    offset = 0
+    monkeypatch.setattr(
+        time, "clock_gettime", lambda clock: actual_clock(clock) + offset
+    )
+
+    class SuspendStream(Stream):
+        async def read(self, *args, **kwargs):
+            nonlocal offset
+            if stage == "read":
+                offset = 30
+            return await super().read(*args, **kwargs)
+
+        async def write(self, *args, **kwargs):
+            nonlocal offset
+            if stage == "write":
+                offset = 30
+            return await super().write(*args, **kwargs)
+
+        async def start_tls(self, *args, **kwargs):
+            nonlocal offset
+            if stage == "tls":
+                offset = 30
+            return await super().start_tls(*args, **kwargs)
+
+        async def aclose(self):
+            nonlocal offset
+            if stage == "close":
+                offset = 30
+            await super().aclose()
+
+    class SuspendNetwork(Network):
+        async def connect_tcp(self, *args, **kwargs):
+            nonlocal offset
+            if stage == "connect":
+                offset = 30
+            return await super().connect_tcp(*args, **kwargs)
+
+    network = SuspendNetwork()
+    network.streams = [SuspendStream(b"HTTP/1.1 200 OK\r\n\r\n")]
+    with pytest.raises(ResourceCleanupError):
+        await probe(
+            "https://example.org",
+            dns_servers=(),
+            denied_ips=(),
+            resolver=Resolver(),
+            network_backend=network,
+        )
+    assert network.streams[0].closed
+    if stage in ("connect", "tls"):
+        assert network.streams[0].written == b""
+
+
+async def test_boot_change_after_dns_prevents_connect(monkeypatch):
+    from pathlib import Path
+
+    from app.health_transport import ResourceCleanupError
+
+    boot = "boot-a"
+    original_read = Path.read_text
+    monkeypatch.setattr(
+        Path,
+        "read_text",
+        lambda path, *args, **kwargs: (
+            boot
+            if str(path) == "/proc/sys/kernel/random/boot_id"
+            else original_read(path, *args, **kwargs)
+        ),
+    )
+
+    class RebootResolver(Resolver):
+        async def resolve(self, *args, **kwargs):
+            nonlocal boot
+            answer = await super().resolve(*args, **kwargs)
+            boot = "boot-b"
+            return answer
+
+    network = Network()
+    with pytest.raises(ResourceCleanupError):
+        await probe(
+            "http://example.org",
+            dns_servers=(),
+            denied_ips=(),
+            resolver=RebootResolver(),
+            network_backend=network,
+        )
+    assert network.calls == []
+
+
+async def test_backward_monotonic_after_dns_prevents_connect(monkeypatch):
+    import time
+
+    from app.health_transport import ResourceCleanupError
+
+    actual_monotonic = time.monotonic
+    offset = 0
+    monkeypatch.setattr(time, "monotonic", lambda: actual_monotonic() + offset)
+
+    class BackwardResolver(Resolver):
+        async def resolve(self, *args, **kwargs):
+            nonlocal offset
+            answer = await super().resolve(*args, **kwargs)
+            offset = -30
+            return answer
+
+    network = Network()
+    with pytest.raises(ResourceCleanupError):
+        await probe(
+            "http://example.org",
+            dns_servers=(),
+            denied_ips=(),
+            resolver=BackwardResolver(),
+            network_backend=network,
+        )
+    assert network.calls == []

@@ -3,6 +3,7 @@
 import asyncio
 import ssl
 import time
+from pathlib import Path
 
 import httpcore
 import httpx
@@ -18,6 +19,33 @@ class ResourceCleanupError(Exception):
     """The worker must stop: termination of an inspection stream is unconfirmed."""
 
 
+class ProbeClock:
+    """Fail closed on suspend/boot-clock discontinuities; not a VM verification."""
+
+    def __init__(self):
+        self.boot_id, self.monotonic, self.offset = self.sample()
+
+    @staticmethod
+    def sample():
+        try:
+            boot_id = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+            monotonic = time.monotonic()
+            offset = time.clock_gettime(time.CLOCK_BOOTTIME) - monotonic
+        except (OSError, AttributeError) as exc:
+            raise ResourceCleanupError("Inspection clock unavailable") from exc
+        return boot_id, monotonic, offset
+
+    def check(self):
+        boot_id, monotonic, offset = self.sample()
+        if (
+            boot_id != self.boot_id
+            or monotonic < self.monotonic
+            or abs(offset - self.offset) > 0.25
+        ):
+            raise ResourceCleanupError("Inspection clock discontinuity")
+        self.monotonic = monotonic
+
+
 class HeaderStream(AsyncNetworkStream):
     def __init__(self, stream, backend):
         self.stream = stream
@@ -25,12 +53,15 @@ class HeaderStream(AsyncNetworkStream):
         self.done = False
 
     async def read(self, max_bytes, timeout=None):
+        self.backend.clock.check()
         if self.done:
             return b""
         data = bytearray()
         offset = 0
         while True:
+            self.backend.clock.check()
             chunk = await self.stream.read(min(max_bytes, 32769 - len(data)), timeout)
+            self.backend.clock.check()
             if not chunk:
                 return bytes(data)
             data.extend(chunk)
@@ -56,8 +87,10 @@ class HeaderStream(AsyncNetworkStream):
                 raise HeadersTooLarge()
 
     async def write(self, buffer, timeout=None):
+        self.backend.clock.check()
         self.backend.stage = "request"
         await self.stream.write(buffer, timeout)
+        self.backend.clock.check()
         self.backend.stage = "response_headers"
 
     async def start_tls(self, ssl_context, server_hostname=None, timeout=None):
@@ -66,10 +99,12 @@ class HeaderStream(AsyncNetworkStream):
             min(self.backend.deadline, self.backend.connect_deadline) - time.monotonic()
         )
         try:
+            self.backend.clock.check()
             async with asyncio.timeout(remaining):
                 self.stream = await self.stream.start_tls(
                     ssl_context, server_hostname, remaining
                 )
+            self.backend.clock.check()
         except BaseException:
             # httpcore has not attached this connection to its pool until TLS
             # succeeds, so this stream owns cleanup on handshake failure.
@@ -89,7 +124,8 @@ class HeaderStream(AsyncNetworkStream):
 
 
 class PinnedBackend(AsyncNetworkBackend):
-    def __init__(self, ip, deadline, delegate=None):
+    def __init__(self, ip, deadline, clock, delegate=None):
+        self.clock = clock
         self.ip = ip
         self.deadline = deadline
         self.delegate = delegate or AnyIOBackend()
@@ -99,6 +135,7 @@ class PinnedBackend(AsyncNetworkBackend):
     async def connect_tcp(
         self, host, port, timeout=None, local_address=None, socket_options=None
     ):
+        self.clock.check()
         self.connect_deadline = min(self.deadline, time.monotonic() + 3)
         async with asyncio.timeout_at(self.connect_deadline):
             stream = await self.delegate.connect_tcp(
@@ -108,7 +145,13 @@ class PinnedBackend(AsyncNetworkBackend):
                 local_address=local_address,
                 socket_options=socket_options,
             )
-        return HeaderStream(stream, self)
+        wrapped = HeaderStream(stream, self)
+        try:
+            self.clock.check()
+        except ResourceCleanupError:
+            await wrapped.aclose()
+            raise
+        return wrapped
 
 
 class ResponseStream(httpx.AsyncByteStream):
@@ -124,8 +167,8 @@ class ResponseStream(httpx.AsyncByteStream):
 
 
 class PinnedTransport(httpx.AsyncBaseTransport):
-    def __init__(self, ip, deadline, backend=None):
-        self.backend = PinnedBackend(ip, deadline, backend)
+    def __init__(self, ip, deadline, clock, backend=None):
+        self.backend = PinnedBackend(ip, deadline, clock, backend)
         self.pool = httpcore.AsyncConnectionPool(
             ssl_context=ssl.create_default_context(),
             network_backend=self.backend,
