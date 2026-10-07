@@ -1,4 +1,4 @@
-"""Owner-only partial app edits and their atomic minimum operation results."""
+"""Owner or administrator app edits and atomic minimum operation results."""
 
 from typing import Annotated
 from uuid import UUID, uuid4
@@ -17,18 +17,24 @@ from app.public_apps import AppDetailResponse, _app_detail
 router = APIRouter(dependencies=[Depends(check_json)])
 
 
-def owned_target(db, app_id, actor):
-    app = db.scalar(select(App).where(App.id == str(app_id)))
-    if app is None or (app.owner_id != actor["id"] and not app.is_public):
+def authorize_app_change(app, actor):
+    if app is None or (
+        app.owner_id != actor["id"] and not actor["is_admin"] and not app.is_public
+    ):
         raise AuthError("NOT_FOUND", 404, message="아카이브 앱을 찾을 수 없어요.")
-    if app.owner_id != actor["id"]:
+    if app.owner_id != actor["id"] and not actor["is_admin"]:
         raise AuthError("FORBIDDEN", 403)
+
+
+def writable_target(db, app_id, actor):
+    app = db.scalar(select(App).where(App.id == str(app_id)))
+    authorize_app_change(app, actor)
     return app
 
 
 def issue_update_operation(db, request, body):
     item, actor = protected_member(db, request, write=True)
-    app = owned_target(db, body.target_id, actor)
+    app = writable_target(db, body.target_id, actor)
     if app.version != body.expected_version:
         raise AuthError("VERSION_CONFLICT")
     stamp, key = now(), str(uuid4())
@@ -50,7 +56,8 @@ def issue_update_operation(db, request, body):
             "expiry": after(stamp, 86400),
         },
     )
-    protected_member(db, request, write=True)
+    _, current_actor = protected_member(db, request, write=True)
+    authorize_app_change(app, current_actor)
     return response(
         db,
         request,
@@ -102,7 +109,7 @@ def update_app(id: UUID, request: Request, body=PatchBody, db=PatchDb):
         operation(db, key, actor)
         db.commit()
         raise AuthError("NOT_FOUND", 404, message="아카이브 앱을 찾을 수 없어요.")
-    app = owned_target(db, id, actor)
+    app = writable_target(db, id, actor)
     if app.version != body.expected_version:
         db.execute(
             text(
@@ -110,7 +117,8 @@ def update_app(id: UUID, request: Request, body=PatchBody, db=PatchDb):
             ),
             {"key": key, "stamp": now()},
         )
-        protected_member(db, request, write=True)
+        _, current_actor = protected_member(db, request, write=True)
+        authorize_app_change(app, current_actor)
         operation(db, key, actor)
         db.commit()
         raise AuthError("VERSION_CONFLICT")
@@ -146,6 +154,13 @@ def update_app(id: UUID, request: Request, body=PatchBody, db=PatchDb):
             ),
             {"id": str(id)},
         )
+    if app.owner_id != actor["id"]:
+        db.execute(
+            text(
+                "INSERT INTO audit_logs(action,actor_id,target_id,occurred_at,outcome) VALUES ('app_update',:actor,:id,:stamp,'succeeded')"
+            ),
+            {"actor": actor["id"], "id": str(id), "stamp": stamp},
+        )
     db.execute(
         text(
             "UPDATE write_operations SET state='succeeded',result_version=:version,applied_at=:stamp WHERE key=:key"
@@ -157,6 +172,7 @@ def update_app(id: UUID, request: Request, body=PatchBody, db=PatchDb):
     detail = AppDetailResponse.model_validate(
         {"item": _app_detail(app), "server_time": now()}
     ).model_dump(mode="json")
-    protected_member(db, request, write=True)
+    _, current_actor = protected_member(db, request, write=True)
+    authorize_app_change(app, current_actor)
     operation(db, key, actor)
     return response(db, request, detail, metadata=item)

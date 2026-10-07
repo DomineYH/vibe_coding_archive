@@ -73,7 +73,7 @@ for (const [account, privateApp] of [
     const before = query("SELECT count(*) FROM apps")[0][0];
     const capabilities = await (await page.request.get("/api/v1/meta")).json();
     expect(capabilities.capabilities.apps_delete_own.enabled).toBe(true);
-    expect(capabilities.capabilities.admin_apps_manage.enabled).toBe(false);
+    expect(capabilities.capabilities.admin_apps_manage.enabled).toBe(true);
     let issues = 0;
     let deletes = 0;
     page.on("request", (request) => {

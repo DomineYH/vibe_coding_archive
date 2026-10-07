@@ -117,7 +117,7 @@ def test_delete_stale_version_message_at_both_boundaries(member_app):
 
 
 @pytest.mark.parametrize("public", [True, False])
-@pytest.mark.parametrize("actor", ["hangul", "admin"])
+@pytest.mark.parametrize("actor", ["hangul"])
 def test_delete_ownership_private_absence_parity_and_key_isolation(
     member_app, public, actor
 ):
@@ -141,21 +141,29 @@ def test_delete_ownership_private_absence_parity_and_key_isolation(
 @pytest.mark.parametrize(
     "version", [True, False, 0, -1, 1.0, "1", None, 9007199254740992]
 )
-def test_delete_strict_versions_at_both_boundaries(member_app, version):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_delete_strict_versions_at_both_boundaries(member_app, version, writer):
     app, _ = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        error(issue_delete(owner, item["id"], version), 422, "VALIDATION_ERROR")
-        error(delete(owner, item["id"], str(uuid4()), version), 422, "VALIDATION_ERROR")
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
+        error(issue_delete(actor, item["id"], version), 422, "VALIDATION_ERROR")
+        error(delete(actor, item["id"], str(uuid4()), version), 422, "VALIDATION_ERROR")
 
 
-def test_delete_protected_headers(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_delete_protected_headers(member_app, writer):
     app, _ = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
+        key = delete_key(actor, item["id"])
         for name, value, status, code in [
             ("Origin", None, 403, "ORIGIN_REJECTED"),
             ("Origin", "https://evil.test", 403, "ORIGIN_REJECTED"),
@@ -166,20 +174,20 @@ def test_delete_protected_headers(member_app):
             ("X-EduVibe-Auth-Revision", "0", 409, "AUTH_STATE_CHANGED"),
             ("X-EduVibe-Session-Generation", "0", 409, "AUTH_STATE_CHANGED"),
         ]:
-            selected = headers(owner)
+            selected = headers(actor)
             if value is None:
                 selected.pop(name)
             else:
                 selected[name] = value
-            error(issue_delete(owner, item["id"], headers=selected), status, code)
+            error(issue_delete(actor, item["id"], headers=selected), status, code)
             error(
                 delete(
-                    owner, item["id"], key, headers={**selected, "Idempotency-Key": key}
+                    actor, item["id"], key, headers={**selected, "Idempotency-Key": key}
                 ),
                 status,
                 code,
             )
-        assert read(owner, key).json()["state"] == "unresolved"
+        assert read(actor, key).json()["state"] == "unresolved"
 
 
 @pytest.mark.parametrize(
@@ -235,16 +243,20 @@ def test_delete_requires_current_approved_full_authority(member_app, state):
             )
 
 
-def test_delete_json_and_streamed_limits_preserve_auth_limit(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_delete_json_and_streamed_limits_preserve_auth_limit(member_app, writer):
     import json
 
     app, _ = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
+        key = delete_key(actor, item["id"])
         selected = {
-            **headers(owner),
+            **headers(actor),
             "Idempotency-Key": key,
             "Content-Type": "application/json",
         }
@@ -297,27 +309,31 @@ def test_delete_json_and_streamed_limits_preserve_auth_limit(member_app):
         )
 
 
-def test_delete_missing_duplicate_malformed_keys_and_expiry(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_delete_missing_duplicate_malformed_keys_and_expiry(member_app, writer):
     app, path = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = delete_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        if writer == "admin":
+            client = actor_client
+        key = delete_key(actor, item["id"])
         for value in (None, "bad", key.upper()):
-            selected = headers(owner)
+            selected = headers(actor)
             if value is not None:
                 selected["Idempotency-Key"] = value
             error(
-                delete(owner, item["id"], key, headers=selected),
+                delete(actor, item["id"], key, headers=selected),
                 422,
                 "VALIDATION_ERROR",
             )
         error(
             delete(
-                owner,
+                actor,
                 item["id"],
                 key,
-                headers=list(headers(owner).items())
+                headers=list(headers(actor).items())
                 + [("Idempotency-Key", key), ("Idempotency-Key", key)],
             ),
             422,
@@ -328,7 +344,7 @@ def test_delete_missing_duplicate_malformed_keys_and_expiry(member_app):
                 "UPDATE write_operations SET expires_at='2000-01-01T00:00:00Z' WHERE key=?",
                 (key,),
             )
-        for result in (read(owner, key), delete(owner, item["id"], key)):
+        for result in (read(actor, key), delete(actor, item["id"], key)):
             error(result, 410, "OPERATION_EXPIRED")
 
 

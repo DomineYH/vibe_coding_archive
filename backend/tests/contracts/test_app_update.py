@@ -109,8 +109,8 @@ def test_patch_route_exists_on_unchanged_source(member_app):
 
 
 @pytest.mark.parametrize("public", [True, False])
-@pytest.mark.parametrize("actor", ["hangul", "admin"])
-def test_other_member_and_admin_cannot_edit_foreign_target(member_app, public, actor):
+@pytest.mark.parametrize("actor", ["hangul"])
+def test_other_member_cannot_edit_foreign_target(member_app, public, actor):
     app, _ = member_app()
     with TestClient(app) as client, TestClient(app) as foreign_client:
         owner, other = signed_in(client), signed_in(foreign_client, actor)
@@ -196,12 +196,14 @@ def test_issue_patch_result_require_current_approved_full_session(member_app, st
             ).fetchone() == ("unresolved",)
 
 
-def test_edit_protected_headers_and_pending_transition(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_edit_protected_headers_and_pending_transition(member_app, writer):
     app, _ = member_app()
-    with TestClient(app) as client:
+    with TestClient(app) as client, TestClient(app) as actor_client:
         owner = signed_in(client)
         item = registered(owner)
-        key = update_key(owner, item["id"])
+        actor = signed_in(actor_client, "admin") if writer == "admin" else owner
+        key = update_key(actor, item["id"])
         for name, value, status, code in [
             ("Origin", None, 403, "ORIGIN_REJECTED"),
             ("Origin", "https://evil.test", 403, "ORIGIN_REJECTED"),
@@ -216,37 +218,37 @@ def test_edit_protected_headers_and_pending_transition(member_app):
             ("X-EduVibe-Session-Generation", None, 422, "VALIDATION_ERROR"),
             ("X-EduVibe-Session-Generation", "0", 409, "AUTH_STATE_CHANGED"),
         ]:
-            selected = headers(owner)
+            selected = headers(actor)
             if value is None:
                 selected.pop(name)
             else:
                 selected[name] = value
             for result in (
-                issue_update(owner, item["id"], headers=selected),
+                issue_update(actor, item["id"], headers=selected),
                 update(
-                    owner, item["id"], key, headers={**selected, "Idempotency-Key": key}
+                    actor, item["id"], key, headers={**selected, "Idempotency-Key": key}
                 ),
             ):
                 error(result, status, code)
             if name not in ("Origin", "X-CSRF-Token"):
-                error(read(owner, key, headers=selected), status, code)
+                error(read(actor, key, headers=selected), status, code)
         assert (
             read(
-                owner,
+                actor,
                 key,
                 headers={
                     k: v
-                    for k, v in headers(owner).items()
+                    for k, v in headers(actor).items()
                     if k not in ("Origin", "X-CSRF-Token")
                 },
             ).status_code
             == 200
         )
-        assert owner.admit("logout").status_code == 201
+        assert actor.admit("logout").status_code == 201
         for result in (
-            issue_update(owner, item["id"]),
-            update(owner, item["id"], key),
-            read(owner, key),
+            issue_update(actor, item["id"]),
+            update(actor, item["id"], key),
+            read(actor, key),
         ):
             error(result, 409, "AUTH_TRANSITION_PENDING")
 
@@ -292,7 +294,10 @@ def test_mismatch_conflict_and_registration_replay_are_distinct(member_app):
         assert read(owner, create_key).json()["kind"] == "app_create"
 
 
-def test_visibility_changes_immediately_hide_lists_facets_and_detail(member_app):
+@pytest.mark.parametrize("writer", ["owner", "admin"])
+def test_visibility_changes_immediately_hide_lists_facets_and_detail(
+    member_app, writer
+):
     app, _ = member_app()
     with (
         TestClient(app) as client,
@@ -308,8 +313,9 @@ def test_visibility_changes_immediately_hide_lists_facets_and_detail(member_app)
         item = registered(owner)
         for version, public in [(1, False), (2, True)]:
             patch = {"is_public": public}
-            key = update_key(owner, item["id"], patch, version)
-            saved = update(owner, item["id"], key, patch, version)
+            writer_actor = admin if writer == "admin" else owner
+            key = update_key(writer_actor, item["id"], patch, version)
+            saved = update(writer_actor, item["id"], key, patch, version)
             assert saved.status_code == 200, saved.text
             for query in (
                 "",

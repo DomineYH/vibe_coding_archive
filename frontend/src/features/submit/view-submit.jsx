@@ -380,10 +380,13 @@ export function SubmitView({
     try {
       const auth = await authService.getCurrentAuthState();
       const user = auth.user;
+      const adminCanManage =
+        user?.role === "admin" &&
+        meta.capabilities.admin_apps_manage.enabled === true;
       if (
         auth.status !== "ready" ||
         !user ||
-        user.id !== app.ownerId ||
+        (user.id !== app.ownerId && !adminCanManage) ||
         !user.approved ||
         user.sessionKind !== "full" ||
         user.mustChangePassword
@@ -394,7 +397,7 @@ export function SubmitView({
           { outcome: "rejected" },
         );
       const latest = await readLatest(app.id);
-      if (latest.ownerId !== user.id)
+      if (latest.ownerId !== user.id && !adminCanManage)
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.");
       const latestDraft = draftFromApp(latest);
       setBaseDraft(latestDraft);

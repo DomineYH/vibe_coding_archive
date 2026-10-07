@@ -48,7 +48,7 @@ def test_edit_capability_has_exactly_the_create_readiness_boundary(
             == {"enabled": True, "reasons": []}
         )
         assert capabilities["apps_delete_own"] == capabilities["apps_update_own"]
-        assert not capabilities["admin_apps_manage"]["enabled"]
+        assert capabilities["admin_apps_manage"] == capabilities["apps_update_own"]
     for environment in ("development", "production", "test"):
         settings = prepared.state.settings.model_copy(update={"app_env": environment})
         with TestClient(create_app(settings)) as client:
@@ -57,7 +57,16 @@ def test_edit_capability_has_exactly_the_create_readiness_boundary(
                 capabilities["apps_update_own"]["enabled"]
                 is capabilities["apps_create"]["enabled"]
             )
+            assert capabilities["admin_apps_manage"]["enabled"] is (
+                environment == "development"
+            )
     with TestClient(make_test_app(tmp_path / "unprepared.sqlite3")) as client:
         assert not client.get(f"{API}/meta").json()["capabilities"]["apps_update_own"][
             "enabled"
         ]
+        assert client.get(f"{API}/meta").json()["capabilities"][
+            "admin_apps_manage"
+        ] == {
+            "enabled": False,
+            "reasons": ["operational_restriction"],
+        }

@@ -163,12 +163,11 @@ test.describe("administrator app list over real HTTP", () => {
       enabled: true,
       reasons: [],
     });
-    for (const key of [
-      "admin_apps_manage",
-      "health_read",
-      "health_check",
-      "health_batch",
-    ])
+    expect(meta.capabilities.admin_apps_manage).toEqual({
+      enabled: true,
+      reasons: [],
+    });
+    for (const key of ["health_read", "health_check", "health_batch"])
       expect(meta.capabilities[key].enabled).toBe(false);
     fixture("mutate", [
       "UPDATE sessions SET recent_auth_until=NULL WHERE member_id=?",
