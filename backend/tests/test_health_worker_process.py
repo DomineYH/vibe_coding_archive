@@ -240,3 +240,75 @@ def test_explicit_disable_closes_each_probe_cancels_queue_and_preserves_last_res
         )
     assert result["health"]["result"]["checked_at"] == checked
     assert result["health"]["result"]["state"] == "healthy"
+
+
+def test_expired_lease_recovers_only_after_socket_cleanup_and_stops_at_two_attempts(
+    harness,
+):
+    from app.health_runtime import boot_clock
+
+    checked = "2026-10-01T00:00:00.000000Z"
+    with harness.factory() as db:
+        db.execute(
+            text(
+                "UPDATE health_results SET state='healthy',checked_at=:checked,fresh_until='2026-10-01T00:15:00.000000Z'"
+            ),
+            {"checked": checked},
+        )
+        db.commit()
+    harness.admit(1)
+    worker = harness.spawn()
+    first_socket, _ = harness.accept()
+    original = harness.states()[0]
+    with harness.factory() as db:
+        db.execute(
+            text("UPDATE health_jobs SET lease_deadline=0 WHERE id=:id"),
+            {"id": original["id"]},
+        )
+        db.commit()
+    # Observe this execution's real socket EOF, not just task.cancel() or a flag.
+    assert first_socket.recv(1) == b""
+    wait_until(lambda: harness.states()[0]["status"] == "queued", timeout=5)
+    recovered = harness.states()[0]
+    assert recovered["id"] == original["id"]
+    assert recovered["attempts"] == 1
+    with harness.factory() as db:
+        boot, mono = boot_clock()
+        assert store.availability(db, boot_id=boot, mono=mono)
+        result = store.snapshot(db, original["app_id"], datetime.now(UTC))
+    assert result["health"]["result"]["checked_at"] == checked
+    with pytest.raises(TimeoutError):
+        harness.accept(timeout=0.2)
+    # The real cooldown boundary has its own process test. Move this fixture's
+    # cooldown past due so this test isolates lease recovery, not 60-second waits.
+    with harness.factory() as db:
+        db.execute(
+            text(
+                "UPDATE health_cooldowns SET next_check_at='2000-01-01T00:00:00.000000Z'"
+            )
+        )
+        db.commit()
+    second_socket, record = harness.accept(timeout=5)
+    assert record["pid"] == worker.pid
+    second = harness.states()[0]
+    assert second["id"] == original["id"]
+    assert second["attempts"] == 2
+    assert second["started_at"] == original["started_at"]
+    with harness.factory() as db:
+        db.execute(
+            text("UPDATE health_jobs SET lease_deadline=0 WHERE id=:id"),
+            {"id": original["id"]},
+        )
+        db.commit()
+    assert second_socket.recv(1) == b""
+    wait_until(lambda: harness.states()[0]["status"] == "failed", timeout=5)
+    assert harness.states()[0]["failure_code"] == "WORKER_RECOVERY_EXHAUSTED"
+    with harness.factory() as db:
+        result = store.snapshot(db, original["app_id"], datetime.now(UTC))
+    assert result["health"]["result"]["checked_at"] == checked
+    assert result["health"]["result"]["state"] == "healthy"
+    with pytest.raises(TimeoutError):
+        harness.accept(timeout=0.2)
+    worker.terminate()
+    worker.communicate(timeout=15)
+    assert worker.returncode == 0
