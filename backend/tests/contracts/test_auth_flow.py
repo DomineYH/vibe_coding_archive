@@ -830,6 +830,9 @@ def maintenance_cycle(monkeypatch):
     gates = Queue()
 
     async def sleep(seconds):
+        if seconds == 5:
+            await asyncio.sleep(seconds)
+            return
         assert seconds == 60
         gate = asyncio.Event()
         gates.put(gate)
