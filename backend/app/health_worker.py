@@ -9,6 +9,7 @@ import signal
 import stat
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -77,6 +78,31 @@ def suspend_offset():
     return time.clock_gettime(time.CLOCK_BOOTTIME) - time.monotonic()
 
 
+class ExecutionClockChanged(RuntimeError):
+    """A confirmed clock discontinuity invalidates the old execution generation."""
+
+
+@dataclass(frozen=True)
+class ExecutionClock:
+    boot_id: str
+    monotonic: float
+    offset: float
+
+    @classmethod
+    def capture(cls):
+        boot, mono = boot_clock()
+        return cls(boot, mono, suspend_offset())
+
+    def check(self):
+        current = self.capture()
+        if (
+            current.boot_id != self.boot_id
+            or current.monotonic < self.monotonic
+            or abs(current.offset - self.offset) > 0.05
+        ):
+            raise ExecutionClockChanged("Execution clock discontinuity")
+
+
 class Worker:
     def __init__(self, settings, session_factory, *, testing_probe=None):
         if testing_probe is not None and settings.app_env != "test":
@@ -90,6 +116,7 @@ class Worker:
         self.tasks = {}
         self.executor = None
         self.stop_deadline = None
+        self.clock = None
 
     def stop(self):
         """Normal restart: retain queued work and drain current original deadlines."""
@@ -106,19 +133,25 @@ class Worker:
             self.testing_probe is not None or runtime_enabled(self.settings)
         )
 
-    async def transaction(self, operation):
+    async def transaction(self, operation, *, clock=None):
         def execute():
             with self.session_factory() as db:
                 db.execute(text("BEGIN IMMEDIATE"))
                 # Clocks and execution conditions are sampled after acquiring the lock.
+                if clock is not None:
+                    clock.check()
                 boot, mono = boot_clock()
                 value = operation(db, boot, mono, utc_stamp())
+                if clock is not None:
+                    clock.check()
                 db.commit()
                 return value
 
         return await asyncio.get_running_loop().run_in_executor(self.executor, execute)
 
     async def register(self):
+        clock = ExecutionClock.capture()
+
         def start(db, boot, mono, stamp):
             previous = store.current_worker(db)
             dead = (previous["worker_id"],) if previous else ()
@@ -130,7 +163,8 @@ class Worker:
                 db, worker_id=self.worker_id, boot_id=boot, mono=mono, stamp=stamp
             )
 
-        await self.transaction(start)
+        await self.transaction(start, clock=clock)
+        self.clock = clock
 
     async def unavailable(self):
         await self.transaction(
@@ -154,7 +188,13 @@ class Worker:
                     raise error
         self.tasks.clear()
 
-    async def reconcile_failed_save(self, job):
+    async def recover_generation(self):
+        await self.unavailable()
+        await self.cancel_running()
+        self.worker_id = str(uuid4())
+        await self.register()
+
+    async def reconcile_failed_save(self, job, clock):
         def reconcile(db, boot, mono, stamp):
             current = (
                 db.execute(
@@ -179,17 +219,19 @@ class Worker:
                 )
 
         try:
-            await self.transaction(reconcile)
+            await self.transaction(reconcile, clock=clock)
         except SQLAlchemyError:
             # Neither success nor failure could be confirmed: leave recovery to
             # the next OS-confirmed worker instance; never repeat result writes.
             self.stopping.set()
 
-    async def execute(self, job):
+    async def execute(self, job, clock):
         from app.health_probe import probe
         from app.health_transport import ResourceCleanupError
 
         try:
+            # The snapshot predates claim's DB wait, unlike probe's own clock.
+            clock.check()
             result = await (self.testing_probe or probe)(
                 job["url"],
                 dns_servers=self.settings.health_dns_servers,
@@ -199,13 +241,14 @@ class Worker:
             raise UncleanShutdown(
                 "Transport cleanup could not be confirmed."
             ) from error
-        except asyncio.CancelledError:
+        except (asyncio.CancelledError, ExecutionClockChanged):
             raise
         except Exception:  # noqa: BLE001 - A confirmed probe failure must terminalize its job.
             await self.transaction(
                 lambda db, boot, mono, stamp: store.fail(
                     db, job, boot_id=boot, mono=mono, stamp=stamp
-                )
+                ),
+                clock=clock,
             )
             return
         try:
@@ -214,10 +257,11 @@ class Worker:
                     store.finish(db, job, result, boot_id=boot, mono=mono, stamp=stamp)
                     if self.enabled()
                     else False
-                )
+                ),
+                clock=clock,
             )
         except SQLAlchemyError:
-            await self.reconcile_failed_save(job)
+            await self.reconcile_failed_save(job, clock)
 
     async def cycle(self, heartbeat_due):
         expired = await self.transaction(
@@ -226,15 +270,13 @@ class Worker:
                     "SELECT 1 FROM health_jobs WHERE worker_id=:worker AND status='running' AND (boot_id<>:boot OR lease_deadline<=:mono) LIMIT 1"
                 ),
                 {"worker": self.worker_id, "boot": boot, "mono": mono},
-            ).scalar()
+            ).scalar(),
+            clock=self.clock,
         )
         if expired:
             # Recovery is fenced by execution generation. Close every execution
             # in the old generation before the store receives its stopped ID.
-            await self.unavailable()
-            await self.cancel_running()
-            self.worker_id = str(uuid4())
-            await self.register()
+            await self.recover_generation()
         for job_id, task in list(self.tasks.items()):
             if task.done():
                 del self.tasks[job_id]
@@ -248,7 +290,7 @@ class Worker:
                     db, worker_id=self.worker_id, boot_id=boot, mono=mono, stamp=stamp
                 )
 
-            await self.transaction(maintain)
+            await self.transaction(maintain, clock=self.clock)
         # Observe deletion/URL changes during execution so their sockets close.
         if self.tasks:
             active = await self.transaction(
@@ -259,20 +301,24 @@ class Worker:
                         ),
                         {"worker": self.worker_id, "boot": boot, "mono": mono},
                     ).scalars()
-                )
+                ),
+                clock=self.clock,
             )
             for job_id, task in self.tasks.items():
                 if job_id not in active and not task.done():
                     task.cancel()
         while len(self.tasks) < 3 and not self.stopping.is_set():
+            clock = ExecutionClock.capture()
+            self.clock.check()
             job = await self.transaction(
                 lambda db, boot, mono, stamp: store.claim(
                     db, worker_id=self.worker_id, boot_id=boot, mono=mono, stamp=stamp
-                )
+                ),
+                clock=clock,
             )
             if job is None:
                 break
-            self.tasks[job["id"]] = asyncio.create_task(self.execute(job))
+            self.tasks[job["id"]] = asyncio.create_task(self.execute(job, clock))
 
     async def run(self):
         if not self.enabled():
@@ -292,7 +338,6 @@ class Worker:
             )
             try:
                 await self.register()
-                offset = suspend_offset()
                 heartbeat_at = time.monotonic()
                 while not self.stopping.is_set():
                     if not self.enabled():
@@ -301,14 +346,12 @@ class Worker:
                         )
                         await self.cancel_running()
                         break
-                    if suspend_offset() - offset > 0.05:
-                        await self.unavailable()
-                        await self.cancel_running()
-                        self.worker_id = str(uuid4())
-                        await self.register()
-                        offset = suspend_offset()
                     heartbeat_due = time.monotonic() - heartbeat_at >= 5
-                    await self.cycle(heartbeat_due)
+                    try:
+                        self.clock.check()
+                        await self.cycle(heartbeat_due)
+                    except ExecutionClockChanged:
+                        await self.recover_generation()
                     if heartbeat_due:
                         heartbeat_at = time.monotonic()
                     try:
