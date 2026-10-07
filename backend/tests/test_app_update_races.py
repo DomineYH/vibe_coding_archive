@@ -83,7 +83,8 @@ def test_concurrent_edits_apply_once_and_finalize_only_the_correct_key(
     [
         ("apps", "UPDATE"),
         ("app_grades", "INSERT"),
-        ("health_results", "UPDATE"),
+        ("health_results", "DELETE"),
+        ("health_results", "INSERT"),
         ("write_operations", "UPDATE"),
     ],
 )

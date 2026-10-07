@@ -150,9 +150,9 @@ def update_app(id: UUID, request: Request, body=PatchBody, db=PatchDb):
     if url_changed:
         db.execute(
             text(
-                "INSERT INTO health_results(app_id,state) VALUES (:id,'unchecked') ON CONFLICT(app_id) DO UPDATE SET state='unchecked',checked_at=NULL,fresh_until=NULL"
+                "INSERT INTO health_results(app_id,url_version,state) VALUES (:id,:url_version,'unchecked')"
             ),
-            {"id": str(id)},
+            {"id": str(id), "url_version": app.url_version + 1},
         )
     if app.owner_id != actor["id"]:
         db.execute(
