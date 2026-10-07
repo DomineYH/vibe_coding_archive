@@ -73,6 +73,10 @@ def test_update_migration_preserves_all_old_rows_and_app_data_and_enforces_shape
             table: db.execute(f"SELECT * FROM {table} ORDER BY 1").fetchall()
             for table in ("apps", "app_grades", "health_results")
         }
+        data_columns = {
+            table: ",".join(row[1] for row in db.execute(f"PRAGMA table_info({table})"))
+            for table in data
+        }
     settings = Settings(
         app_env="test",
         database_path=path,
@@ -87,7 +91,7 @@ def test_update_migration_preserves_all_old_rows_and_app_data_and_enforces_shape
     command.upgrade(config, "head")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0011_user_delete",
+            "0012_health_checks",
         )
         assert (
             db.execute(
@@ -100,7 +104,12 @@ def test_update_migration_preserves_all_old_rows_and_app_data_and_enforces_shape
             == [(None,)] * 6
         )
         for table, rows in data.items():
-            assert db.execute(f"SELECT * FROM {table} ORDER BY 1").fetchall() == rows
+            assert (
+                db.execute(
+                    f"SELECT {data_columns[table]} FROM {table} ORDER BY 1"
+                ).fetchall()
+                == rows
+            )
         assert db.execute("PRAGMA foreign_key_check").fetchall() == []
         assert any(
             row[1] == "ix_write_operations_expiry"
@@ -171,7 +180,7 @@ def test_update_migration_preserves_all_old_rows_and_app_data_and_enforces_shape
         command.downgrade(config, "0007_app_create")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0011_user_delete",
+            "0012_health_checks",
         )
         assert db.execute("SELECT count(*) FROM write_operations").fetchone() == (7,)
     with (

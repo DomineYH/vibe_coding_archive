@@ -475,6 +475,7 @@ def test_meta_advertises_the_verified_t01_t05_bundle_and_nothing_else(member_app
     assert enabled == {
         "admin_reauth",
         "apps_read",
+        "health_read",
         "auth_login",
         "auth_logout",
         "auth_password_change",

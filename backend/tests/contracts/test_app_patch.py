@@ -305,13 +305,15 @@ def test_edit_body_limit_is_exact_and_does_not_widen_approval_or_subpaths(
             (f"/apps/{uuid4()}", "patch", 1200000),
             ("/write-operations", "post", 1200000),
             (f"/apps/{uuid4()}/health", "patch", 18000),
+            (f"/apps/{uuid4()}/health-checks", "post", 18000),
             ("/write-operations/unknown/cancel", "post", 18000),
         ]:
             body = b" " * size
             selected = iter([body[: size // 2], body[size // 2 :]]) if chunked else body
             response = getattr(client, method)(f"{API}{url}", content=selected)
             if url.endswith("/health"):
-                assert response.status_code == 404
+                assert response.status_code == 405
+                assert response.headers["Allow"] == "GET"
             else:
                 error(response, 413, "PAYLOAD_TOO_LARGE")
         for body in (
