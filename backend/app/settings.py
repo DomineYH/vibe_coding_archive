@@ -51,6 +51,12 @@ class Settings(BaseModel):
     public_origin: str
     password_blocklist_path: Path | None = None
     password_reset_hmac_path: Path | None = None
+    health_checks_enabled: bool = False
+    health_dns_servers: tuple[str, ...] = ()
+    health_denied_ips: tuple[str, ...] = ()
+    health_worker_uid: int | None = None
+    health_worker_lock_path: Path = Path("/run/eduvibe/health-worker.lock")
+    health_activation_path: Path | None = None
 
     @classmethod
     def from_environment(
@@ -189,6 +195,49 @@ class Settings(BaseModel):
                     "Production requires an explicit non-local HTTPS origin."
                 )
 
+        health_enabled = values.get("HEALTH_CHECKS_ENABLED", "false")
+        if health_enabled not in {"true", "false"}:
+            raise ConfigurationError("HEALTH_CHECKS_ENABLED must be true or false.")
+        dns_servers = tuple(
+            item.strip()
+            for item in (values.get("HEALTH_DNS_SERVERS") or "").split(",")
+            if item.strip()
+        )
+        denied_ips = tuple(
+            item.strip()
+            for item in (values.get("HEALTH_DENIED_IPS") or "").split(",")
+            if item.strip()
+        )
+        try:
+            for address in dns_servers:
+                ipaddress.ip_address(address)
+            for address in denied_ips:
+                ipaddress.ip_network(address, strict=False)
+            worker_uid = (
+                int(values["HEALTH_WORKER_UID"])
+                if values.get("HEALTH_WORKER_UID")
+                else None
+            )
+            if worker_uid is not None and worker_uid <= 0:
+                raise ValueError("A nonprivileged worker UID is required.")
+            health_lock = Path(
+                values.get("HEALTH_WORKER_LOCK_PATH")
+                or "/run/eduvibe/health-worker.lock"
+            )
+            health_activation = (
+                Path(values["HEALTH_ACTIVATION_PATH"])
+                if values.get("HEALTH_ACTIVATION_PATH")
+                else None
+            )
+            if not health_lock.is_absolute() or (
+                health_activation is not None and not health_activation.is_absolute()
+            ):
+                raise ValueError("Health paths must be absolute.")
+        except (ValueError, TypeError):
+            raise ConfigurationError(
+                "Health worker configuration is invalid."
+            ) from None
+
         try:
             return cls(
                 app_env=app_env,
@@ -201,6 +250,12 @@ class Settings(BaseModel):
                     values.get("PASSWORD_BLOCKLIST_PATH")
                     or path.parent / "password-blocklist-ncsc.txt"
                 ).resolve(),
+                health_checks_enabled=health_enabled == "true",
+                health_dns_servers=dns_servers,
+                health_denied_ips=denied_ips,
+                health_worker_uid=worker_uid,
+                health_worker_lock_path=health_lock,
+                health_activation_path=health_activation,
             )
         except ValidationError:
             raise ConfigurationError("Application configuration is invalid.") from None
