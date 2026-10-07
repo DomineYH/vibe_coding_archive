@@ -651,6 +651,74 @@ it.each(["navigation", "rotation", "other", "hidden"])(
   },
 );
 
+it("clears an active public detail after a private save without stale navigation", async () => {
+  await visit(ownEdit, DEMO_ACCOUNTS[0]);
+  const form = await screen.findByRole("form", { name: "앱 수정 양식" });
+  const original = await appsService.get(
+    "00000000-0000-4000-8000-000000000001",
+  );
+  const saved = {
+    ...original,
+    isPublic: false,
+    version: 2,
+    name: "확정된 비공개 결과",
+  };
+  // API writes do not emit the mock storage event that also clears caches.
+  vi.spyOn(appsService, "issueUpdateOperation").mockResolvedValue({
+    key: "00000000-0000-4000-8000-000000000201",
+    kind: "app_update",
+    targetId: original.id,
+    state: "unresolved",
+  });
+  vi.spyOn(appsService, "update").mockResolvedValue(saved);
+  const { ServiceError } = await import("../src/services/service-error");
+  let rejectPublicRead;
+  vi.spyOn(appsService, "get").mockImplementation(async (_id, options) => {
+    if (options?.readContext) return saved;
+    return new Promise((_resolve, reject) => {
+      rejectPublicRead = () =>
+        reject(
+          new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
+            httpStatus: 404,
+          }),
+        );
+    });
+  });
+  const publicKey = [__DATA_MODE__, "apps", "detail", original.id, "public"];
+  client.setQueryData(publicKey, original);
+  let release;
+  const cancel = client.cancelQueries.bind(client);
+  vi.spyOn(client, "cancelQueries").mockImplementation(async (filters) => {
+    await cancel(filters);
+    if (!release && filters.queryKey?.[2] === "detail")
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+  });
+  fireEvent.click(within(form).getByRole("switch", { name: "전체 공개" }));
+  fireEvent.click(within(form).getByRole("button", { name: "변경사항 저장" }));
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  await act(async () => router.navigate(`/apps/${original.id}`));
+  await waitFor(() => expect(rejectPublicRead).toBeTypeOf("function"));
+  await screen.findByRole("button", { name: "로그아웃" });
+  expect(
+    screen.getByRole("heading", { name: original.name, exact: true }),
+  ).toBeInTheDocument();
+  const locationKey = router.state.location.key;
+  await act(async () => release());
+  // Retirement must hide the old public body before a pending read settles.
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("heading", { name: original.name, exact: true }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(client.getQueryData(publicKey)).toBeUndefined();
+  expect(router.state.location.key).toBe(locationKey);
+  expect(screen.queryByText("앱을 수정했어요.")).not.toBeInTheDocument();
+  await act(async () => rejectPublicRead());
+  await screen.findByRole("heading", { name: saved.name, exact: true });
+});
+
 it.each(["/", "/apps/new"])(
   "hides creation for a real change-only admin at %s",
   async (path) => {

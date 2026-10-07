@@ -1878,15 +1878,12 @@ export default function App() {
           [__DATA_MODE__, "admin"],
         ].map((queryKey) => queryClient.cancelQueries({ queryKey })),
       );
-      // A committed visibility change retires public data across auth observations.
-      queryClient.removeQueries({
+      // Reset active public views as well as caches across auth observations.
+      void queryClient.resetQueries({
         queryKey: [...detailKey, "public"],
         exact: true,
       });
-      queryClient.removeQueries({
-        queryKey: [__DATA_MODE__, "apps", "list"],
-      });
-      void queryClient.invalidateQueries({
+      void queryClient.resetQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
       });
       if (
@@ -1895,7 +1892,7 @@ export default function App() {
         document.visibilityState === "hidden"
       )
         return;
-      queryClient.removeQueries({ queryKey: detailKey });
+      queryClient.removeQueries({ queryKey: [...detailKey, "member"] });
       queryClient.removeQueries({ queryKey: healthKey });
       if (app.isPublic)
         queryClient.setQueryData(
