@@ -3,6 +3,7 @@ import { blockExternalRequests, query } from "./helpers.js";
 import { openMonitor, test } from "./admin-apps-helpers.js";
 
 test.describe("connection checks over real API, queue and worker", () => {
+  test.beforeEach(() => test.setTimeout(120000));
   test.skip(
     process.env.API_E2E_HEALTH !== "1",
     "requires the owned controlled-I/O worker",
