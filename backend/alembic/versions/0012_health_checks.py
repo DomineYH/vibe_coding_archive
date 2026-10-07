@@ -1,6 +1,7 @@
 """Persist health jobs, fenced executions, batch snapshots and admission limits."""
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision = "0012_health_checks"
@@ -30,7 +31,7 @@ def upgrade():
         attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts BETWEEN 0 AND 2),
         worker_id TEXT, boot_id TEXT, lease_deadline REAL,
         CHECK((status IN ('queued','running') AND finished_at IS NULL) OR (status IN ('completed','failed','cancelled') AND finished_at IS NOT NULL)),
-        CHECK((status='failed' AND failure_code IN ('QUEUE_WAIT_EXPIRED','WORKER_RECOVERY_EXHAUSTED','CHECK_EXECUTION_FAILED','RESULT_STORE_FAILED')) OR (status<>'failed' AND failure_code IS NULL)),
+        CHECK((status='failed' AND failure_code IS NOT NULL AND failure_code IN ('QUEUE_WAIT_EXPIRED','WORKER_RECOVERY_EXHAUSTED','CHECK_EXECUTION_FAILED','RESULT_STORE_FAILED')) OR (status<>'failed' AND failure_code IS NULL)),
         CHECK(status<>'running' OR (attempts>0 AND worker_id IS NOT NULL AND boot_id IS NOT NULL AND lease_deadline IS NOT NULL AND started_at IS NOT NULL))
     )""")
     op.execute(
