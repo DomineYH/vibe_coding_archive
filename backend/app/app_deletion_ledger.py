@@ -77,10 +77,10 @@ def _verify(rows, events, *, restored=False):
             raise RuntimeError("Independent app deletion target evidence disagrees.")
 
 
-def prepare(factory, *, restored=False):
+def prepare(factory, *, restored=False, deadline=None):
     """Verify before normal initialization; restore never writes independent evidence."""
     path = ledger_path(factory)
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + 5 if deadline is None else deadline
     try:
         with closing(_operational(factory, deadline)) as db:
             rows = db.execute("SELECT * FROM app_delete_outbox").fetchall()
@@ -193,10 +193,10 @@ def confirm(factory, event_id, *, deadline=None):
         return False
 
 
-def retry_delivery(factory):
-    if prepare(factory) is None:
+def retry_delivery(factory, *, deadline=None, verified=False):
+    if not verified and prepare(factory, deadline=deadline) is None:
         return
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + 5 if deadline is None else deadline
     with closing(_operational(factory, deadline)) as db:
         pending = db.execute(
             "SELECT event_id FROM app_delete_outbox WHERE delivered_at IS NULL ORDER BY db_applied_at LIMIT 100"

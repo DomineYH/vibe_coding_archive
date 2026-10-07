@@ -337,3 +337,5 @@ fences after credential material is removed. It is irreversible: restore a separ
 verified backup instead of downgrading. The scheduled sweep now also removes expired
 or revoked S/R generations inside live flows within the R9 Q18 retention bound;
 clearing an obsolete reference does not alter a newer pending transition or revision.
+
+관리자 회원 삭제의 작업 키, 전체 그룹 확인 및 `0011_user_delete` 복원 절차는 [회원 삭제 개발 안내](../docs/development/user-delete.md)를 참조한다.

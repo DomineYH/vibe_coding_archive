@@ -851,3 +851,94 @@ it("same-path navigation suppresses a late result-confirmation error toast", asy
     screen.queryByText("obsolete confirmation error"),
   ).not.toBeInTheDocument();
 });
+
+it.each(["same", "other", "explicit"])(
+  "retains only the original user-delete key across same-actor login and clears it on %s departure",
+  async (departure) => {
+    const router = await visit("/admin", 0);
+    const issue = vi.spyOn(adminService, "createUserDeleteOperation");
+    const execute = vi.spyOn(adminService, "deleteUser").mockRejectedValue(
+      new ServiceError("NETWORK_ERROR", "Unknown delete reply", {
+        outcome: "unknown",
+      }),
+    );
+    const read = vi.spyOn(adminService, "getUserDeleteOperation");
+    const row = (
+      await screen.findByText("로그인 아이디: 비기너개발자", { exact: true })
+    ).closest('[role="listitem"]');
+    fireEvent.click(
+      within(row).getByRole("button", { name: "삭제", exact: true }),
+    );
+    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
+      target: { value: "admin123" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "본인 확인", exact: true }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: "삭제 확인", exact: true }),
+    );
+    await screen.findByText(
+      "삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지 않았습니다.",
+    );
+    const operation = await issue.mock.results[0].value;
+    if (departure === "explicit") {
+      await act(async () => {
+        window.dispatchEvent(new Event("blur"));
+        await authService.logout();
+        await authService.login({
+          loginId: DEMO_ACCOUNTS[0].loginId,
+          password: DEMO_ACCOUNTS[0].password,
+        });
+        window.dispatchEvent(new Event("focus"));
+      });
+      await screen.findByText(
+        "삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지 않았습니다.",
+      );
+      await waitFor(() => expect(read).toHaveBeenLastCalledWith(operation.key));
+      fireEvent.click(
+        screen.getByRole("button", { name: "로그아웃", exact: true }),
+      );
+      await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+    } else {
+      await act(async () => {
+        window.dispatchEvent(new Event("blur"));
+        await authService.logout();
+        const account = DEMO_ACCOUNTS[departure === "other" ? 1 : 0];
+        await authService.login({
+          loginId: account.loginId,
+          password: account.password,
+        });
+        window.dispatchEvent(new Event("focus"));
+      });
+      if (departure === "other")
+        await screen.findByText("관리자 권한이 필요해요");
+    }
+    if (departure !== "same") {
+      await act(async () => {
+        await authService.logout();
+        await authService.login({
+          loginId: DEMO_ACCOUNTS[0].loginId,
+          password: DEMO_ACCOUNTS[0].password,
+        });
+        window.dispatchEvent(new Event("focus"));
+        await router.navigate("/admin");
+      });
+    }
+    await screen.findByRole("list", { name: "회원 목록" });
+    if (departure === "same") {
+      await screen.findByText(
+        "삭제 결과가 아직 확정되지 않았어요. 현재 회원 상태로 성공을 추정하지 않았습니다.",
+      );
+      expect(read).toHaveBeenLastCalledWith(operation.key);
+    } else {
+      expect(
+        screen.queryByRole("region", {
+          name: /계정 삭제 확인|계정을 삭제할까요/,
+        }),
+      ).not.toBeInTheDocument();
+    }
+    expect(issue).toHaveBeenCalledTimes(1);
+    expect(execute).toHaveBeenCalledTimes(1);
+  },
+);

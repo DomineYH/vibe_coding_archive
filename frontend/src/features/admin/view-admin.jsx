@@ -808,6 +808,7 @@ function PasswordResetPanel({
 }
 
 function UserDeletePanel({
+  outcome,
   target,
   loading,
   busy,
@@ -824,13 +825,15 @@ function UserDeletePanel({
   onClose,
 }) {
   const hasPendingKey = Boolean(operationKey && !operation);
-  const unresolved = operation?.state === "unresolved" || hasPendingKey;
-  const confirming = operation?.state === "confirming_deletion";
+  const unresolved = operation?.state === "unresolved";
+  const confirming =
+    outcome === "pending" || operation?.state === "confirming_deletion";
   const expectedCount = expectedAppCount ?? target?.appCount;
   const canConfirm =
     !loading &&
     !busy &&
     target?.role === "user" &&
+    !outcome &&
     !operation &&
     !operationKey &&
     !refreshRequired;
@@ -875,7 +878,7 @@ function UserDeletePanel({
             현재 회원 정보와 소유 앱 수를 다시 확인하고 있어요.
           </p>
         ) : null}
-        {operation?.state === "succeeded" ? (
+        {outcome === "succeeded" || operation?.state === "succeeded" ? (
           <p
             role="status"
             className="mt-2 text-[12px] font-semibold text-emerald-800"
@@ -905,7 +908,7 @@ function UserDeletePanel({
             삭제는 반영됐고 별도 확인을 기다리고 있어요. 이 상태는 삭제 실패나
             롤백이 아니며 계정과 앱을 되살리지 않습니다.
           </p>
-        ) : unresolved ? (
+        ) : !busy && (unresolved || hasPendingKey) ? (
           <p
             role="status"
             className="mt-2 text-[12px] font-semibold text-amber-800"
@@ -946,12 +949,15 @@ function UserDeletePanel({
           </Btn>
         </>
       ) : null}
-      {operationKey && !operationExpired && !busy ? (
+      {operationKey && outcome !== "succeeded" && !operationExpired && !busy ? (
         <Btn size="sm" variant="line" onClick={onReadResult}>
           결과 확인
         </Btn>
       ) : null}
       {unresolved &&
+      !outcome &&
+      !confirming &&
+      !refreshRequired &&
       target &&
       expectedAppCount !== null &&
       expectedAppCount !== undefined &&
@@ -968,7 +974,8 @@ function UserDeletePanel({
           현재 회원 정보 다시 확인
         </Btn>
       )}
-      {(operation?.state === "succeeded" ||
+      {(outcome === "succeeded" ||
+        operation?.state === "succeeded" ||
         operation?.state === "rejected") && (
         <Btn size="sm" variant="line" onClick={onClose} disabled={busy}>
           닫기
@@ -985,6 +992,7 @@ export function AdminView({
   resumeState,
   onConsumeResume,
   onSaveResume,
+  onRememberDelete,
 }) {
   const canReset =
     __DATA_MODE__ === "mock" ||
@@ -992,10 +1000,6 @@ export function AdminView({
   const canDelete =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_user_delete.enabled === true;
-  const deleteNotImplemented =
-    !canDelete &&
-    meta?.capabilities.admin_user_delete.enabled === false &&
-    meta.capabilities.admin_user_delete.reasons.includes("not_implemented");
   const canReadApps =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_apps_read.enabled === true;
@@ -1043,7 +1047,44 @@ export function AdminView({
     setResetBusy(false);
     setResetError("");
   }, [active, scopeKey, route.invalid, tab]);
+  const retiredUserIds = useRef(new Set());
   const deleteDetailRequest = useRef(0);
+  const deleteOwner = useRef(null);
+  const deleteSubmitting = useRef(false);
+  useEffect(() => {
+    if (!active || !deleteSelection) return;
+    onRememberDelete?.(
+      deleteSelection?.operationKey
+        ? {
+            targetId: deleteSelection.id,
+            operationKey: deleteSelection.operationKey,
+            expectedAppCount: deleteSelection.expectedAppCount,
+          }
+        : null,
+    );
+  }, [active, deleteSelection, onRememberDelete]);
+  deleteOwner.current = {
+    active: active && !route.invalid && tab === "users",
+    scopeKey,
+    id: deleteSelection?.id,
+  };
+  const ownsDelete = useCallback(
+    (request, owner, id = deleteOwner.current.id) => {
+      return (
+        alive.current &&
+        deleteOwner.current.active &&
+        deleteOwner.current.scopeKey === owner &&
+        request === deleteDetailRequest.current &&
+        deleteOwner.current.id === id
+      );
+    },
+    [],
+  );
+  useEffect(() => {
+    ++deleteDetailRequest.current;
+    deleteSubmitting.current = false;
+    setDeleteBusy(false);
+  }, [active, scopeKey, route.invalid, tab]);
   useEffect(() => {
     const request = ++detailRequest.current;
     const current = pendingSelection.current;
@@ -1110,7 +1151,9 @@ export function AdminView({
   });
   const refetchResetList = query.refetch;
   const pages = query.data?.pages ?? [];
-  const users = pages.flatMap((page) => page.items);
+  const users = pages
+    .flatMap((page) => page.items)
+    .filter((user) => !retiredUserIds.current.has(user.id));
   const stats = pages[0]?.stats;
   const statsServerTime = pages[0]?.serverTime;
   const total = pages[0]?.pagination.total ?? 0;
@@ -1178,6 +1221,7 @@ export function AdminView({
   );
   const deletePending = Boolean(
     deleteSelection &&
+    deleteSelection.outcome !== "succeeded" &&
     (["unresolved", "confirming_deletion"].includes(
       deleteSelection.operation?.state,
     ) ||
@@ -1189,6 +1233,7 @@ export function AdminView({
     ++resetDetailRequest.current;
     setSelection(null);
     setResetSelection(null);
+    onRememberDelete?.(null);
     setDeleteSelection(null);
     setResetError("");
     setDeleteError("");
@@ -1319,9 +1364,52 @@ export function AdminView({
     tab,
   ]);
 
+  const refreshAfterDelete = useCallback(
+    async (request, owner, id) => {
+      if (!ownsDelete(request, owner, id)) return;
+      retiredUserIds.current.add(id);
+      setDeleteSelection((current) => ({
+        ...current,
+        target: null,
+        error: "",
+      }));
+      const affected = (query) =>
+        query.queryKey[0] === __DATA_MODE__ &&
+        ["apps", "admin", "health"].includes(query.queryKey[1]);
+      await queryClient.cancelQueries({ predicate: affected });
+      if (!ownsDelete(request, owner, id)) return;
+      queryClient.removeQueries({
+        predicate: (query) =>
+          affected(query) &&
+          (query.queryKey[1] === "health" ||
+            query.queryKey[2] === "detail" ||
+            query.queryKey[2] === "edit"),
+      });
+      queryClient.setQueryData(
+        [__DATA_MODE__, "admin", "users", scopeKey],
+        (data) =>
+          data
+            ? {
+                ...data,
+                pages: data.pages.map((page) => ({
+                  ...page,
+                  items: page.items.filter((user) => user.id !== id),
+                })),
+              }
+            : data,
+      );
+      await queryClient.invalidateQueries({ predicate: affected });
+    },
+    [ownsDelete, queryClient, scopeKey],
+  );
+
   useEffect(() => {
-    if (!active) ++deleteDetailRequest.current;
-    const resume = active ? resumeState?.adminDelete : null;
+    if (!active || route.invalid || tab !== "users")
+      ++deleteDetailRequest.current;
+    const resume =
+      active && !route.invalid && tab === "users"
+        ? resumeState?.adminDelete
+        : null;
     if (!resume || typeof resume.targetId !== "string") return;
     const targetId = resume.targetId;
     const operationKey =
@@ -1330,6 +1418,8 @@ export function AdminView({
       ? resume.expectedAppCount
       : null;
     const request = ++deleteDetailRequest.current;
+    const owner = scopeKey;
+    deleteOwner.current.id = targetId;
     setSelection(null);
     setResetSelection(null);
     setDeleteError("");
@@ -1349,14 +1439,19 @@ export function AdminView({
       let operationError = null;
       if (operationKey) {
         try {
-          operation = await adminService.getUserDeleteOperation(operationKey);
+          operation = checkedDeleteResult(
+            await adminService.getUserDeleteOperation(operationKey),
+            operationKey,
+            targetId,
+          );
         } catch (error) {
           operationError = error;
         }
       }
+      if (!ownsDelete(request, owner)) return;
       try {
         const target = await adminService.getUser(targetId);
-        if (!alive.current || request !== deleteDetailRequest.current) return;
+        if (!ownsDelete(request, owner, targetId)) return;
         onConsumeResume?.();
         setDeleteSelection({
           id: targetId,
@@ -1365,10 +1460,13 @@ export function AdminView({
           operationKey,
           expectedAppCount:
             expectedAppCount ?? (operationKey ? null : target.appCount),
+          refreshRequired: Boolean(
+            operationKey && expectedAppCount !== target.appCount,
+          ),
           operation,
         });
       } catch (error) {
-        if (!alive.current || request !== deleteDetailRequest.current) return;
+        if (!ownsDelete(request, owner, targetId)) return;
         onConsumeResume?.();
         setDeleteSelection({
           id: targetId,
@@ -1381,13 +1479,25 @@ export function AdminView({
             error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
         });
       }
-      if (!alive.current || request !== deleteDetailRequest.current) return;
+      if (!ownsDelete(request, owner, targetId)) return;
+      if (["succeeded", "confirming_deletion"].includes(operation?.state))
+        await refreshAfterDelete(request, owner, targetId);
+      if (!ownsDelete(request, owner, targetId)) return;
       if (operationError) {
         markDeleteExpired(operationError);
         setDeleteError(deleteOperationMessage(operationError));
       }
     })();
-  }, [active, resumeState, onConsumeResume]);
+  }, [
+    active,
+    resumeState,
+    onConsumeResume,
+    scopeKey,
+    route.invalid,
+    tab,
+    ownsDelete,
+    refreshAfterDelete,
+  ]);
 
   async function openApproval(user) {
     if (resetPending) return;
@@ -1448,6 +1558,7 @@ export function AdminView({
     operationKey = null,
     expectedAppCount = null,
   ) {
+    ++deleteDetailRequest.current;
     ++detailRequest.current;
     ++resetDetailRequest.current;
     setBusy(false);
@@ -1477,141 +1588,201 @@ export function AdminView({
       startDeleteReauthentication(targetId);
   }
 
-  async function refreshAfterDelete() {
-    queryClient.removeQueries({ queryKey: [__DATA_MODE__, "apps", "detail"] });
-    await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: [__DATA_MODE__, "apps", "list"],
-      }),
-      queryClient.invalidateQueries({ queryKey: [__DATA_MODE__, "admin"] }),
-    ]);
+  function checkedDeleteResult(operation, key, id) {
+    if (operation.key !== key || operation.targetId !== id)
+      throw new Error("삭제 작업 결과가 요청과 일치하지 않아요.");
+    return operation;
   }
 
   async function readDeleteResult() {
-    const operationKey =
-      deleteSelection?.operation?.key ?? deleteSelection?.operationKey;
-    if (!operationKey || deleteBusy) return;
+    const key = deleteSelection?.operationKey;
+    if (!key || deleteBusy || deleteSubmitting.current) return;
+    const { id } = deleteSelection;
+    const request = deleteDetailRequest.current;
+    const owner = scopeKey;
     setDeleteBusy(true);
     setDeleteError("");
     try {
-      const operation = await adminService.getUserDeleteOperation(operationKey);
-      if (!alive.current) return;
+      const operation = checkedDeleteResult(
+        await adminService.getUserDeleteOperation(key),
+        key,
+        id,
+      );
+      if (!ownsDelete(request, owner, id)) return;
       setDeleteSelection((current) => ({
         ...current,
-        operationKey,
         operation,
+        outcome:
+          operation.state === "succeeded"
+            ? "succeeded"
+            : operation.state === "confirming_deletion"
+              ? "pending"
+              : current.outcome,
+        refreshRequired: operation.state === "unresolved",
       }));
-      if (operation.state === "succeeded") await refreshAfterDelete();
+      if (["succeeded", "confirming_deletion"].includes(operation.state))
+        await refreshAfterDelete(request, owner, id);
     } catch (error) {
-      if (alive.current) {
-        markDeleteExpired(error);
-        setDeleteError(deleteOperationMessage(error));
-      }
+      if (!ownsDelete(request, owner, id)) return;
+      markDeleteExpired(error);
+      setDeleteError(deleteOperationMessage(error));
+      setDeleteSelection((current) => ({
+        ...current,
+        operation: ["succeeded", "confirming_deletion"].includes(
+          current.operation?.state,
+        )
+          ? current.operation
+          : null,
+      }));
     } finally {
-      if (alive.current) setDeleteBusy(false);
+      if (ownsDelete(request, owner, id)) setDeleteBusy(false);
     }
   }
 
   async function refreshDeleteTarget() {
     if (!deleteSelection || deleteBusy) return;
-    const id = deleteSelection.id;
+    const current = deleteSelection;
+    const { id } = current;
     const request = ++deleteDetailRequest.current;
+    const owner = scopeKey;
+    const fresh = current.operation?.state === "rejected";
     setDeleteError("");
-    setDeleteOperationExpired(false);
-    setDeleteSelection({ ...deleteSelection, loading: true, error: "" });
+    setDeleteSelection({ ...current, loading: true, error: "" });
     try {
       const target = await adminService.getUser(id);
-      if (alive.current && request === deleteDetailRequest.current) {
-        setDeleteSelection({
-          id,
-          target,
-          loading: false,
-          operationKey: null,
-          expectedAppCount: target.appCount,
-          operation: null,
-        });
-      }
+      if (!ownsDelete(request, owner, id)) return;
+      const sameCount =
+        !current.operationKey || current.expectedAppCount === target.appCount;
+      setDeleteSelection({
+        ...current,
+        target,
+        loading: false,
+        refreshRequired: !sameCount,
+        ...(fresh
+          ? {
+              operationKey: null,
+              operation: null,
+              outcome: null,
+              expectedAppCount: target.appCount,
+              refreshRequired: false,
+            }
+          : {
+              expectedAppCount: current.operationKey
+                ? current.expectedAppCount
+                : target.appCount,
+            }),
+      });
+      if (fresh) setDeleteOperationExpired(false);
+      if (!sameCount && !fresh)
+        setDeleteError(
+          "소유 앱 수가 달라졌어요. 기존 작업 결과를 먼저 확인해 주세요.",
+        );
     } catch (error) {
-      if (alive.current && request === deleteDetailRequest.current) {
+      if (ownsDelete(request, owner, id))
         setDeleteSelection({
-          id,
+          ...current,
           target: null,
           loading: false,
-          operationKey: null,
-          expectedAppCount: null,
-          operation: null,
-          error:
-            error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
+          error: error.message,
         });
-      }
     }
   }
 
-  async function submitUserDelete() {
-    if (!deleteSelection?.target || deleteBusy || deleteSelection.operation)
+  async function executeUserDelete(retry = false) {
+    if (
+      !deleteSelection?.target ||
+      deleteBusy ||
+      deleteSubmitting.current ||
+      deleteSelection.refreshRequired ||
+      deleteSelection.outcome
+    )
+      return;
+    if (
+      retry
+        ? deleteSelection.operation?.state !== "unresolved"
+        : Boolean(deleteSelection.operationKey || deleteSelection.operation)
+    )
       return;
     const { id, target } = deleteSelection;
     const expectedAppCount =
       deleteSelection.expectedAppCount ?? target.appCount;
+    const request = deleteDetailRequest.current;
+    const owner = scopeKey;
+    let key = retry ? deleteSelection.operationKey : null;
+    deleteSubmitting.current = true;
     setDeleteBusy(true);
     setDeleteError("");
-    setDeleteOperationExpired(false);
-    let operation = null;
-    let recoveredOperation = null;
     try {
-      operation = await adminService.createUserDeleteOperation({
-        targetId: id,
-        expectedAppCount,
-      });
-      if (!alive.current) return;
+      if (!retry) {
+        const operation = await adminService.createUserDeleteOperation({
+          targetId: id,
+          expectedAppCount,
+        });
+        if (!ownsDelete(request, owner, id)) return;
+        key = operation.key;
+        checkedDeleteResult(operation, key, id);
+        setDeleteSelection((current) => ({
+          ...current,
+          operationKey: key,
+          operation,
+          expectedAppCount,
+        }));
+      }
+      if (!ownsDelete(request, owner, id)) return;
+      await adminService.deleteUser(id, expectedAppCount, key);
+      if (!ownsDelete(request, owner, id)) return;
       setDeleteSelection((current) => ({
         ...current,
-        operationKey: operation.key,
-        expectedAppCount,
-        operation,
+        outcome: "succeeded",
+        operation: null,
       }));
-      await adminService.deleteUser(id, expectedAppCount, operation.key);
-      const result = await adminService.getUserDeleteOperation(operation.key);
-      if (!alive.current) return;
-      setDeleteSelection((current) => ({ ...current, operation: result }));
-      if (
-        result.state === "succeeded" ||
-        result.state === "confirming_deletion"
-      )
-        await refreshAfterDelete();
+      await refreshAfterDelete(request, owner, id);
     } catch (error) {
-      if (!alive.current) return;
+      if (!ownsDelete(request, owner, id)) return;
       if (error instanceof ServiceError && error.code === "REAUTH_REQUIRED") {
-        startDeleteReauthentication(
-          id,
-          operation?.key ?? null,
-          operation ? expectedAppCount : null,
-        );
+        startDeleteReauthentication(id, key, key ? expectedAppCount : null);
         return;
       }
-      if (operation) {
+      if (key) {
+        setDeleteSelection((current) => ({
+          ...current,
+          operationKey: key,
+          expectedAppCount,
+          operation: null,
+          ...(error.code === "DELETION_CONFIRMATION_PENDING"
+            ? { outcome: "pending" }
+            : {}),
+        }));
+        if (error.code === "DELETION_CONFIRMATION_PENDING")
+          await refreshAfterDelete(request, owner, id);
+        if (!ownsDelete(request, owner, id)) return;
         try {
-          const result = await adminService.getUserDeleteOperation(
-            operation.key,
+          const operation = checkedDeleteResult(
+            await adminService.getUserDeleteOperation(key),
+            key,
+            id,
           );
-          if (!alive.current) return;
-          recoveredOperation = result;
-          setDeleteSelection((current) => ({ ...current, operation: result }));
-          if (
-            result.state === "succeeded" ||
-            result.state === "confirming_deletion"
-          )
-            await refreshAfterDelete();
+          if (!ownsDelete(request, owner, id)) return;
+          setDeleteSelection((current) => ({
+            ...current,
+            operation,
+            outcome:
+              operation.state === "succeeded"
+                ? "succeeded"
+                : operation.state === "confirming_deletion"
+                  ? "pending"
+                  : current.outcome,
+            refreshRequired: operation.state === "unresolved",
+          }));
+          if (["succeeded", "confirming_deletion"].includes(operation.state)) {
+            await refreshAfterDelete(request, owner, id);
+            return;
+          }
         } catch (readError) {
-          if (
-            readError instanceof ServiceError &&
-            readError.code === "OPERATION_EXPIRED"
-          )
-            setDeleteOperationExpired(true);
-          setDeleteError(deleteOperationMessage(error));
+          if (!ownsDelete(request, owner, id)) return;
+          markDeleteExpired(readError);
         }
       } else if (
-        error instanceof ServiceError &&
         ["APP_COUNT_CONFLICT", "USER_NOT_FOUND"].includes(error.code)
       ) {
         setDeleteSelection((current) => ({
@@ -1619,76 +1790,22 @@ export function AdminView({
           refreshRequired: true,
         }));
       }
+      if (!ownsDelete(request, owner, id)) return;
       markDeleteExpired(error);
-      setDeleteError(
-        recoveredOperation?.state === "succeeded" ||
-          recoveredOperation?.state === "confirming_deletion"
-          ? ""
-          : deleteOperationMessage(error),
-      );
+      setDeleteError(deleteOperationMessage(error));
     } finally {
-      if (alive.current) setDeleteBusy(false);
+      if (ownsDelete(request, owner, id)) {
+        deleteSubmitting.current = false;
+        setDeleteBusy(false);
+      }
     }
   }
 
-  async function retryUserDelete() {
-    const operationKey =
-      deleteSelection?.operation?.key ?? deleteSelection?.operationKey;
-    if (
-      !operationKey ||
-      !deleteSelection?.target ||
-      (deleteSelection.operation &&
-        deleteSelection.operation.state !== "unresolved") ||
-      deleteBusy
-    )
-      return;
-    setDeleteBusy(true);
-    setDeleteError("");
-    try {
-      await adminService.deleteUser(
-        deleteSelection.id,
-        deleteSelection.expectedAppCount,
-        operationKey,
-      );
-      const operation = await adminService.getUserDeleteOperation(operationKey);
-      if (!alive.current) return;
-      setDeleteSelection((current) => ({ ...current, operation }));
-      if (
-        operation.state === "succeeded" ||
-        operation.state === "confirming_deletion"
-      )
-        await refreshAfterDelete();
-    } catch (error) {
-      if (!alive.current) return;
-      if (error instanceof ServiceError && error.code === "REAUTH_REQUIRED") {
-        startDeleteReauthentication(
-          deleteSelection.id,
-          operationKey,
-          deleteSelection.expectedAppCount,
-        );
-        return;
-      }
-      try {
-        const operation =
-          await adminService.getUserDeleteOperation(operationKey);
-        if (!alive.current) return;
-        setDeleteSelection((current) => ({ ...current, operation }));
-        if (
-          operation.state === "succeeded" ||
-          operation.state === "confirming_deletion"
-        )
-          await refreshAfterDelete();
-      } catch (readError) {
-        if (
-          readError instanceof ServiceError &&
-          readError.code === "OPERATION_EXPIRED"
-        )
-          setDeleteOperationExpired(true);
-        setDeleteError(deleteOperationMessage(error));
-      }
-    } finally {
-      if (alive.current) setDeleteBusy(false);
-    }
+  function submitUserDelete() {
+    return executeUserDelete();
+  }
+  function retryUserDelete() {
+    return executeUserDelete(true);
   }
 
   async function retryResetTarget(fresh = false) {
@@ -2279,6 +2396,7 @@ export function AdminView({
         !query.isPending &&
         !users.some((user) => user.id === deleteSelection.id) ? (
           <UserDeletePanel
+            outcome={deleteSelection.outcome}
             target={deleteSelection.target}
             loading={deleteSelection.loading}
             busy={deleteBusy}
@@ -2294,6 +2412,7 @@ export function AdminView({
             onRetryTarget={() => void refreshDeleteTarget()}
             onClose={() => {
               ++deleteDetailRequest.current;
+              onRememberDelete?.(null);
               setDeleteSelection(null);
               setDeleteError("");
             }}
@@ -2392,11 +2511,6 @@ export function AdminView({
                           size="sm"
                           variant="line"
                           onClick={() => beginUserDelete(user.id)}
-                          aria-describedby={
-                            deleteNotImplemented
-                              ? `admin-user-delete-reason-${user.id}`
-                              : undefined
-                          }
                           disabled={
                             !canDelete ||
                             busy ||
@@ -2426,19 +2540,11 @@ export function AdminView({
                       </div>
                     )}
                   </div>
-                  {user.role !== "admin" && deleteNotImplemented ? (
-                    <div className="space-y-1 px-5 pb-4 pl-[68px] text-[12px] text-neutral-500 sm:pl-[72px] sm:pr-6">
-                      {deleteNotImplemented ? (
-                        <p id={`admin-user-delete-reason-${user.id}`}>
-                          회원 삭제 기능은 아직 준비 중이에요.
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
                   {selection?.id === user.id ? approvalPanel : null}
                   {resetSelection?.id === user.id ? resetPanel : null}
                   {deleteSelection?.id === user.id ? (
                     <UserDeletePanel
+                      outcome={deleteSelection.outcome}
                       target={deleteSelection.target}
                       loading={deleteSelection.loading}
                       busy={deleteBusy}
@@ -2454,6 +2560,7 @@ export function AdminView({
                       onRetryTarget={() => void refreshDeleteTarget()}
                       onClose={() => {
                         ++deleteDetailRequest.current;
+                        onRememberDelete?.(null);
                         setDeleteSelection(null);
                         setDeleteError("");
                       }}

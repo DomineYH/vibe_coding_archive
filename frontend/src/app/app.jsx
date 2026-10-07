@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -1638,6 +1639,7 @@ function AdminRoute({
   resumeState,
   onConsumeResume,
   onSaveResume,
+  onRememberDelete,
 }) {
   const continuity = draftContinuityScope(auth);
   const scopeKey = memberCacheScope(auth);
@@ -1669,6 +1671,7 @@ function AdminRoute({
             resumeState={resumeState}
             onConsumeResume={onConsumeResume}
             onSaveResume={onSaveResume}
+            onRememberDelete={onRememberDelete}
           />
         </div>
       ) : null}
@@ -1787,6 +1790,13 @@ export default function App() {
   const authObservation = useRef(0);
   const pendingReauth = useRef(null);
   const [adminResume, setAdminResume] = useState(null);
+  const rememberedDelete = useRef(null);
+  const [deleteMemoryVersion, setDeleteMemoryVersion] = useState(0);
+  const rememberDelete = useCallback((value) => {
+    const actorId = authSnapshot.current.user?.id;
+    rememberedDelete.current =
+      value && actorId ? { actorId, resume: { adminDelete: value } } : null;
+  }, []);
   const consumeAdminResume = useCallback(() => setAdminResume(null), []);
   const saveAdminResume = useCallback((value) => {
     const owner = draftContinuityScope(authSnapshot.current);
@@ -2363,6 +2373,8 @@ export default function App() {
     setLogoutPending(true);
     pendingReauth.current = null;
     setAdminResume(null);
+    rememberedDelete.current = null;
+    setDeleteMemoryVersion((version) => version + 1);
     setDeletion(null);
     try {
       await beginAuthTransition();
@@ -2679,10 +2691,33 @@ export default function App() {
   }, [auth.status, auth.user, deletion]);
 
   const resumeOwner = draftContinuityScope(auth);
-  const ownedAdminResume =
-    adminResume?.owner === resumeOwner ? adminResume.resume : null;
+  const ownedAdminResume = useMemo(() => {
+    if (adminResume?.owner === resumeOwner) return adminResume.resume;
+    const remembered = rememberedDelete.current;
+    return location.pathname === "/admin" &&
+      remembered &&
+      remembered.actorId === auth.user?.id
+      ? remembered.resume
+      : null;
+    // Snapshot mutable recovery memory at navigation, session and explicit logout boundaries.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    adminResume,
+    deleteMemoryVersion,
+    resumeOwner,
+    auth.user?.id,
+    location.key,
+    location.pathname,
+  ]);
   useEffect(() => {
     const attempt = pendingReauth.current;
+    if (
+      auth.status === "ready" &&
+      !auth.concealed &&
+      auth.user &&
+      rememberedDelete.current?.actorId !== auth.user.id
+    )
+      rememberedDelete.current = null;
     if (
       auth.status === "ready" &&
       !auth.concealed &&
@@ -2849,6 +2884,7 @@ export default function App() {
               resumeState={ownedAdminResume}
               onConsumeResume={consumeAdminResume}
               onSaveResume={saveAdminResume}
+              onRememberDelete={rememberDelete}
             />
           }
         />

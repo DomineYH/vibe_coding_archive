@@ -176,6 +176,10 @@ def response(*args, **kwargs):
         "/api/v1/auth/password",
         "/api/v1/auth/reauth",
     }
+    target = target or (
+        args[1].method == "DELETE"
+        and args[1].url.path.startswith("/api/v1/admin/users/")
+    )
     if target:
         barrier.hit("before_commit")
     result = respond(*args, **kwargs)
@@ -189,3 +193,7 @@ auth_login.execution_context = execution_context
 auth_password.execution_context = execution_context
 auth_reauth.execution_context = execution_context
 auth_login.response = response
+
+from app import admin_user_delete
+
+admin_user_delete.response = response

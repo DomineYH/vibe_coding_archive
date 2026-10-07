@@ -520,3 +520,31 @@ it("maps reset 413 to PAYLOAD_TOO_LARGE without claiming a contract failure", as
     ),
   ).rejects.toMatchObject({ code: "PAYLOAD_TOO_LARGE", httpStatus: 413 });
 });
+
+it.each([
+  [404, "USER_NOT_FOUND", "USER_NOT_FOUND"],
+  [409, "USER_NOT_FOUND", "CONTRACT_ERROR"],
+  [413, "PAYLOAD_TOO_LARGE", "PAYLOAD_TOO_LARGE"],
+])(
+  "validates deletion status/code parity: %s/%s",
+  async (status, code, expected) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        adminResponse(
+          JSON.stringify({
+            error: { code, message: "safe error", request_id: null },
+          }),
+          { status },
+        ),
+      ),
+    );
+    await expect(
+      adminService.deleteUser(
+        target.id,
+        target.app_count,
+        userDeleteOperation.key,
+      ),
+    ).rejects.toMatchObject({ code: expected });
+  },
+);

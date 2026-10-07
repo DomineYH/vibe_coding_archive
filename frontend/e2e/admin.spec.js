@@ -430,27 +430,37 @@ test("app-count conflict requires an explicit current-member refresh", async ({
 test("unknown deletion result needs lookup and an explicit same-key retry", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.evaluate(async () => {
-    const { setMockScenario } = await import("/src/services/mock/state.ts");
-    setMockScenario("admin_delete_unresolved");
-  });
   await login(page, "admin", "admin123");
   await page.goto("/admin");
   const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await page.evaluate(async () => {
+    const { adminService } = await import("/src/services/mock/admin.ts");
+    const { ServiceError } = await import("/src/services/service-error.ts");
+    const original = adminService.deleteUser.bind(adminService);
+    let first = true;
+    adminService.deleteUser = async (...args) => {
+      if (first) {
+        first = false;
+        throw new ServiceError("NETWORK_ERROR", "응답을 확인할 수 없어요.", {
+          outcome: "unknown",
+        });
+      }
+      return original(...args);
+    };
+  });
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText(
     "삭제 결과가 아직 확정되지 않았어요",
   );
   await expect(row).toHaveCount(1);
-  await page.evaluate(async () => {
-    const { setMockScenario } = await import("/src/services/mock/state.ts");
-    setMockScenario("original");
-  });
+
   await panel.getByRole("button", { name: "결과 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText(
     "삭제 결과가 아직 확정되지 않았어요",
   );
+  await panel
+    .getByRole("button", { name: "현재 회원 정보 다시 확인", exact: true })
+    .click();
   await panel
     .getByRole("button", { name: "같은 삭제 요청 다시 제출", exact: true })
     .click();
@@ -525,14 +535,24 @@ test("pending deletion confirmation stays distinct and resolves by its known key
 test("reauthenticating an expired recent-auth delete preserves its key without replay", async ({
   page,
 }) => {
-  await page.goto("/");
-  await page.evaluate(async () => {
-    const { setMockScenario } = await import("/src/services/mock/state.ts");
-    setMockScenario("admin_delete_unresolved");
-  });
   await login(page, "admin", "admin123");
   await page.goto("/admin");
   const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  await page.evaluate(async () => {
+    const { adminService } = await import("/src/services/mock/admin.ts");
+    const { ServiceError } = await import("/src/services/service-error.ts");
+    const original = adminService.deleteUser.bind(adminService);
+    let first = true;
+    adminService.deleteUser = async (...args) => {
+      if (first) {
+        first = false;
+        throw new ServiceError("NETWORK_ERROR", "응답을 확인할 수 없어요.", {
+          outcome: "unknown",
+        });
+      }
+      return original(...args);
+    };
+  });
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText(
     "삭제 결과가 아직 확정되지 않았어요",
@@ -542,6 +562,9 @@ test("reauthenticating an expired recent-auth delete preserves its key without r
     state.mock_now = "2026-09-22T00:28:00.000Z";
     localStorage.setItem(key, JSON.stringify(state));
   }, STORAGE_KEY);
+  await panel
+    .getByRole("button", { name: "현재 회원 정보 다시 확인", exact: true })
+    .click();
   await panel
     .getByRole("button", { name: "같은 삭제 요청 다시 제출", exact: true })
     .click();
@@ -559,10 +582,7 @@ test("reauthenticating an expired recent-auth delete preserves its key without r
     "삭제 결과가 아직 확정되지 않았어요",
   );
   await expect(row).toHaveCount(1);
-  await page.evaluate(async () => {
-    const { setMockScenario } = await import("/src/services/mock/state.ts");
-    setMockScenario("original");
-  });
+
   await resumedPanel
     .getByRole("button", { name: "같은 삭제 요청 다시 제출", exact: true })
     .click();
@@ -584,10 +604,11 @@ test("a delayed delete cannot apply after the admin permission changes", async (
   await login(page, "admin", "admin123");
   await page.goto("/admin");
   const { panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const pauseTime = await page.evaluate(() => Date.now() + 50);
+  await page.clock.pauseAt(pauseTime);
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
-  await expect(panel.getByRole("status")).toContainText(
-    "삭제 결과가 아직 확정되지 않았어요",
-  );
+  await expect(panel).toHaveAttribute("aria-busy", "true");
+  await expect(panel).not.toContainText("삭제 결과가 아직 확정되지 않았어요");
   await page.evaluate(async (memberId) => {
     const { setMockPrincipal } = await import("/src/services/mock/state.ts");
     setMockPrincipal(memberId);

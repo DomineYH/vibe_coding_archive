@@ -253,11 +253,11 @@ def main() -> int:
             if args.command == "invalidate-restored-auth":
                 reconcile(make_session_factory(engine), restored=True)
             else:
-                from app.app_deletion_ledger import retry_delivery
+                from app.auth_maintenance import deliver_deletions
                 from app.pending_retention import sweep_pending
 
                 factory = make_session_factory(engine)
-                retry_delivery(factory)
+                deliver_deletions(factory)
                 sweep_pending(factory)
         except (RuntimeError, SQLAlchemyError, OSError, sqlite3.Error):
             print(

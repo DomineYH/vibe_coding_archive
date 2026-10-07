@@ -481,6 +481,7 @@ def test_meta_advertises_the_verified_t01_t05_bundle_and_nothing_else(member_app
         "auth_register",
         "admin_users_read",
         "admin_approval",
+        "admin_user_delete",
         "admin_summary",
         "apps_create",
         "apps_update_own",

@@ -18,6 +18,7 @@ from starlette.responses import JSONResponse
 
 from app.admin_approval import router as admin_approval_router
 from app.admin_password_reset import router as password_reset_router
+from app.admin_user_delete import router as user_delete_router
 from app.app_create import router as app_create_router
 from app.app_delete import router as app_delete_router
 from app.app_input import AppInput
@@ -51,6 +52,7 @@ from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
 from app.settings import ConfigurationError, Settings
+from app.user_deletion_ledger import prepare as prepare_user_delete
 
 NOT_IMPLEMENTED = ["not_implemented"]
 COLLECTION_DISABLED = ["collection_disabled"]
@@ -186,6 +188,8 @@ def create_app(
             raise RuntimeError("Authentication test boundary requires APP_ENV=test.")
         app.state.settings = resolved
         app.state.auth_enabled = auth_testing or resolved.app_env == "development"
+        app.state.user_delete_corrupt = False
+        app.state.user_delete_ready = False
         app.state.auth_ready = False
         if app.state.auth_enabled:
             try:
@@ -209,6 +213,9 @@ def create_app(
         try:
             reconcile(app.state.session_factory)
             sweep(app.state.session_factory)
+            app.state.user_delete_ready = (
+                prepare_user_delete(app.state.session_factory) is not None
+            )
             app.state.auth_ready = True
         except RuntimeError:
             verification_failed = True
@@ -228,6 +235,15 @@ def create_app(
                 await asyncio.to_thread(app.state.password_reset_gate.maintain)
                 try:
                     await asyncio.to_thread(sweep, app.state.session_factory)
+                    app.state.user_delete_ready = (
+                        await asyncio.to_thread(
+                            prepare_user_delete, app.state.session_factory
+                        )
+                        is not None
+                    )
+                    verification_failed = (
+                        verification_failed or app.state.user_delete_corrupt
+                    )
                     if not app.state.auth_ready and not verification_failed:
                         await asyncio.to_thread(reconcile, app.state.session_factory)
                         app.state.auth_ready = True
@@ -359,6 +375,15 @@ def create_app(
             and gate.ready
             else ["operational_restriction"],
         }
+        delete_enabled = bool(
+            request.app.state.auth_enabled
+            and request.app.state.auth_ready
+            and request.app.state.user_delete_ready
+        )
+        capabilities["admin_user_delete"] = {
+            "enabled": delete_enabled,
+            "reasons": [] if delete_enabled else ["operational_restriction"],
+        }
         if request.app.state.auth_enabled and request.app.state.auth_ready:
             # #113: the T01–T05 bundle; operating release remains behind T07.
             for key in (
@@ -396,6 +421,7 @@ def create_app(
     api.include_router(register_router)
     api.include_router(admin_approval_router)
     api.include_router(password_reset_router)
+    api.include_router(user_delete_router)
     api.include_router(public_apps_router)
     api.include_router(app_create_router)
     api.include_router(app_update_router)

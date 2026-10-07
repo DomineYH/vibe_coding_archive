@@ -196,6 +196,7 @@ def error_response(error):
                     "SESSION_KIND_NOT_ALLOWED": "현재 세션으로는 이 작업을 수행할 수 없어요.",
                     "ADMIN_ACCOUNT_PROTECTED": "관리자 계정에는 이 작업을 수행할 수 없어요.",
                     "USER_NOT_FOUND": "회원을 찾을 수 없어요.",
+                    "APP_COUNT_CONFLICT": "소유 앱 수가 바뀌었어요. 현재 회원 정보를 다시 확인해 주세요.",
                     "USER_STATE_CONFLICT": "회원 상태가 바뀌었어요. 현재 상태를 다시 확인해 주세요.",
                     "LOGIN_ID_TAKEN": "이미 사용 중인 로그인 아이디예요.",
                     "VERSION_CONFLICT": "다른 곳에서 먼저 바뀌었어요. 최신 내용을 확인해 주세요.",
