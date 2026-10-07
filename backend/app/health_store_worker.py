@@ -128,7 +128,19 @@ def claim(db, *, worker_id, boot_id, mono, stamp):
     return dict(value, url=job["url"])
 
 
+def execution_valid(db, job, *, boot_id, mono):
+    """Whether this execution still owns permission to persist its result."""
+    return _live(db, job, boot_id, mono) is not None
+
+
 def _live(db, job, boot_id, mono):
+    worker = current_worker(db)
+    if (
+        not worker
+        or worker["worker_id"] != job["worker_id"]
+        or worker["boot_id"] != boot_id
+    ):
+        return None
     return row(
         db,
         """SELECT j.* FROM health_jobs j JOIN apps a ON a.id=j.app_id
