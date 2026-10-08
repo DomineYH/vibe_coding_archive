@@ -290,6 +290,7 @@ def test_backup_manifest_binds_original_expiry_and_scope(backup_case, monkeypatc
         "undelivered",
         "legacy",
         "legacy_conflict",
+        "binary_legacy",
     ],
 )
 def test_backup_requires_complete_current_ledger(backup_case, fault):
@@ -334,6 +335,11 @@ def test_backup_requires_complete_current_ledger(backup_case, fault):
                     + ",".join("?" for _ in FIELDS)
                     + ")",
                     tuple(group[0][f] for f in FIELDS),
+                )
+            elif fault == "binary_legacy":
+                ledger.execute(
+                    "INSERT INTO member_deletions VALUES (?,?)",
+                    (sqlite3.Binary(b"unsupported-binary-value"), stamp),
                 )
             else:
                 db.execute("INSERT INTO member_deletions VALUES (?,?)", (target, stamp))

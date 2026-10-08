@@ -633,6 +633,7 @@ def main(argv):
     except (
         UnicodeError,
         ValueError,
+        TypeError,
         OSError,
         RuntimeError,
         sqlite3.Error,
