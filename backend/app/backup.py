@@ -105,8 +105,8 @@ def _sized_digest(value):
     )
 
 
-def validate_manifest(manifest, *, metadata=None, now=None):
-    """Structure/expiry only; supply age-authenticated metadata to bind the core."""
+def validate_manifest_structure(manifest, *, metadata=None, now=None):
+    """Validate original clocks and structure, including expired cleanup inputs."""
     try:
         if not isinstance(manifest, dict) or set(manifest) != CORE | OUTER:
             raise ValueError()
@@ -139,7 +139,7 @@ def validate_manifest(manifest, *, metadata=None, now=None):
         )
         instant = datetime.now(UTC) if now is None else now
         if not (
-            created == recovery <= completed <= instant < expires
+            created == recovery <= completed <= instant
             and expires == created + timedelta(days=30)
         ):
             raise ValueError()
@@ -167,6 +167,14 @@ def validate_manifest(manifest, *, metadata=None, now=None):
             raise ValueError()
     except (ValueError, TypeError, KeyError, AttributeError, OverflowError):
         raise ValueError("BACKUP_MANIFEST_INVALID") from None
+
+
+def validate_manifest(manifest, *, metadata=None, now=None):
+    """Structure/expiry only; supply age-authenticated metadata to bind the core."""
+    instant = datetime.now(UTC) if now is None else now
+    validate_manifest_structure(manifest, metadata=metadata, now=instant)
+    if instant >= _utc(manifest["original_expires_at"]):
+        raise ValueError("BACKUP_MANIFEST_INVALID")
 
 
 def _directory(path, *, test):

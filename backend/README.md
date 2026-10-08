@@ -360,6 +360,10 @@ Nginx 배포 템플릿, API 산출물 허용 목록, 신뢰 proxy 경계와 격�
 
 `uv run --frozen python -m app.cli backup-db --output-dir /absolute/private/backups --recipient-file /absolute/private/config/recipients.txt --release-id <build-id>` creates an age v1 encrypted logical SQLite dump and an authenticated-inner-metadata manifest. A locally complete pair returns **3** (`LOCAL_ONLY_REMOTE_NOT_CONFIRMED`); it does not establish independent remote durability. See [backup operations](../docs/operations/backups.md) for private paths/permissions, payload format, expiry, interruption handling, scheduling and restore handoff.
 
+## Safe logging and retention (#200)
+
+Use `uv run --frozen python -m app.api --host 127.0.0.1 --port 8000` for the API logging boundary. Run `uv run --frozen python -m app.cli purge-expired --backup-dir /srv/eduvibe/backups` with the configured private paths and `HEALTH_CHECKS_ENABLED=false`. Exit 3 reports local completion with audit classification and copy inventory still blocked; no audit or ledger row is pruned. See [logging and retention](../docs/operations/logging-retention.md) for journal/proxy templates, original-clock policy, safe failures and T10/T11/T12 evidence still required.
+
 ## Isolated restore drills (#198)
 
 `APP_ENV=test HEALTH_CHECKS_ENABLED=false python -m app.cli restore-db` and

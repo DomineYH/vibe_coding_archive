@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import sqlite3
 import sys
+from asyncio import get_running_loop
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from typing import Annotated, Literal
@@ -65,6 +66,7 @@ from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
 from app.restore_guard import restore_blocked
+from app.safe_logging import CompletionLog, background_error, emit
 from app.settings import ConfigurationError, Settings
 from app.user_deletion_ledger import prepare as prepare_user_delete
 
@@ -184,6 +186,9 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        loop = get_running_loop()
+        previous_handler = loop.get_exception_handler()
+        loop.set_exception_handler(background_error)
         engine = None
         try:
             resolved = Settings.model_validate(
@@ -205,7 +210,11 @@ def create_app(
                 )
             app.state.restore_blocked = restore_blocked(resolved.database_path)
             if app.state.restore_blocked:
-                yield
+                emit("RESTORE_MAINTENANCE_REQUIRED")
+                try:
+                    yield
+                finally:
+                    loop.set_exception_handler(previous_handler)
                 return
             resolved.validate_production_runtime()
             engine = make_engine(resolved.database_path)
@@ -351,6 +360,7 @@ def create_app(
             with suppress(asyncio.CancelledError):
                 await maintenance
             engine.dispose()
+            loop.set_exception_handler(previous_handler)
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
@@ -364,6 +374,8 @@ def create_app(
             if request.url.path == "/readyz":
                 return JSONResponse(status_code=503, content={"status": "not_ready"})
         return await call_next(request)
+
+    app.add_middleware(CompletionLog)
 
     @app.exception_handler(AuthError)
     def handle_auth_error(request, error):

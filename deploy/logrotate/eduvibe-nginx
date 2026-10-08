@@ -1,0 +1,13 @@
+# LOG_ROOT=/var/log/eduvibe/nginx; private directory 0700, log 0600.
+/var/log/eduvibe/nginx/nginx-access.log {
+    daily
+    rotate 7
+    maxage 7
+    missingok
+    ifempty
+    create 0600
+    sharedscripts
+    postrotate
+        /bin/systemctl kill --kill-whom=main --signal=USR1 eduvibe-nginx.service
+    endscript
+}

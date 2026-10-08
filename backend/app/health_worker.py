@@ -7,6 +7,7 @@ import fcntl
 import os
 import signal
 import stat
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -26,6 +27,7 @@ from app.database import (
 )
 from app.health_runtime import boot_clock, runtime_enabled
 from app.restore_guard import restore_blocked
+from app.safe_logging import background_error, emit, install
 from app.settings import Settings
 
 
@@ -118,6 +120,8 @@ class Worker:
         self.worker_id = str(uuid4())
         self.stopping = asyncio.Event()
         self.disabled = restore_blocked(settings.database_path)
+        if self.disabled:
+            emit("RESTORE_MAINTENANCE_REQUIRED")
         self.tasks = {}
         self.executor = None
         self.stop_deadline = None
@@ -428,7 +432,9 @@ class Worker:
 
 
 async def serve(settings):
+    asyncio.get_running_loop().set_exception_handler(background_error)
     if restore_blocked(settings.database_path):
+        emit("RESTORE_MAINTENANCE_REQUIRED")
         raise ActivationRequired("RESTORE_MAINTENANCE_REQUIRED")
     engine = make_engine(settings.database_path)
     try:
@@ -448,8 +454,17 @@ async def serve(settings):
 
 
 def main():
-    asyncio.run(serve(Settings.from_environment()))
+    install()
+    try:
+        asyncio.run(serve(Settings.from_environment()))
+    except KeyboardInterrupt:
+        return 130
+    except Exception:  # noqa: BLE001 - Preserve nonzero exit without a traceback.
+        emit("WORKER_FAILED")
+        return 1
+    emit("WORKER_COMPLETED")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

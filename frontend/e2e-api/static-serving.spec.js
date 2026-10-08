@@ -12,7 +12,12 @@ import {
 import path from "node:path";
 import { approvalHeaders, login } from "./approval-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
-import { test, wire } from "./static-serving-helpers.js";
+import {
+  test,
+  wire,
+  safeLogCaptures,
+  withDatabaseWriteLock,
+} from "./static-serving-helpers.js";
 
 if (process.env.API_E2E_NGINX !== "1")
   throw new Error(
@@ -521,4 +526,128 @@ test("keeps operational capabilities disabled and fails when the upstream is una
   await expect
     .poll(async () => (await request.get("/readyz")).status())
     .toBe(200);
+});
+
+test("sanitized proxy and API logs exclude request secrets on every result", async () => {
+  const secrets = [
+    "password",
+    "hash",
+    "session",
+    "recovery",
+    "csrf",
+    "hmac",
+    "email",
+    "phone",
+    "body",
+    "query",
+    "path",
+    "header",
+    "remote",
+  ].map((kind) => `T06_SECRET_${kind}_200`);
+  const headers = [
+    `X-Request-Id: ${secrets[0]}`,
+    `Authorization: ${secrets[1]}`,
+    `Cookie: S=${secrets[2]}; R=${secrets[3]}`,
+    `X-CSRF-Token: ${secrets[4]}`,
+    `X-HMAC: ${secrets[5]}`,
+    `X-Email: ${secrets[6]}`,
+    `X-Phone: ${secrets[7]}`,
+    `X-Synthetic: ${secrets[11]}`,
+  ];
+  expect(
+    (await wire(`/api/v1/meta?query=${secrets[9]}`, { headers })).status,
+  ).toBe(200);
+  expect((await wire(`/api/${secrets[10]}`, { headers })).status).toBe(404);
+  expect(
+    (
+      await wire("/api/v1/auth/flows", {
+        method: "POST",
+        headers: [
+          ...headers,
+          `Origin: ${origin}`,
+          "Content-Type: application/json",
+        ],
+        body: secrets[8],
+      })
+    ).status,
+  ).toBe(400);
+  expect([400, 414, 431]).toContain(
+    (
+      await wire("/api/v1/meta", {
+        headers: [...headers, `X-Large: ${secrets[12]}${"x".repeat(9000)}`],
+      })
+    ).status,
+  );
+  const busy = await withDatabaseWriteLock(async () => {
+    const response = await wire("/api/v1/auth/flows", {
+      method: "POST",
+      headers: [
+        ...headers,
+        `Origin: ${origin}`,
+        "Content-Type: application/json",
+      ],
+      body: '{"restart_from":[]}',
+    });
+    // Keep the lock past the upstream timeout even if the proxy times out first.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return response;
+  });
+  // The proxy read deadline and SQLite busy deadline are both five seconds.
+  expect([503, 504]).toContain(busy.status);
+  const pid = Number(readFileSync(process.env.API_E2E_UPSTREAM_PID, "utf8"));
+  expect(Number.isSafeInteger(pid) && pid > 1).toBe(true);
+  process.kill(pid, "SIGSTOP");
+  try {
+    expect([502, 504]).toContain(
+      (await wire(`/api/v1/meta?query=${secrets[9]}`, { headers })).status,
+    );
+  } finally {
+    process.kill(pid, "SIGCONT");
+  }
+  await expect.poll(async () => (await wire("/readyz")).status).toBe(200);
+  const captures = await safeLogCaptures();
+  const absent = captures.every((capture) =>
+    secrets.every((secret) => !capture.includes(secret)),
+  );
+  expect(absent, "sensitive sentinel escaped into private log captures").toBe(
+    true,
+  );
+  const proxy = captures[0]
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  expect(proxy.length).toBeGreaterThan(0);
+  expect(
+    proxy.every(
+      (event) =>
+        /^[a-f0-9]{32}$/.test(event.request_id) &&
+        ["api", "static", "health", "unmatched", "redirect"].includes(
+          event.route,
+        ) &&
+        Number.isInteger(event.status) &&
+        event.duration >= 0,
+    ),
+  ).toBe(true);
+  const api = captures[1]
+    .split("\n")
+    .filter((line) => line.startsWith("{"))
+    .map((line) => JSON.parse(line));
+  expect(
+    api.some(
+      (event) =>
+        event.code === "REQUEST_COMPLETED" &&
+        event.status === 200 &&
+        event.route === "/api/v1/meta",
+    ),
+  ).toBe(true);
+  expect(
+    api.some(
+      (event) => event.code === "REQUEST_COMPLETED" && event.status === 400,
+    ),
+  ).toBe(true);
+  expect(
+    api.some(
+      (event) => event.code === "REQUEST_COMPLETED" && event.status === 503,
+    ),
+  ).toBe(true);
 });

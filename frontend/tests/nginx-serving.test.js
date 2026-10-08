@@ -23,6 +23,7 @@ const values = {
   TLS_CERTIFICATE: "/private/tls/cert.pem",
   TLS_CERTIFICATE_KEY: "/private/tls/key.pem",
   RUNTIME_ROOT: "/private/nginx",
+  LOG_ROOT: "/private/logs",
 };
 const temporary = [];
 afterEach(() => {
@@ -41,6 +42,7 @@ it.each([
   ["TLS_CERTIFICATE", '/tls/"bad"'],
   ["TLS_CERTIFICATE_KEY", "/tls/line\nbreak"],
   ["RUNTIME_ROOT", "relative/path"],
+  ["LOG_ROOT", "/srv/eduvibe/releases/api/logs"],
   ["RELEASE_ROOT", "/srv/../private"],
   ["API_UPSTREAM", "attacker.example:8000"],
   ["SERVER_NAME", "localhost *.example"],
@@ -78,7 +80,11 @@ it("cleans up failed startup", async () => {
   const runtime = path.join(directory, "runtime");
   try {
     await expect(
-      startNginx({ ...values, RUNTIME_ROOT: runtime }),
+      startNginx({
+        ...values,
+        RUNTIME_ROOT: runtime,
+        LOG_ROOT: path.join(directory, "logs"),
+      }),
     ).rejects.toThrow(/Nginx startup failed/);
     expect(existsSync(runtime)).toBe(false);
   } finally {
@@ -116,4 +122,17 @@ it("rejects unresolved template delimiters", () => {
   expect(() => renderNginx(template + "{{BROKEN", values)).toThrow(
     /placeholder/,
   );
+});
+
+it("logs only generated IDs, constant route classes, status and duration", () => {
+  expect(template).toContain("log_format eduvibe escape=json");
+  const format = template.slice(
+    template.indexOf("log_format eduvibe"),
+    template.indexOf(";", template.indexOf("log_format eduvibe")),
+  );
+  expect([...format.matchAll(/\$([a-z_]+)/g)].map((match) => match[1])).toEqual(
+    ["request_id", "eduvibe_log_route", "status", "request_time"],
+  );
+  expect(template).toContain("error_log /dev/null;");
+  expect(template).toContain("/nginx-access.log eduvibe;");
 });

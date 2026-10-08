@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import argparse
+import logging
 import sqlite3
 import sys
 from datetime import UTC, datetime
@@ -17,6 +17,7 @@ from app.auth_boundary import normalized_login_id as _normalized_login_id
 from app.auth_maintenance import reconcile
 from app.database import current_head, current_revision, make_engine
 from app.models import App, AppGrade, HealthResult, Member
+from app.safe_logging import SafeParser, emit, install
 from app.settings import ROOT, ConfigurationError, Settings
 
 MEMBERS = (
@@ -201,7 +202,7 @@ def seed() -> None:
     print(f"Seeded {members_added} members and {apps_added} apps.")
 
 
-def main() -> int:
+def _main() -> int:
     if sys.argv[1:2] == ["backup-db"]:
         from app.backup import main as backup_main
 
@@ -210,9 +211,13 @@ def main() -> int:
         from app.restore import main as restore_main
 
         return restore_main(sys.argv[1], sys.argv[2:])
-    parser = argparse.ArgumentParser(prog="python -m app.cli")
+    parser = SafeParser(prog="python -m app.cli", allow_abbrev=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("backup-db", help="create a local encrypted database backup")
+    purge = subparsers.add_parser(
+        "purge-expired", help="purge eligible local records and backups"
+    )
+    purge.add_argument("--backup-dir", required=True)
     for command in ("restore-db", "verify-restore"):
         subparsers.add_parser(command, help="inspect an isolated blocked restore")
     subparsers.add_parser("seed", help="add missing synthetic development data")
@@ -226,6 +231,10 @@ def main() -> int:
     for command in ("bootstrap-admin", "recover-admin", "prepare-password-blocklist"):
         subparsers.add_parser(command)
     args = parser.parse_args()
+    if args.command == "purge-expired":
+        from app.retention import purge_expired
+
+        return purge_expired(Settings.from_environment(), backup_dir=args.backup_dir)
     if args.command in (
         "bootstrap-admin",
         "recover-admin",
@@ -244,7 +253,7 @@ def main() -> int:
         except (ValueError, RuntimeError, SQLAlchemyError, OSError, EOFError) as error:
             # SQL errors can embed bound hashes; report no raw exception or parameters.
             print(
-                str(error)
+                _safe_guidance(error)
                 if isinstance(error, ValueError)
                 else "Administrator credential operation failed; no changes saved.",
                 file=sys.stderr,
@@ -283,9 +292,65 @@ def main() -> int:
         try:
             seed()
         except SeedError as error:
-            print(error, file=sys.stderr)
+            print(_safe_guidance(error), file=sys.stderr)
             return 1
     return 0
+
+
+_GUIDANCE = (
+    "Admin credentials require an interactive terminal.",
+    "Administrator credential change cancelled.",
+    "Bootstrap requires zero administrators.",
+    "Conflicting seed data; no changes were saved.",
+    "Database migration head could not be verified.",
+    "Database migration head does not match the application.",
+    "Invalid development configuration.",
+    "Invalid login ID.",
+    "Login ID collision; no member was promoted.",
+    "Nickname must contain 2 to 20 characters.",
+    "Password must contain 15 to 128 Unicode characters.",
+    "Recovery requires an existing administrator.",
+    "Run the explicit development migration first.",
+    "Run the explicit migration first.",
+    "Seed is available only in the development environment.",
+    "Seed requires an interactive terminal.",
+    "Seed requires the designated development database.",
+    "Temporary password does not meet the password policy.",
+    "The entered passwords do not match.",
+)
+
+
+def _safe_guidance(error):
+    message = str(error)
+    return next((fixed for fixed in _GUIDANCE if fixed == message), "CLI_FAILED")
+
+
+def main() -> int:
+    install()
+    command = sys.argv[1] if len(sys.argv) > 1 else None
+    fixed_output = command in (
+        "backup-db",
+        "restore-db",
+        "verify-restore",
+        "sweep-pending",
+        "invalidate-restored-auth",
+    )
+    if fixed_output:
+        # Preserve existing fixed CLI protocols without library diagnostics.
+        logging.getLogger().handlers[0].addFilter(
+            lambda record: record.name == "eduvibe.safe"
+        )
+    try:
+        result = _main()
+    except ConfigurationError:
+        emit("CLI_USAGE_INVALID")
+        return 2
+    except Exception:  # noqa: BLE001 - Never expose process exception text.
+        emit("CLI_FAILED")
+        return 1
+    if not fixed_output:
+        emit("CLI_COMPLETED" if result in (0, 3) else "CLI_FAILED")
+    return result
 
 
 if __name__ == "__main__":
