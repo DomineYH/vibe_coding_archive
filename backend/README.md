@@ -311,6 +311,8 @@ localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. IPv4-mapped/
 IPv4에도 기존 IPv4 차단 대역을 적용하며 공개 내장 IPv4는 허용한다. 빈 사용자 정보는
 파서가 authority로 해석하는 모든 표기에서 거부하되 경로·query·fragment의 `@`는 허용한다.
 DNS·HTTP 연결 검사는 하지 않는다.
+NAT64(`64:ff9b::/96`·`64:ff9b:1::/48`)·6to4(`2002::/16`)·SIIT(`::ffff:0:0:0/96`) 변환 주소는 등록 단계에서 검사하지 않으며, 검사 단계 목적지 정책이 내장 IPv4와 관계없이 차단한다.
+사용자 정의 NAT64 대역은 `HEALTH_DENIED_IPS`와 송신망 정책에 추가한다([운영 절차](../docs/operations/health-checks.md)).
 
 `0009_app_delete`는 0008의 승인·등록·편집 행과 앱 데이터를 보존하며 삭제 종류·상태·DB 반영 시각과
 영속 전달 outbox를 추가한다. 병합 후 개발 DB는 서버와 쓰기 작업을 멈추고 유효한

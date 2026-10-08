@@ -5,13 +5,24 @@ from app.health_probe import probe
 
 @pytest.mark.parametrize(
     "url",
-    ["http://127.0.0.1", "https://[64:ff9b::808:808]", "https://[2002:0808:0808::1]"],
+    [
+        "http://127.0.0.1",
+        "https://[64:ff9b::808:808]",
+        "https://[2002:0808:0808::1]",
+        "http://[64:ff9b::7f00:1]/",
+        "http://[2002:7f00:1::]/",
+        "http://[::ffff:0:7f00:1]/",
+        "http://[64:ff9b::127.0.0.1]/",
+        "http://[::ffff:0:127.0.0.1]/",
+    ],
 )
 async def test_forbidden_literal_never_connects(url):
-    result = await probe(url, dns_servers=(), denied_ips=())
+    network = Network()
+    result = await probe(url, dns_servers=(), denied_ips=(), network_backend=network)
     assert result["state"] == "blocked"
     assert result["http_status"] is None
     assert result["error_kind"] == "DESTINATION_BLOCKED"
+    assert network.calls == []
 
 
 class Resolver:
@@ -74,6 +85,20 @@ async def test_public_https_pins_ip_preserves_host_tls_and_closes_without_body()
     assert network.calls == [("8.8.8.8", 443)]
     assert network.streams[0].sni == "example.org"
     assert b"Host: example.org\r\n" in network.streams[0].written
+    assert network.streams[0].closed
+
+
+async def test_public_ipv6_literal_connects():
+    network = Network(b"HTTP/1.1 204 No Content\r\n\r\n")
+    result = await probe(
+        "http://[2606:4700:4700::1111]/",
+        dns_servers=(),
+        denied_ips=(),
+        network_backend=network,
+    )
+    assert result["state"] == "healthy"
+    assert result["http_status"] == 204
+    assert network.calls == [("2606:4700:4700::1111", 80)]
     assert network.streams[0].closed
 
 
@@ -162,6 +187,9 @@ async def test_preparse_header_limit_including_intermediate_responses(
         "64:ff9b:1::808:808",
         "::ffff:0:808:808",
         "2001::808:808",
+        "64:ff9b::7f00:1",
+        "2002:7f00:1::",
+        "::ffff:0:7f00:1",
     ],
 )
 async def test_any_forbidden_dns_answer_blocks_entire_request(ip):
@@ -183,6 +211,8 @@ async def test_any_forbidden_dns_answer_blocks_entire_request(ip):
         network_backend=network,
     )
     assert result["state"] == "blocked"
+    assert result["http_status"] is None
+    assert result["error_kind"] == "DESTINATION_BLOCKED"
     assert network.calls == []
 
 
@@ -204,6 +234,9 @@ async def test_denied_own_host_or_custom_translation_prefix():
         (b"/a", "redirect_error"),
         (b"", "redirect_error"),
         (b"http://127.0.0.1", "blocked"),
+        (b"http://[64:ff9b::7f00:1]/", "blocked"),
+        (b"http://[2002:7f00:1::]/", "blocked"),
+        (b"http://[::ffff:0:7f00:1]/", "blocked"),
     ],
 )
 async def test_invalid_loop_and_forbidden_redirect(location, state):
