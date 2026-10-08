@@ -85,3 +85,17 @@ def process_server(member_app, password_blocklist):
         yield server, database
     finally:
         server.close()
+
+
+@pytest.fixture(autouse=True)
+def require_age(request):
+    if request.node.get_closest_marker("requires_age") is None:
+        return
+    import shutil
+
+    missing = [name for name in ("age", "age-keygen") if shutil.which(name) is None]
+    if missing:
+        reason = "NOT RUN: real age encryption requires installed " + ", ".join(missing)
+        if os.environ.get("CI", "").lower() == "true":
+            pytest.fail(reason, pytrace=False)
+        pytest.skip(reason)

@@ -345,3 +345,7 @@ or revoked S/R generations inside live flows within the R9 Q18 retention bound;
 clearing an obsolete reference does not alter a newer pending transition or revision.
 
 관리자 회원 삭제의 작업 키, 전체 그룹 확인 및 `0011_user_delete` 복원 절차는 [회원 삭제 개발 안내](../docs/development/user-delete.md)를 참조한다.
+
+## Local encrypted backup
+
+`uv run --frozen python -m app.cli backup-db --output-dir /absolute/private/backups --recipient-file /absolute/private/config/recipients.txt --release-id <build-id>` creates an age v1 encrypted logical SQLite dump and an authenticated-inner-metadata manifest. A locally complete pair returns **3** (`LOCAL_ONLY_REMOTE_NOT_CONFIRMED`); it does not establish independent remote durability. See [backup operations](../docs/operations/backups.md) for private paths/permissions, payload format, expiry, interruption handling, scheduling and restore handoff.
