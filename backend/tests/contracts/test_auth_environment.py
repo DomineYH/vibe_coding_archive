@@ -71,7 +71,7 @@ def test_development_meta_enables_only_auth_bundle(
         assert response.status_code == 200
         capabilities = response.json()["capabilities"]
         assert {key for key, value in capabilities.items() if value["enabled"]} == (
-            AUTH_BUNDLE | {"apps_read"}
+            AUTH_BUNDLE | {"apps_read", "health_read"}
         )
         assert capabilities.keys() == baseline.keys()
         for key, value in capabilities.items():

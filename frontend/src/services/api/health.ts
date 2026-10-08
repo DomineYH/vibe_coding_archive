@@ -8,7 +8,9 @@ import {
 import { getJson } from "./apps";
 import { isUuid } from "../../contracts/uuid";
 import { ServiceError } from "../service-error";
-import type { HealthService } from "../health-service";
+import type { HealthReadOptions, HealthService } from "../health-service";
+import { assertAuthObservation } from "../auth-state";
+import { requestJson, apiContractError, type ApiEndpoint } from "./transport";
 
 function requireUuid(id: string): string {
   if (!isUuid(id))
@@ -18,13 +20,58 @@ function requireUuid(id: string): string {
   return encodeURIComponent(id);
 }
 
+async function readHealth(
+  endpoint: ApiEndpoint,
+  path: string,
+  { signal, readContext }: HealthReadOptions,
+  authenticated = false,
+) {
+  if (!readContext) return getJson(endpoint, path, { signal, authenticated });
+  assertAuthObservation(readContext);
+  const { flow, status } = readContext.state;
+  if (status !== "ready" || !flow.sessionGeneration)
+    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+      httpStatus: 401,
+    });
+  try {
+    const result = (await requestJson(endpoint, path, {
+      signal,
+      cache: "no-store",
+      includeHeaders: true,
+      headers: new Headers({
+        Accept: "application/json",
+        "X-EduVibe-Flow-Id": flow.flowId,
+        "X-EduVibe-Auth-Revision": flow.revision,
+        "X-EduVibe-Session-Generation": flow.sessionGeneration,
+      }),
+    })) as { body: unknown; headers: Headers };
+    assertAuthObservation(readContext);
+    if (result.headers.get("Cache-Control") !== "private, no-store")
+      throw apiContractError(200);
+    for (const [name, expected] of [
+      ["X-EduVibe-Flow-Id", flow.flowId],
+      ["X-EduVibe-Auth-Revision", flow.revision],
+      ["X-EduVibe-Session-Generation", flow.sessionGeneration],
+    ]) {
+      const actual = result.headers.get(name);
+      if (!actual) throw apiContractError(200);
+      if (actual !== expected)
+        throw new DOMException("Authentication context changed", "AbortError");
+    }
+    return result.body;
+  } catch (error) {
+    assertAuthObservation(readContext);
+    throw error;
+  }
+}
+
 export const healthService: HealthService = {
-  async getAppHealth(appId, { signal } = {}) {
+  async getAppHealth(appId, options = {}) {
     return mapHealthSnapshot(
-      await getJson(
+      await readHealth(
         "GET /apps/{id}/health",
         `/apps/${requireUuid(appId)}/health`,
-        { signal },
+        options,
       ),
     );
   },
@@ -43,12 +90,12 @@ export const healthService: HealthService = {
     return mapCheckAccepted(response.body, response.status);
   },
 
-  async getJob(jobId, { signal } = {}) {
+  async getJob(jobId, options = {}) {
     return mapHealthJobResponse(
-      await getJson(
+      await readHealth(
         "GET /health-checks/{id}",
         `/health-checks/${requireUuid(jobId)}`,
-        { signal },
+        options,
       ),
     );
   },
@@ -62,12 +109,13 @@ export const healthService: HealthService = {
     return mapBatchAccepted(response.body, response.status);
   },
 
-  async getBatch(batchId, { signal } = {}) {
+  async getBatch(batchId, options = {}) {
     return mapHealthBatch(
-      await getJson(
+      await readHealth(
         "GET /admin/health-check-batches/{id}",
         `/admin/health-check-batches/${requireUuid(batchId)}`,
-        { authenticated: true, signal },
+        options,
+        true,
       ),
     );
   },

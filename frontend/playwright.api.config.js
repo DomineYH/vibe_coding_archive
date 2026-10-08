@@ -40,7 +40,7 @@ export default defineConfig({
       command:
         process.env.API_E2E_FAULTS === "1"
           ? "node e2e-api/auth-fault-launcher.mjs"
-          : `uv run --frozen uvicorn ${process.env.API_E2E_AUTH_BOUNDARY === "prepared" ? "tests.auth_server" : "app.main"}:app --host 127.0.0.1 --port 8000`,
+          : `uv run --frozen uvicorn ${process.env.API_E2E_HEALTH === "1" ? "tests.health_server" : process.env.API_E2E_AUTH_BOUNDARY === "prepared" ? "tests.auth_server" : "app.main"}:app --host 127.0.0.1 --port 8000`,
       cwd: process.env.API_E2E_FAULTS === "1" ? "." : "../backend",
       url: "http://127.0.0.1:8000/healthz",
       reuseExistingServer: false,

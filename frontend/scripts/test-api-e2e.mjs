@@ -61,7 +61,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+      /health-real|auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
         arg,
       ),
     );
@@ -201,8 +201,12 @@ raise SystemExit(status)`,
       "e2e-api/auth-recovery-captures.spec.js",
     ];
     const isFault = (arg) => /auth-(races|recovery)/.test(arg);
+    const isHealth = (arg) => /health-real/.test(arg);
     const selectedFaults = arguments_.filter(isFault);
-    const selectedNormal = arguments_.filter((arg) => !isFault(arg));
+    const selectedHealth = arguments_.filter(isHealth);
+    const selectedNormal = arguments_.filter(
+      (arg) => !isFault(arg) && !isHealth(arg),
+    );
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
     const emptyRun = (files) => ({
@@ -221,7 +225,8 @@ raise SystemExit(status)`,
         ]
       : arguments_.length || process.argv.includes("--auth-unavailable")
         ? [
-            ...(normalFiles.length || !selectedFaults.length
+            ...(normalFiles.length ||
+            (!selectedFaults.length && !selectedHealth.length)
               ? [
                   {
                     arguments_: selectedNormal,
@@ -239,11 +244,27 @@ raise SystemExit(status)`,
                   },
                 ]
               : []),
+            ...(selectedHealth.length
+              ? [
+                  {
+                    arguments_: [...selectedHealth, ...options],
+                    prepared: true,
+                    faults: false,
+                    health: true,
+                  },
+                ]
+              : []),
           ]
         : [
             { arguments_: [], prepared: false, faults: false },
             { arguments_: normal, prepared: true, faults: false },
             { arguments_: faults, prepared: true, faults: true },
+            {
+              arguments_: ["e2e-api/health-real.spec.js"],
+              prepared: true,
+              faults: false,
+              health: true,
+            },
             emptyRun(["e2e-api/admin-apps-empty.spec.js"]),
           ];
     // Functional contracts always use a moving clock. Only the card captures
@@ -298,6 +319,7 @@ raise SystemExit(status)`,
         AUTH_FAULT_CONTROL: path.join(runDirectory, "auth-control.sock"),
         AUTH_PROXY_CONTROL: path.join(runDirectory, "proxy-control.sock"),
         AUTH_PROCESS_CONTROL: path.join(runDirectory, "process-control.sock"),
+        HEALTH_WORKER_LOCK_PATH: path.join(runDirectory, "health-worker.lock"),
       };
       await copyFile(
         run.empty ? emptyTemplate : template,
@@ -312,6 +334,7 @@ raise SystemExit(status)`,
             ...runEnv,
             API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
             API_E2E_FAULTS: run.faults ? "1" : "",
+            API_E2E_HEALTH: run.health ? "1" : "",
             API_E2E_EMPTY_APPS: run.empty ? "1" : "",
             API_E2E_CLOCK: run.capture ? "2026-10-01T00:00:00Z" : "",
           },

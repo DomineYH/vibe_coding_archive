@@ -595,11 +595,27 @@ function DetailRoute({
     access.meta?.capabilities.health_read.enabled === true;
   const healthCheckEnabled =
     access.meta?.capabilities.health_check.enabled === true;
-  const healthKey = [__DATA_MODE__, "health", "app", id, app?.urlVersion ?? 0];
+  const healthReadContext = eligible
+    ? captureAuthObservation(auth, () =>
+        isCurrentObservation(auth.observationId),
+      )
+    : undefined;
+  const healthKey = [
+    __DATA_MODE__,
+    "health",
+    "app",
+    id,
+    app?.urlVersion ?? 0,
+    memberCacheScope(auth),
+  ];
   const healthQuery = useQuery({
     queryKey: healthKey,
     enabled: Boolean(app && healthReadEnabled),
-    queryFn: ({ signal }) => healthService.getAppHealth(id, { signal }),
+    queryFn: ({ signal }) =>
+      healthService.getAppHealth(id, {
+        signal,
+        readContext: healthReadContext,
+      }),
     retry: false,
     refetchOnWindowFocus: false,
   });
@@ -618,11 +634,16 @@ function DetailRoute({
     activeJobId ?? "",
     id,
     app?.urlVersion ?? 0,
+    memberCacheScope(auth),
   ];
   const jobQuery = useQuery({
     queryKey: jobKey,
     enabled: Boolean(activeJobId && healthReadEnabled),
-    queryFn: ({ signal }) => healthService.getJob(activeJobId, { signal }),
+    queryFn: ({ signal }) =>
+      healthService.getJob(activeJobId, {
+        signal,
+        readContext: healthReadContext,
+      }),
     retry: false,
     refetchOnWindowFocus: false,
     refetchInterval: (query) =>
@@ -658,6 +679,7 @@ function DetailRoute({
     onMutate: () =>
       queryClient.cancelQueries({ queryKey: healthKey, exact: true }),
     onSuccess: (accepted) => {
+      if (healthReadContext && !healthReadContext.isCurrent()) return;
       if (accepted.urlVersion !== app?.urlVersion) return;
       queryClient.setQueryData(healthKey, accepted);
     },

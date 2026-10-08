@@ -2512,7 +2512,11 @@ export interface operations {
     getAppHealth: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-EduVibe-Flow-Id"?: string;
+                "X-EduVibe-Auth-Revision"?: string;
+                "X-EduVibe-Session-Generation"?: string;
+            };
             path: {
                 id: string;
             };
@@ -2532,6 +2536,8 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -2574,6 +2580,8 @@ export interface operations {
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -2581,7 +2589,11 @@ export interface operations {
     getHealthCheckJob: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "X-EduVibe-Flow-Id"?: string;
+                "X-EduVibe-Auth-Revision"?: string;
+                "X-EduVibe-Session-Generation"?: string;
+            };
             path: {
                 id: string;
             };
@@ -2601,6 +2613,8 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };
@@ -2631,6 +2645,8 @@ export interface operations {
             401: components["responses"]["ServiceError"];
             403: components["responses"]["ServiceError"];
             409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             429: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
@@ -2653,7 +2669,7 @@ export interface operations {
             /** @description Current fixed-target batch counts and status. */
             200: {
                 headers: {
-                    "Cache-Control"?: "no-store";
+                    "Cache-Control"?: "private, no-store";
                     [name: string]: unknown;
                 };
                 content: {
@@ -2664,6 +2680,7 @@ export interface operations {
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };
     };

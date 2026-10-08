@@ -6,6 +6,11 @@
 프로세스 `APP_ENV`가 없거나 비어 있으면 파일의 `APP_ENV`를 사용하며 두 곳 모두
 없으면 실행을 거절한다. 편집한 설정을 적용하려면 서버를 재시작한다.
 
+Phase 6의 검사 API·영속 큐·별도 worker가 구현되어 있다. 연결 결과 조회는
+가능하며 실제 검사는 기본 비활성이다. 활성화 설정, worker 실행과 종료,
+호스트 검증의 범위는 [연결 검사 운영 절차](../docs/operations/health-checks.md)를
+따른다. `health_testing=True` 및 통제 probe는 `APP_ENV=test`에서만 허용한다.
+
 ```sh
 # 기존 .env가 없을 때만 복사:
 if [ ! -e .env ]; then cp .env.example .env; fi
@@ -116,7 +121,6 @@ minutes of inactivity; `me`, `csrf` and `flow-state` never extend it.
 Synthetic Argon2 members for tests live in `tests/support.py`
 (`populate_auth_members`); the API E2E runner inserts them once with the other
 fixtures. Their shared password is a test-only constant, never a seed default.
-
 
 ## T03 administrator credentials and own password change
 

@@ -31,10 +31,13 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   context,
 }) => {
   const requests = [];
+  const writeRequests = [];
   const externalRequests = [];
   page.on("request", (request) => {
     const url = new URL(request.url());
     requests.push(url.pathname);
+    if (url.pathname.startsWith("/api/v1/") && request.method() !== "GET")
+      writeRequests.push(`${request.method()} ${url.pathname}`);
     if (!loopbackHosts.has(url.hostname)) externalRequests.push(url.hostname);
   });
   await blockExternalRequests(context);
@@ -124,11 +127,21 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   expect(requests).toContain("/api/v1/apps");
   expect(requests.some((path) => path.startsWith("/api/v1/auth/"))).toBe(false);
   expect(requests.some((path) => path.includes("csrf"))).toBe(false);
-  expect(
-    requests.some(
-      (path) => path.startsWith("/api/v1/") && path.includes("health"),
+  await expect
+    .poll(() =>
+      requests.includes(
+        "/api/v1/apps/00000000-0000-4000-8000-000000000027/health",
+      ),
+    )
+    .toBe(true);
+  expect([
+    ...new Set(
+      requests.filter(
+        (path) => path.startsWith("/api/v1/") && path.includes("health"),
+      ),
     ),
-  ).toBe(false);
+  ]).toEqual(["/api/v1/apps/00000000-0000-4000-8000-000000000027/health"]);
+  expect(writeRequests).toEqual([]);
   expect(externalRequests).toEqual([]);
 });
 

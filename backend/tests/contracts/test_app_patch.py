@@ -198,7 +198,7 @@ def test_url_literal_change_resets_health_but_fragment_and_same_values_preserve_
             client = actor_client
         with sqlite3.connect(path) as db:
             db.execute(
-                "UPDATE health_results SET state='healthy',checked_at='2026-10-01T00:00:00Z',fresh_until='2099-01-01T00:00:00Z'"
+                "UPDATE health_results SET state='healthy',checked_at='2026-10-01T00:00:00Z',fresh_until='2099-01-01T00:00:00Z',http_status=200,response_ms=5"
             )
         before = detail(actor, item["id"]).json()["item"]
         key = update_key(actor, item["id"], patch)
@@ -207,6 +207,12 @@ def test_url_literal_change_resets_health_but_fragment_and_same_values_preserve_
         saved = result.json()["item"]
         assert saved["version"] == 2 and saved["url_version"] == (2 if reset else 1)
         assert saved["health"] == (item["health"] if reset else before["health"])
+        with sqlite3.connect(path) as db:
+            result_row = db.execute(
+                "SELECT url_version,http_status,response_ms FROM health_results WHERE app_id=?",
+                (item["id"],),
+            ).fetchone()
+        assert result_row == ((2, None, None) if reset else (1, 200, 5))
         error(update(actor, item["id"], key, patch), 409, "OPERATION_ALREADY_RESOLVED")
         assert detail(actor, item["id"]).json()["item"]["version"] == 2
 
@@ -305,13 +311,15 @@ def test_edit_body_limit_is_exact_and_does_not_widen_approval_or_subpaths(
             (f"/apps/{uuid4()}", "patch", 1200000),
             ("/write-operations", "post", 1200000),
             (f"/apps/{uuid4()}/health", "patch", 18000),
+            (f"/apps/{uuid4()}/health-checks", "post", 18000),
             ("/write-operations/unknown/cancel", "post", 18000),
         ]:
             body = b" " * size
             selected = iter([body[: size // 2], body[size // 2 :]]) if chunked else body
             response = getattr(client, method)(f"{API}{url}", content=selected)
             if url.endswith("/health"):
-                assert response.status_code == 404
+                assert response.status_code == 405
+                assert response.headers["Allow"] == "GET"
             else:
                 error(response, 413, "PAYLOAD_TOO_LARGE")
         for body in (

@@ -11,6 +11,7 @@ import catalog from "../../../../contracts/catalog.json";
 import { adminService } from "@services/admin";
 import { healthService } from "@services/health";
 import { ServiceError } from "../../services/service-error";
+import { HealthCheckControl } from "./health-check-control";
 
 const PAGE_SIZE = 24;
 const APPS_DENIED_CODES = new Set([
@@ -329,7 +330,7 @@ function batchRequestMessage(error) {
   return error.message;
 }
 
-function HealthBatchControls({ stats, scopeKey }) {
+function HealthBatchControls({ stats, scopeKey, readContext, canRequest }) {
   const queryClient = useQueryClient();
   const [acceptedBatchId, setAcceptedBatchId] = useState(null);
   const [acceptedDisposition, setAcceptedDisposition] = useState(null);
@@ -343,11 +344,18 @@ function HealthBatchControls({ stats, scopeKey }) {
     acceptedBatchId ??
     stats?.latestHealthBatchId ??
     null;
-  const batchKey = [__DATA_MODE__, "admin", "health-batch", batchId ?? ""];
+  const batchKey = [
+    __DATA_MODE__,
+    "admin",
+    "health-batch",
+    batchId ?? "",
+    scopeKey,
+  ];
   const batchQuery = useQuery({
     queryKey: batchKey,
     enabled: Boolean(batchId),
-    queryFn: ({ signal }) => healthService.getBatch(batchId, { signal }),
+    queryFn: ({ signal }) =>
+      healthService.getBatch(batchId, { signal, readContext }),
     retry: false,
     refetchOnWindowFocus: false,
     refetchInterval: (query) =>
@@ -371,17 +379,23 @@ function HealthBatchControls({ stats, scopeKey }) {
   }, [queryClient, scopeKey]);
 
   useEffect(() => {
-    if (!batchQuery.data?.isFinished) return;
+    if (!batchQuery.data?.id) return;
     void refreshDashboard();
-  }, [batchQuery.data?.id, batchQuery.data?.isFinished, refreshDashboard]);
+  }, [
+    batchQuery.data?.id,
+    batchQuery.data?.processedCount,
+    batchQuery.data?.isFinished,
+    refreshDashboard,
+  ]);
 
   async function requestBatch() {
-    if (requestPendingRef.current) return;
+    if (requestPendingRef.current || !canRequest) return;
     requestPendingRef.current = true;
     setRequestPending(true);
     setRequestError(null);
     try {
       const accepted = await healthService.requestBatch();
+      if (readContext && !readContext.isCurrent()) return;
       setAcceptedBatchId(accepted.batch.id);
       setAcceptedDisposition(accepted.disposition);
       void refreshDashboard();
@@ -398,7 +412,7 @@ function HealthBatchControls({ stats, scopeKey }) {
     requeryPendingRef.current = true;
     setRequeryPending(true);
     try {
-      const batch = await healthService.getBatch(batchId);
+      const batch = await healthService.getBatch(batchId, { readContext });
       queryClient.setQueryData(batchKey, batch);
     } catch {
       // Keep the read error visible and stop automatic polling.
@@ -434,7 +448,7 @@ function HealthBatchControls({ stats, scopeKey }) {
           size="sm"
           variant="line"
           onClick={() => void requestBatch()}
-          disabled={requestPending}
+          disabled={requestPending || !canRequest}
           aria-describedby="health-check-note"
         >
           {requestPending ? "접수 중…" : "전체 재검사"}
@@ -446,11 +460,13 @@ function HealthBatchControls({ stats, scopeKey }) {
         aria-live="polite"
         className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
       >
-        {note}
+        {canRequest ? note : "현재 전체 연결 검사를 사용할 수 없어요."}
       </p>
-      <p className="border-b border-neutral-200/70 px-6 py-2 text-[11px] text-neutral-500">
-        개발용 합성 시연이며 외부 사이트에 요청을 보내지 않습니다.
-      </p>
+      {__DATA_MODE__ === "mock" ? (
+        <p className="border-b border-neutral-200/70 px-6 py-2 text-[11px] text-neutral-500">
+          개발용 합성 시연이며 외부 사이트에 요청을 보내지 않습니다.
+        </p>
+      ) : null}
       {requestError ? (
         <p
           role="alert"
@@ -1017,6 +1033,8 @@ export function AdminView({
   const canApprove =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_approval.enabled === true;
+  const canCheckHealth = meta?.capabilities.health_check.enabled === true;
+  const canRequestBatch = meta?.capabilities.health_batch.enabled === true;
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -2675,9 +2693,17 @@ export function AdminView({
           tabIndex={0}
           className="mt-8 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm"
         >
-          <HealthBatchControls stats={stats} scopeKey={scopeKey} />
+          <HealthBatchControls
+            key={scopeKey}
+            stats={stats}
+            scopeKey={scopeKey}
+            readContext={readContext}
+            canRequest={canRequestBatch}
+          />
           <p id="health-row-check-note" className="sr-only">
-            개별 재검사는 아직 사용할 수 없어요.
+            {canCheckHealth
+              ? "검사 접수 후 이 행에서 진행 상태를 확인합니다."
+              : "현재 개별 연결 검사를 사용할 수 없어요."}
           </p>
 
           {!canReadApps ? (
@@ -2803,14 +2829,13 @@ export function AdminView({
                             )}
                           </span>
                         </div>
-                        <Btn
-                          size="sm"
-                          variant="line"
-                          disabled
-                          aria-describedby="health-row-check-note"
-                        >
-                          즉시 재검사
-                        </Btn>
+                        <HealthCheckControl
+                          key={`${scopeKey}:${app.id}:${app.urlVersion}`}
+                          app={app}
+                          canRequest={canCheckHealth}
+                          readContext={readContext}
+                          scopeKey={scopeKey}
+                        />
                         <Btn
                           size="sm"
                           variant="line"

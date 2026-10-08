@@ -5,7 +5,7 @@ from app.database import current_head
 
 def test_delete_migration_is_current_and_durable_outbox_has_no_cascading_fk(member_app):
     _app, path = member_app()
-    assert current_head() == "0011_user_delete"
+    assert current_head() == "0012_health_checks"
     with sqlite3.connect(path) as db:
         assert "db_applied_at" in [
             r[1] for r in db.execute("PRAGMA table_info(write_operations)")
@@ -80,6 +80,10 @@ def test_upgrade_preserves_all_predecessor_columns_and_delete_checks(
                 "app_deletions",
             )
         }
+        related_columns = {
+            table: ",".join(row[1] for row in db.execute(f"PRAGMA table_info({table})"))
+            for table in related
+        }
     command.upgrade(config, "head")
     with sqlite3.connect(path) as db:
         assert (
@@ -93,7 +97,8 @@ def test_upgrade_preserves_all_predecessor_columns_and_delete_checks(
             == [(None,)] * 9
         )
         assert {
-            t: db.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() for t in related
+            t: db.execute(f"SELECT {related_columns[t]} FROM {t} ORDER BY 1").fetchall()
+            for t in related
         } == related
         assert db.execute("PRAGMA foreign_key_check").fetchall() == []
         sql = db.execute(
@@ -141,9 +146,12 @@ def test_upgrade_preserves_all_predecessor_columns_and_delete_checks(
                     f"UPDATE write_operations SET {assignment} WHERE key=?", (key,)
                 )
         db.commit()
-    with pytest.raises(RuntimeError, match="history cannot be discarded"):
+    with pytest.raises(
+        RuntimeError,
+        match="Health execution history requires a verified backup restore",
+    ):
         command.downgrade(config, "0008_app_update")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0011_user_delete",
+            "0012_health_checks",
         )

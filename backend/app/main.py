@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
+from app import health_store
 from app.admin_approval import router as admin_approval_router
 from app.admin_apps import router as admin_apps_router
 from app.admin_password_reset import router as password_reset_router
@@ -48,6 +49,8 @@ from app.database import (
     make_engine,
     make_session_factory,
 )
+from app.health_api import router as health_router
+from app.health_runtime import boot_clock, checks_available, runtime_enabled
 from app.password_policy import load_blocklist
 from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
@@ -164,7 +167,10 @@ def _verify_schema(engine) -> str:
 
 
 def create_app(
-    settings: Settings | None = None, *, auth_testing: bool = False
+    settings: Settings | None = None,
+    *,
+    auth_testing: bool = False,
+    health_testing: bool = False,
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -187,6 +193,10 @@ def create_app(
         if auth_testing and resolved.app_env != "test":
             engine.dispose()
             raise RuntimeError("Authentication test boundary requires APP_ENV=test.")
+        if health_testing and resolved.app_env != "test":
+            engine.dispose()
+            raise RuntimeError("Health test boundary requires APP_ENV=test.")
+        app.state.health_testing = health_testing
         app.state.settings = resolved
         app.state.auth_enabled = auth_testing or resolved.app_env == "development"
         app.state.user_delete_corrupt = False
@@ -255,10 +265,43 @@ def create_app(
                 except Exception:  # noqa: BLE001 - A maintenance failure must not stop future cycles.
                     app.state.auth_ready = False
 
+        def health_maintenance_cycle():
+            with app.state.session_factory() as db:
+                db.execute(text("BEGIN IMMEDIATE"))
+                boot_id, mono = boot_clock()
+                stamp = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+                if not app.state.health_testing and not runtime_enabled(resolved):
+                    health_store.cancel_all(db, stamp)
+                health_store.maintain(
+                    db,
+                    boot_id=boot_id,
+                    mono=mono,
+                    stamp=stamp,
+                )
+                db.commit()
+
+        async def health_maintenance_once():
+            try:
+                await asyncio.to_thread(health_maintenance_cycle)
+            except Exception:  # noqa: BLE001 - Retry transient maintenance failures.
+                print(
+                    "Health maintenance failed; retrying next cycle.", file=sys.stderr
+                )
+
+        async def maintain_health():
+            while True:
+                await asyncio.sleep(5)
+                await health_maintenance_once()
+
+        await health_maintenance_once()
         maintenance = asyncio.create_task(maintain_auth())
+        health_maintenance = asyncio.create_task(maintain_health())
         try:
             yield
         finally:
+            health_maintenance.cancel()
+            with suppress(asyncio.CancelledError):
+                await health_maintenance
             maintenance.cancel()
             with suppress(asyncio.CancelledError):
                 await maintenance
@@ -362,6 +405,17 @@ def create_app(
     def get_meta(request: Request) -> dict[str, object]:
         read_context(request)
         capabilities = _capabilities()
+        capabilities["health_read"] = {"enabled": True, "reasons": []}
+        try:
+            with request.app.state.session_factory() as db:
+                health_enabled = checks_available(db, request)
+        except (SQLAlchemyError, OSError):
+            health_enabled = False
+        for key in ("health_check", "health_batch"):
+            capabilities[key] = {
+                "enabled": health_enabled,
+                "reasons": [] if health_enabled else ["operational_restriction"],
+            }
         gate = request.app.state.password_reset_gate
         gate.maintain()
         capabilities["admin_password_reset"] = {
@@ -425,6 +479,7 @@ def create_app(
             "initial_pending_days": 90,
         }
 
+    api.include_router(health_router)
     api.include_router(auth_router)
     api.include_router(login_router)
     api.include_router(password_router)
