@@ -71,14 +71,12 @@ test("fixture counts remain correct and deleting a pending member preserves all 
     await expect(userRow(page, nickname)).toContainText(`등록 앱 ${count}개`);
   }
 
+  await page.evaluate(async () => {
+    const { authService } = await import("/src/services/mock/auth.ts");
+    await authService.reauthenticate({ password: "admin123" });
+  });
   const pending = userRow(page, "비기너개발자");
   await pending.getByRole("button", { name: "삭제", exact: true }).click();
-  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
-  await reauth
-    .getByLabel("현재 관리자 비밀번호", { exact: true })
-    .fill("admin123");
-  await reauth.getByRole("button", { name: "본인 확인", exact: true }).click();
   await expect(page).toHaveURL("/admin");
   const panel = page.getByRole("region", {
     name: /계정 삭제 확인|계정을 삭제할까요/,

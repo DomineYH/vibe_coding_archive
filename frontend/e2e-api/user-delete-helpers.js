@@ -92,8 +92,7 @@ export async function openAdmin(page, owned) {
 export async function openDelete(page, owned, kind = "member") {
   const row = await findRow(page, owned[kind].login);
   await row.getByRole("button", { name: "삭제", exact: true }).click();
-  await page.getByLabel("현재 관리자 비밀번호").fill(PASSWORD);
-  await page.getByRole("button", { name: "본인 확인", exact: true }).click();
+  await expect(page).toHaveURL("/admin");
   await expect(page.getByRole("region", { name: /계정.*삭제/ })).toBeVisible();
   return page.getByRole("region", { name: /계정.*삭제/ });
 }

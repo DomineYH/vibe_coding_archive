@@ -8,13 +8,19 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useNavigate } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigate } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { AdminView } from "../src/features/admin/view-admin";
 import { adminService } from "../src/services/mock/admin";
 import { appsService } from "../src/services/mock/apps";
 import { authService } from "../src/services/mock/auth";
-import { resetMockState, setMockScenario } from "../src/services/mock/state";
+import {
+  getMockSnapshot,
+  MOCK_STORAGE_KEY,
+  resetMockState,
+  setMockClock,
+  setMockScenario,
+} from "../src/services/mock/state";
 
 let client;
 beforeEach(async () => {
@@ -961,4 +967,292 @@ it("does not enable same-key execution while deletion lookup is unknown", async 
     screen.queryByRole("button", { name: "같은 삭제 요청 다시 제출" }),
   ).not.toBeInTheDocument();
   expect(execute).not.toHaveBeenCalled();
+});
+
+function PanelLocation() {
+  const location = useLocation();
+  return (
+    <output data-testid="panel-location">{JSON.stringify(location)}</output>
+  );
+}
+
+function panelTree(props = {}) {
+  return (
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/admin"]}>
+        <PanelLocation />
+        <AdminView scopeKey="direct-panels" {...props} />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
+async function clickMemberAction(kind, nickname = "비기너개발자") {
+  const row = (await screen.findByText(nickname)).closest('[role="listitem"]');
+  await userEvent.setup().click(
+    within(row).getByRole("button", {
+      name: kind === "reset" ? "임시 비밀번호 설정" : "삭제",
+      exact: true,
+    }),
+  );
+  const panel = await screen.findByRole("region", {
+    name: kind === "reset" ? /임시 비밀번호 초기화 확인/ : /계정.*삭제/,
+  });
+  await waitFor(() => expect(panel).toHaveAttribute("aria-busy", "false"));
+  return panel;
+}
+
+async function confirmMemberAction(kind) {
+  const user = userEvent.setup();
+  if (kind === "reset") {
+    await user.type(
+      screen.getByLabelText("임시 비밀번호", { exact: true }),
+      "Synthetic secret for issue 188!",
+    );
+    await user.type(
+      screen.getByLabelText("임시 비밀번호 확인"),
+      "Synthetic secret for issue 188!",
+    );
+  }
+  await user.click(
+    screen.getByRole("button", {
+      name: kind === "reset" ? "초기화 확인" : "삭제 확인",
+      exact: true,
+    }),
+  );
+}
+
+it.each(["reset", "delete"])(
+  "opens %s directly with valid recent auth without issuing or saving resume",
+  async (kind) => {
+    await authService.reauthenticate({ password: "admin123" });
+    const target = (await adminService.listUsers()).items.find(
+      (item) => item.nickname === "비기너개발자",
+    );
+    const read = vi.spyOn(adminService, "getUser");
+    const issue = vi.spyOn(
+      adminService,
+      kind === "reset"
+        ? "createPasswordResetOperation"
+        : "createUserDeleteOperation",
+    );
+    const execute = vi.spyOn(
+      adminService,
+      kind === "reset" ? "setPasswordReset" : "deleteUser",
+    );
+    const save = vi.fn();
+    const consume = vi.fn();
+    render(panelTree({ onSaveResume: save, onConsumeResume: consume }));
+    const panel = await clickMemberAction(kind);
+    expect(panel).toHaveTextContent(target.nickname);
+    expect(panel).toHaveTextContent(target.loginId);
+    if (kind === "delete")
+      expect(panel).toHaveTextContent(`앱 ${target.appCount}개`);
+    expect(
+      JSON.parse(screen.getByTestId("panel-location").textContent).pathname,
+    ).toBe("/admin");
+    expect(read).toHaveBeenCalledWith(target.id);
+    expect(save).not.toHaveBeenCalled();
+    expect(consume).not.toHaveBeenCalled();
+    expect(issue).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+  },
+);
+
+it.each([
+  ["reset", "absent"],
+  ["reset", "expired"],
+  ["delete", "absent"],
+  ["delete", "expired"],
+])(
+  "opens %s with %s recent auth and redirects only on issuance REAUTH_REQUIRED",
+  async (kind, auth) => {
+    const target = (await adminService.listUsers()).items.find(
+      (item) => item.nickname === "비기너개발자",
+    );
+    if (auth === "expired") {
+      await authService.reauthenticate({ password: "admin123" });
+      setMockClock(
+        new Date(
+          Date.parse(getMockSnapshot().principal_session.recent_auth_until) + 1,
+        ).toISOString(),
+      );
+    } else {
+      const state = getMockSnapshot();
+      state.principal_session.recent_auth_until = null;
+      localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+    }
+    const issue = vi.spyOn(
+      adminService,
+      kind === "reset"
+        ? "createPasswordResetOperation"
+        : "createUserDeleteOperation",
+    );
+    const execute = vi.spyOn(
+      adminService,
+      kind === "reset" ? "setPasswordReset" : "deleteUser",
+    );
+    const save = vi.fn();
+    render(panelTree({ onSaveResume: save }));
+    await clickMemberAction(kind);
+    expect(save).not.toHaveBeenCalled();
+    expect(issue).not.toHaveBeenCalled();
+    await confirmMemberAction(kind);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(issue).toHaveBeenCalledTimes(1);
+    await expect(issue.mock.results[0].value).rejects.toMatchObject({
+      code: "REAUTH_REQUIRED",
+      httpStatus: 403,
+    });
+    expect(execute).not.toHaveBeenCalled();
+    expect(save).toHaveBeenCalledWith({
+      tab: "users",
+      [kind === "reset" ? "adminReset" : "adminDelete"]: {
+        targetId: target.id,
+      },
+    });
+    const location = JSON.parse(
+      screen.getByTestId("panel-location").textContent,
+    );
+    expect(location.pathname + location.search).toBe(
+      "/auth?mode=reauth&return_to=%2Fadmin",
+    );
+    expect(
+      JSON.stringify([
+        save.mock.calls,
+        location,
+        { ...localStorage },
+        { ...sessionStorage },
+        client
+          .getQueryCache()
+          .getAll()
+          .map((query) => query.state.data),
+      ]),
+    ).not.toContain("Synthetic secret for issue 188!");
+  },
+);
+
+it.each(["reset", "delete"])(
+  "preserves the issued %s key on execution REAUTH_REQUIRED and resumes lookup without replay",
+  async (kind) => {
+    const { ServiceError } = await import("../src/services/service-error");
+    await authService.reauthenticate({ password: "admin123" });
+    const target = (await adminService.listUsers()).items.find(
+      (item) => item.nickname === "비기너개발자",
+    );
+    const issue = vi.spyOn(
+      adminService,
+      kind === "reset"
+        ? "createPasswordResetOperation"
+        : "createUserDeleteOperation",
+    );
+    const execute = vi
+      .spyOn(adminService, kind === "reset" ? "setPasswordReset" : "deleteUser")
+      .mockRejectedValue(
+        new ServiceError("REAUTH_REQUIRED", "Reauthenticate", {
+          httpStatus: 403,
+        }),
+      );
+    const save = vi.fn();
+    render(panelTree({ onSaveResume: save }));
+    await clickMemberAction(kind);
+    await confirmMemberAction(kind);
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    const operation = await issue.mock.results[0].value;
+    const resume = {
+      tab: "users",
+      [kind === "reset" ? "adminReset" : "adminDelete"]: {
+        targetId: target.id,
+        operationKey: operation.key,
+        [kind === "reset" ? "expectedAccountVersion" : "expectedAppCount"]:
+          kind === "reset" ? target.accountVersion : target.appCount,
+      },
+    };
+    expect(save).toHaveBeenCalledWith(resume);
+    expect(
+      JSON.parse(screen.getByTestId("panel-location").textContent).search,
+    ).toBe("?mode=reauth&return_to=%2Fadmin");
+    expect(
+      screen.queryByLabelText("임시 비밀번호", { exact: true }),
+    ).not.toBeInTheDocument();
+    cleanup();
+    const readOperation = vi.spyOn(
+      adminService,
+      kind === "reset" ? "getPasswordResetOperation" : "getUserDeleteOperation",
+    );
+    const readTarget = vi.spyOn(adminService, "getUser");
+    const consume = vi.fn();
+    render(panelTree({ resumeState: resume, onConsumeResume: consume }));
+    await waitFor(() => expect(consume).toHaveBeenCalledTimes(1));
+    expect(readOperation).toHaveBeenCalledWith(operation.key);
+    expect(readOperation.mock.invocationCallOrder[0]).toBeLessThan(
+      readTarget.mock.invocationCallOrder[0],
+    );
+    expect(issue).toHaveBeenCalledTimes(1);
+    expect(execute).toHaveBeenCalledTimes(1);
+    if (kind === "reset") {
+      expect(
+        screen.getByLabelText("임시 비밀번호", { exact: true }),
+      ).toHaveValue("");
+      expect(screen.getByLabelText("임시 비밀번호 확인")).toHaveValue("");
+    }
+    expect(
+      JSON.stringify([
+        resume,
+        { ...localStorage },
+        { ...sessionStorage },
+        client
+          .getQueryCache()
+          .getAll()
+          .map((query) => query.state.data),
+        JSON.parse(screen.getByTestId("panel-location").textContent),
+      ]),
+    ).not.toContain("Synthetic secret for issue 188!");
+  },
+);
+
+it("opens only the current panel during reset to delete to reset with late target responses", async () => {
+  const targets = (await adminService.listUsers()).items;
+  const first = targets.find((item) => item.nickname === "비기너개발자");
+  const second = targets.find((item) => item.nickname === "코딩꿈나무");
+  const releases = [];
+  vi.spyOn(adminService, "getUser").mockImplementation(
+    () => new Promise((resolve) => releases.push(resolve)),
+  );
+  const remember = vi.fn();
+  render(panelTree({ onRememberDelete: remember }));
+  const user = userEvent.setup();
+  const click = async (target, action) =>
+    user.click(
+      within(
+        screen.getByText(target.nickname).closest('[role="listitem"]'),
+      ).getByRole("button", { name: action, exact: true }),
+    );
+  await screen.findByText(first.nickname);
+  await click(first, "임시 비밀번호 설정");
+  await waitFor(() => expect(releases).toHaveLength(1));
+  await click(second, "삭제");
+  await waitFor(() => expect(releases).toHaveLength(2));
+  expect(
+    screen.queryByRole("region", { name: /임시 비밀번호 초기화 확인/ }),
+  ).not.toBeInTheDocument();
+  await click(second, "임시 비밀번호 설정");
+  await waitFor(() => expect(releases).toHaveLength(3));
+  expect(
+    screen.queryByRole("region", { name: /계정.*삭제/ }),
+  ).not.toBeInTheDocument();
+  await act(async () => releases[2](second));
+  await act(async () => {
+    releases[0](first);
+    releases[1](second);
+  });
+  const panel = screen.getByRole("region", {
+    name: /임시 비밀번호 초기화 확인/,
+  });
+  expect(panel).toHaveTextContent(second.nickname);
+  expect(panel).not.toHaveTextContent(first.nickname);
+  expect(
+    screen.queryByRole("region", { name: /계정.*삭제/ }),
+  ).not.toBeInTheDocument();
+  expect(remember).toHaveBeenCalledWith(null);
 });

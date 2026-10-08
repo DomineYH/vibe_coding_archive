@@ -543,11 +543,32 @@ it("keeps pending reauthentication return context in this tab memory and refetch
       exact: true,
     }),
   );
+  await screen.findByLabelText("임시 비밀번호", { exact: true });
+  expect(router.state.location.pathname).toBe("/admin");
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.principal_session.recent_auth_until = null;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  for (const label of ["임시 비밀번호", "임시 비밀번호 확인"]) {
+    fireEvent.change(screen.getByLabelText(label, { exact: true }), {
+      target: { value: "Synthetic memory-only password 188!" },
+    });
+  }
+  fireEvent.click(
+    screen.getByRole("button", { name: "초기화 확인", exact: true }),
+  );
   await screen.findByLabelText("현재 관리자 비밀번호");
+  expect(create).toHaveBeenCalledTimes(1);
   expect(router.state.location.state).toBeNull();
   expect(
     JSON.stringify([{ ...localStorage }, { ...sessionStorage }]),
   ).not.toContain("adminReset");
+  expect(
+    JSON.stringify([
+      { ...localStorage },
+      { ...sessionStorage },
+      router.state.location,
+    ]),
+  ).not.toContain("Synthetic memory-only password 188!");
   const read = vi.spyOn(adminService, "getUser");
   fireEvent.change(screen.getByLabelText("현재 관리자 비밀번호"), {
     target: { value: "admin123" },
@@ -563,7 +584,7 @@ it("keeps pending reauthentication return context in this tab memory and refetch
   expect(
     screen.getByLabelText("임시 비밀번호 확인", { exact: true }),
   ).toHaveValue("");
-  expect(create).not.toHaveBeenCalled();
+  expect(create).toHaveBeenCalledTimes(1);
   expect(writes).not.toHaveBeenCalled();
   expect(router.state.location.state).toBeNull();
 });
@@ -856,6 +877,7 @@ it.each(["same", "other", "explicit"])(
   "retains only the original user-delete key across same-actor login and clears it on %s departure",
   async (departure) => {
     const router = await visit("/admin", 0);
+    await act(async () => authService.reauthenticate({ password: "admin123" }));
     const issue = vi.spyOn(adminService, "createUserDeleteOperation");
     const execute = vi.spyOn(adminService, "deleteUser").mockRejectedValue(
       new ServiceError("NETWORK_ERROR", "Unknown delete reply", {
@@ -868,12 +890,6 @@ it.each(["same", "other", "explicit"])(
     ).closest('[role="listitem"]');
     fireEvent.click(
       within(row).getByRole("button", { name: "삭제", exact: true }),
-    );
-    fireEvent.change(await screen.findByLabelText("현재 관리자 비밀번호"), {
-      target: { value: "admin123" },
-    });
-    fireEvent.click(
-      screen.getByRole("button", { name: "본인 확인", exact: true }),
     );
     fireEvent.click(
       await screen.findByRole("button", { name: "삭제 확인", exact: true }),

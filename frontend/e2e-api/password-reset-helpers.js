@@ -98,9 +98,7 @@ export async function openReset(page, members, kind = "member") {
   await row
     .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
     .click();
-  await page.getByLabel("현재 관리자 비밀번호").fill(ORIGINAL);
-  await page.getByRole("button", { name: "본인 확인", exact: true }).click();
-  await findRow(page, members[kind].login);
+  await expect(page).toHaveURL("/admin");
   await expect(
     page.getByRole("heading", { name: /임시 비밀번호 초기화 확인/ }),
   ).toBeVisible();

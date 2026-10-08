@@ -17,7 +17,7 @@ test.describe("account deletion over real HTTP", () => {
     test.setTimeout(90000);
     await blockExternalRequests(context);
   });
-  test("inline public/private deletion cancels safely, submits once, revokes old sessions and refreshes counts", async ({
+  test("recent login deletes public/private apps without reauth, cancels safely, submits once and revokes old sessions", async ({
     page,
     owned,
   }) => {
@@ -39,6 +39,16 @@ test.describe("account deletion over real HTTP", () => {
           })
         ).status(),
       ).toBe(200);
+    const reauthVisits = [];
+    let reauthRequests = 0;
+    page.on("framenavigated", (frame) => {
+      if (frame === page.mainFrame() && /[?&]mode=reauth/.test(frame.url()))
+        reauthVisits.push(frame.url());
+    });
+    page.on("request", (request) => {
+      if (request.method() === "POST" && request.url().endsWith("/auth/reauth"))
+        reauthRequests++;
+    });
     await openAdmin(page, owned);
     const headers = await approvalHeaders(page);
     const before = await (
@@ -76,6 +86,8 @@ test.describe("account deletion over real HTTP", () => {
     await expect(userRow(page, owned.member.login)).toHaveCount(0);
     expect(issues).toBe(1);
     expect(writes).toBe(1);
+    expect(reauthVisits).toEqual([]);
+    expect(reauthRequests).toBe(0);
     const currentHeaders = await approvalHeaders(page);
     const after = await (
       await page.request.get("/api/v1/admin/users", { headers: currentHeaders })
@@ -195,10 +207,8 @@ test.describe("account deletion over real HTTP", () => {
     owned,
   }) => {
     await openAdmin(page, owned);
-    // Keep the restored target unconsumed: its detail reads (React StrictMode
-    // issues two) are held, so the monitor is loaded under the
-    // post-reauthentication scope and the deletion panel resumes when the users
-    // tab is shown again.
+    // Hold the fresh target read while visiting the monitor. Returning to users
+    // requires a fresh row click; the old response must not reopen its panel.
     const gate = deferred();
     let holding = true;
     await page.route(
@@ -224,7 +234,10 @@ test.describe("account deletion over real HTTP", () => {
       holding = false;
       gate.resolve();
       await page.getByRole("tab", { name: "사용자 관리" }).click();
-      const panel = page.getByRole("region", { name: /계정.*삭제/ });
+      await expect(
+        page.getByRole("region", { name: /계정.*삭제/ }),
+      ).toHaveCount(0);
+      const panel = await openDelete(page, owned);
       await panel
         .getByRole("button", { name: "삭제 확인", exact: true })
         .click();
