@@ -40,6 +40,7 @@ from app.auth_boundary import (
     rate_limit_window,
     response,
 )
+from app.auth_runtime import auth_available
 
 router = APIRouter(prefix="/auth")
 
@@ -121,6 +122,8 @@ def check_password(password, stored):
 
 def execution_context(db, request, kind, state):
     """Prove flow, current S, CSRF, headers and the admitted transition."""
+    if not auth_available(request.app.state):
+        raise AuthError("FEATURE_UNAVAILABLE", 503)
     item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session", csrf=True)
     if kind == "password_change" and session["kind"] != "change_only":
@@ -412,6 +415,8 @@ def member_session(db, request, *, flow_id=None):
     grants only restricted Self, logout and the member's own password change.
     Admission supplies its validated body flow ID; execution uses the flow header.
     """
+    if not auth_available(request.app.state):
+        raise AuthError("FEATURE_UNAVAILABLE", 503)
     item = flow(db, flow_id or request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session")
     if session["member_id"] is None:

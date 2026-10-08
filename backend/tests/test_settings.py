@@ -128,20 +128,31 @@ def test_environment_file_is_overridden_by_process_values(
     assert settings.password_blocklist_path == blocklist.resolve()
 
 
-def test_production_environment_is_resolved_from_dotenv(tmp_path: Path):
-    backend = tmp_path / "backend"
-    backend.mkdir()
-    database = Path(tempfile.gettempdir()).parent / "operations.sqlite3"
-    blocklist = tmp_path / "blocklist.txt"
-    (backend / ".env").write_text(
-        f"APP_ENV=production\nDATABASE_PATH={database}\n"
-        f"PUBLIC_ORIGIN=https://archive.example.org\nPASSWORD_BLOCKLIST_PATH={blocklist}\n"
-    )
-    settings = Settings.from_environment({}, repo_root=tmp_path, backend_root=backend)
-    assert settings.app_env == "production"
-    assert settings.database_path == database.resolve()
-    assert settings.public_origin == "https://archive.example.org"
-    assert settings.password_blocklist_path == blocklist.resolve()
+@pytest.mark.parametrize("environment", [{}, {"APP_ENV": ""}])
+def test_dotenv_cannot_select_production(tmp_path, environment):
+    (tmp_path / ".env").write_text("APP_ENV=production\n")
+    with pytest.raises(ConfigurationError, match="process environment"):
+        Settings.from_environment(environment, backend_root=tmp_path)
+
+
+@pytest.mark.parametrize("complete", [False, True])
+def test_production_never_reads_dotenv(tmp_path, monkeypatch, complete):
+    def reject_read(*args, **kwargs):
+        raise AssertionError("production must not read dotenv")
+
+    monkeypatch.setattr("app.settings.dotenv_values", reject_read)
+    environment = {"APP_ENV": "production"}
+    if complete:
+        environment.update(
+            DATABASE_PATH="/srv/eduvibe/data/api.sqlite3",
+            PUBLIC_ORIGIN="https://archive.example.org",
+        )
+        settings = Settings.from_environment(environment, backend_root=tmp_path)
+        assert not settings.health_checks_enabled
+        assert settings.auth_activation_path is None
+    else:
+        with pytest.raises(ConfigurationError, match="explicit"):
+            Settings.from_environment(environment, backend_root=tmp_path)
 
 
 @pytest.mark.parametrize(
@@ -156,7 +167,7 @@ def test_production_environment_is_resolved_from_dotenv(tmp_path: Path):
         ("outside", "https://localhost", "HTTPS"),
     ],
 )
-def test_production_dotenv_retains_validation(
+def test_production_process_configuration_retains_validation(
     tmp_path: Path, database, origin, message
 ):
     backend = tmp_path / "backend"
@@ -166,14 +177,13 @@ def test_production_dotenv_retains_validation(
         "repo": tmp_path / "storage/production.sqlite3",
         "temporary": tmp_path.parent / "production.sqlite3",
     }
-    dotenv = "APP_ENV=production\n"
+    environment = {"APP_ENV": "production"}
     if database is not None:
-        dotenv += f"DATABASE_PATH={paths.get(database, database)}\n"
+        environment["DATABASE_PATH"] = str(paths.get(database, database))
     if origin is not None:
-        dotenv += f"PUBLIC_ORIGIN={origin}\n"
-    (backend / ".env").write_text(dotenv)
+        environment["PUBLIC_ORIGIN"] = origin
     with pytest.raises(ConfigurationError, match=message):
-        Settings.from_environment({}, repo_root=tmp_path, backend_root=backend)
+        Settings.from_environment(environment, repo_root=tmp_path, backend_root=backend)
 
 
 @pytest.mark.parametrize("environment", [{}, {"APP_ENV": ""}])
@@ -500,3 +510,194 @@ uvicorn.run('app.main:app', host='127.0.0.1', port=0)
 """
     result = _run_application(database_path, bootstrap=bootstrap)
     _assert_safe_startup_rejection(result, database_path)
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"AUTH_ACTIVATION_PATH": "relative.json", "APP_RELEASE_ID": "release-1"},
+        {"AUTH_ACTIVATION_PATH": "/srv/eduvibe/auth.json"},
+        {"AUTH_ACTIVATION_PATH": "/srv/eduvibe/auth.json", "APP_RELEASE_ID": " "},
+        {"AUTH_ACTIVATION_PATH": "/srv/eduvibe/auth.json", "APP_RELEASE_ID": "x" * 257},
+        {"AUTH_ACTIVATION_PATH": "/tmp/auth.json", "APP_RELEASE_ID": "release-1"},
+        {"DATABASE_PATH": "/var/tmp/api.sqlite3"},
+        {"DATABASE_PATH": "/dev/shm/api.sqlite3"},
+    ],
+)
+def test_production_candidate_configuration_rejects_invalid_input(updates):
+    with pytest.raises(ConfigurationError):
+        Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "DATABASE_PATH": "/srv/eduvibe/data/api.sqlite3",
+                "PUBLIC_ORIGIN": "https://archive.example.org",
+                **updates,
+            }
+        )
+
+
+def test_candidate_configuration_accepts_explicit_release():
+    settings = Settings.from_environment(
+        {
+            "APP_ENV": "production",
+            "DATABASE_PATH": "/srv/eduvibe/data/api.sqlite3",
+            "PUBLIC_ORIGIN": "https://archive.example.org",
+            "AUTH_ACTIVATION_PATH": "/srv/eduvibe/data/auth.json",
+            "APP_RELEASE_ID": "release-1",
+        }
+    )
+    assert settings.auth_activation_path == Path("/srv/eduvibe/data/auth.json")
+    assert settings.app_release_id == "release-1"
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "valid",
+        "missing",
+        "mode",
+        "owner",
+        "directory",
+        "symlink",
+        "parent",
+        "ancestor",
+        "wal",
+        "shm",
+    ],
+)
+def test_production_storage_permissions(tmp_path, monkeypatch, kind):
+    from types import SimpleNamespace
+
+    private = tmp_path / "data"
+    private.mkdir(mode=0o700)
+    database = private / "api.sqlite3"
+    database.write_bytes(b"")
+    database.chmod(0o600)
+    if kind == "missing":
+        database.unlink()
+    elif kind == "mode":
+        database.chmod(0o644)
+    elif kind == "directory":
+        database.unlink()
+        database.mkdir()
+    elif kind == "symlink":
+        target = private / "target"
+        target.write_bytes(b"")
+        target.chmod(0o600)
+        database.unlink()
+        database.symlink_to(target)
+    elif kind == "parent":
+        private.chmod(0o755)
+    elif kind in {"wal", "shm"}:
+        sidecar = Path(f"{database}-{kind}")
+        sidecar.write_bytes(b"")
+        sidecar.chmod(0o644)
+    # Only metadata/open calls are mapped. No actual production file is accessed.
+    virtual = Path("/srv/eduvibe-synthetic/data")
+    real_stat, real_lstat, real_open, real_fstat = (
+        Path.stat,
+        Path.lstat,
+        os.open,
+        os.fstat,
+    )
+
+    def mapped(path):
+        if path.is_relative_to(virtual):
+            return private / path.relative_to(virtual)
+        if path == virtual.parent:
+            return tmp_path
+        return path
+
+    def lstat(path, *args, **kwargs):
+        result = real_lstat(mapped(path), *args, **kwargs)
+        if kind == "ancestor" and path == virtual.parent:
+            return SimpleNamespace(st_mode=result.st_mode | 0o002, st_uid=result.st_uid)
+        return result
+
+    def fstat(descriptor):
+        result = real_fstat(descriptor)
+        if kind == "owner":
+            return SimpleNamespace(st_mode=result.st_mode, st_uid=os.geteuid() + 1)
+        return result
+
+    monkeypatch.setattr(
+        Path,
+        "stat",
+        lambda path, *args, **kwargs: real_stat(mapped(path), *args, **kwargs),
+    )
+    monkeypatch.setattr(Path, "lstat", lstat)
+    monkeypatch.setattr(
+        os,
+        "open",
+        lambda path, flags, *args, **kwargs: real_open(
+            mapped(Path(path)), flags, *args, **kwargs
+        ),
+    )
+    monkeypatch.setattr(os, "fstat", fstat)
+    settings = Settings(
+        app_env="production",
+        database_path=virtual / "api.sqlite3",
+        public_origin="https://archive.example.test",
+    )
+    if kind == "valid":
+        settings.validate_production_runtime()
+    else:
+        with pytest.raises(ConfigurationError):
+            settings.validate_production_runtime()
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {"database_path": Path("relative.sqlite3")},
+        {"database_path": Path("/tmp/production.sqlite3")},
+        {"public_origin": "http://archive.example.test"},
+        {"auth_activation_path": Path("/srv/eduvibe/data/auth.json")},
+    ],
+)
+def test_explicit_production_settings_cannot_bypass_startup_guard(
+    tmp_path, monkeypatch, updates
+):
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    def reject_open(*args):
+        raise AssertionError("invalid production settings opened a database")
+
+    monkeypatch.setattr("app.main.make_engine", reject_open)
+    settings = Settings(
+        app_env="production",
+        database_path=Path("/srv/eduvibe/data/api.sqlite3"),
+        public_origin="https://archive.example.test",
+    ).model_copy(update=updates)
+    with (
+        pytest.raises(
+            RuntimeError,
+            match="Application configuration or database revision is invalid",
+        ),
+        TestClient(create_app(settings)),
+    ):
+        pass
+
+
+@pytest.mark.parametrize(
+    "origin",
+    [
+        "https://localhost",
+        "https://sub.localhost.",
+        "https://127.0.0.2",
+        "https://[::1]",
+        "https://[::ffff:127.0.0.1]",
+        "https://[::ffff:7f00:1]",
+    ],
+)
+def test_production_rejects_loopback_origin_matrix(origin):
+    with pytest.raises(ConfigurationError, match="HTTPS"):
+        Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "DATABASE_PATH": "/srv/eduvibe/data/api.sqlite3",
+                "PUBLIC_ORIGIN": origin,
+            }
+        )

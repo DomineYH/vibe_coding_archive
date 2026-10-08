@@ -33,19 +33,22 @@ APP_ENV=test uv run --frozen pytest
 사용자 지정 경로는 절대 경로를 권장한다. uvicorn도 준비 명령과 같은 경로를
 사용해야 하며 `.env`에 설정하면 두 명령에 함께 적용된다.
 
-실사용 전환은 `.env`의 `APP_ENV=production`과 DB/origin을 함께
-변경한다(`.env.example`의 주석 예시 참고). 운영 DB는 저장소 및 임시 디렉터리
-밖의 절대 경로여야 하고, `PUBLIC_ORIGIN`은 비로컬 HTTPS origin이어야 한다.
-명시적 migration은 계속 필요하며 자동 실행하지 않는다. 운영 API는 인증이
-비활성인 동안 차단 목록을 읽지 않는다. 운영 API의 차단 목록 경로 설정과 준비는
-운영 인증을 활성화할 때만 필요하다.
-셸에 남은 환경 변수가 파일보다 우선하므로 전환 시 확인한다. 필요하면
-`APP_ENV=development uv run --frozen ...`처럼 명령별로 덮어쓸 수 있다.
+운영은 프로세스 환경에 `APP_ENV=production`, `DATABASE_PATH`, `PUBLIC_ORIGIN`을
+명시하며 프로젝트 `.env`를 읽지 않는다. 파일만으로 production/test를 선택하면
+거절한다. `.env`는 development에만 사용하며 프로세스 값이 우선한다.
+운영 DB는 저장소 및 `/tmp`, `/var/tmp`, `/dev/shm`, 설정된 임시 디렉터리 밖의
+canonical 절대 경로여야 하고 origin은 비로컬 HTTPS여야 한다. API 시작 전에
+명시적으로 migration을 완료해야 한다. 기존 DB/WAL/SHM은 서비스 UID 소유 0600,
+데이터 디렉터리는 0700, 상위 디렉터리는 신뢰할 수 있는 소유권/권한이어야 한다.
+API는 파일 생성·migration·권한 수정을 자동으로 하지 않는다.
 
-**주의:** `backend/.env`가 `APP_ENV=production`이면 접두어 없는 `alembic upgrade head`, `bootstrap-admin`, `recover-admin`, `sweep-pending`, `invalidate-restored-auth` 명령은 운영 DB를 대상으로 하므로 실행 전에 적용될 `APP_ENV`를 확인한다.
+**주의:** 명령별 프로세스 환경이 운영 DB를 선택한다. `alembic upgrade head`,
+`bootstrap-admin`, `recover-admin`, `sweep-pending`, `invalidate-restored-auth` 전에
+적용될 환경을 확인한다. 운영 설정의 누락을 development로 대체하지 않는다.
 
-시험은 프로세스에 `APP_ENV=test`를 명시하며 `.env`를 읽지 않는다. 파일에만
-`APP_ENV=test`를 쓰면 실행을 거절한다. 시험 DB/origin은 별도로 명시해야 한다.
+시험은 프로세스의 `APP_ENV=test`와 전용 임시 DB/origin을 명시하며 `.env`를 읽지 않는다.
+[제한된 인증 후보 절차](../docs/operations/auth-candidate.md)는 별도 운영자 승인 파일과
+immutable release ID를 요구한다. 승인 없는 운영 API는 공개 읽기만 유지한다.
 
 Tests that start the API provide their own temporary `DATABASE_PATH` and
 `PUBLIC_ORIGIN`. The API refuses to start until an explicit migration leaves
@@ -68,8 +71,9 @@ read twice without echo and stored as a hash.
 `auth_login`, `auth_logout`, `auth_password_change`, `auth_register`,
 `admin_users_read`, `admin_approval`, `admin_summary`, `apps_create`, `apps_update_own`, `apps_delete_own` 열 capability를 켠다.
 `APP_ENV=test`는 기존 factory의 `auth_testing=True`일 때만 켜며 이 인자는
-시험 환경에서만 허용한다. `APP_ENV=production`은 인증을 계속 비활성화한다.
-T07/G01~G18 운영 공개 검수는 보류 상태다.
+시험 환경에서만 허용한다. `APP_ENV=production`의 인증은 기본 off이며
+보호된 `AUTH_ACTIVATION_PATH` 기록이 정확한 build/release/config와 #144 후보 허가를
+증명할 때만 제한된 후보로 활성화한다. 공개 운영 검수는 계속 별도다.
 
 프런트는 `npm run dev:api`로 실행한다. 기본 `PUBLIC_ORIGIN`은
 `http://localhost:5174`이며 다른 host/port를 쓰면 정확히 맞춰야 한다.
@@ -167,11 +171,11 @@ windows begin at the change; normal full administrator login also grants
 15 minutes of recent auth.
 Administrator reauthentication rotates S and CSRF while inheriting the original
 absolute expiry and preserving identity continuity. It is available only at the
-auth-ready development or explicit isolated-test boundary; production and the
-remaining Phase 5 sensitive actions stay disabled.
+auth-ready development, explicit isolated-test boundary, or an operator-approved
+limited production candidate. The candidate never opens external ingress.
 A lost reply uses the original transition and cookie observation, never replays
 the change, and discards only that unreceived result S. 개발 및 prepared 시험 환경은
-가입까지 활성화하며 운영 인증과 관리자 초기화/삭제는 계속 비활성이다.
+가입까지 활성화한다. 운영 후보의 관리자 초기화는 별도 검증된 HMAC 공급도 필요하다.
 
 ### T04 가입과 최초 승인 대기 정리
 
@@ -237,7 +241,7 @@ T07 운영 공개 전에 원장과 SQLite sidecar를 운영 DB의 디렉터리/�
 T04의 `0005_member_approval` schema와 T01~T03의 full S/흐름/순번/세대/CSRF 경계를
 재사용한다. 개발 환경과 `APP_ENV=test` prepared factory에서는 `auth_register`,
 `admin_users_read`, `admin_approval`, `admin_summary`를 묶음으로 활성화한다.
-운영 실행은 T07 공개 gate 전까지 인증을 열지 않는다. 새 phase flag는 없다.
+운영 공개 gate와 제한된 인증 후보 승인은 별도다. 후보 절차는 위 운영 문서를 따른다.
 
 현재 full 관리자는 `/admin/users`(페이지·전체 stats), `/admin/users/{id}`를 읽고,
 `POST /write-operations`의 `kind=user_approval`로 별도 업무 키를 발급한다.
@@ -304,7 +308,7 @@ VERSION_CONFLICT는 최신 앱을 명시적으로 읽고 다시 확인한 뒤 �
 개발 환경에서는 로그인 후 `/apps/new`에서 공개 앱(예: `https://www.naver.com`)을 등록하고
 상세·새로고침·비로그인 갤러리를 확인할 수 있다. 비공개 앱은 작성자·관리자만 상세를 볼 수
 있고 공개 목록·검색·facets·total에는 나타나지 않는다. `/apps/{id}/edit`에서 편집·공개 전환을
-확인한다. 운영 환경 등록·편집·삭제는 계속 비활성이고 Phase 4 전체 수락은 별도 검수다.
+확인한다. 운영의 등록·편집·삭제는 승인된 제한 후보에서만 활성화하며 공개 수락은 별도 검수다.
 앱 생성·PATCH·DELETE 본문과 `app_create`·`app_update`·`app_delete` 발급 본문은 1MiB, 그 외 인증·관리자 쓰기 본문은 16KiB로
 스트리밍 수신 단계에서 제한한다. 기본 포트(`http:80`, `https:443`)는 허용하고 사용자 정보,
 localhost·사설 IP·다른 포트는 URL 파싱 후 거부한다. IPv4-mapped/compatible IPv6의 내장
