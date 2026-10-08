@@ -167,12 +167,12 @@ test("admins see the complete public and private app monitor summaries", async (
     exact: true,
   });
   await expect(checkAll).toBeEnabled();
-  await expect(checkOne).toBeDisabled();
+  await expect(checkOne).toBeEnabled();
   await expect(checkAll).toHaveAccessibleDescription(
     "새 전체 검사는 이 버튼을 눌렀을 때 시작합니다.",
   );
   await expect(checkOne).toHaveAccessibleDescription(
-    "개별 재검사는 아직 사용할 수 없어요.",
+    "검사 접수 후 이 행에서 진행 상태를 확인합니다.",
   );
 });
 
