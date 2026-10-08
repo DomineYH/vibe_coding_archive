@@ -359,3 +359,13 @@ Nginx 배포 템플릿, API 산출물 허용 목록, 신뢰 proxy 경계와 격�
 ## Local encrypted backup
 
 `uv run --frozen python -m app.cli backup-db --output-dir /absolute/private/backups --recipient-file /absolute/private/config/recipients.txt --release-id <build-id>` creates an age v1 encrypted logical SQLite dump and an authenticated-inner-metadata manifest. A locally complete pair returns **3** (`LOCAL_ONLY_REMOTE_NOT_CONFIRMED`); it does not establish independent remote durability. See [backup operations](../docs/operations/backups.md) for private paths/permissions, payload format, expiry, interruption handling, scheduling and restore handoff.
+
+## Isolated restore drills (#198)
+
+`APP_ENV=test HEALTH_CHECKS_ENABLED=false python -m app.cli restore-db` and
+`verify-restore` require explicit private backup/key/current-ledger inputs and a
+fresh empty target. Verified restores return **3** and retain `.restore-blocked`;
+API data, login, readiness and health execution remain unavailable. They never
+replace a production DB or grant cutover permission. See
+[the restore procedure](../docs/operations/restores.md) for limits, exit codes,
+source immutability and CI-only real-age verification.

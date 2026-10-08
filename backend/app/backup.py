@@ -275,15 +275,19 @@ def _read_only(parent, name):
     )
 
 
-def _verify_snapshot(db):
+def _verify_snapshot(db, *, expected_revision=None):
     if (
         db.execute("PRAGMA integrity_check").fetchall() != [("ok",)]
         or db.execute("PRAGMA foreign_key_check").fetchall()
     ):
         raise RuntimeError()
     revision = db.execute("SELECT version_num FROM alembic_version").fetchall()
-    if revision != [(current_head(),)]:
+    head = current_head()
+    expected = head if expected_revision is None else expected_revision
+    if revision != [(expected,)]:
         raise RuntimeError()
+    if expected != head:
+        return expected
     for table in (
         "members",
         "apps",

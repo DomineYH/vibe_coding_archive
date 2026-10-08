@@ -25,6 +25,7 @@ from app.database import (
     make_session_factory,
 )
 from app.health_runtime import boot_clock, runtime_enabled
+from app.restore_guard import restore_blocked
 from app.settings import Settings
 
 
@@ -116,7 +117,7 @@ class Worker:
         self.testing_probe = testing_probe
         self.worker_id = str(uuid4())
         self.stopping = asyncio.Event()
-        self.disabled = False
+        self.disabled = restore_blocked(settings.database_path)
         self.tasks = {}
         self.executor = None
         self.stop_deadline = None
@@ -427,6 +428,8 @@ class Worker:
 
 
 async def serve(settings):
+    if restore_blocked(settings.database_path):
+        raise ActivationRequired("RESTORE_MAINTENANCE_REQUIRED")
     engine = make_engine(settings.database_path)
     try:
         if current_revision(engine) != current_head():
