@@ -29,6 +29,19 @@ jobs:
       - name: Backend format check
         working-directory: backend
         run: uv run --frozen ruff format --check .
+      - name: Install and record age from signed Ubuntu package indexes
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes age
+          dpkg-query -W -f='${Version}\n' age
+          age --version
+          age-keygen --version
+          age --version | grep -Eq '^v?1\.[0-9]+\.[0-9]+$'
+      - name: Real age backup encryption and decryption tests
+        working-directory: backend
+        env:
+          CI: "true"
+        run: APP_ENV=test uv run --frozen pytest -m requires_age tests/test_backup_process.py -ra
       - name: Backend tests
         working-directory: backend
         run: APP_ENV=test uv run --frozen pytest

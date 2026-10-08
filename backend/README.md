@@ -355,3 +355,7 @@ clearing an obsolete reference does not alter a newer pending transition or revi
 Nginx 배포 템플릿, API 산출물 허용 목록, 신뢰 proxy 경계와 격리 HTTPS smoke는
 [동일 출처 정적 제공 절차](../docs/operations/static-serving.md)를 따른다.
 실환경 TLS·UID·기기 검수와 공개 승인은 #144/T12에 남아 있다.
+
+## Local encrypted backup
+
+`uv run --frozen python -m app.cli backup-db --output-dir /absolute/private/backups --recipient-file /absolute/private/config/recipients.txt --release-id <build-id>` creates an age v1 encrypted logical SQLite dump and an authenticated-inner-metadata manifest. A locally complete pair returns **3** (`LOCAL_ONLY_REMOTE_NOT_CONFIRMED`); it does not establish independent remote durability. See [backup operations](../docs/operations/backups.md) for private paths/permissions, payload format, expiry, interruption handling, scheduling and restore handoff.
