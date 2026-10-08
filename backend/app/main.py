@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import sqlite3
 import sys
+from asyncio import get_running_loop
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
 from typing import Annotated, Literal
@@ -184,7 +185,7 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        loop = asyncio.get_running_loop()
+        loop = get_running_loop()
         previous_handler = loop.get_exception_handler()
         loop.set_exception_handler(background_error)
         engine = None
