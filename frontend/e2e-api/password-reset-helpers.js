@@ -2,6 +2,7 @@ import { expect, test as base } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { approvalHeaders, login, userRow } from "./approval-helpers.js";
+import { query } from "./helpers.js";
 
 export { approvalHeaders, login, userRow };
 export const ORIGINAL = "Synthetic original password 167!";
@@ -26,6 +27,7 @@ function fixtures() {
 // Each case owns its browser flow and database rows, including failed cases.
 export const test = base.extend({
   members: async ({ context }, runTest) => {
+    const rates = query("SELECT * FROM rate_limit_events");
     const members = fixtures();
     try {
       await runTest(members);
@@ -39,7 +41,8 @@ export const test = base.extend({
           "python",
           "-c",
           `import json, os, sqlite3, sys
-ids = json.load(sys.stdin)
+owned = json.load(sys.stdin)
+ids = owned['ids']
 marks = ','.join('?' for _ in ids)
 with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
     db.execute('PRAGMA foreign_keys=ON')
@@ -51,15 +54,20 @@ with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
     db.execute(f'DELETE FROM write_operations WHERE actor_id IN ({marks}) OR target_id IN ({marks})', ids + ids)
     db.execute(f'DELETE FROM audit_logs WHERE actor_id IN ({marks}) OR target_id IN ({marks})', ids + ids)
     db.execute(f'DELETE FROM members WHERE id IN ({marks})', ids)
+    previous_rates = {tuple(row) for row in owned['rates']}
+    for row in db.execute('SELECT * FROM rate_limit_events').fetchall():
+        if tuple(row) not in previous_rates:
+            db.execute('DELETE FROM rate_limit_events WHERE id=?', (row[0],))
     assert not db.execute('PRAGMA foreign_key_check').fetchall()
 `,
         ],
         {
           cwd: "../backend",
           env: process.env,
-          input: JSON.stringify(
-            Object.values(members).map((member) => member.id),
-          ),
+          input: JSON.stringify({
+            ids: Object.values(members).map((member) => member.id),
+            rates,
+          }),
           encoding: "utf8",
         },
       );
