@@ -299,3 +299,57 @@ it("preserves stale authentication errors from private health polling", async ()
     httpStatus: 409,
   });
 });
+
+it("preserves uppercase administrator results through snapshot, admission and polling", async () => {
+  vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
+  vi.spyOn(authService, "getCsrf").mockResolvedValue({
+    csrfToken: "csrf-test",
+    expiresAt: "2026-09-22T01:12:00.000Z",
+  });
+  const result = {
+    state: "blocked",
+    checked_at: time,
+    fresh_until: "2026-09-22T00:27:00.000Z",
+    http_status: null,
+    response_ms: null,
+    error_kind: "DESTINATION_BLOCKED",
+    error_stage: "dns",
+  };
+  const snapshot = {
+    app_id: appId,
+    url_version: 3,
+    server_time: time,
+    health: { ...health(), result },
+  };
+  const job = {
+    ...health().latest_job,
+    status: "completed",
+    finished_at: time,
+  };
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(jsonResponse(snapshot))
+    .mockResolvedValueOnce(
+      jsonResponse({ ...snapshot, disposition: "created" }, 202),
+    )
+    .mockResolvedValueOnce(jsonResponse({ ...snapshot, job }))
+    .mockResolvedValueOnce(
+      jsonResponse({
+        ...snapshot,
+        health: { ...snapshot.health, latest_job: null },
+        disposition: "result_reused",
+      }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  expect((await healthService.getAppHealth(appId)).health.result).toEqual(
+    result,
+  );
+  expect((await healthService.requestCheck(appId)).health.result).toEqual(
+    result,
+  );
+  expect((await healthService.getJob(jobId)).health.result).toEqual(result);
+  const reused = await healthService.requestCheck(appId);
+  expect(reused.disposition).toBe("result_reused");
+  expect(reused.health.result).toEqual(result);
+  expect(fetch).toHaveBeenCalledTimes(4);
+});

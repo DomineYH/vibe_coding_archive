@@ -11,13 +11,19 @@ from app.settings import Settings
 
 
 class Record:
+    def __init__(self, address):
+        self.address = address
+
     def to_text(self):
-        return "93.184.216.34"
+        return self.address
 
 
 class Resolver:
     async def resolve(self, host, kind, **kwargs):
-        return [Record()] if kind == "A" else []
+        address = (
+            "127.0.0.1" if host == "health-blocked.example.test." else "93.184.216.34"
+        )
+        return [Record(address)] if kind == "A" else []
 
 
 class Stream:

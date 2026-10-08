@@ -180,3 +180,38 @@ test("marks the exact freshness boundary stale and rejects stale cooldown reuse"
     .click();
   await expect(panel.getByRole("alert")).toContainText("재검사 대기 중");
 });
+
+test("administrator error identifiers persist through mock storage reload", async ({
+  page,
+}) => {
+  for (const [index, [scenario, status, ms, identifier]] of [
+    ["health_result_timeout", "—", "—", "TIMEOUT / response_headers"],
+    ["health_result_network_error", "—", "—", "DNS_FAILURE / dns"],
+    ["health_result_blocked", "—", "—", "DESTINATION_BLOCKED / dns"],
+    [
+      "health_result_redirect_error",
+      "302",
+      "18 ms",
+      "REDIRECT_ERROR / redirect",
+    ],
+  ].entries()) {
+    if (index > 0) await resetMock(page);
+    const panel = await openScenario(page, scenario);
+    await loginAdmin(page);
+    await page.goto(`/apps/${appId}`);
+    await panel
+      .getByRole("button", { name: "연결 다시 확인", exact: true })
+      .click();
+    await expect(
+      panel.getByRole("status").filter({ hasText: "검사 작업이 완료됐어요" }),
+    ).toBeVisible();
+    await expect(panel.locator("dl").nth(1).getByRole("definition")).toHaveText(
+      [status, ms, identifier],
+    );
+    await page.reload();
+    await expect(panel.locator("dl").nth(1).getByRole("definition")).toHaveText(
+      [status, ms, identifier],
+    );
+    await expect(panel.getByRole("alert")).toHaveCount(0);
+  }
+});

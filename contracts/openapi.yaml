@@ -2760,8 +2760,27 @@ components:
         fresh_until: { type: [string, "null"], format: date-time }
         http_status: { type: [integer, "null"], minimum: 100, maximum: 599 }
         response_ms: { type: [number, "null"], minimum: 0 }
-        error_kind: { type: [string, "null"], minLength: 1, maxLength: 64 }
-        error_stage: { type: [string, "null"], minLength: 1, maxLength: 64 }
+        error_kind:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z][A-Za-z0-9_]{0,63}$"
+          description: >-
+            Nullable extensible ASCII identifier; preserve its original case.
+            Current probe kinds are DNS_FAILURE, TLS_FAILURE, CONNECT_FAILURE,
+            HTTP_PROTOCOL_ERROR, TIMEOUT, DESTINATION_BLOCKED,
+            RESPONSE_HEADERS_TOO_LARGE, and REDIRECT_ERROR. null means no error kind.
+          examples: [DNS_FAILURE, DESTINATION_BLOCKED, TIMEOUT, null]
+        error_stage:
+          type: [string, "null"]
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z][A-Za-z0-9_]{0,63}$"
+          description: >-
+            Nullable extensible ASCII identifier; preserve its original case.
+            Current probe stages are url, dns, connect, tls, response_headers,
+            redirect, and overall. null means no error stage.
+          examples: [dns, response_headers, overall, null]
     HealthView:
       type: object
       additionalProperties: false

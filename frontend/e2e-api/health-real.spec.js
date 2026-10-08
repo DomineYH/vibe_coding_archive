@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { blockExternalRequests, query } from "./helpers.js";
-import { openMonitor, test } from "./admin-apps-helpers.js";
+import { openMonitor, signIn, test } from "./admin-apps-helpers.js";
 
 test.describe("connection checks over real API, queue and worker", () => {
   test.beforeEach(() => test.setTimeout(120000));
@@ -146,6 +146,106 @@ test.describe("connection checks over real API, queue and worker", () => {
     await expect(row).toContainText("정상");
     expect(
       query("SELECT count(*) FROM health_jobs WHERE app_id='" + app.id + "'"),
+    ).toEqual([[1]]);
+  });
+
+  test("administrator blocked result completes polling, refreshes the row and survives reload and reuse", async ({
+    page,
+    context,
+    owned,
+  }) => {
+    await blockExternalRequests(context);
+    const app = owned.apps[2];
+    await signIn(page, owned.admin);
+    await page.goto(`/apps/${app.id}/edit`);
+    const form = page.getByRole("form", { name: "앱 수정 양식", exact: true });
+    await form
+      .getByRole("textbox", { name: "배포 URL", exact: true })
+      .fill("https://health-blocked.example.test/app");
+    await form
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await expect(page).toHaveURL(`/apps/${app.id}`);
+    const [[urlVersion]] = query(
+      `SELECT url_version FROM apps WHERE id='${app.id}'`,
+    );
+    await page.goto("/admin?tab=health");
+    const row = page
+      .getByRole("list", { name: "전체 앱 목록" })
+      .getByRole("listitem")
+      .filter({
+        has: page.getByRole("button", {
+          name: `앱 관리: ${app.name}`,
+          exact: true,
+        }),
+      });
+    const accepted = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/apps/${app.id}/health-checks`) &&
+        response.request().method() === "POST",
+    );
+    await row.getByRole("button", { name: "즉시 재검사", exact: true }).click();
+    const response = await accepted;
+    expect(response.status()).toBe(202);
+    const admission = await response.json();
+    expect(admission.disposition).toBe("created");
+    await expect(row.getByRole("status")).toHaveText("검사 완료");
+    await expect(row).toContainText("검사 제한");
+    expect(
+      query(
+        `SELECT status,attempts FROM health_jobs WHERE id='${admission.health.latest_job.id}'`,
+      ),
+    ).toEqual([["completed", 1]]);
+    expect(
+      query(
+        `SELECT url_version,state,http_status,response_ms,error_kind,error_stage FROM health_results WHERE app_id='${app.id}'`,
+      ),
+    ).toEqual([
+      [urlVersion, "blocked", null, null, "DESTINATION_BLOCKED", "dns"],
+    ]);
+    await page.goto(`/apps/${app.id}`);
+    const panel = page.locator("aside section").filter({
+      has: page.getByRole("heading", { name: "연결 상태", exact: true }),
+    });
+    for (const reload of [false, true]) {
+      if (reload) await page.reload();
+      const measurements = panel.locator("dl").nth(1).getByRole("definition");
+      await expect(measurements).toHaveText([
+        "—",
+        "—",
+        "DESTINATION_BLOCKED / dns",
+      ]);
+      await expect(panel.getByRole("alert")).toHaveCount(0);
+      await expect(
+        panel.getByRole("button", { name: "결과 다시 조회", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        panel.getByRole("button", { name: "진행 다시 조회", exact: true }),
+      ).toHaveCount(0);
+    }
+    const reused = page.waitForResponse(
+      (response) =>
+        response.url().endsWith(`/apps/${app.id}/health-checks`) &&
+        response.request().method() === "POST",
+    );
+    await panel
+      .getByRole("button", { name: "연결 다시 확인", exact: true })
+      .click();
+    const reusedResponse = await reused;
+    expect(reusedResponse.status()).toBe(200);
+    expect(await reusedResponse.json()).toMatchObject({
+      disposition: "result_reused",
+      health: {
+        result: { error_kind: "DESTINATION_BLOCKED", error_stage: "dns" },
+      },
+    });
+    await expect(panel).toContainText("최근 연결 검사 결과를 다시 표시합니다.");
+    await expect(panel.getByRole("alert")).toHaveCount(0);
+    await expect(panel.locator("dl").nth(1).getByRole("definition")).toHaveText(
+      ["—", "—", "DESTINATION_BLOCKED / dns"],
+    );
+    expect(
+      query(`SELECT count(*) FROM health_jobs WHERE app_id='${app.id}'`),
     ).toEqual([[1]]);
   });
 });

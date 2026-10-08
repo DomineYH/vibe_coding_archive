@@ -1292,7 +1292,21 @@ export interface components {
             fresh_until: string | null;
             http_status: number | null;
             response_ms: number | null;
+            /**
+             * @description Nullable extensible ASCII identifier; preserve its original case. Current probe kinds are DNS_FAILURE, TLS_FAILURE, CONNECT_FAILURE, HTTP_PROTOCOL_ERROR, TIMEOUT, DESTINATION_BLOCKED, RESPONSE_HEADERS_TOO_LARGE, and REDIRECT_ERROR. null means no error kind.
+             * @example DNS_FAILURE
+             * @example DESTINATION_BLOCKED
+             * @example TIMEOUT
+             * @example null
+             */
             error_kind: string | null;
+            /**
+             * @description Nullable extensible ASCII identifier; preserve its original case. Current probe stages are url, dns, connect, tls, response_headers, redirect, and overall. null means no error stage.
+             * @example dns
+             * @example response_headers
+             * @example overall
+             * @example null
+             */
             error_stage: string | null;
         };
         HealthView: {

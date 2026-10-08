@@ -481,7 +481,10 @@ function validateHealthMeasurements(
       (measurement.http_status === null) !==
         (measurement.response_ms === null) ||
       ![measurement.error_kind, measurement.error_stage].every(
-        (item) => item === null || /^[a-z][a-z0-9_]{0,63}$/u.test(item),
+        (item) =>
+          item === null ||
+          (typeof item === "string" &&
+            /^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(item)),
       )
     )
       throw storageError();
