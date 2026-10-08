@@ -43,6 +43,19 @@ jobs:
       - name: Install Playwright Chromium for API E2E
         working-directory: frontend
         run: npx playwright install --with-deps chromium
+      - name: Install native Nginx serving tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes nginx openssl
+          nginx -v
+          openssl version
+          dpkg-query --show nginx openssl
+      - name: Build and check the same-origin API release
+        working-directory: frontend
+        run: npm run build && npm run check:dist
+      - name: Native HTTPS Nginx serving contracts
+        working-directory: frontend
+        run: npm run test:e2e:api -- --nginx e2e-api/static-serving.spec.js
       - name: API end-to-end tests
         working-directory: frontend
         run: npm run test:e2e:api

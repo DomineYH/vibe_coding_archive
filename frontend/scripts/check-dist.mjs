@@ -1,19 +1,24 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, lstatSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve("dist");
 const files = [];
 function visit(directory) {
+  if (lstatSync(directory).isSymbolicLink())
+    throw new Error("API dist contains a symlink");
   for (const name of readdirSync(directory).sort()) {
     const target = path.join(directory, name);
-    if (statSync(target).isDirectory()) visit(target);
+    const entry = lstatSync(target);
+    if (entry.isSymbolicLink()) throw new Error("API dist contains a symlink");
+    if (entry.isDirectory()) visit(target);
     else files.push(path.relative(root, target).replaceAll(path.sep, "/"));
   }
 }
 
 try {
   visit(root);
-} catch {
+} catch (error) {
+  if (error.code !== "ENOENT") throw error;
   throw new Error("API dist is missing; run npm run build first");
 }
 if (
@@ -23,7 +28,7 @@ if (
   throw new Error("API dist is incomplete");
 if (
   files.some((file) =>
-    /(^|\/)(fixtures|mock|reference|research|evidence|basic_design)(\/|$)|(^|\/)\.env(?:$|[._-])|\.map$|\.thumbnail$|\.(?:db|sqlite)(?:-wal|-shm)?$|\.(?:bak|backup|old|orig|pem|key|p12|pfx)$/i.test(
+    /(^|\/)(fixtures|mock|reference|research|evidence|basic_design)([./_-]|$)|(^|\/)\.env(?:$|[._-])|\.map$|\.thumbnail$|\.(?:db|sqlite3?|age|bak|backup|old|orig|pem|key|p12|pfx|ts|tsx|jsx)(?:[./_-]|$)/i.test(
       file,
     ),
   )
@@ -33,7 +38,7 @@ if (
 const isAllowedOutput = (file) =>
   file === "index.html" ||
   file === "licenses/Pretendard-OFL.txt" ||
-  /^assets\/[^/]+\.(?:css|js|woff2)$/i.test(file);
+  /^assets\/[^/.][^/]*\.(?:css|js|woff2)$/i.test(file);
 if (files.some((file) => !isAllowedOutput(file)))
   throw new Error("API dist contains an unexpected file");
 const textAssets = files
@@ -48,6 +53,11 @@ for (const forbidden of [
   "simulatePing",
   "TweaksPanel",
   "mockMeta",
+  "DEMO_ACCOUNTS",
+  "TEMPORARY_DEMO_ACCOUNTS",
+  "admin123",
+  "Temporary Demo Password 38",
+  "Temporary Admin Password 38",
   "list_failure",
   "list_delayed",
   "/__dev/mock-reset",
@@ -56,6 +66,8 @@ for (const forbidden of [
   if (textAssets.includes(forbidden))
     throw new Error(`API bundle includes mock-only content: ${forbidden}`);
 }
+if (/\bpassword["']?\s*:\s*["']1234["']/.test(textAssets))
+  throw new Error("API bundle includes a demo password record");
 process.stdout.write(
   `API dist contains ${files.length} files and no mock fixtures, Tweaks, references, or source maps.\n`,
 );

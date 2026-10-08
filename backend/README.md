@@ -345,3 +345,9 @@ or revoked S/R generations inside live flows within the R9 Q18 retention bound;
 clearing an obsolete reference does not alter a newer pending transition or revision.
 
 관리자 회원 삭제의 작업 키, 전체 그룹 확인 및 `0011_user_delete` 복원 절차는 [회원 삭제 개발 안내](../docs/development/user-delete.md)를 참조한다.
+
+## Same-origin static serving
+
+Nginx 배포 템플릿, API 산출물 허용 목록, 신뢰 proxy 경계와 격리 HTTPS smoke는
+[동일 출처 정적 제공 절차](../docs/operations/static-serving.md)를 따른다.
+실환경 TLS·UID·기기 검수와 공개 승인은 #144/T12에 남아 있다.
