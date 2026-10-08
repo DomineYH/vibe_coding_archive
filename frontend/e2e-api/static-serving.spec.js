@@ -122,7 +122,19 @@ test("serves built routes on direct entry reload and history", async ({
     await page.evaluate(() => document.activeElement !== document.body),
   ).toBe(true);
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
+  await expect(page).toHaveURL("/");
+  await expect(
+    page
+      .getByRole("banner")
+      .getByRole("button", { name: "로그인", exact: true }),
+  ).toBeVisible();
+  const adminLogin = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === "/api/v1/auth/login" &&
+      response.request().method() === "POST",
+  );
   await login(page, "approval-admin");
+  expect((await adminLogin).status()).toBe(200);
   await expect(
     page.getByRole("banner").getByText("승인 담당", { exact: true }),
   ).toBeVisible();
@@ -178,11 +190,14 @@ test("separates API assets probes and unknown routes", async ({ request }) => {
     expect(response.status()).toBe(404);
     expect((await response.text()).includes('<div id="root">')).toBe(false);
   }
-  for (const route of ["/healthz", "/readyz"]) {
+  for (const [route, status] of [
+    ["/healthz", "ok"],
+    ["/readyz", "ready"],
+  ]) {
     const response = await request.get(route);
     expect(response.status()).toBe(200);
     expect(response.headers()["content-type"]).toContain("application/json");
-    expect(await response.json()).toEqual({ status: "ok" });
+    expect(await response.json()).toEqual({ status });
   }
   const files = [
     "index.html",
