@@ -207,6 +207,10 @@ def _main() -> int:
         from app.backup import main as backup_main
 
         return backup_main(sys.argv[2:])
+    if sys.argv[1:2] in (["restore-db"], ["verify-restore"]):
+        from app.restore import main as restore_main
+
+        return restore_main(sys.argv[1], sys.argv[2:])
     parser = SafeParser(prog="python -m app.cli", allow_abbrev=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("backup-db", help="create a local encrypted database backup")
@@ -214,6 +218,8 @@ def _main() -> int:
         "purge-expired", help="purge eligible local records and backups"
     )
     purge.add_argument("--backup-dir", required=True)
+    for command in ("restore-db", "verify-restore"):
+        subparsers.add_parser(command, help="inspect an isolated blocked restore")
     subparsers.add_parser("seed", help="add missing synthetic development data")
     subparsers.add_parser(
         "sweep-pending", help="delete expired initial pending members"
@@ -322,7 +328,13 @@ def _safe_guidance(error):
 def main() -> int:
     install()
     command = sys.argv[1] if len(sys.argv) > 1 else None
-    fixed_output = command in ("backup-db", "sweep-pending", "invalidate-restored-auth")
+    fixed_output = command in (
+        "backup-db",
+        "restore-db",
+        "verify-restore",
+        "sweep-pending",
+        "invalidate-restored-auth",
+    )
     if fixed_output:
         # Preserve existing fixed CLI protocols without library diagnostics.
         logging.getLogger().handlers[0].addFilter(

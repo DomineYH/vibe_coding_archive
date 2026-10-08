@@ -363,3 +363,13 @@ Nginx 배포 템플릿, API 산출물 허용 목록, 신뢰 proxy 경계와 격�
 ## Safe logging and retention (#200)
 
 Use `uv run --frozen python -m app.api --host 127.0.0.1 --port 8000` for the API logging boundary. Run `uv run --frozen python -m app.cli purge-expired --backup-dir /srv/eduvibe/backups` with the configured private paths and `HEALTH_CHECKS_ENABLED=false`. Exit 3 reports local completion with audit classification and copy inventory still blocked; no audit or ledger row is pruned. See [logging and retention](../docs/operations/logging-retention.md) for journal/proxy templates, original-clock policy, safe failures and T10/T11/T12 evidence still required.
+
+## Isolated restore drills (#198)
+
+`APP_ENV=test HEALTH_CHECKS_ENABLED=false python -m app.cli restore-db` and
+`verify-restore` require explicit private backup/key/current-ledger inputs and a
+fresh empty target. Verified restores return **3** and retain `.restore-blocked`;
+API data, login, readiness and health execution remain unavailable. They never
+replace a production DB or grant cutover permission. See
+[the restore procedure](../docs/operations/restores.md) for limits, exit codes,
+source immutability and CI-only real-age verification.

@@ -96,6 +96,12 @@ async function run() {
   const env = {
     ...process.env,
     APP_ENV: "test",
+    HEALTH_CHECKS_ENABLED: "false",
+    API_E2E_AGE_AVAILABLE:
+      spawnSync("age", ["--version"], { stdio: "ignore" }).status === 0 &&
+      spawnSync("age-keygen", ["--version"], { stdio: "ignore" }).status === 0
+        ? "1"
+        : "",
     API_E2E_AUTH_BOUNDARY: authPrepared ? "prepared" : "unavailable",
     API_E2E_TEMP_ROOT: temporary,
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
@@ -396,6 +402,7 @@ raise SystemExit(status)`,
         run.empty ? emptyTemplate : template,
         runEnv.DATABASE_PATH,
       );
+      await chmod(runEnv.DATABASE_PATH, 0o600);
       if (run.candidate) {
         runEnv.AUTH_ACTIVATION_PATH = path.join(
           runDirectory,

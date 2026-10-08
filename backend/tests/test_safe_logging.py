@@ -90,8 +90,12 @@ import pytest
 
 
 @contextmanager
-def running_api(member_app):
+def running_api(member_app, *, restore_marked=False):
     _, database = member_app()
+    if restore_marked:
+        marker = database.parent / ".restore-blocked"
+        marker.write_text(SECRET)
+        marker.chmod(0o600)
     with socket.socket() as listener:
         listener.bind(("127.0.0.1", 0))
         port = listener.getsockname()[1]
@@ -386,3 +390,88 @@ def test_cli_usage_has_a_generated_run_id():
     assert len(events) == 1
     assert events[0]["code"] == "CLI_USAGE_INVALID"
     assert UUID(events[0]["run_id"]).version == 4
+
+
+def test_restore_latch_logs_safe_decision_and_every_blocked_request(member_app):
+    with running_api(member_app, restore_marked=True) as (client, database, captured):
+        assert client.get("/readyz").status_code == 503
+        response = client.get("/api/v1/apps/" + SECRET, params={"query": SECRET})
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+        (database.parent / ".restore-blocked").unlink()
+        assert client.get("/api/v1/auth/state").status_code == 503
+        assert client.get("/readyz").status_code == 503
+    events = [json.loads(line) for line in captured[0].splitlines()]
+    assert sum(event["code"] == "RESTORE_MAINTENANCE_REQUIRED" for event in events) == 1
+    completions = [event for event in events if event["code"] == "REQUEST_COMPLETED"]
+    assert sum(event["status"] == 503 for event in completions) == 4
+    assert all(event["route"] in ("unmatched", "/healthz") for event in completions)
+
+
+def test_restore_latch_restores_previous_loop_exception_handler(tmp_path):
+    (tmp_path / ".restore-blocked").write_text(SECRET)
+    result = process(
+        """
+import asyncio
+from app.safe_logging import install, background_error
+install()
+from app.main import create_app
+from app.settings import Settings
+async def check():
+    loop = asyncio.get_running_loop()
+    previous = loop.get_exception_handler()
+    app = create_app(Settings.from_environment())
+    async with app.router.lifespan_context(app):
+        assert loop.get_exception_handler() is background_error
+    assert loop.get_exception_handler() is previous
+asyncio.run(check())
+""",
+        env={
+            "DATABASE_PATH": str(tmp_path / "never-created.sqlite3"),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+        },
+    )
+    excludes_secrets(result.stdout + result.stderr)
+    assert result.returncode == 0, "restore latch leaked its loop exception handler"
+    assert not (tmp_path / "never-created.sqlite3").exists()
+
+
+@pytest.mark.parametrize("entrypoint", [False, True])
+def test_worker_restore_latch_logs_only_fixed_events(tmp_path, entrypoint):
+    private = tmp_path / SECRET
+    private.mkdir(mode=0o700)
+    (private / ".restore-blocked").write_text(SECRET)
+    code = """
+from app.safe_logging import install
+install()
+from app.health_worker import Worker, main
+from app.settings import Settings
+"""
+    code += (
+        "raise SystemExit(main())"
+        if entrypoint
+        else """
+settings = Settings.from_environment()
+worker = Worker(settings, None)
+assert worker.disabled
+(settings.database_path.parent / '.restore-blocked').unlink()
+assert worker.disabled
+assert not worker.enabled()
+"""
+    )
+    database = private / "never-created.sqlite3"
+    result = process(
+        code,
+        env={
+            "DATABASE_PATH": str(database),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+        },
+    )
+    excludes_secrets(result.stdout + result.stderr)
+    assert result.returncode == int(entrypoint)
+    assert not database.exists()
+    events = [json.loads(line)["code"] for line in result.stderr.splitlines()]
+    events = [code for code in events if code != "DIAGNOSTIC_SUPPRESSED"]
+    assert events == ["RESTORE_MAINTENANCE_REQUIRED"] + (
+        ["WORKER_FAILED"] if entrypoint else []
+    )

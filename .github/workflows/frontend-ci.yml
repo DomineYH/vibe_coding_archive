@@ -41,7 +41,7 @@ jobs:
         working-directory: backend
         env:
           CI: "true"
-        run: APP_ENV=test uv run --frozen pytest -m requires_age tests/test_backup_process.py -ra
+        run: APP_ENV=test uv run --frozen pytest -m requires_age tests/test_backup_process.py tests/test_restore_process.py -ra
       - name: Backend tests
         working-directory: backend
         run: APP_ENV=test uv run --frozen pytest

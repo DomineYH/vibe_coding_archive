@@ -66,3 +66,5 @@ SIGINT/SIGTERM, child failures/timeouts, broken pipes, ENOSPC and fsync errors c
 For stale-stage cleanup, stop scheduling, verify the old process has exited, acquire the existing persistent `.backup.lock` with exclusive flock, inspect hidden stage ownership/modes and remove only the identified unfinished stage. Do not remove the lock inode, source database, independent ledger, UUID runs, or unrelated stages. Ciphertext created before an interrupted age process completes may be invalid. This ticket provides no garbage collector or automated restore authorization.
 
 For expiry-minus-one-day local cleanup, unchanged original clocks, blocked copy inventory and retry behavior, see [safe logging and local retention](logging-retention.md).
+
+For test-only recovery into a fresh blocked target, see [isolated restore drills](restores.md).

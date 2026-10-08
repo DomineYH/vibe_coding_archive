@@ -20,6 +20,7 @@ CODES = frozenset(
         "BACKGROUND_FAILED",
         "DIAGNOSTIC_SUPPRESSED",
         "REQUEST_COMPLETED",
+        "RESTORE_MAINTENANCE_REQUIRED",
     }
 )
 

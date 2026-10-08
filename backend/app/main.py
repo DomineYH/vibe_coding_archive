@@ -65,7 +65,8 @@ from app.password_policy import load_blocklist
 from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
-from app.safe_logging import CompletionLog, background_error
+from app.restore_guard import restore_blocked
+from app.safe_logging import CompletionLog, background_error, emit
 from app.settings import ConfigurationError, Settings
 from app.user_deletion_ledger import prepare as prepare_user_delete
 
@@ -207,6 +208,14 @@ def create_app(
                         "PUBLIC_ORIGIN": resolved.public_origin,
                     }
                 )
+            app.state.restore_blocked = restore_blocked(resolved.database_path)
+            if app.state.restore_blocked:
+                emit("RESTORE_MAINTENANCE_REQUIRED")
+                try:
+                    yield
+                finally:
+                    loop.set_exception_handler(previous_handler)
+                return
             resolved.validate_production_runtime()
             engine = make_engine(resolved.database_path)
             head = _verify_schema(engine)
@@ -356,6 +365,16 @@ def create_app(
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
     app.add_middleware(AuthBodyLimit)
+
+    @app.middleware("http")
+    async def isolate_restore(request, call_next):
+        if getattr(request.app.state, "restore_blocked", False):
+            if request.url.path.startswith("/api/"):
+                return error_response(AuthError("SERVICE_UNAVAILABLE", 503))
+            if request.url.path == "/readyz":
+                return JSONResponse(status_code=503, content={"status": "not_ready"})
+        return await call_next(request)
+
     app.add_middleware(CompletionLog)
 
     @app.exception_handler(AuthError)
