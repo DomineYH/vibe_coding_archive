@@ -64,6 +64,7 @@ from app.password_policy import load_blocklist
 from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
+from app.safe_logging import CompletionLog, background_error
 from app.settings import ConfigurationError, Settings
 from app.user_deletion_ledger import prepare as prepare_user_delete
 
@@ -183,6 +184,9 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        loop = asyncio.get_running_loop()
+        previous_handler = loop.get_exception_handler()
+        loop.set_exception_handler(background_error)
         engine = None
         try:
             resolved = Settings.model_validate(
@@ -346,10 +350,12 @@ def create_app(
             with suppress(asyncio.CancelledError):
                 await maintenance
             engine.dispose()
+            loop.set_exception_handler(previous_handler)
 
     app = FastAPI(lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 
     app.add_middleware(AuthBodyLimit)
+    app.add_middleware(CompletionLog)
 
     @app.exception_handler(AuthError)
     def handle_auth_error(request, error):

@@ -16,6 +16,7 @@ def make_engine(path: Path, *, poolclass=None) -> Engine:
         URL.create("sqlite", database=str(path)),
         connect_args={"check_same_thread": False, "timeout": 5},
         poolclass=poolclass,
+        hide_parameters=True,
     )
 
     @event.listens_for(engine, "connect")

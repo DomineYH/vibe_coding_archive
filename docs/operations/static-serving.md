@@ -167,3 +167,5 @@ mock cards. Teardown stops owned processes before deleting temporary files.
 The work-order WSL has no nginx. Local Nginx execution is **NOT RUN**, with a
 nonzero missing-tool diagnostic. Runtime RED/GREEN and release acceptance stay
 pending actual CI execution; implemented assertions are not PASS evidence.
+
+T06's [safe logging and local retention contract](logging-retention.md) supersedes the disabled-access-log and raw Uvicorn examples above: deployment render values now require private `LOG_ROOT`, and the supported API entrypoint is `python -m app.api`.

@@ -3,6 +3,7 @@ import {
   chmod,
   cp,
   mkdir,
+  open,
   readFile,
   realpath,
   rm,
@@ -31,12 +32,14 @@ const tokens = [
   "TLS_CERTIFICATE",
   "TLS_CERTIFICATE_KEY",
   "RUNTIME_ROOT",
+  "LOG_ROOT",
 ];
 const paths = [
   "RELEASE_ROOT",
   "TLS_CERTIFICATE",
   "TLS_CERTIFICATE_KEY",
   "RUNTIME_ROOT",
+  "LOG_ROOT",
 ];
 const port = (value) => /^[1-9]\d*$/.test(value) && Number(value) <= 65535;
 
@@ -54,6 +57,11 @@ export function renderNginx(template, values) {
     )
       throw new Error(`Unsafe template value: ${name}`);
   }
+  if (
+    values.LOG_ROOT === values.RELEASE_ROOT ||
+    values.LOG_ROOT.startsWith(`${values.RELEASE_ROOT}/`)
+  )
+    throw new Error("Unsafe template value: LOG_ROOT");
   if (
     !/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/.test(values.SERVER_NAME) ||
     values.SERVER_NAME.includes("..")
@@ -145,6 +153,7 @@ export async function prepareNginx(parent) {
     TLS_CERTIFICATE: cert,
     TLS_CERTIFICATE_KEY: key,
     RUNTIME_ROOT: path.join(directory, "nginx-runtime"),
+    LOG_ROOT: path.join(directory, "logs"),
   };
   const file = path.join(directory, "nginx-values.json");
   await writeFile(file, JSON.stringify(values), { mode: 0o600, flag: "wx" });
@@ -152,6 +161,7 @@ export async function prepareNginx(parent) {
     API_E2E_NGINX_VALUES: file,
     API_E2E_RELEASE_ROOT: release,
     API_E2E_UPSTREAM_PID: path.join(directory, "upstream.pid"),
+    API_E2E_LOG_ROOT: values.LOG_ROOT,
   };
 }
 
@@ -196,6 +206,13 @@ export async function startNginx(values) {
   };
   for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, onSignal);
   try {
+    await mkdir(values.LOG_ROOT, { mode: 0o700 }).catch((error) => {
+      if (error.code !== "EEXIST") throw error;
+    });
+    await writeFile(path.join(values.LOG_ROOT, "nginx-access.log"), "", {
+      mode: 0o600,
+      flag: "wx",
+    });
     const config = path.join(values.RUNTIME_ROOT, "nginx.conf");
     await writeFile(config, rendered, { mode: 0o600, flag: "wx" });
     const args = ["-p", `${values.RUNTIME_ROOT}/`, "-c", config];
@@ -252,6 +269,16 @@ async function main() {
       "Nginx harness requires the isolated --nginx test environment.",
     );
   if (process.argv[2] === "--upstream") {
+    await mkdir(process.env.API_E2E_LOG_ROOT, { mode: 0o700 }).catch(
+      (error) => {
+        if (error.code !== "EEXIST") throw error;
+      },
+    );
+    const log = await open(
+      path.join(process.env.API_E2E_LOG_ROOT, "upstream.log"),
+      "wx",
+      0o600,
+    );
     const child = spawn(
       "uv",
       [
@@ -259,14 +286,18 @@ async function main() {
         "--frozen",
         "python",
         "-c",
-        `import os, uvicorn
+        `import os
+from app.api import run
 fd = os.open(os.environ['API_E2E_UPSTREAM_PID'], os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
 with os.fdopen(fd, 'w') as handle:
     handle.write(str(os.getpid()))
-uvicorn.run('tests.auth_server:app', host='127.0.0.1', port=8000, proxy_headers=True, forwarded_allow_ips='127.0.0.1', access_log=False)
+raise SystemExit(run('tests.auth_server:app'))
 `,
       ],
-      { cwd: path.resolve(frontend, "../backend"), stdio: "inherit" },
+      {
+        cwd: path.resolve(frontend, "../backend"),
+        stdio: ["ignore", log.fd, log.fd],
+      },
     );
     const exited = new Promise((resolve, reject) => {
       child.once("error", reject);
@@ -278,6 +309,7 @@ uvicorn.run('tests.auth_server:app', host='127.0.0.1', port=8000, proxy_headers=
     try {
       process.exitCode = (await exited) ?? 1;
     } finally {
+      await log.close();
       await rm(process.env.API_E2E_UPSTREAM_PID, { force: true });
     }
     return;

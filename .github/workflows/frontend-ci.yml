@@ -69,6 +69,11 @@ jobs:
       - name: Native HTTPS Nginx serving contracts
         working-directory: frontend
         run: npm run test:e2e:api -- --nginx e2e-api/static-serving.spec.js
+      - name: Safe process logging and local retention contracts
+        working-directory: backend
+        env:
+          HEALTH_CHECKS_ENABLED: "false"
+        run: APP_ENV=test uv run --frozen pytest tests/test_safe_logging.py tests/test_purge_expired.py -ra
       - name: API end-to-end tests
         working-directory: frontend
         run: npm run test:e2e:api

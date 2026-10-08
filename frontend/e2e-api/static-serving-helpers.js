@@ -90,3 +90,51 @@ export function wire(
     });
   });
 }
+
+// Private captures stay in memory; never attach them to Playwright reports.
+export async function safeLogCaptures() {
+  const { readFile } = await import("node:fs/promises");
+  const path = await import("node:path");
+  return Promise.all(
+    ["nginx-access.log", "upstream.log"].map((name) =>
+      readFile(path.join(process.env.API_E2E_LOG_ROOT, name), "utf8"),
+    ),
+  );
+}
+
+export async function withDatabaseWriteLock(operation) {
+  const { spawn } = await import("node:child_process");
+  const child = spawn(
+    "uv",
+    [
+      "run",
+      "--frozen",
+      "python",
+      "-c",
+      `import os, sqlite3, sys
+with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
+    db.execute('BEGIN IMMEDIATE')
+    print('LOCKED', flush=True)
+    sys.stdin.read(1)
+`,
+    ],
+    { cwd: "../backend", stdio: ["pipe", "pipe", "ignore"], env: process.env },
+  );
+  const exited = new Promise((resolve) => child.once("exit", resolve));
+  try {
+    await new Promise((resolve, reject) => {
+      child.once("error", () => reject(new Error("test database lock failed")));
+      child.once("exit", () =>
+        reject(new Error("test database lock exited early")),
+      );
+      child.stdout.once("data", (data) => {
+        if (data.toString().trim() === "LOCKED") resolve();
+        else reject(new Error("test database lock failed"));
+      });
+    });
+    return await operation();
+  } finally {
+    child.stdin.end("x");
+    await exited;
+  }
+}
