@@ -179,6 +179,8 @@ test.describe("connection checks over real API, queue and worker", () => {
           exact: true,
         }),
       });
+    await page.getByRole("button", { name: /추가 앱 불러오기/ }).click();
+    await expect(row).toBeVisible();
     const accepted = page.waitForResponse(
       (response) =>
         response.url().endsWith(`/apps/${app.id}/health-checks`) &&
