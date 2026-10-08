@@ -447,6 +447,7 @@ test("enforces single and aggregate header budgets", async ({ page }) => {
           );
       } else {
         expect([400, 414, 431]).toContain(result.status);
+        expect(result.response.includes("<center>nginx</center>")).toBe(true);
         expect(query("SELECT count(*) FROM auth_flows")).toEqual(before);
       }
     }
@@ -464,6 +465,7 @@ test("enforces single and aggregate header budgets", async ({ page }) => {
           expect(result.status).toBe(method === "GET" ? 200 : 201);
         else {
           expect([400, 414, 431]).toContain(result.status);
+          expect(result.response.includes("<center>nginx</center>")).toBe(true);
           expect(query("SELECT count(*) FROM auth_flows")).toEqual(before);
         }
       }

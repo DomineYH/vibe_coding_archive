@@ -127,7 +127,7 @@ They require CI wire confirmation against the recorded distribution version.
 The smoke includes ordinary product cookies, an accepted ~12 KiB request with
 four fields smaller than 4 KiB, single-field 8 KiB boundaries, aggregate 16 KiB
 boundaries, varied order/count, fragmented writes, GET and side-effecting POST.
-Rejected POSTs must leave the flow count unchanged. Backend HeadersTooLarge is
+Rejections must carry the native Nginx error body (upstream errors are not intercepted); rejected POSTs must leave the flow count unchanged. Backend HeadersTooLarge is
 an outbound health-probe response limit and does not limit these inbound headers.
 HTTP/2 is deliberately not enabled or claimed by this template/harness.
 
