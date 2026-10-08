@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import sqlite3
 import sys
 from datetime import UTC, datetime
@@ -320,6 +321,13 @@ def _safe_guidance(error):
 
 def main() -> int:
     install()
+    command = sys.argv[1] if len(sys.argv) > 1 else None
+    fixed_output = command in ("backup-db", "sweep-pending", "invalidate-restored-auth")
+    if fixed_output:
+        # Preserve existing fixed CLI protocols without library diagnostics.
+        logging.getLogger().handlers[0].addFilter(
+            lambda record: record.name == "eduvibe.safe"
+        )
     try:
         result = _main()
     except ConfigurationError:
@@ -328,7 +336,7 @@ def main() -> int:
     except Exception:  # noqa: BLE001 - Never expose process exception text.
         emit("CLI_FAILED")
         return 1
-    if sys.argv[1:2] != ["backup-db"]:
+    if not fixed_output:
         emit("CLI_COMPLETED" if result in (0, 3) else "CLI_FAILED")
     return result
 
