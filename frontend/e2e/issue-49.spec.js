@@ -384,6 +384,11 @@ test("signup through approval, app health, account deletion, and reset works as 
   await expect(member).toHaveCount(1);
   await expect(member).toContainText("등록 앱 1개");
   await member.getByRole("button", { name: "삭제", exact: true }).click();
+  await expect(page).toHaveURL("/admin");
+  await page
+    .getByRole("region", { name: /계정 삭제 확인|계정을 삭제할까요/ })
+    .getByRole("button", { name: "삭제 확인", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
   const reauth = page.locator('[data-screen-label="관리자 재인증"]');
   const reauthForm = reauth.locator("form");

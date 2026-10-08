@@ -208,16 +208,6 @@ for (const viewport of viewports) {
     await capture(page, "admin-approval-confirm", viewport, testInfo);
 
     await pendingRow.getByRole("button", { name: "삭제", exact: true }).click();
-    await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-    const deleteReauth = page.locator('[data-screen-label="관리자 재인증"]');
-    const deleteReauthForm = deleteReauth.locator("form");
-    await expect(deleteReauthForm).toBeVisible();
-    await deleteReauth
-      .getByLabel("현재 관리자 비밀번호", { exact: true })
-      .fill("admin123");
-    await deleteReauthForm
-      .getByRole("button", { name: "본인 확인", exact: true })
-      .click();
     await expect(page).toHaveURL("/admin");
     const deletePanel = page.getByRole("region", {
       name: /비기너개발자 계정을 삭제할까요/,
@@ -246,6 +236,28 @@ for (const viewport of viewports) {
     await member
       .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
       .click();
+    await expect(page).toHaveURL("/admin");
+    const resetPanel = page.getByRole("region", {
+      name: /임시 비밀번호 초기화 확인/,
+    });
+    const temporaryPassword = "Visual temporary password for issue 44!";
+    expect(
+      await page.evaluate(
+        (key) =>
+          JSON.parse(localStorage.getItem(key)).principal_session
+            .recent_auth_until,
+        mockStorageKey,
+      ),
+    ).toBeNull();
+    await resetPanel
+      .getByLabel("임시 비밀번호", { exact: true })
+      .fill(temporaryPassword);
+    await resetPanel
+      .getByLabel("임시 비밀번호 확인", { exact: true })
+      .fill(temporaryPassword);
+    await resetPanel
+      .getByRole("button", { name: "초기화 확인", exact: true })
+      .click();
     await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
     await expect(
       page.locator('[data-screen-label="관리자 재인증"]'),
@@ -272,15 +284,17 @@ for (const viewport of viewports) {
       .getByRole("button", { name: "본인 확인", exact: true })
       .click();
     await expect(page).toHaveURL("/admin");
-    const resetPanel = page.getByRole("region", {
-      name: /임시 비밀번호 초기화 확인/,
-    });
     await expect(
       resetPanel.getByLabel("임시 비밀번호", { exact: true }),
-    ).toBeVisible();
+    ).toHaveValue("");
+    await expect(
+      resetPanel.getByLabel("임시 비밀번호 확인", { exact: true }),
+    ).toHaveValue("");
+    await expect(
+      resetPanel.getByRole("button", { name: "초기화 확인", exact: true }),
+    ).toBeEnabled();
     await capture(page, "admin-password-reset-form", viewport, testInfo);
 
-    const temporaryPassword = "Visual temporary password for issue 44!";
     await page.evaluate((key) => {
       const state = JSON.parse(localStorage.getItem(key));
       localStorage.setItem(
@@ -320,20 +334,10 @@ for (const viewport of viewports) {
     await member
       .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
       .click();
-    await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-    const secondReauth = page.locator('[data-screen-label="관리자 재인증"]');
-    const secondForm = secondReauth.locator("form");
-    await expect(secondForm).toBeVisible();
-    await secondReauth
-      .getByLabel("현재 관리자 비밀번호", { exact: true })
-      .fill("admin123");
-    await secondForm
-      .getByRole("button", { name: "본인 확인", exact: true })
-      .click();
     await expect(page).toHaveURL("/admin");
     await expect(
       resetPanel.getByLabel("임시 비밀번호", { exact: true }),
-    ).toBeVisible();
+    ).toHaveValue("");
     await resetPanel
       .getByLabel("임시 비밀번호", { exact: true })
       .fill(temporaryPassword);

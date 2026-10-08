@@ -1053,6 +1053,8 @@ export function AdminView({
   const [resetOperationExpired, setResetOperationExpired] = useState(false);
   const [deleteOperationExpired, setDeleteOperationExpired] = useState(false);
   const alive = useRef(true);
+  // Saving resume can render the outgoing view before navigation commits.
+  const reauthenticating = useRef(false);
   const detailRequest = useRef(0);
   const pendingSelection = useRef(selection);
   pendingSelection.current = selection;
@@ -1345,102 +1347,111 @@ export function AdminView({
     };
   }, []);
 
+  const openResetPanel = useCallback(
+    (
+      targetId,
+      operationKey = null,
+      expectedAccountVersion = null,
+      consumeResume = false,
+    ) => {
+      const request = ++resetDetailRequest.current;
+      ++detailRequest.current;
+      ++deleteDetailRequest.current;
+      onRememberDelete?.(null);
+      setDeleteSelection(null);
+      setSelection(null);
+      setResetError("");
+      setResetBusy(false);
+      setResetOperationExpired(false);
+      setResetSelection({
+        id: targetId,
+        target: null,
+        loading: true,
+        operationKey,
+        expectedAccountVersion,
+        operation: null,
+      });
+
+      void (async () => {
+        let operation = null;
+        let operationError = null;
+        if (operationKey) {
+          try {
+            operation =
+              await adminService.getPasswordResetOperation(operationKey);
+          } catch (error) {
+            operationError = error;
+          }
+        }
+        if (!alive.current || request !== resetDetailRequest.current) return;
+        try {
+          const target = await adminService.getUser(targetId);
+          if (!alive.current || request !== resetDetailRequest.current) return;
+          if (consumeResume) onConsumeResume?.();
+          setResetSelection({
+            id: targetId,
+            target,
+            loading: false,
+            operationKey,
+            expectedAccountVersion,
+            operation,
+          });
+          if (operation?.state === "succeeded") await refetchResetList();
+          if (!alive.current || request !== resetDetailRequest.current) return;
+          if (operationError) {
+            if (
+              operationError instanceof ServiceError &&
+              operationError.code === "OPERATION_EXPIRED"
+            )
+              setResetOperationExpired(true);
+            setResetError(resetOperationMessage(operationError));
+          }
+        } catch (error) {
+          if (!alive.current || request !== resetDetailRequest.current) return;
+          if (consumeResume) onConsumeResume?.();
+          setResetSelection({
+            id: targetId,
+            target: null,
+            loading: false,
+            operationKey,
+            expectedAccountVersion,
+            operation,
+            error:
+              error instanceof Error
+                ? error.message
+                : "대상을 확인할 수 없어요.",
+          });
+          if (operation?.state === "succeeded") await refetchResetList();
+          if (!alive.current || request !== resetDetailRequest.current) return;
+          if (operationError) {
+            if (
+              operationError instanceof ServiceError &&
+              operationError.code === "OPERATION_EXPIRED"
+            )
+              setResetOperationExpired(true);
+            setResetError(resetOperationMessage(operationError));
+          }
+        }
+      })();
+    },
+    [onConsumeResume, onRememberDelete, refetchResetList],
+  );
+
   useEffect(() => {
-    if (!active) ++resetDetailRequest.current;
     const resume =
-      active && !route.invalid && tab === "users"
+      active && !reauthenticating.current && !route.invalid && tab === "users"
         ? resumeState?.adminReset
         : null;
     if (!resume || typeof resume.targetId !== "string") return;
-    const targetId = resume.targetId;
-    const operationKey =
-      typeof resume.operationKey === "string" ? resume.operationKey : null;
-    const expectedAccountVersion = Number.isSafeInteger(
-      resume.expectedAccountVersion,
-    )
-      ? resume.expectedAccountVersion
-      : null;
-    const request = ++resetDetailRequest.current;
-    setSelection(null);
-    setResetError("");
-    setResetBusy(false);
-    setResetOperationExpired(false);
-    setResetSelection({
-      id: targetId,
-      target: null,
-      loading: true,
-      operationKey,
-      expectedAccountVersion,
-      operation: null,
-    });
-
-    void (async () => {
-      let operation = null;
-      let operationError = null;
-      if (operationKey) {
-        try {
-          operation =
-            await adminService.getPasswordResetOperation(operationKey);
-        } catch (error) {
-          operationError = error;
-        }
-      }
-      if (!alive.current || request !== resetDetailRequest.current) return;
-      try {
-        const target = await adminService.getUser(targetId);
-        if (!alive.current || request !== resetDetailRequest.current) return;
-        onConsumeResume?.();
-        setResetSelection({
-          id: targetId,
-          target,
-          loading: false,
-          operationKey,
-          expectedAccountVersion,
-          operation,
-        });
-        if (operation?.state === "succeeded") await refetchResetList();
-        if (!alive.current || request !== resetDetailRequest.current) return;
-        if (operationError) {
-          if (
-            operationError instanceof ServiceError &&
-            operationError.code === "OPERATION_EXPIRED"
-          )
-            setResetOperationExpired(true);
-          setResetError(resetOperationMessage(operationError));
-        }
-      } catch (error) {
-        if (!alive.current || request !== resetDetailRequest.current) return;
-        onConsumeResume?.();
-        setResetSelection({
-          id: targetId,
-          target: null,
-          loading: false,
-          operationKey,
-          expectedAccountVersion,
-          operation,
-          error:
-            error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
-        });
-        if (operation?.state === "succeeded") await refetchResetList();
-        if (!alive.current || request !== resetDetailRequest.current) return;
-        if (operationError) {
-          if (
-            operationError instanceof ServiceError &&
-            operationError.code === "OPERATION_EXPIRED"
-          )
-            setResetOperationExpired(true);
-          setResetError(resetOperationMessage(operationError));
-        }
-      }
-    })();
-  }, [
-    active,
-    resumeState,
-    onConsumeResume,
-    refetchResetList,
-    route.invalid,
-    tab,
-  ]);
+    openResetPanel(
+      resume.targetId,
+      typeof resume.operationKey === "string" ? resume.operationKey : null,
+      Number.isSafeInteger(resume.expectedAccountVersion)
+        ? resume.expectedAccountVersion
+        : null,
+      true,
+    );
+  }, [active, resumeState, route.invalid, tab, openResetPanel]);
 
   const refreshAfterDelete = useCallback(
     async (request, owner, id) => {
@@ -1484,101 +1495,114 @@ export function AdminView({
     [ownsDelete, queryClient, scopeKey],
   );
 
+  const openDeletePanel = useCallback(
+    (
+      targetId,
+      operationKey = null,
+      expectedAppCount = null,
+      consumeResume = false,
+    ) => {
+      const request = ++deleteDetailRequest.current;
+      const owner = scopeKey;
+      deleteOwner.current.id = targetId;
+      ++detailRequest.current;
+      ++resetDetailRequest.current;
+      onRememberDelete?.(null);
+      setSelection(null);
+      setResetSelection(null);
+      setDeleteError("");
+      setDeleteBusy(false);
+      setDeleteOperationExpired(false);
+      setDeleteSelection({
+        id: targetId,
+        target: null,
+        loading: true,
+        operationKey,
+        expectedAppCount,
+        operation: null,
+      });
+
+      void (async () => {
+        let operation = null;
+        let operationError = null;
+        if (operationKey) {
+          try {
+            operation = checkedDeleteResult(
+              await adminService.getUserDeleteOperation(operationKey),
+              operationKey,
+              targetId,
+            );
+          } catch (error) {
+            operationError = error;
+          }
+        }
+        if (!ownsDelete(request, owner)) return;
+        try {
+          const target = await adminService.getUser(targetId);
+          if (!ownsDelete(request, owner, targetId)) return;
+          if (consumeResume) onConsumeResume?.();
+          setDeleteSelection({
+            id: targetId,
+            target,
+            loading: false,
+            operationKey,
+            expectedAppCount:
+              expectedAppCount ?? (operationKey ? null : target.appCount),
+            refreshRequired: Boolean(
+              operationKey && expectedAppCount !== target.appCount,
+            ),
+            operation,
+          });
+        } catch (error) {
+          if (!ownsDelete(request, owner, targetId)) return;
+          if (consumeResume) onConsumeResume?.();
+          setDeleteSelection({
+            id: targetId,
+            target: null,
+            loading: false,
+            operationKey,
+            expectedAppCount,
+            operation,
+            error:
+              error instanceof Error
+                ? error.message
+                : "대상을 확인할 수 없어요.",
+          });
+        }
+        if (!ownsDelete(request, owner, targetId)) return;
+        if (["succeeded", "confirming_deletion"].includes(operation?.state))
+          await refreshAfterDelete(request, owner, targetId);
+        if (!ownsDelete(request, owner, targetId)) return;
+        if (operationError) {
+          markDeleteExpired(operationError);
+          setDeleteError(deleteOperationMessage(operationError));
+        }
+      })();
+    },
+    [
+      onConsumeResume,
+      onRememberDelete,
+      scopeKey,
+      ownsDelete,
+      refreshAfterDelete,
+    ],
+  );
+
   useEffect(() => {
-    if (!active || route.invalid || tab !== "users")
-      ++deleteDetailRequest.current;
     const resume =
-      active && !route.invalid && tab === "users"
+      active && !reauthenticating.current && !route.invalid && tab === "users"
         ? resumeState?.adminDelete
         : null;
     if (!resume || typeof resume.targetId !== "string") return;
-    const targetId = resume.targetId;
-    const operationKey =
-      typeof resume.operationKey === "string" ? resume.operationKey : null;
-    const expectedAppCount = Number.isSafeInteger(resume.expectedAppCount)
-      ? resume.expectedAppCount
-      : null;
-    const request = ++deleteDetailRequest.current;
-    const owner = scopeKey;
-    deleteOwner.current.id = targetId;
-    setSelection(null);
-    setResetSelection(null);
-    setDeleteError("");
-    setDeleteBusy(false);
-    setDeleteOperationExpired(false);
-    setDeleteSelection({
-      id: targetId,
-      target: null,
-      loading: true,
-      operationKey,
-      expectedAppCount,
-      operation: null,
-    });
-
-    void (async () => {
-      let operation = null;
-      let operationError = null;
-      if (operationKey) {
-        try {
-          operation = checkedDeleteResult(
-            await adminService.getUserDeleteOperation(operationKey),
-            operationKey,
-            targetId,
-          );
-        } catch (error) {
-          operationError = error;
-        }
-      }
-      if (!ownsDelete(request, owner)) return;
-      try {
-        const target = await adminService.getUser(targetId);
-        if (!ownsDelete(request, owner, targetId)) return;
-        onConsumeResume?.();
-        setDeleteSelection({
-          id: targetId,
-          target,
-          loading: false,
-          operationKey,
-          expectedAppCount:
-            expectedAppCount ?? (operationKey ? null : target.appCount),
-          refreshRequired: Boolean(
-            operationKey && expectedAppCount !== target.appCount,
-          ),
-          operation,
-        });
-      } catch (error) {
-        if (!ownsDelete(request, owner, targetId)) return;
-        onConsumeResume?.();
-        setDeleteSelection({
-          id: targetId,
-          target: null,
-          loading: false,
-          operationKey,
-          expectedAppCount,
-          operation,
-          error:
-            error instanceof Error ? error.message : "대상을 확인할 수 없어요.",
-        });
-      }
-      if (!ownsDelete(request, owner, targetId)) return;
-      if (["succeeded", "confirming_deletion"].includes(operation?.state))
-        await refreshAfterDelete(request, owner, targetId);
-      if (!ownsDelete(request, owner, targetId)) return;
-      if (operationError) {
-        markDeleteExpired(operationError);
-        setDeleteError(deleteOperationMessage(operationError));
-      }
-    })();
-  }, [
-    active,
-    resumeState,
-    onConsumeResume,
-    scopeKey,
-    route.invalid,
-    tab,
-    ownsDelete,
-    refreshAfterDelete,
-  ]);
+    openDeletePanel(
+      resume.targetId,
+      typeof resume.operationKey === "string" ? resume.operationKey : null,
+      Number.isSafeInteger(resume.expectedAppCount)
+        ? resume.expectedAppCount
+        : null,
+      true,
+    );
+  }, [active, resumeState, route.invalid, tab, openDeletePanel]);
 
   async function openApproval(user) {
     if (resetPending) return;
@@ -1616,6 +1640,7 @@ export function AdminView({
     operationKey = null,
     expectedAccountVersion = null,
   ) {
+    reauthenticating.current = true;
     ++resetDetailRequest.current;
     ++detailRequest.current;
     setBusy(false);
@@ -1639,6 +1664,7 @@ export function AdminView({
     operationKey = null,
     expectedAppCount = null,
   ) {
+    reauthenticating.current = true;
     ++deleteDetailRequest.current;
     ++detailRequest.current;
     ++resetDetailRequest.current;
@@ -1661,12 +1687,13 @@ export function AdminView({
   }
 
   function beginPasswordReset(targetId) {
-    if (!resetPending) startResetReauthentication(targetId);
+    if (!busy && !resetBusy && !resetPending && !deletePending && !deleteBusy)
+      openResetPanel(targetId);
   }
 
   function beginUserDelete(targetId) {
     if (!busy && !resetBusy && !resetPending && !deletePending && !deleteBusy)
-      startDeleteReauthentication(targetId);
+      openDeletePanel(targetId);
   }
 
   function checkedDeleteResult(operation, key, id) {

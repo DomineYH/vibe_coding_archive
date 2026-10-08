@@ -27,18 +27,18 @@ function userDeletePanel(page) {
   });
 }
 
-async function deleteAfterReauthentication(page, nickname) {
+async function authenticateAdmin(page) {
+  await page.evaluate(async () => {
+    const { authService } = await import("/src/services/mock/auth.ts");
+    await authService.reauthenticate({ password: "admin123" });
+  });
+}
+
+async function openUserDelete(page, nickname) {
+  await authenticateAdmin(page);
   const row = userRow(page, nickname);
   await expect(row).toHaveCount(1);
   await row.getByRole("button", { name: "삭제", exact: true }).click();
-  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
-  const form = reauth.locator("form");
-  await expect(form).toBeVisible();
-  await reauth
-    .getByLabel("현재 관리자 비밀번호", { exact: true })
-    .fill("admin123");
-  await form.getByRole("button", { name: "본인 확인", exact: true }).click();
   await expect(page).toHaveURL("/admin");
   const panel = userDeletePanel(page);
   await expect(panel).toContainText(`${nickname} 계정을 삭제할까요?`);
@@ -189,6 +189,12 @@ test("member password reset requires reauthentication and an explicit submit", a
     .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
     .click();
 
+  await expect(page).toHaveURL("/admin");
+  await page
+    .getByLabel("임시 비밀번호", { exact: true })
+    .fill(temporaryPassword);
+  await page.getByLabel("임시 비밀번호 확인").fill(temporaryPassword);
+  await page.getByRole("button", { name: "초기화 확인", exact: true }).click();
   await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
   expect(page.url()).not.toContain(MEMBER_ID);
   const reauth = page.locator('[data-screen-label="관리자 재인증"]');
@@ -331,6 +337,10 @@ test("member deletion reauthenticates, preserves cancellation, and removes owned
   await deleteButton.focus();
   await expect(deleteButton).toBeFocused();
   await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/admin");
+  await userDeletePanel(page)
+    .getByRole("button", { name: "삭제 확인", exact: true })
+    .click();
   await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
   const reauth = page.locator('[data-screen-label="관리자 재인증"]');
   const reauthForm = reauth.locator("form");
@@ -357,7 +367,7 @@ test("member deletion reauthenticates, preserves cancellation, and removes owned
   await expect(statistics.getByText("7", { exact: true })).toBeVisible();
   await expect(statistics.getByText("17", { exact: true })).toBeVisible();
 
-  panel = (await deleteAfterReauthentication(page, "교사김코딩")).panel;
+  panel = (await openUserDelete(page, "교사김코딩")).panel;
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText(
     `소유 앱 ${appCount}개 삭제가 확정됐어요`,
@@ -391,7 +401,7 @@ test("app-count conflict requires an explicit current-member refresh", async ({
 }) => {
   await login(page, "admin", "admin123");
   await page.goto("/admin");
-  const { panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const { panel } = await openUserDelete(page, "교사김코딩");
   const row = userRow(page, "교사김코딩");
   const originalAppCount = Number(
     (await row.innerText()).match(/등록 앱 (\d+)개/)[1],
@@ -432,7 +442,7 @@ test("unknown deletion result needs lookup and an explicit same-key retry", asyn
 }) => {
   await login(page, "admin", "admin123");
   await page.goto("/admin");
-  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const { row, panel } = await openUserDelete(page, "교사김코딩");
   await page.evaluate(async () => {
     const { adminService } = await import("/src/services/mock/admin.ts");
     const { ServiceError } = await import("/src/services/service-error.ts");
@@ -478,7 +488,7 @@ test("a lost delete response is resolved with its issued key without replay", as
   });
   await login(page, "admin", "admin123");
   await page.goto("/admin");
-  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const { row, panel } = await openUserDelete(page, "교사김코딩");
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText("삭제가 확정됐어요");
   await expect(row).toHaveCount(0);
@@ -507,7 +517,7 @@ test("pending deletion confirmation stays distinct and resolves by its known key
   });
   await login(page, "admin", "admin123");
   await page.goto("/admin");
-  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const { row, panel } = await openUserDelete(page, "교사김코딩");
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
   await expect(panel.getByRole("status")).toContainText(
     "삭제는 반영됐고 별도 확인을 기다리고 있어요",
@@ -537,7 +547,7 @@ test("reauthenticating an expired recent-auth delete preserves its key without r
 }) => {
   await login(page, "admin", "admin123");
   await page.goto("/admin");
-  const { row, panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const { row, panel } = await openUserDelete(page, "교사김코딩");
   await page.evaluate(async () => {
     const { adminService } = await import("/src/services/mock/admin.ts");
     const { ServiceError } = await import("/src/services/service-error.ts");
@@ -603,7 +613,7 @@ test("a delayed delete cannot apply after the admin permission changes", async (
   });
   await login(page, "admin", "admin123");
   await page.goto("/admin");
-  const { panel } = await deleteAfterReauthentication(page, "교사김코딩");
+  const { panel } = await openUserDelete(page, "교사김코딩");
   const pauseTime = await page.evaluate(() => Date.now() + 50);
   await page.clock.pauseAt(pauseTime);
   await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
@@ -642,20 +652,11 @@ test("unknown password-reset results require explicit query, same-key retry, or 
   }, STORAGE_KEY);
   await login(page, "admin", "admin123");
   await page.goto("/admin");
+  await authenticateAdmin(page);
   const row = userRow(page, "교사김코딩");
   await expect(row).toHaveCount(1);
   await row
     .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
-  const reauthForm = reauth.locator("form");
-  await expect(reauthForm).toBeVisible();
-  await reauth
-    .getByLabel("현재 관리자 비밀번호", { exact: true })
-    .fill("admin123");
-  await reauthForm
-    .getByRole("button", { name: "본인 확인", exact: true })
     .click();
   await expect(page).toHaveURL("/admin");
 
@@ -738,20 +739,11 @@ test("a lost reset response stays unknown until the member operation is read", a
   }, STORAGE_KEY);
   await login(page, "admin", "admin123");
   await page.goto("/admin");
+  await authenticateAdmin(page);
   const row = userRow(page, "교사김코딩");
   await expect(row).toHaveCount(1);
   await row
     .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
-  const reauthForm = reauth.locator("form");
-  await expect(reauthForm).toBeVisible();
-  await reauth
-    .getByLabel("현재 관리자 비밀번호", { exact: true })
-    .fill("admin123");
-  await reauthForm
-    .getByRole("button", { name: "본인 확인", exact: true })
     .click();
   await expect(page).toHaveURL("/admin");
 
@@ -818,20 +810,11 @@ test("a delayed password reset is rejected after the admin session changes", asy
   }, STORAGE_KEY);
   await login(page, "admin", "admin123");
   await page.goto("/admin");
+  await authenticateAdmin(page);
   const row = userRow(page, "교사김코딩");
   await expect(row).toHaveCount(1);
   await row
     .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-  const reauth = page.locator('[data-screen-label="관리자 재인증"]');
-  const reauthForm = reauth.locator("form");
-  await expect(reauthForm).toBeVisible();
-  await reauth
-    .getByLabel("현재 관리자 비밀번호", { exact: true })
-    .fill("admin123");
-  await reauthForm
-    .getByRole("button", { name: "본인 확인", exact: true })
     .click();
   await expect(page).toHaveURL("/admin");
 
@@ -889,20 +872,11 @@ test("reauthenticating an expired recent-auth reset preserves its key without re
   }, STORAGE_KEY);
   await login(page, "admin", "admin123");
   await page.goto("/admin");
+  await authenticateAdmin(page);
   const row = userRow(page, "교사김코딩");
   await expect(row).toHaveCount(1);
   await row
     .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\/auth\?mode=reauth&return_to=%2Fadmin/);
-  const firstReauth = page.locator('[data-screen-label="관리자 재인증"]');
-  const firstForm = firstReauth.locator("form");
-  await expect(firstForm).toBeVisible();
-  await firstReauth
-    .getByLabel("현재 관리자 비밀번호", { exact: true })
-    .fill("admin123");
-  await firstForm
-    .getByRole("button", { name: "본인 확인", exact: true })
     .click();
   await expect(page).toHaveURL("/admin");
 
