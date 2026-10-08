@@ -12,6 +12,7 @@ import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { prepareNginx, requireNginxTools } from "./nginx-serving.mjs";
 
 const frontend = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -48,23 +49,50 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 async function run() {
+  const nginx = process.argv.includes("--nginx");
+  if (
+    nginx &&
+    process.argv
+      .slice(2)
+      .some(
+        (arg) =>
+          /auth-|admin-apps-empty|health-real/.test(arg) ||
+          (/\.spec\.js$/.test(arg) && !arg.endsWith("static-serving.spec.js")),
+      )
+  )
+    throw new Error(
+      "--nginx requires an isolated static-serving run; fault/health/unavailable modes cannot be mixed.",
+    );
+  if (
+    !nginx &&
+    process.argv.some((arg) => arg.includes("static-serving.spec.js"))
+  )
+    throw new Error("static-serving.spec.js requires --nginx.");
+  if (nginx) requireNginxTools();
   await requireFreePort(8000, "127.0.0.1");
-  await requireFreePort(5174, "localhost");
+  if (nginx) {
+    await requireFreePort(8080, "0.0.0.0");
+    await requireFreePort(8443, "0.0.0.0");
+  } else await requireFreePort(5174, "localhost");
 
   const temporary = await mkdtemp(path.join(os.tmpdir(), "eduvibe-api-e2e-"));
   const emptyOnly = process.argv.includes("--admin-apps-empty");
   const arguments_ = process.argv
     .slice(2)
     .filter(
-      (arg) => arg !== "--auth-unavailable" && arg !== "--admin-apps-empty",
+      (arg) =>
+        arg !== "--auth-unavailable" &&
+        arg !== "--admin-apps-empty" &&
+        arg !== "--nginx",
     );
   const authPrepared =
-    !process.argv.includes("--auth-unavailable") &&
-    arguments_.some((arg) =>
-      /health-real|auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
-        arg,
-      ),
-    );
+    nginx ||
+    (!process.argv.includes("--auth-unavailable") &&
+      arguments_.some((arg) =>
+        /health-real|auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+          arg,
+        ),
+      ));
   const env = {
     ...process.env,
     APP_ENV: "test",
@@ -73,13 +101,21 @@ async function run() {
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
     PASSWORD_RESET_HMAC_PATH: path.join(temporary, "reset-hmac.json"),
-    PUBLIC_ORIGIN: "http://localhost:5174",
+    PUBLIC_ORIGIN: nginx ? "https://localhost:8443" : "http://localhost:5174",
+    API_E2E_NGINX: nginx ? "1" : "",
+    ...(nginx
+      ? {
+          HEALTH_CHECKS_ENABLED: "false",
+          HEALTH_ACTIVATION_PATH: path.join(temporary, "no-activation.json"),
+        }
+      : {}),
     AUTH_FAULT_CONTROL: path.join(temporary, "auth-control.sock"),
     AUTH_PROXY_CONTROL: path.join(temporary, "proxy-control.sock"),
     AUTH_PROCESS_CONTROL: path.join(temporary, "process-control.sock"),
   };
 
   try {
+    if (nginx) Object.assign(env, await prepareNginx(temporary));
     const secret = randomBytes(32);
     await writeFile(
       env.PASSWORD_RESET_HMAC_PATH,
@@ -267,11 +303,22 @@ raise SystemExit(status)`,
             },
             emptyRun(["e2e-api/admin-apps-empty.spec.js"]),
           ];
+    const selectedRuns = nginx
+      ? [
+          {
+            arguments_: arguments_.some((arg) => /\.spec\.js$/.test(arg))
+              ? arguments_
+              : ["e2e-api/static-serving.spec.js", ...arguments_],
+            prepared: true,
+            faults: false,
+          },
+        ]
+      : runs;
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
     const capture =
       "change-only card and field errors|registration cards|administrator approval cards|private access states|integration recovery captures";
-    const separated = runs.flatMap((run) => {
+    const separated = selectedRuns.flatMap((run) => {
       if (
         !run.prepared ||
         !run.arguments_.some((arg) =>
