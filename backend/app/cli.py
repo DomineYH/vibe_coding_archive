@@ -206,9 +206,15 @@ def main() -> int:
         from app.backup import main as backup_main
 
         return backup_main(sys.argv[2:])
+    if sys.argv[1:2] in (["restore-db"], ["verify-restore"]):
+        from app.restore import main as restore_main
+
+        return restore_main(sys.argv[1], sys.argv[2:])
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("backup-db", help="create a local encrypted database backup")
+    for command in ("restore-db", "verify-restore"):
+        subparsers.add_parser(command, help="inspect an isolated blocked restore")
     subparsers.add_parser("seed", help="add missing synthetic development data")
     subparsers.add_parser(
         "sweep-pending", help="delete expired initial pending members"

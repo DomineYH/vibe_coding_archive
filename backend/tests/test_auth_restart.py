@@ -199,3 +199,108 @@ def test_real_restart_then_operational_backup_restore_uses_the_current_deletion_
             ]
     finally:
         server.close()
+
+
+from tests.test_restore import (  # noqa: F401
+    backup_case,
+    real_age_case,
+    restore_case,
+    restore_inputs,
+)
+
+
+def test_restore_cli_revokes_every_saved_browser_and_operation_authority(
+    member_app,
+    restore_inputs,  # noqa: F811
+):
+    from app.main import create_app
+    from app.settings import Settings
+    from tests.app_delete_client import delete_key
+    from tests.app_update_client import registered
+    from tests.contracts.test_auth_reauth import execute as reauthenticate
+    from tests.test_backup import environment
+    from tests.test_restore import prepare_live_restore, run_restore
+
+    app, path = member_app()
+    with (
+        TestClient(app) as full_client,
+        TestClient(app) as admin_client,
+        TestClient(app) as anon_client,
+        TestClient(app) as change_client,
+    ):
+        full = signed_in(full_client)
+        admin = signed_in(admin_client, "admin")
+        anonymous = Browser(anon_client).prepare().anonymous()
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "UPDATE members SET must_change_password=1,temporary_password_expires_at=? WHERE id=?",
+                (
+                    (datetime.now(UTC) + timedelta(days=1)).isoformat(),
+                    AUTH_MEMBERS["limited"][0],
+                ),
+            )
+        change = signed_in(change_client, "limited")
+        permit = admin.admit("reauthenticate").json()
+        assert reauthenticate(admin, permit).status_code == 200
+        item = registered(full)
+        key = delete_key(full, item["id"])
+        full.admit("logout")
+        anonymous.admit("login")
+        with sqlite3.connect(path) as db:
+            db.execute(
+                "UPDATE auth_transitions SET state='executing' WHERE state='admitted' AND kind='login'"
+            )
+            original_clocks = db.execute(
+                "SELECT flow_id,issued_seq,expires_at,absolute_expires_at,authenticated_at,recent_auth_until FROM sessions ORDER BY flow_id,issued_seq"
+            ).fetchall()
+            original_reauth = db.execute(
+                "SELECT authenticated_at FROM sessions WHERE member_id=? AND revoked_at IS NULL",
+                (AUTH_MEMBERS["admin"][0],),
+            ).fetchone()
+            assert original_reauth[0] is not None
+            assert {r[0] for r in db.execute("SELECT DISTINCT kind FROM sessions")} == {
+                "anonymous",
+                "full",
+                "change_only",
+            }
+        case = prepare_live_restore(restore_inputs, path)
+        result = run_restore(case)
+        assert result.returncode == 3, result.stderr
+        with sqlite3.connect(case[3]) as db:
+            assert (
+                db.execute(
+                    "SELECT flow_id,issued_seq,expires_at,absolute_expires_at,authenticated_at,recent_auth_until FROM sessions ORDER BY flow_id,issued_seq"
+                ).fetchall()
+                == original_clocks
+            )
+            for table in ("auth_flows", "sessions", "recovery_credentials"):
+                assert (
+                    db.execute(
+                        f"SELECT 1 FROM {table} WHERE revoked_at IS NULL"
+                    ).fetchall()
+                    == []
+                )
+            assert db.execute("SELECT key FROM write_operations").fetchall() == []
+            assert (
+                db.execute(
+                    "SELECT transition_id FROM auth_transitions WHERE terminal_at IS NULL"
+                ).fetchall()
+                == []
+            )
+        blocked = create_app(
+            Settings.from_environment(
+                {**environment(case[0]), "DATABASE_PATH": str(case[3])}
+            ),
+            auth_testing=True,
+        )
+        with TestClient(blocked) as client:
+            for browser in (full, admin, anonymous, change):
+                client.cookies.clear()
+                client.cookies.update(browser.client.cookies)
+                assert (
+                    client.get(
+                        "/api/v1/auth/me", headers=browser.session_headers()
+                    ).status_code
+                    == 503
+                )
+            assert client.get(f"/api/v1/write-operations/{key}").status_code == 503

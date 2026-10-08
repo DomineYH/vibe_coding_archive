@@ -378,3 +378,54 @@ def test_conflicting_independent_payload_never_acknowledges_deletion(member_app)
                 ledger.execute("SELECT * FROM completed_app_delete_events").fetchall()
                 == original
             )
+
+
+from tests.test_restore import (  # noqa: F401
+    backup_case,
+    real_age_case,
+    restore_case,
+    restore_inputs,
+)
+
+
+def test_encrypted_restore_replays_post_backup_app_delete(member_app, restore_inputs):  # noqa: F811
+    from app.main import create_app
+    from app.settings import Settings
+    from tests.test_backup import environment
+    from tests.test_restore import prepare_live_restore, run_restore
+
+    app, path = member_app()
+    with TestClient(app) as client:
+        owner = signed_in(client)
+        item = registered(owner)
+        key = delete_key(owner, item["id"])
+        case = prepare_live_restore(restore_inputs, path)
+        assert delete(owner, item["id"], key).status_code == 204
+        ledger = path.with_suffix(".deletions.sqlite3").read_bytes()
+        assert run_restore(case).returncode == 3
+        assert path.with_suffix(".deletions.sqlite3").read_bytes() == ledger
+        with sqlite3.connect(case[3]) as db:
+            assert (
+                db.execute("SELECT id FROM apps WHERE id=?", (item["id"],)).fetchall()
+                == []
+            )
+            assert db.execute("SELECT * FROM write_operations").fetchall() == []
+            assert db.execute("SELECT app_id FROM app_delete_outbox").fetchall() == [
+                (item["id"],)
+            ]
+        blocked = create_app(
+            Settings.from_environment(
+                {**environment(case[0]), "DATABASE_PATH": str(case[3])}
+            ),
+            auth_testing=True,
+        )
+        with TestClient(blocked) as restarted:
+            restarted.cookies.update(client.cookies)
+            assert restarted.get(f"/api/v1/apps/{item['id']}").status_code == 503
+            assert (
+                restarted.get(
+                    f"/api/v1/write-operations/{key}", headers=owner.session_headers()
+                ).status_code
+                == 503
+            )
+        assert run_restore(case, "verify-restore").returncode == 3

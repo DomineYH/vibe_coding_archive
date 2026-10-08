@@ -456,3 +456,67 @@ def test_actual_process_kill_on_each_side_of_db_commit_recovers_original_key(
                 )
     finally:
         server.close()
+
+
+from tests.test_restore import (  # noqa: F401
+    backup_case,
+    real_age_case,
+    restore_case,
+    restore_inputs,
+)
+
+
+def test_encrypted_restore_replays_post_backup_account_delete(
+    member_app,
+    restore_inputs,  # noqa: F811
+):
+    from app.main import create_app
+    from app.settings import Settings
+    from tests.test_backup import environment
+    from tests.test_restore import prepare_live_restore, run_restore
+
+    app, path = member_app()
+    with TestClient(app) as client, TestClient(app) as owner_client:
+        admin = signed_in(client, "admin")
+        owner = signed_in(owner_client)
+        apps = owned_apps(owner)
+        key = issue(admin, count=2).json()["key"]
+        case = prepare_live_restore(restore_inputs, path)
+        assert execute(admin, key, count=2).status_code == 204
+        before = path.with_suffix(".deletions.sqlite3").read_bytes()
+        result_ = run_restore(case)
+        assert result_.returncode == 3, result_.stderr
+        assert path.with_suffix(".deletions.sqlite3").read_bytes() == before
+        with sqlite3.connect(case[3]) as db:
+            assert (
+                db.execute("SELECT id FROM members WHERE id=?", (TARGET,)).fetchall()
+                == []
+            )
+            assert (
+                db.execute("SELECT id FROM apps WHERE owner_id=?", (TARGET,)).fetchall()
+                == []
+            )
+            assert db.execute("SELECT count(*) FROM user_delete_outbox").fetchone() == (
+                3,
+            )
+            assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+            assert all(
+                db.execute("SELECT id FROM apps WHERE id=?", (a["id"],)).fetchone()
+                is None
+                for a in apps
+            )
+        blocked = create_app(
+            Settings.from_environment(
+                {**environment(case[0]), "DATABASE_PATH": str(case[3])}
+            ),
+            auth_testing=True,
+        )
+        with TestClient(blocked) as restarted:
+            restarted.cookies.update(owner_client.cookies)
+            assert (
+                restarted.get(
+                    "/api/v1/auth/me", headers=owner.session_headers()
+                ).status_code
+                == 503
+            )
+        assert run_restore(case, "verify-restore").returncode == 3
