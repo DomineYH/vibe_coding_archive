@@ -9,7 +9,14 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from pydantic import AnyUrl, BaseModel, ConfigDict, Field, WithJsonSchema
+from pydantic import (
+    AnyUrl,
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    WithJsonSchema,
+)
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -41,6 +48,8 @@ from app.auth_maintenance import reconcile, sweep
 from app.auth_password import router as password_router
 from app.auth_reauth import router as reauth_router
 from app.auth_register import router as register_router
+from app.auth_runtime import auth_available, load_candidate_blocklist
+from app.auth_runtime import runtime_enabled as auth_runtime_enabled
 from app.catalog import CATALOG
 from app.database import (
     current_head,
@@ -176,10 +185,37 @@ def create_app(
     async def lifespan(app: FastAPI):
         engine = None
         try:
-            resolved = settings or Settings.from_environment()
+            resolved = Settings.model_validate(
+                (settings or Settings.from_environment()).model_dump()
+            )
+            if auth_testing and resolved.app_env != "test":
+                raise RuntimeError(
+                    "Authentication test boundary requires APP_ENV=test."
+                )
+            if health_testing and resolved.app_env != "test":
+                raise RuntimeError("Health test boundary requires APP_ENV=test.")
+            if resolved.app_env == "test":
+                Settings.from_environment(
+                    {
+                        "APP_ENV": "test",
+                        "DATABASE_PATH": str(resolved.database_path),
+                        "PUBLIC_ORIGIN": resolved.public_origin,
+                    }
+                )
+            resolved.validate_production_runtime()
             engine = make_engine(resolved.database_path)
             head = _verify_schema(engine)
-        except (ConfigurationError, SQLAlchemyError, RuntimeError):
+        except (
+            ConfigurationError,
+            ValidationError,
+            SQLAlchemyError,
+            RuntimeError,
+        ) as error:
+            if engine is None and str(error) in {
+                "Authentication test boundary requires APP_ENV=test.",
+                "Health test boundary requires APP_ENV=test.",
+            }:
+                raise
             if engine is not None:
                 engine.dispose()
             print(
@@ -190,24 +226,26 @@ def create_app(
                 "Application configuration or database revision is invalid."
             ) from None
 
-        if auth_testing and resolved.app_env != "test":
-            engine.dispose()
-            raise RuntimeError("Authentication test boundary requires APP_ENV=test.")
-        if health_testing and resolved.app_env != "test":
-            engine.dispose()
-            raise RuntimeError("Health test boundary requires APP_ENV=test.")
         app.state.health_testing = health_testing
         app.state.settings = resolved
-        app.state.auth_enabled = auth_testing or resolved.app_env == "development"
+        app.state.auth_candidate = resolved.app_env == "production"
+        app.state.auth_revoked = False
+        app.state.auth_enabled = (
+            auth_testing
+            or resolved.app_env == "development"
+            or auth_runtime_enabled(resolved)
+        )
         app.state.user_delete_corrupt = False
         app.state.user_delete_ready = False
         app.state.auth_ready = False
         if app.state.auth_enabled:
             try:
-                app.state.password_blocklist = load_blocklist(
-                    resolved.password_blocklist_path
+                app.state.password_blocklist = (
+                    load_candidate_blocklist(resolved.password_blocklist_path)
+                    if resolved.app_env == "production"
+                    else load_blocklist(resolved.password_blocklist_path)
                 )
-            except RuntimeError:
+            except (RuntimeError, OSError, ValueError, TypeError):
                 engine.dispose()
                 if resolved.app_env == "development":
                     raise RuntimeError(
@@ -215,7 +253,9 @@ def create_app(
                         "From backend/, run: APP_ENV=development uv run --frozen "
                         "python -m app.cli prepare-password-blocklist"
                     ) from None
-                raise
+                raise RuntimeError(
+                    "A verified password blocklist is required."
+                ) from None
         app.state.hash_gate = HashGate()
         app.state.engine = engine
         app.state.expected_head = head
@@ -404,11 +444,25 @@ def create_app(
     )
     def get_meta(request: Request) -> dict[str, object]:
         read_context(request)
+        auth_decision = auth_available(request.app.state)
         capabilities = _capabilities()
+        if request.app.state.auth_candidate and not auth_decision:
+            for key in capabilities.keys() - {
+                "apps_read",
+                "health_read",
+                "email_collection",
+                "phone_collection",
+            }:
+                capabilities[key] = {
+                    "enabled": False,
+                    "reasons": ["operational_restriction"],
+                }
         capabilities["health_read"] = {"enabled": True, "reasons": []}
         try:
             with request.app.state.session_factory() as db:
-                health_enabled = checks_available(db, request)
+                health_enabled = checks_available(
+                    db, request, auth_decision=auth_decision
+                )
         except (SQLAlchemyError, OSError):
             health_enabled = False
         for key in ("health_check", "health_batch"):
@@ -419,22 +473,12 @@ def create_app(
         gate = request.app.state.password_reset_gate
         gate.maintain()
         capabilities["admin_password_reset"] = {
-            "enabled": bool(
-                request.app.state.auth_enabled
-                and request.app.state.auth_ready
-                and gate.ready
-            ),
+            "enabled": bool(auth_decision and gate.ready),
             "reasons": []
-            if request.app.state.auth_enabled
-            and request.app.state.auth_ready
-            and gate.ready
+            if auth_decision and gate.ready
             else ["operational_restriction"],
         }
-        delete_enabled = bool(
-            request.app.state.auth_enabled
-            and request.app.state.auth_ready
-            and request.app.state.user_delete_ready
-        )
+        delete_enabled = bool(auth_decision and request.app.state.user_delete_ready)
         capabilities["admin_user_delete"] = {
             "enabled": delete_enabled,
             "reasons": [] if delete_enabled else ["operational_restriction"],
@@ -447,8 +491,8 @@ def create_app(
             "enabled": False,
             "reasons": ["operational_restriction"],
         }
-        if request.app.state.auth_enabled and request.app.state.auth_ready:
-            # #113: the T01–T05 bundle; operating release remains behind T07.
+        if auth_decision:
+            # Candidate approval never substitutes for the operating release gate.
             for key in (
                 "auth_login",
                 "auth_logout",

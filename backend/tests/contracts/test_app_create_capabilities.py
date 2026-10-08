@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.auth_runtime import runtime_enabled
 from app.main import create_app
 from tests.app_create_client import API, INPUT, error
 
@@ -29,6 +30,10 @@ def test_environment_capability_gate(member_app, environment):
     prepared, _ = member_app()
     with TestClient(prepared):
         settings = prepared.state.settings.model_copy(update={"app_env": environment})
+    if environment == "production":
+        # Production approval is pure metadata; live production cannot use this temp DB.
+        assert not runtime_enabled(settings)
+        return
     app = create_app(settings)
     with TestClient(app) as client:
         assert client.get(f"{API}/meta").json()["capabilities"]["apps_create"][
@@ -51,6 +56,9 @@ def test_edit_capability_has_exactly_the_create_readiness_boundary(
         assert capabilities["admin_apps_manage"] == capabilities["apps_update_own"]
     for environment in ("development", "production", "test"):
         settings = prepared.state.settings.model_copy(update={"app_env": environment})
+        if environment == "production":
+            assert not runtime_enabled(settings)
+            continue
         with TestClient(create_app(settings)) as client:
             capabilities = client.get(f"{API}/meta").json()["capabilities"]
             assert (

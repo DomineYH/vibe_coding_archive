@@ -14,6 +14,7 @@ from app.auth_boundary import (
     response,
     screen_read_context,
 )
+from app.auth_runtime import auth_available
 from app.health_runtime import checks_available
 from app.public_apps import UUID_PATTERN
 
@@ -98,9 +99,11 @@ def write_actor(db, request):
     from app.auth_boundary import check_revision, credential, flow, origin, pending
 
     origin(request)
-    if not request.app.state.auth_enabled or not request.app.state.auth_ready:
+    if not auth_available(request.app.state):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     db.execute(text("BEGIN IMMEDIATE"))
+    if not auth_available(request.app.state):
+        raise AuthError("FEATURE_UNAVAILABLE", 503)
     item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session", csrf=True)
     context = read_context(request)
@@ -206,7 +209,7 @@ def get_health_batch(id: str, request: Request, db=Db):
 
     no_query(request)
     read_context(request)
-    if not request.app.state.auth_enabled or not request.app.state.auth_ready:
+    if not auth_available(request.app.state):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     item, _ = administrator(db, request)
     body = health_store.batch_view(db, identifier(id), now())

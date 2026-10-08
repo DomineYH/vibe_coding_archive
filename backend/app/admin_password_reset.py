@@ -19,6 +19,7 @@ from app.auth import Unlocked
 from app.auth_boundary import AuthError, after, now, response
 from app.auth_login import HASHER
 from app.auth_reauth import current_admin, require_recent_admin
+from app.auth_runtime import auth_available
 from app.password_policy import new_password
 from app.password_reset_secret import fingerprint
 
@@ -26,13 +27,13 @@ router = APIRouter(dependencies=[Depends(check_json)])
 
 
 def recent_reset_administrator(db, request):
-    if not request.app.state.auth_enabled or not request.app.state.auth_ready:
+    if not auth_available(request.app.state):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     return require_recent_admin(db, request, write=True)
 
 
 def reset_administrator(db, request, *, write=False):
-    if not request.app.state.auth_enabled or not request.app.state.auth_ready:
+    if not auth_available(request.app.state):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     item, actor = administrator(db, request, write=write)
     current_admin(db, request)

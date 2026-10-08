@@ -24,3 +24,9 @@ if fixed := os.environ.get("API_E2E_CLOCK"):
     main.datetime = Clock
     public_apps.datetime = Clock
 app = create_app(settings, auth_testing=True)
+
+# This file is imported only after the APP_ENV=test guard above.
+if os.environ.get("API_E2E_CANDIDATE_STATUS"):
+    from tests.auth_candidate import install_candidate
+
+    install_candidate(app, settings)

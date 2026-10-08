@@ -23,12 +23,15 @@ from app.auth_boundary import (
     response,
 )
 from app.auth_login import HASHER, nfc
+from app.auth_runtime import auth_available
 from app.password_policy import new_password
 
 router = APIRouter(prefix="/auth")
 
 
 def registration_context(db, request):
+    if not auth_available(request.app.state):
+        raise AuthError("FEATURE_UNAVAILABLE", 503)
     item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
     session = credential(db, request, item, "session", csrf=True)
     if session["kind"] != "anonymous":

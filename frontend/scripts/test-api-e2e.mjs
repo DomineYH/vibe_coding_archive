@@ -61,7 +61,7 @@ async function run() {
   const authPrepared =
     !process.argv.includes("--auth-unavailable") &&
     arguments_.some((arg) =>
-      /health-real|auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+      /health-real|auth-(candidate|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
         arg,
       ),
     );
@@ -200,12 +200,14 @@ raise SystemExit(status)`,
       "e2e-api/auth-recovery-boundaries.spec.js",
       "e2e-api/auth-recovery-captures.spec.js",
     ];
+    const isCandidate = (arg) => /auth-candidate/.test(arg);
+    const selectedCandidate = arguments_.filter(isCandidate);
     const isFault = (arg) => /auth-(races|recovery)/.test(arg);
     const isHealth = (arg) => /health-real/.test(arg);
     const selectedFaults = arguments_.filter(isFault);
     const selectedHealth = arguments_.filter(isHealth);
     const selectedNormal = arguments_.filter(
-      (arg) => !isFault(arg) && !isHealth(arg),
+      (arg) => !isFault(arg) && !isHealth(arg) && !isCandidate(arg),
     );
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
@@ -226,7 +228,9 @@ raise SystemExit(status)`,
       : arguments_.length || process.argv.includes("--auth-unavailable")
         ? [
             ...(normalFiles.length ||
-            (!selectedFaults.length && !selectedHealth.length)
+            (!selectedFaults.length &&
+              !selectedHealth.length &&
+              !selectedCandidate.length)
               ? [
                   {
                     arguments_: selectedNormal,
@@ -235,6 +239,17 @@ raise SystemExit(status)`,
                   },
                 ]
               : []),
+            ...selectedCandidate.flatMap((file) =>
+              (authPrepared
+                ? ["approved", "pending", "invalid", "revoked"]
+                : ["pending"]
+              ).map((candidate) => ({
+                arguments_: [file, ...options],
+                prepared: authPrepared,
+                faults: false,
+                candidate,
+              })),
+            ),
             ...(selectedFaults.length
               ? [
                   {
@@ -258,6 +273,14 @@ raise SystemExit(status)`,
         : [
             { arguments_: [], prepared: false, faults: false },
             { arguments_: normal, prepared: true, faults: false },
+            ...["approved", "pending", "invalid", "revoked"].map(
+              (candidate) => ({
+                arguments_: ["e2e-api/auth-candidate.spec.js"],
+                prepared: true,
+                faults: false,
+                candidate,
+              }),
+            ),
             { arguments_: faults, prepared: true, faults: true },
             {
               arguments_: ["e2e-api/health-real.spec.js"],
@@ -301,6 +324,7 @@ raise SystemExit(status)`,
                 arg,
               ),
             ),
+            ...options,
             "--grep",
             capture,
           ],
@@ -312,7 +336,7 @@ raise SystemExit(status)`,
     });
     for (const [index, run] of separated.entries()) {
       const runDirectory = path.join(temporary, `run-${index}`);
-      await mkdir(runDirectory);
+      await mkdir(runDirectory, { mode: 0o700 });
       const runEnv = {
         ...env,
         DATABASE_PATH: path.join(runDirectory, "api.sqlite3"),
@@ -325,6 +349,27 @@ raise SystemExit(status)`,
         run.empty ? emptyTemplate : template,
         runEnv.DATABASE_PATH,
       );
+      if (run.candidate) {
+        runEnv.AUTH_ACTIVATION_PATH = path.join(
+          runDirectory,
+          "synthetic-auth.json",
+        );
+        runEnv.APP_RELEASE_ID = "synthetic-api-e2e-release";
+        runEnv.API_E2E_CANDIDATE_STATUS = run.candidate;
+        const fixture = spawnSync(
+          "uv",
+          [
+            "run",
+            "--frozen",
+            "python",
+            "-c",
+            "import os; from app.settings import Settings; from tests.auth_candidate import write_fixture; write_fixture(Settings.from_environment(), os.environ['API_E2E_CANDIDATE_STATUS'])",
+          ],
+          { cwd: backend, env: runEnv, stdio: "inherit" },
+        );
+        if (fixture.error || fixture.status !== 0)
+          throw new Error("Synthetic candidate fixture preparation failed.");
+      }
       playwright = spawn(
         path.join(frontend, "node_modules", ".bin", "playwright"),
         ["test", "--config=playwright.api.config.js", ...run.arguments_],
