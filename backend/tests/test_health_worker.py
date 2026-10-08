@@ -4,12 +4,15 @@ from datetime import UTC, datetime
 import pytest
 from sqlalchemy import text
 
+from app.app_input import validate_url
 from app.database import make_engine, make_session_factory
+from app.health_probe import probe
 from app.health_store import request_check, snapshot
 from app.health_worker import ActivationRequired, Worker, WorkerLock
 from app.settings import Settings
 from tests.admin_apps_fixtures import app_id
 from tests.support import populate_public_and_private_apps
+from tests.test_health_probe import Network
 
 
 @pytest.fixture
@@ -86,6 +89,66 @@ async def test_worker_completes_a_persisted_job_and_preserves_queue_on_stop(
             state["health"]["latest_job"]["id"]
             == accepted["health"]["latest_job"]["id"]
         )
+    finally:
+        worker.stop()
+        await asyncio.wait_for(task, 5)
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://[64:ff9b::7f00:1]/",
+        "http://[2002:7f00:1::]/",
+        "http://[::ffff:0:7f00:1]/",
+    ],
+)
+async def test_worker_blocks_registered_transition_url(worker_database, url):
+    configured, factory = worker_database
+    assert validate_url(url) == url
+    with factory() as db:
+        db.execute(text("BEGIN IMMEDIATE"))
+        db.execute(
+            text("UPDATE apps SET url=:url WHERE id=:id"),
+            {"url": url, "id": app_id(1)},
+        )
+        _, accepted = request_check(
+            db, app_id(1), "anon:test", None, datetime.now(UTC).isoformat()
+        )
+        db.commit()
+    called = asyncio.Event()
+    network = Network()
+    observed_urls = []
+
+    async def observed_probe(url, *, dns_servers, denied_ips):
+        observed_urls.append(url)
+        called.set()
+        return await probe(
+            url,
+            dns_servers=dns_servers,
+            denied_ips=denied_ips,
+            network_backend=network,
+        )
+
+    worker = Worker(configured, factory, testing_probe=observed_probe)
+    task = asyncio.create_task(worker.run())
+    try:
+        await asyncio.wait_for(called.wait(), 5)
+        async with asyncio.timeout(5):
+            while True:
+                with factory() as db:
+                    state = snapshot(db, app_id(1), datetime.now(UTC).isoformat(), True)
+                if state["health"]["latest_job"]["status"] == "completed":
+                    break
+                await asyncio.sleep(0.01)
+        assert state["health"]["result"]["state"] == "blocked"
+        assert state["health"]["result"]["error_kind"] == "DESTINATION_BLOCKED"
+        assert state["health"]["result"]["http_status"] is None
+        assert (
+            state["health"]["latest_job"]["id"]
+            == accepted["health"]["latest_job"]["id"]
+        )
+        assert observed_urls == [url]
+        assert network.calls == []
     finally:
         worker.stop()
         await asyncio.wait_for(task, 5)
