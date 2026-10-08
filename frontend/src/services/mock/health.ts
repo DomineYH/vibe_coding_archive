@@ -100,25 +100,25 @@ const resultMeasures: Record<
   timeout: {
     http_status: null,
     response_ms: null,
-    error_kind: "timeout",
-    error_stage: "response",
+    error_kind: "TIMEOUT",
+    error_stage: "response_headers",
   },
   network_error: {
     http_status: null,
     response_ms: null,
-    error_kind: "dns_failure",
+    error_kind: "DNS_FAILURE",
     error_stage: "dns",
   },
   blocked: {
     http_status: null,
     response_ms: null,
-    error_kind: "destination_blocked",
-    error_stage: "policy",
+    error_kind: "DESTINATION_BLOCKED",
+    error_stage: "dns",
   },
   redirect_error: {
     http_status: 302,
     response_ms: 18,
-    error_kind: "redirect_error",
+    error_kind: "REDIRECT_ERROR",
     error_stage: "redirect",
   },
 };

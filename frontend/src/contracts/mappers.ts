@@ -1627,8 +1627,9 @@ function mapAdminHealthResult(value: unknown): AdminHealthResult {
       (typeof responseMs !== "number" ||
         !Number.isFinite(responseMs) ||
         responseMs < 0)) ||
-    (errorKind !== null && !/^[a-z][a-z0-9_]{0,63}$/u.test(errorKind)) ||
-    (errorStage !== null && !/^[a-z][a-z0-9_]{0,63}$/u.test(errorStage)) ||
+    (errorKind !== null && !/^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(errorKind)) ||
+    (errorStage !== null &&
+      !/^[A-Za-z][A-Za-z0-9_]{0,63}$/u.test(errorStage)) ||
     (httpStatus === null) !== (responseMs === null) ||
     (base.state === "unchecked" &&
       (httpStatus !== null || errorKind !== null || errorStage !== null)) ||

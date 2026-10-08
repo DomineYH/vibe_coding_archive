@@ -1,0 +1,33 @@
+export const healthErrorCases = [
+  ["network_error", "DNS_FAILURE", "dns", null, null],
+  ["network_error", "TLS_FAILURE", "tls", null, null],
+  ["network_error", "CONNECT_FAILURE", "connect", null, null],
+  ["network_error", "HTTP_PROTOCOL_ERROR", "response_headers", null, null],
+  ["timeout", "TIMEOUT", "overall", null, null],
+  ["blocked", "DESTINATION_BLOCKED", "url", null, null],
+  ["blocked", "RESPONSE_HEADERS_TOO_LARGE", "response_headers", null, null],
+  ["redirect_error", "REDIRECT_ERROR", "redirect", 302, 8],
+  ["blocked", "DESTINATION_BLOCKED", "dns", null, null],
+  ["timeout", "TIMEOUT", "response_headers", null, null],
+] as const;
+
+export const invalidHealthIdentifiers = [
+  "",
+  "a".repeat(65),
+  "1dns",
+  "_dns",
+  "dns failure",
+  "dns\tfailure",
+  "dns\nfailure",
+  "dns\n",
+  "dns-failure",
+  "dns.failure",
+  "오류",
+  42,
+  {},
+  [],
+  ["dns"],
+  true,
+  false,
+  undefined,
+];

@@ -373,3 +373,65 @@ describe("OpenAPI app detail schema", () => {
     expect(grade.anyOf[1].$ref).toBe("#/components/schemas/Grade");
   });
 });
+
+it("documents nullable extensible administrator health identifiers without exposing measurements in other DTOs", () => {
+  const schemas = openapi.components.schemas;
+  const properties = schemas.AdminHealthResult.properties;
+  for (const field of ["error_kind", "error_stage"]) {
+    expect(properties[field]).toMatchObject({
+      type: ["string", "null"],
+      minLength: 1,
+      maxLength: 64,
+      pattern: "^[A-Za-z][A-Za-z0-9_]{0,63}$",
+    });
+    expect(properties[field]).not.toHaveProperty("enum");
+    for (const word of ["null", "case", "extensible"])
+      expect(properties[field].description).toContain(word);
+  }
+  for (const kind of [
+    "DNS_FAILURE",
+    "TLS_FAILURE",
+    "CONNECT_FAILURE",
+    "HTTP_PROTOCOL_ERROR",
+    "TIMEOUT",
+    "DESTINATION_BLOCKED",
+    "RESPONSE_HEADERS_TOO_LARGE",
+    "REDIRECT_ERROR",
+  ])
+    expect(properties.error_kind.description).toContain(kind);
+  for (const stage of [
+    "url",
+    "dns",
+    "connect",
+    "tls",
+    "response_headers",
+    "redirect",
+    "overall",
+  ])
+    expect(properties.error_stage.description).toContain(stage);
+  expect(properties.error_kind.examples).toContain("DESTINATION_BLOCKED");
+  expect(properties.error_stage.examples).toContain("dns");
+  expect(Object.keys(schemas.HealthResult.properties)).toEqual([
+    "state",
+    "checked_at",
+    "fresh_until",
+  ]);
+  expect(schemas.AdminApp.properties.health.$ref).toBe(
+    "#/components/schemas/HealthResult",
+  );
+  for (const name of [
+    "HealthResult",
+    "AdminApp",
+    "Job",
+    "HealthBatch",
+    "HealthBatchCounts",
+  ])
+    for (const field of [
+      "http_status",
+      "response_ms",
+      "error_kind",
+      "error_stage",
+    ])
+      expect(schemas[name].properties).not.toHaveProperty(field);
+  expect(schemas.Job.properties.failure_code.type).toEqual(["string", "null"]);
+});

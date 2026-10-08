@@ -6,6 +6,11 @@ import {
 } from "../src/contracts/mappers";
 import type { components } from "../src/contracts/api";
 
+import {
+  healthErrorCases,
+  invalidHealthIdentifiers,
+} from "./health-identifiers.fixture";
+
 const appId = "00000000-0000-4000-8000-000000000001";
 const jobId = "00000000-0000-4000-8000-000000000201";
 const time = "2026-09-22T00:12:00.000Z";
@@ -55,6 +60,8 @@ describe("health response mappers", () => {
     ["network_error", null, null],
     ["blocked", null, null],
     ["redirect_error", 302, 8],
+    ["redirect_error", 302, 0],
+    ["redirect_error", null, null],
   ] as const)(
     "maps %s without changing measured nulls",
     (state, status, ms) => {
@@ -62,6 +69,7 @@ describe("health response mappers", () => {
         snapshot(adminResult(state, status, ms)),
       );
 
+      expect(mapped.health.result).toEqual(adminResult(state, status, ms));
       expect(mapped).toMatchObject({
         appId,
         urlVersion: 3,
@@ -178,4 +186,110 @@ describe("health response mappers", () => {
       ),
     ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
   });
+});
+
+describe("administrator health identifiers", () => {
+  it.each(healthErrorCases)(
+    "preserves %s / %s / %s through every response",
+    (state, kind, stage, status, ms) => {
+      const result = {
+        ...adminResult(state, status, ms),
+        error_kind: kind,
+        error_stage: stage,
+      };
+      const wire = snapshot(result);
+      expect(mapHealthSnapshot(wire).health.result).toEqual(result);
+      expect(
+        mapCheckAccepted({ ...wire, disposition: "result_reused" }, 200).health
+          .result,
+      ).toEqual(result);
+      expect(
+        mapCheckAccepted(
+          {
+            ...snapshot(result, {
+              ...job,
+              status: "running",
+              finished_at: null,
+            }),
+            disposition: "created",
+          },
+          202,
+        ).health.result,
+      ).toEqual(result);
+      expect(
+        mapHealthJobResponse({ ...wire, job, health: wire.health }).health
+          .result,
+      ).toEqual(result);
+    },
+  );
+  it.each([
+    null,
+    "dns_failure",
+    "MiXeD_123",
+    "a",
+    "Z",
+    "a".repeat(64),
+    "Z".repeat(64),
+  ])("preserves nullable/extensible identifier %j", (identifier) => {
+    const result = {
+      ...adminResult("network_error", null, null),
+      error_kind: identifier,
+      error_stage: identifier,
+    };
+    expect(mapHealthSnapshot(snapshot(result)).health.result).toEqual(result);
+  });
+  for (const field of ["error_kind", "error_stage"]) {
+    it.each(invalidHealthIdentifiers)(
+      `rejects malformed ${field} %j`,
+      (identifier) => {
+        expect(() =>
+          mapHealthSnapshot(
+            snapshot({
+              ...adminResult("network_error", null, null),
+              [field]: identifier,
+            }),
+          ),
+        ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+      },
+    );
+    it(`rejects missing ${field}`, () => {
+      const result = { ...adminResult("network_error", null, null) };
+      Reflect.deleteProperty(result, field);
+      expect(() => mapHealthSnapshot(snapshot(result))).toThrowError(
+        expect.objectContaining({ code: "CONTRACT_ERROR" }),
+      );
+    });
+  }
+  it.each([
+    ["healthy", { http_status: 99 }],
+    ["healthy", { http_status: 600 }],
+    ["healthy", { http_status: 204.5 }],
+    ["healthy", { http_status: "204" }],
+    ["healthy", { response_ms: NaN }],
+    ["healthy", { response_ms: Infinity }],
+    ["healthy", { response_ms: "0" }],
+    ["healthy", { http_status: 404 }],
+    ["http_error", { http_status: 204 }],
+    ["timeout", {}],
+    ["network_error", {}],
+    ["blocked", {}],
+    ["redirect_error", { http_status: 204 }],
+    ["unchecked", { error_kind: "DNS_FAILURE" }],
+    ["unchecked", { error_stage: "dns" }],
+    ["unchecked", { http_status: 204, response_ms: 0 }],
+    ["healthy", { checked_at: null }],
+    ["healthy", { fresh_until: time }],
+  ] as const)(
+    "keeps %s measurement/state validation for %o",
+    (state, patch) => {
+      const result = adminResult(
+        state,
+        state === "unchecked" ? null : 204,
+        state === "unchecked" ? null : 0,
+      );
+      expect(() =>
+        mapHealthSnapshot(snapshot({ ...result, ...patch })),
+      ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+    },
+  );
 });

@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appsService } from "../src/services/mock/apps";
 import { authService } from "../src/services/mock/auth";
-import { MOCK_STORAGE_KEY, resetMockState } from "../src/services/mock/state";
+import {
+  getMockSnapshot,
+  MOCK_STORAGE_KEY,
+  resetMockState,
+} from "../src/services/mock/state";
+
+import { invalidHealthIdentifiers } from "./health-identifiers.fixture";
 
 type StoredObject = Record<string, unknown>;
 type StoredState = StoredObject & { apps: StoredObject[] };
@@ -529,4 +535,56 @@ describe("persisted mock state validation", () => {
       health_id_sequence: 0,
     });
   });
+});
+
+describe("persisted health identifiers", () => {
+  beforeEach(() => localStorage.clear());
+  afterEach(() => localStorage.clear());
+  function seed(kind: unknown, stage: unknown) {
+    resetMockState();
+    const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY)!);
+    const row = {
+      app_id: state.apps[0].id,
+      url_version: state.apps[0].url_version,
+      http_status: null,
+      response_ms: null,
+      error_kind: kind,
+      error_stage: stage,
+    };
+    state.health_measurements = [row];
+    const serialized = JSON.stringify(state);
+    localStorage.setItem(MOCK_STORAGE_KEY, serialized);
+    return { row, serialized };
+  }
+  it.each([
+    [null, null],
+    ["timeout", "response"],
+    ["destination_blocked", "policy"],
+    ["dns_failure", "dns"],
+    ["TIMEOUT", "response_headers"],
+    ["DESTINATION_BLOCKED", "dns"],
+    ["MiXeD_123", "Stage_2"],
+    ["a", "Z"],
+    ["Z".repeat(64), "a".repeat(64)],
+  ])("reloads %j / %j unchanged", async (kind, stage) => {
+    const { row, serialized } = seed(kind, stage);
+    expect((await appsService.list()).items).toHaveLength(16);
+    expect(getMockSnapshot().health_measurements).toEqual([row]);
+    expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(serialized);
+  });
+  for (const field of ["error_kind", "error_stage"]) {
+    it.each(invalidHealthIdentifiers)(
+      `rejects persisted ${field} %j without resetting`,
+      async (value) => {
+        const { serialized } =
+          field === "error_kind"
+            ? seed(value, "dns")
+            : seed("dns_failure", value);
+        await expect(appsService.list()).rejects.toMatchObject({
+          code: "MOCK_STORAGE_ERROR",
+        });
+        expect(localStorage.getItem(MOCK_STORAGE_KEY)).toBe(serialized);
+      },
+    );
+  }
 });

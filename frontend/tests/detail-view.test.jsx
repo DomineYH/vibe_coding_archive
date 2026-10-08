@@ -11,6 +11,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppDetailView } from "../src/features/detail/view-detail";
 import { ServiceError } from "../src/services/service-error";
 
+import { mapHealthSnapshot } from "../src/contracts/mappers";
+import { healthErrorCases } from "./health-identifiers.fixture";
+
 const clipboardDescriptor = Object.getOwnPropertyDescriptor(
   navigator,
   "clipboard",
@@ -276,4 +279,77 @@ it("hides deletion retry without an app or operation key", async () => {
     screen.queryByRole("button", { name: "다시 시도", exact: true }),
   ).not.toBeInTheDocument();
   expect(retry).not.toHaveBeenCalled();
+});
+
+describe("administrator health measurements", () => {
+  const cases = [
+    ...healthErrorCases,
+    ["unchecked", null, null, null, null],
+    ["healthy", null, null, 204, 0],
+    ["healthy", null, null, null, null],
+    ["http_error", null, null, 404, 12],
+    ["redirect_error", "REDIRECT_ERROR", "redirect", 302, 0],
+    ["redirect_error", "REDIRECT_ERROR", "redirect", null, null],
+  ];
+  function mappedHealth(state, kind, stage, status, ms) {
+    return mapHealthSnapshot({
+      app_id: app.id,
+      url_version: 1,
+      server_time: app.serverTime,
+      health: {
+        result: {
+          state,
+          checked_at: state === "unchecked" ? null : app.serverTime,
+          fresh_until:
+            state === "unchecked" ? null : "2026-09-22T00:27:00.000Z",
+          http_status: status,
+          response_ms: ms,
+          error_kind: kind,
+          error_stage: stage,
+        },
+        latest_job: null,
+        next_check_at: null,
+      },
+    }).health;
+  }
+  it.each(cases)(
+    "renders %s / %s / %s verbatim",
+    (state, kind, stage, status, ms) => {
+      render(
+        <MemoryRouter>
+          <AppDetailView
+            app={app}
+            meta={meta}
+            isAdmin
+            health={mappedHealth(state, kind, stage, status, ms)}
+          />
+        </MemoryRouter>,
+      );
+      for (const [label, value] of [
+        ["HTTP 상태 코드", status === null ? "—" : String(status)],
+        ["응답 시간", ms === null ? "—" : `${ms} ms`],
+        ["오류 종류 / 단계", `${kind ?? "—"} / ${stage ?? "—"}`],
+      ])
+        expect(screen.getByText(label).nextElementSibling).toHaveTextContent(
+          value,
+        );
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "결과 다시 조회" }),
+      ).not.toBeInTheDocument();
+    },
+  );
+  it("hides administrator measurements from a non-administrator", () => {
+    render(
+      <MemoryRouter>
+        <AppDetailView
+          app={app}
+          meta={meta}
+          health={mappedHealth(...healthErrorCases[0])}
+        />
+      </MemoryRouter>,
+    );
+    for (const label of ["HTTP 상태 코드", "응답 시간", "오류 종류 / 단계"])
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+  });
 });

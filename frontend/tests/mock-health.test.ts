@@ -4,6 +4,7 @@ import { healthService } from "../src/services/mock/health";
 import type { components } from "../src/contracts/api";
 import {
   getMockSnapshot,
+  MOCK_STORAGE_KEY,
   resetMockState,
   setMockClock,
   setMockScenario,
@@ -69,19 +70,73 @@ describe("individual health check mock", () => {
   });
 
   it.each([
-    ["health_result_healthy", "healthy", 204],
-    ["health_result_http_error", "http_error", 404],
-    ["health_result_timeout", "timeout", null],
-    ["health_result_network_error", "network_error", null],
-    ["health_result_blocked", "blocked", null],
-    ["health_result_redirect_error", "redirect_error", 302],
+    ["health_result_healthy", "healthy", 204, 26, null, null],
+    ["health_result_http_error", "http_error", 404, 43, null, null],
+    [
+      "health_result_timeout",
+      "timeout",
+      null,
+      null,
+      "TIMEOUT",
+      "response_headers",
+    ],
+    [
+      "health_result_network_error",
+      "network_error",
+      null,
+      null,
+      "DNS_FAILURE",
+      "dns",
+    ],
+    [
+      "health_result_blocked",
+      "blocked",
+      null,
+      null,
+      "DESTINATION_BLOCKED",
+      "dns",
+    ],
+    [
+      "health_result_redirect_error",
+      "redirect_error",
+      302,
+      18,
+      "REDIRECT_ERROR",
+      "redirect",
+    ],
   ] as const)(
     "shows synthetic %s result without treating it as real traffic",
-    async (scenario, state, httpStatus) => {
+    async (scenario, state, httpStatus, responseMs, kind, stage) => {
+      await authService.login({ loginId: "admin", password: "admin123" });
       setMockScenario(scenario);
       const { health } = await healthService.requestCheck(appId);
       const completed = await healthService.getJob(health.latestJob!.id);
 
+      const result = {
+        state,
+        checked_at: "2026-09-22T00:12:00.000Z",
+        fresh_until: "2026-09-22T00:27:00.000Z",
+        http_status: httpStatus,
+        response_ms: responseMs,
+        error_kind: kind,
+        error_stage: stage,
+      };
+      expect(completed.health.result).toEqual(result);
+      const measurement = {
+        app_id: appId,
+        url_version: 1,
+        http_status: httpStatus,
+        response_ms: responseMs,
+        error_kind: kind,
+        error_stage: stage,
+      };
+      expect(
+        JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY)!).health_measurements,
+      ).toContainEqual(measurement);
+      expect(getMockSnapshot().health_measurements).toContainEqual(measurement);
+      expect((await healthService.getAppHealth(appId)).health.result).toEqual(
+        result,
+      );
       expect(completed.job.status).toBe("completed");
       expect(completed.health.result.state).toBe(state);
       await expect(healthService.getAppHealth(appId)).resolves.toMatchObject({
