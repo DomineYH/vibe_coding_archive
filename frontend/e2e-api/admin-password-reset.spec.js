@@ -1,3 +1,5 @@
+import { browserContextOptions } from "./helpers.js";
+import { publicOrigin } from "./helpers.js";
 import { expect } from "@playwright/test";
 import { blockExternalRequests, query } from "./helpers.js";
 import {
@@ -64,9 +66,9 @@ test.describe("real administrator password reset", () => {
     members,
     browser,
   }) => {
-    const oldContext = await browser.newContext();
-    const tempContext = await browser.newContext();
-    const secondContext = await browser.newContext();
+    const oldContext = await browser.newContext(browserContextOptions);
+    const tempContext = await browser.newContext(browserContextOptions);
+    const secondContext = await browser.newContext(browserContextOptions);
     try {
       const old = await oldContext.newPage();
       await login(old, members.member.login, ORIGINAL);
@@ -124,7 +126,7 @@ test.describe("real administrator password reset", () => {
       }
       const headers = await approvalHeaders(temporary);
       const denied = await temporary.request.post("/api/v1/write-operations", {
-        headers: { ...headers, Origin: "http://localhost:5174" },
+        headers: { ...headers, Origin: publicOrigin },
         data: {
           kind: "app_delete",
           target_id: "00000000-0000-4000-8000-000000000001",
@@ -165,7 +167,7 @@ test.describe("real administrator password reset", () => {
     members,
     browser,
   }) => {
-    const temporaryContext = await browser.newContext();
+    const temporaryContext = await browser.newContext(browserContextOptions);
     try {
       const temporary = await temporaryContext.newPage();
       await login(temporary, members.temporary.login, ORIGINAL);

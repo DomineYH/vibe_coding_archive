@@ -157,3 +157,50 @@ def test_fastapi_declarations_match_the_single_openapi_source(
         expected_meta["properties"], source
     )
     assert actual_meta["additionalProperties"] is False
+
+
+import pytest
+
+
+@pytest.mark.parametrize(
+    "support",
+    [
+        {},
+        {
+            "SUPPORT_EMAIL": "",
+            "SUPPORT_SERVICE_URL": " \t",
+            "SUPPORT_ANNOUNCEMENT_URL": "",
+        },
+        {"SUPPORT_EMAIL": "support@example.test"},
+        {"SUPPORT_SERVICE_URL": "https://service.example.test/help"},
+        {"SUPPORT_ANNOUNCEMENT_URL": "https://notice.example.test/updates"},
+        {
+            "SUPPORT_EMAIL": "support@example.test",
+            "SUPPORT_SERVICE_URL": "https://service.example.test/help",
+            "SUPPORT_ANNOUNCEMENT_URL": "https://notice.example.test/updates",
+        },
+    ],
+)
+def test_meta_support_matches_configuration(
+    tmp_path, make_test_app, monkeypatch, support
+):
+    for field in ["SUPPORT_EMAIL", "SUPPORT_SERVICE_URL", "SUPPORT_ANNOUNCEMENT_URL"]:
+        monkeypatch.setenv(field, support.get(field, ""))
+    app = make_test_app(tmp_path / "support.sqlite3")
+    with TestClient(app) as client:
+        response = client.get("/api/v1/meta")
+        assert response.status_code == 200
+        meta = response.json()
+        assert meta["support"] == {
+            "email": support.get("SUPPORT_EMAIL") or None,
+            "service_url": (support.get("SUPPORT_SERVICE_URL") or "").strip() or None,
+            "announcement_url": support.get("SUPPORT_ANNOUNCEMENT_URL") or None,
+        }
+        for field in ["email_collection", "phone_collection"]:
+            assert meta["capabilities"][field] == {
+                "enabled": False,
+                "reasons": ["collection_disabled"],
+            }
+        for field in ["health_check", "health_batch"]:
+            assert meta["capabilities"][field]["enabled"] is False
+        assert app.state.settings.health_checks_enabled is False

@@ -1,3 +1,4 @@
+import { publicOrigin } from "./helpers.js";
 import { expect, test } from "@playwright/test";
 import {
   blockExternalRequests,
@@ -171,7 +172,7 @@ if (prepared)
       const headers = await approvalHeaders(page);
       const cancel = await page.request.post(
         `/api/v1/write-operations/${key}/cancel`,
-        { headers: { ...headers, Origin: "http://localhost:5174" } },
+        { headers: { ...headers, Origin: publicOrigin } },
       );
       expect(cancel.status()).toBe(200);
       expect((await cancel.json()).state).toBe("succeeded");

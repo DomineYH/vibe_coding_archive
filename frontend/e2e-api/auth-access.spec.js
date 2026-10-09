@@ -1,3 +1,5 @@
+import { browserContextOptions } from "./helpers.js";
+import { publicOrigin } from "./helpers.js";
 import { expect, test } from "@playwright/test";
 import {
   blockExternalRequests,
@@ -26,11 +28,39 @@ async function signedIn(page, id = "member-a", nickname = "승인 회원") {
   await expect(
     page.getByRole("banner").getByText(nickname, { exact: true }),
   ).toBeVisible();
-  const observed = await page.evaluate(async () => {
-    const { authService } = await import("/src/services/api/auth.ts");
-    const state = await authService.getCurrentAuthState();
-    return { status: state.status, kind: state.user?.sessionKind };
-  });
+  const observed =
+    process.env.API_E2E_NGINX_FUNCTIONAL === "1"
+      ? await page.evaluate(async () => {
+          const { flowId } = JSON.parse(
+            localStorage.getItem("eduvibe-auth-flow-v1"),
+          );
+          const csrf = await fetch("/api/v1/auth/csrf", {
+            headers: { "X-EduVibe-Flow-Id": flowId },
+          });
+          if (csrf.status !== 200)
+            throw new Error("HTTPS session proof failed");
+          const headers = Object.fromEntries(
+            [
+              "X-EduVibe-Flow-Id",
+              "X-EduVibe-Auth-Revision",
+              "X-EduVibe-Session-Generation",
+            ].map((name) => [name, csrf.headers.get(name)]),
+          );
+          const me = await fetch("/api/v1/auth/me", { headers });
+          if (me.status !== 200) throw new Error("HTTPS member proof failed");
+          if (
+            Object.entries(headers).some(
+              ([name, value]) => me.headers.get(name) !== value,
+            )
+          )
+            throw new Error("HTTPS proof context changed");
+          return { status: "ready", kind: (await me.json()).session_kind };
+        })
+      : await page.evaluate(async () => {
+          const { authService } = await import("/src/services/api/auth.ts");
+          const state = await authService.getCurrentAuthState();
+          return { status: state.status, kind: state.user?.sessionKind };
+        });
   expect(observed).toEqual({ status: "ready", kind: "full" });
 }
 async function read(page, id, contextual = true, captured = null) {
@@ -464,11 +494,15 @@ if (prepared) {
       };
     });
     const oldSession = oldCookies.find((cookie) =>
-      cookie.name.startsWith("eduvibe_session_dev_"),
+      cookie.name.startsWith(
+        publicOrigin.startsWith("https:")
+          ? "__Host-eduvibe_session_"
+          : "eduvibe_session_dev_",
+      ),
     );
     expect(oldSession).toBeDefined();
     const before = await (await page.request.get("/api/v1/apps")).json();
-    const secondContext = await browser.newContext();
+    const secondContext = await browser.newContext(browserContextOptions);
     await blockExternalRequests(secondContext);
     const secondPage = await secondContext.newPage();
     await secondPage.bringToFront();
@@ -479,7 +513,7 @@ if (prepared) {
     expect(secondProof["X-EduVibe-Flow-Id"]).not.toBe(
       oldContext["X-EduVibe-Flow-Id"],
     );
-    const adminContext = await browser.newContext();
+    const adminContext = await browser.newContext(browserContextOptions);
     await blockExternalRequests(adminContext);
     const adminPage = await adminContext.newPage();
     try {
@@ -487,7 +521,7 @@ if (prepared) {
       await openAdmin(adminPage);
       const headers = {
         ...(await approvalHeaders(adminPage)),
-        Origin: "http://localhost:5174",
+        Origin: publicOrigin,
       };
       const id = "00000000-0000-4000-8000-000000000100";
       for (const approved of [false, true]) {
@@ -575,24 +609,82 @@ if (prepared) {
     const before = query("SELECT count(*) FROM write_operations");
     await page.evaluate(() => window.dispatchEvent(new Event("blur")));
     await expect(panel).toHaveCount(0);
-    const continuity = await page.evaluate(async () => {
-      const { authService } = await import("/src/services/api/auth.ts");
-      const before = await authService.getFlowState();
-      const result = await authService.rotateRecoveryCookie(before.flowId, {
-        expectedRevision: before.revision,
-        expectedSessionGeneration: before.sessionGeneration,
-      });
-      await authService.confirmRecoveryCookie(before.flowId, {
-        expectedRevision: result.revision,
-      });
-      const after = await authService.getFlowState();
-      return {
-        revisionChanged: before.revision !== after.revision,
-        identityUnchanged:
-          before.lastIdentityChangeRevision ===
-          after.lastIdentityChangeRevision,
-      };
-    });
+    const continuity =
+      process.env.API_E2E_NGINX_FUNCTIONAL === "1"
+        ? await page.evaluate(async () => {
+            const { flowId } = JSON.parse(
+              localStorage.getItem("eduvibe-auth-flow-v1"),
+            );
+            const read = async () => {
+              const response = await fetch("/api/v1/auth/flow-state", {
+                headers: { "X-EduVibe-Flow-Id": flowId },
+              });
+              if (response.status !== 200)
+                throw new Error("HTTPS flow proof failed");
+              return response.json();
+            };
+            const before = await read();
+            const csrf = await fetch("/api/v1/auth/csrf", {
+              headers: { "X-EduVibe-Flow-Id": flowId },
+            });
+            if (csrf.status !== 200) throw new Error("HTTPS CSRF proof failed");
+            const rotated = await fetch(
+              `/api/v1/auth/flows/${flowId}/recovery-cookie/rotate`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-EduVibe-Flow-Id": flowId,
+                  "X-CSRF-Token": (await csrf.json()).csrf_token,
+                },
+                body: JSON.stringify({
+                  expected_revision: before.revision,
+                  expected_session_generation: before.session_generation,
+                }),
+              },
+            );
+            if (rotated.status !== 201)
+              throw new Error("HTTPS rotation failed");
+            const result = await rotated.json();
+            const ready = await fetch(`/api/v1/auth/flows/${flowId}/ready`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-Token": result.recovery_csrf_token,
+              },
+              body: JSON.stringify({ expected_revision: result.revision }),
+            });
+            if (ready.status !== 200 || !(await ready.json()).ready)
+              throw new Error("HTTPS recovery receipt failed");
+            const after = await read();
+            return {
+              revisionChanged: before.revision !== after.revision,
+              identityUnchanged:
+                before.last_identity_change_revision ===
+                after.last_identity_change_revision,
+            };
+          })
+        : await page.evaluate(async () => {
+            const { authService } = await import("/src/services/api/auth.ts");
+            const before = await authService.getFlowState();
+            const result = await authService.rotateRecoveryCookie(
+              before.flowId,
+              {
+                expectedRevision: before.revision,
+                expectedSessionGeneration: before.sessionGeneration,
+              },
+            );
+            await authService.confirmRecoveryCookie(before.flowId, {
+              expectedRevision: result.revision,
+            });
+            const after = await authService.getFlowState();
+            return {
+              revisionChanged: before.revision !== after.revision,
+              identityUnchanged:
+                before.lastIdentityChangeRevision ===
+                after.lastIdentityChangeRevision,
+            };
+          });
     expect(continuity).toEqual({
       revisionChanged: true,
       identityUnchanged: true,

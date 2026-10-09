@@ -525,3 +525,17 @@ with patch('{module}.{function}',{keyword}={effect}):
         assert result.returncode == (128 + int(signum) if signum else 1)
         excludes_secrets(result.stdout + result.stderr)
         assert b"Traceback" not in result.stderr
+
+
+def test_invalid_support_startup_does_not_echo_configuration(tmp_path):
+    result = process(
+        code="import runpy; runpy.run_module('app.api', run_name='__main__')",
+        env={
+            "DATABASE_PATH": str(tmp_path / "support.sqlite3"),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+            "SUPPORT_SERVICE_URL": "http://service.example.test/" + SECRET,
+        },
+    )
+    assert result.returncode != 0
+    excludes_secrets(result.stdout + result.stderr)
+    assert b"Traceback" not in result.stderr

@@ -385,8 +385,50 @@ function ReauthenticationCard({
   );
 }
 
+const supportEmailPattern =
+  /^[A-Za-z0-9!$&'*+/=^_`{|}~-]+(?:\.[A-Za-z0-9!$&'*+/=^_`{|}~-]+)*@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$/;
+
+function supportUrl(value) {
+  try {
+    return new URL(value).protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function SupportLinks({ support }) {
+  const links = [
+    [
+      "이메일 문의",
+      supportEmailPattern.test(support?.email)
+        ? `mailto:${support.email}`
+        : null,
+    ],
+    ["서비스 문의", supportUrl(support?.service_url)],
+    ["공지사항", supportUrl(support?.announcement_url)],
+  ].filter(([, href]) => href);
+  if (!links.length) return null;
+  return (
+    <nav
+      aria-label="운영 안내"
+      className="mt-4 flex w-full flex-wrap gap-x-4 gap-y-2 text-[12px]"
+    >
+      {links.map(([label, href]) => (
+        <a
+          key={label}
+          href={href}
+          className="break-all rounded text-[#4C7A96] underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"
+        >
+          {label}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 export function AuthView({
   mode,
+  support,
   authUser,
   routeError,
   authStatus,
@@ -504,6 +546,7 @@ export function AuthView({
             desc="API 모드에서는 로그인과 회원가입을 사용할 수 없어요."
           />
         </div>
+        <SupportLinks support={support} />
       </main>
     );
 
@@ -673,9 +716,13 @@ export function AuthView({
           </p>
           <p className="mt-3">
             승인을 요청하려면 로그인 아이디, 국내 성인 교육 관계자라는 자기진술,
-            교육 목적 한 문장을 운영자에게 전달해 주세요. 운영 문의 주소는 현재
-            설정되지 않았습니다.
+            교육 목적 한 문장을 운영자에게 전달해 주세요.{" "}
+            {!supportEmailPattern.test(support?.email) &&
+            !supportUrl(support?.service_url)
+              ? "운영 문의 주소는 현재 설정되지 않았습니다."
+              : null}
           </p>
+          <SupportLinks support={support} />
           <Link
             to="/auth?mode=login"
             className="mt-5 inline-flex h-10 items-center rounded-full bg-neutral-900 px-4 text-[13px] font-semibold text-white"
@@ -1045,6 +1092,7 @@ export function AuthView({
           </p>
         ) : null}
       </form>
+      <SupportLinks support={support} />
 
       {__DATA_MODE__ === "mock" ? (
         <div className="mt-5 w-full rounded-2xl border border-neutral-200/70 bg-white/70 px-4 py-3.5">

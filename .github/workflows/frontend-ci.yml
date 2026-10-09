@@ -85,6 +85,12 @@ jobs:
         run: |
           systemd-analyze --version
           APP_ENV=test uv run --frozen pytest tests/test_service_units.py tests/test_migration_lifecycle.py tests/test_health_worker_process.py -ra
+      - name: Native HTTPS functional release contracts
+        working-directory: frontend
+        env:
+          CI: "true"
+          HEALTH_CHECKS_ENABLED: "false"
+        run: npm run test:e2e:api -- --nginx-functional
   frontend:
     runs-on: ubuntu-24.04
     steps:

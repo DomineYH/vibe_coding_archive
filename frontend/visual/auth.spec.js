@@ -167,6 +167,9 @@ async function capture(
     viewport,
     baseline,
     screenshot: name,
+    ...(state.startsWith("auth-support-")
+      ? { acceptanceStatus: "comparison pending T13 #205" }
+      : {}),
     ...comparison,
   };
   results.push(result);
@@ -475,4 +478,134 @@ for (const viewport of viewports) {
     await expect(passwordChange.locator("#new-password")).toBeVisible();
     await capture(page, "auth-password-change", viewport, testInfo);
   });
+}
+
+for (const viewport of viewports) {
+  for (const variant of ["configured", "long"]) {
+    test(`support ${variant} notices at ${viewport.width}x${viewport.height}`, async ({
+      page,
+    }, testInfo) => {
+      await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+      const support =
+        variant === "long"
+          ? {
+              email: `${"support".repeat(8)}+archive@${"domain".repeat(8)}.example.test`,
+              service_url: `https://service.example.test/${"help/".repeat(80)}?topic=${"archive".repeat(40)}`,
+              announcement_url: `https://notice.example.test/${"updates/".repeat(80)}`,
+            }
+          : {
+              email: "support@example.test",
+              service_url: "https://service.example.test/help",
+              announcement_url: "https://notice.example.test/updates",
+            };
+      await page.route("**/src/services/mock/apps.ts*", async (route) => {
+        const response = await route.fetch();
+        await route.fulfill({
+          response,
+          body: `${await response.text()}\nmockMetaWire.support = ${JSON.stringify(support)};`,
+        });
+      });
+      async function checkAndCapture(state) {
+        const email = page.getByRole("link", {
+          name: "이메일 문의",
+          exact: true,
+        });
+        await expect(email).toHaveAttribute("href", `mailto:${support.email}`);
+        await expect(
+          page.getByRole("link", { name: "서비스 문의" }),
+        ).toHaveAttribute("href", support.service_url);
+        await expect(
+          page.getByRole("link", { name: "공지사항" }),
+        ).toHaveAttribute("href", support.announcement_url);
+        await email.focus();
+        await page.keyboard.press("Tab");
+        await expect(
+          page.getByRole("link", { name: "서비스 문의" }),
+        ).toBeFocused();
+        await page.keyboard.press("Shift+Tab");
+        await expect(email).toBeFocused();
+        expect(
+          await email.evaluate((link) => getComputedStyle(link).outlineStyle),
+        ).not.toBe("none");
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        ).toBe(true);
+        await capture(
+          page,
+          `auth-support-${variant}-${state}`,
+          viewport,
+          testInfo,
+        );
+      }
+      await reset(page, viewport);
+      await page.goto("/auth?mode=login");
+      await checkAndCapture("login-focus");
+      await page.goto("/auth?mode=signup");
+      await expect(page.locator("#email")).toHaveAttribute(
+        "aria-describedby",
+        "contact-hint",
+      );
+      await checkAndCapture("signup");
+      await register(page, {
+        email: "synthetic@example.test",
+        phone: "synthetic phone",
+      });
+      await expect(page.locator("#email-error")).toBeVisible();
+      await expect(page.locator("#phone-error")).toBeVisible();
+      await expect(page.locator("#email")).toHaveAttribute(
+        "aria-describedby",
+        "email-error",
+      );
+      await expect(page.locator("#phone")).toHaveAttribute(
+        "aria-describedby",
+        "phone-error",
+      );
+      await checkAndCapture("field-errors");
+      await page.locator("#email").fill("");
+      await page.locator("#phone").fill("");
+      await page
+        .getByRole("button", { name: "가입 신청하기", exact: true })
+        .click();
+      await expect(
+        page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+      ).toBeVisible();
+      await expect(
+        page.getByText(/운영 문의 주소는 현재 설정되지/),
+      ).toHaveCount(0);
+      await checkAndCapture("pending");
+      // Mock auth always stays available; capture the public unavailable view directly.
+      await page.evaluate(async (support) => {
+        const [
+          { default: React },
+          { default: ReactDOM },
+          { MemoryRouter },
+          { AuthView },
+        ] = await Promise.all([
+          import("/node_modules/.vite/deps/react.js"),
+          import("/node_modules/.vite/deps/react-dom_client.js"),
+          import("/node_modules/.vite/deps/react-router-dom.js"),
+          import("/src/features/auth/view-auth.jsx"),
+        ]);
+        const host = document.createElement("div");
+        document.getElementById("root").replaceWith(host);
+        ReactDOM.createRoot(host).render(
+          React.createElement(
+            MemoryRouter,
+            null,
+            React.createElement(AuthView, {
+              mode: "login",
+              authStatus: "unavailable",
+              support,
+            }),
+          ),
+        );
+      }, support);
+      await expect(
+        page.getByText("인증 기능은 아직 준비 중이에요"),
+      ).toBeVisible();
+      await checkAndCapture("unavailable");
+    });
+  }
 }

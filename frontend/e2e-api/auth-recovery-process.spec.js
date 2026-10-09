@@ -1,3 +1,4 @@
+import { publicOrigin } from "./helpers.js";
 import { expect } from "@playwright/test";
 import {
   test,
@@ -169,11 +170,11 @@ test("encrypted restore keeps old browser cookies and current authority blocked"
   const storage = await page.evaluate((key) => localStorage.getItem(key), key);
   const ownerHeaders = {
     ...(await approvalHeaders(page)),
-    Origin: "http://localhost:5174",
+    Origin: publicOrigin,
   };
   const adminHeaders = {
     ...(await approvalHeaders(adminPage)),
-    Origin: "http://localhost:5174",
+    Origin: publicOrigin,
   };
   try {
     await processControl({ action: "encrypted-backup" });
@@ -292,7 +293,7 @@ test("migration maintenance blocks old cookies then release restart preserves ar
   await page.goto(`/apps/${owned.apps[1]}`);
   const headers = {
     ...(await approvalHeaders(page)),
-    Origin: "http://localhost:5174",
+    Origin: publicOrigin,
   };
   await expect(page.locator("main pre")).toBeVisible();
   const source = await page.locator("main pre").textContent();

@@ -6,6 +6,7 @@ import {
   mkdir,
   mkdtemp,
   rm,
+  readFile,
   writeFile,
 } from "node:fs/promises";
 import { createServer } from "node:net";
@@ -48,10 +49,89 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
   });
 }
 
+export function nginxNodeTrust(functional, certificate) {
+  return functional ? { NODE_EXTRA_CA_CERTS: certificate } : {};
+}
+
+export function selectNginxRuns(args) {
+  const functional = args.includes("--nginx-functional");
+  const nginx = args.includes("--nginx");
+  if (!functional && !nginx) return null;
+  if (
+    (functional && nginx) ||
+    args.includes("--auth-unavailable") ||
+    args.includes("--admin-apps-empty")
+  )
+    throw new Error("Conflicting Nginx runner modes.");
+  const arguments_ = args.filter(
+    (arg) => arg !== "--nginx" && arg !== "--nginx-functional",
+  );
+  const files = arguments_.filter((arg) => /\.spec\.js$/.test(arg));
+  const options = arguments_.filter((arg) => !/\.spec\.js$/.test(arg));
+  if (!functional) {
+    if (files.some((file) => !file.endsWith("static-serving.spec.js")))
+      throw new Error("--nginx requires an isolated static-serving run.");
+    return [
+      {
+        arguments_: files.length
+          ? arguments_
+          : ["e2e-api/static-serving.spec.js", ...options],
+        prepared: true,
+        faults: false,
+      },
+    ];
+  }
+  const normal = [
+    "auth-register",
+    "admin-approval",
+    "auth-login",
+    "auth-access",
+    "app-create",
+    "app-edit",
+    "app-delete",
+    "admin-password-reset",
+    "admin-user-delete",
+  ].map((name) => `e2e-api/${name}.spec.js`);
+  const groups = [
+    { arguments_: normal, prepared: true, faults: false },
+    {
+      arguments_: ["e2e-api/auth-support.spec.js"],
+      prepared: true,
+      faults: false,
+      support: true,
+    },
+    {
+      arguments_: ["e2e-api/auth-recovery-process.spec.js"],
+      prepared: true,
+      faults: true,
+    },
+    {
+      arguments_: ["e2e-api/health-real.spec.js"],
+      prepared: true,
+      faults: false,
+      health: true,
+    },
+  ];
+  const allowed = groups.flatMap((run) => run.arguments_);
+  if (files.some((file) => !allowed.includes(file)))
+    throw new Error("Spec not selected in HTTPS variant.");
+  return groups.flatMap((run) => {
+    const selected = run.arguments_.filter(
+      (file) => !files.length || files.includes(file),
+    );
+    return selected.length
+      ? [{ ...run, arguments_: [...selected, ...options] }]
+      : [];
+  });
+}
+
 async function run() {
-  const nginx = process.argv.includes("--nginx");
+  const functionalNginx = process.argv.includes("--nginx-functional");
+  const nginx = process.argv.includes("--nginx") || functionalNginx;
+  const nginxRuns = selectNginxRuns(process.argv.slice(2));
   if (
     nginx &&
+    !functionalNginx &&
     process.argv
       .slice(2)
       .some(
@@ -83,13 +163,14 @@ async function run() {
       (arg) =>
         arg !== "--auth-unavailable" &&
         arg !== "--admin-apps-empty" &&
-        arg !== "--nginx",
+        arg !== "--nginx" &&
+        arg !== "--nginx-functional",
     );
   const authPrepared =
     nginx ||
     (!process.argv.includes("--auth-unavailable") &&
       arguments_.some((arg) =>
-        /health-real|auth-(candidate|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+        /health-real|auth-(candidate|support|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
           arg,
         ),
       ));
@@ -97,6 +178,10 @@ async function run() {
     ...process.env,
     APP_ENV: "test",
     HEALTH_CHECKS_ENABLED: "false",
+    SUPPORT_EMAIL: "",
+    SUPPORT_SERVICE_URL: "",
+    SUPPORT_ANNOUNCEMENT_URL: "",
+    API_E2E_SUPPORT_MODE: "",
     API_E2E_AGE_AVAILABLE:
       spawnSync("age", ["--version"], { stdio: "ignore" }).status === 0 &&
       spawnSync("age-keygen", ["--version"], { stdio: "ignore" }).status === 0
@@ -109,6 +194,7 @@ async function run() {
     PASSWORD_RESET_HMAC_PATH: path.join(temporary, "reset-hmac.json"),
     PUBLIC_ORIGIN: nginx ? "https://localhost:8443" : "http://localhost:5174",
     API_E2E_NGINX: nginx ? "1" : "",
+    API_E2E_NGINX_FUNCTIONAL: functionalNginx ? "1" : "",
     ...(nginx
       ? {
           HEALTH_CHECKS_ENABLED: "false",
@@ -242,6 +328,17 @@ raise SystemExit(status)`,
       "e2e-api/auth-recovery-boundaries.spec.js",
       "e2e-api/auth-recovery-captures.spec.js",
     ];
+    const isSupport = (arg) => /auth-support/.test(arg);
+    const selectedSupport = arguments_.filter(isSupport);
+    const supportRuns = (files, prepared = true) =>
+      files.flatMap((file) =>
+        (prepared ? [true, false] : [false]).map((enabled) => ({
+          arguments_: [file, ...options],
+          prepared: enabled,
+          faults: false,
+          support: true,
+        })),
+      );
     const isCandidate = (arg) => /auth-candidate/.test(arg);
     const selectedCandidate = arguments_.filter(isCandidate);
     const isFault = (arg) => /auth-(races|recovery)/.test(arg);
@@ -249,7 +346,8 @@ raise SystemExit(status)`,
     const selectedFaults = arguments_.filter(isFault);
     const selectedHealth = arguments_.filter(isHealth);
     const selectedNormal = arguments_.filter(
-      (arg) => !isFault(arg) && !isHealth(arg) && !isCandidate(arg),
+      (arg) =>
+        !isFault(arg) && !isHealth(arg) && !isCandidate(arg) && !isSupport(arg),
     );
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
@@ -272,7 +370,8 @@ raise SystemExit(status)`,
             ...(normalFiles.length ||
             (!selectedFaults.length &&
               !selectedHealth.length &&
-              !selectedCandidate.length)
+              !selectedCandidate.length &&
+              !selectedSupport.length)
               ? [
                   {
                     arguments_: selectedNormal,
@@ -281,6 +380,7 @@ raise SystemExit(status)`,
                   },
                 ]
               : []),
+            ...supportRuns(selectedSupport, authPrepared),
             ...selectedCandidate.flatMap((file) =>
               (authPrepared
                 ? ["approved", "pending", "invalid", "revoked"]
@@ -313,7 +413,12 @@ raise SystemExit(status)`,
               : []),
           ]
         : [
-            { arguments_: [], prepared: false, faults: false },
+            {
+              arguments_: ["^(?!.*auth-support).*\\.spec\\.js$"],
+              prepared: false,
+              faults: false,
+            },
+            ...supportRuns(["e2e-api/auth-support.spec.js"]),
             { arguments_: normal, prepared: true, faults: false },
             ...["approved", "pending", "invalid", "revoked"].map(
               (candidate) => ({
@@ -332,17 +437,7 @@ raise SystemExit(status)`,
             },
             emptyRun(["e2e-api/admin-apps-empty.spec.js"]),
           ];
-    const selectedRuns = nginx
-      ? [
-          {
-            arguments_: arguments_.some((arg) => /\.spec\.js$/.test(arg))
-              ? arguments_
-              : ["e2e-api/static-serving.spec.js", ...arguments_],
-            prepared: true,
-            faults: false,
-          },
-        ]
-      : runs;
+    const selectedRuns = nginxRuns ?? runs;
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
     const capture =
@@ -392,12 +487,41 @@ raise SystemExit(status)`,
       await mkdir(runDirectory, { mode: 0o700 });
       const runEnv = {
         ...env,
+        ...(run.support
+          ? {
+              API_E2E_SUPPORT_MODE: "configured",
+              SUPPORT_EMAIL: "support@example.test",
+              SUPPORT_SERVICE_URL: "https://service.example.test/help",
+              SUPPORT_ANNOUNCEMENT_URL: "https://notice.example.test/updates",
+            }
+          : {}),
         DATABASE_PATH: path.join(runDirectory, "api.sqlite3"),
         AUTH_FAULT_CONTROL: path.join(runDirectory, "auth-control.sock"),
         AUTH_PROXY_CONTROL: path.join(runDirectory, "proxy-control.sock"),
         AUTH_PROCESS_CONTROL: path.join(runDirectory, "process-control.sock"),
         HEALTH_WORKER_LOCK_PATH: path.join(runDirectory, "health-worker.lock"),
       };
+      if (nginx) {
+        const values = JSON.parse(
+          await readFile(env.API_E2E_NGINX_VALUES, "utf8"),
+        );
+        Object.assign(
+          runEnv,
+          nginxNodeTrust(functionalNginx, values.TLS_CERTIFICATE),
+        );
+        values.RUNTIME_ROOT = path.join(runDirectory, "nginx-runtime");
+        values.LOG_ROOT = path.join(runDirectory, "logs");
+        runEnv.API_E2E_NGINX_VALUES = path.join(
+          runDirectory,
+          "nginx-values.json",
+        );
+        runEnv.API_E2E_LOG_ROOT = values.LOG_ROOT;
+        runEnv.API_E2E_UPSTREAM_PID = path.join(runDirectory, "upstream.pid");
+        await writeFile(runEnv.API_E2E_NGINX_VALUES, JSON.stringify(values), {
+          mode: 0o600,
+          flag: "wx",
+        });
+      }
       await copyFile(
         run.empty ? emptyTemplate : template,
         runEnv.DATABASE_PATH,
@@ -455,9 +579,14 @@ raise SystemExit(status)`,
   }
 }
 
-try {
-  await run();
-} catch (error) {
-  console.error(error instanceof Error ? error.message : "API E2E failed.");
-  process.exitCode = receivedSignal ? signalExitCode() : 1;
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  try {
+    await run();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : "API E2E failed.");
+    process.exitCode = receivedSignal ? signalExitCode() : 1;
+  }
 }

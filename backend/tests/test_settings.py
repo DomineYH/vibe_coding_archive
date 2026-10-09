@@ -701,3 +701,136 @@ def test_production_rejects_loopback_origin_matrix(origin):
                 "PUBLIC_ORIGIN": origin,
             }
         )
+
+
+@pytest.mark.parametrize("value", [None, "", " \t\n"])
+def test_support_settings_empty_is_null(tmp_path, value):
+    environment = {
+        "APP_ENV": "test",
+        "DATABASE_PATH": str(tmp_path / "support.sqlite3"),
+        "PUBLIC_ORIGIN": "http://localhost:5174",
+    }
+    if value is not None:
+        environment.update(
+            dict.fromkeys(
+                ["SUPPORT_EMAIL", "SUPPORT_SERVICE_URL", "SUPPORT_ANNOUNCEMENT_URL"],
+                value,
+            )
+        )
+    settings = Settings.from_environment(environment)
+    assert (
+        settings.support_email,
+        settings.support_service_url,
+        settings.support_announcement_url,
+    ) == (None, None, None)
+
+
+@pytest.mark.parametrize(
+    "support",
+    [
+        {"SUPPORT_EMAIL": "support+archive@example.test"},
+        {"SUPPORT_SERVICE_URL": "https://service.example.test/help?q=archive#contact"},
+        {"SUPPORT_ANNOUNCEMENT_URL": "https://notice.example.test/updates"},
+        {
+            "SUPPORT_EMAIL": "support@example.test",
+            "SUPPORT_SERVICE_URL": "https://service.example.test/help",
+            "SUPPORT_ANNOUNCEMENT_URL": "https://notice.example.test/updates",
+        },
+    ],
+)
+def test_support_settings_preserve_public_values(tmp_path, support):
+    settings = Settings.from_environment(
+        {
+            "APP_ENV": "test",
+            "DATABASE_PATH": str(tmp_path / "support.sqlite3"),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+            **support,
+        }
+    )
+    assert settings.support_email == support.get("SUPPORT_EMAIL")
+    assert settings.support_service_url == support.get("SUPPORT_SERVICE_URL")
+    assert settings.support_announcement_url == support.get("SUPPORT_ANNOUNCEMENT_URL")
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "name <support@example.test>",
+        "a@example.test,b@example.test",
+        "mailto:a@example.test",
+        "a..b@example.test",
+        ".a@example.test",
+        "a@example.test?subject=x",
+        "a#b@example.test",
+        "a%b@example.test",
+        "a@-example.test",
+        "a@localhost",
+        "한글@example.test",
+        " a@example.test",
+        "a@example.test\n",
+        "a\x7f@example.test",
+    ],
+)
+def test_invalid_support_email_configuration_is_rejected(tmp_path, value):
+    with pytest.raises(ConfigurationError) as failure:
+        Settings.from_environment(
+            {
+                "APP_ENV": "test",
+                "DATABASE_PATH": str(tmp_path / "support.sqlite3"),
+                "PUBLIC_ORIGIN": "http://localhost:5174",
+                "SUPPORT_EMAIL": value,
+            }
+        )
+    assert value not in str(failure.value)
+
+
+@pytest.mark.parametrize("field", ["SUPPORT_SERVICE_URL", "SUPPORT_ANNOUNCEMENT_URL"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        "http://service.example.test/help",
+        "//service.example.test/help",
+        "javascript:alert(1)",
+        "data:text/html,x",
+        "mailto:a@example.test",
+        "https://",
+        "https://user:pass@service.example.test/",
+        "https://-bad.test/",
+        "https://service.example.test:0/",
+        "https://service.example.test:65536/",
+        "https://service.example.test:bad/",
+        "https://service.example.test:/",
+        "https://[::1",
+        "https://[::1]suffix/",
+        "https://999.1.1.1/",
+        "https://service.example.test/white space",
+        "https://service.example.test/\n",
+        "https://service.example.test/\x7f",
+        "https://service.example.test\\evil/",
+        " https://service.example.test/",
+        "https://service.example.test/%ZZ",
+    ],
+)
+def test_invalid_support_url_configuration_is_rejected(tmp_path, field, value):
+    with pytest.raises(ConfigurationError) as failure:
+        Settings.from_environment(
+            {
+                "APP_ENV": "test",
+                "DATABASE_PATH": str(tmp_path / "support.sqlite3"),
+                "PUBLIC_ORIGIN": "http://localhost:5174",
+                field: value,
+            }
+        )
+    assert value not in str(failure.value)
+
+
+def test_support_validation_rejects_direct_settings(tmp_path):
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError, match="Support"):
+        Settings(
+            app_env="test",
+            database_path=tmp_path / "support.sqlite3",
+            public_origin="http://localhost:5174",
+            support_email="invalid",
+        )

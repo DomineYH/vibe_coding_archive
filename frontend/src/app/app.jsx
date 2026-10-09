@@ -1621,6 +1621,7 @@ function AuthRoute({
           : mode
       }
       mode={mode}
+      support={meta?.support}
       authUser={authUser}
       routeError={route.invalid}
       authStatus={

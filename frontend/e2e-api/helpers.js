@@ -3,6 +3,17 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+export const publicOrigin =
+  process.env.PUBLIC_ORIGIN ?? "http://localhost:5174";
+export const browserContextOptions = {
+  baseURL: publicOrigin,
+  ignoreHTTPSErrors: publicOrigin.startsWith("https:"),
+};
+
+export function authCookieKind(cookie) {
+  return cookie.name.replace(/^__Host-/, "").split("_")[1];
+}
+
 export const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
 export const viewports = [
