@@ -10,6 +10,10 @@ export const browserContextOptions = {
   ignoreHTTPSErrors: publicOrigin.startsWith("https:"),
 };
 
+export function authCookieKind(cookie) {
+  return cookie.name.replace(/^__Host-/, "").split("_")[1];
+}
+
 export const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
 
 export const viewports = [

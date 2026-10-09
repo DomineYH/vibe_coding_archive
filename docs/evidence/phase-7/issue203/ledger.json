@@ -8296,7 +8296,8 @@
         "frontend/e2e-api/admin-password-reset.spec.js::pending and revoked targets remain unapproved; existing temporary sessions are revoked",
         "frontend/e2e-api/admin-user-delete.spec.js::recent login deletes public/private apps without reauth, cancels safely, submits once and revokes old sessions",
         "frontend/e2e-api/admin-user-delete.spec.js::zero-app and change-only members can be deleted with their old authority blocked",
-        "frontend/e2e-api/admin-user-delete.spec.js::a Health Monitor loaded before a confirmed deletion never shows the deleted owner's apps again"
+        "frontend/e2e-api/admin-user-delete.spec.js::a Health Monitor loaded before a confirmed deletion never shows the deleted owner's apps again",
+        "frontend/e2e-api/auth-login.spec.js::login states at ${width}x${height}"
       ],
       "command": "npm run test:e2e:api -- --nginx-functional",
       "cwd": "frontend",
@@ -10260,7 +10261,6 @@
       "case_ids": [
         "frontend/e2e-api/auth-register.spec.js::registration cards at ${viewport.width}x${viewport.height}",
         "frontend/e2e-api/admin-approval.spec.js::administrator approval cards at ${viewport.width}x${viewport.height}",
-        "frontend/e2e-api/auth-login.spec.js::login states at ${width}x${height}",
         "frontend/e2e-api/auth-access.spec.js::private access states ${viewport.width}x${viewport.height}"
       ],
       "command": "npm run test:e2e:api -- --nginx-functional",
@@ -10281,6 +10281,84 @@
       "owner": "impl-t09 / #203",
       "reviewer": "DomineYH",
       "timestamp": "2026-10-09T12:23:53.167092Z"
+    }
+  ],
+  "ci_history": [
+    {
+      "run_id": "ci-37932036263-attempt-1",
+      "source_commit": "8d1cbec9c9a53b23ede3919f3011d1931be77527",
+      "release_id": "phase7-t09-candidate",
+      "lock_hashes": {
+        "backend": "257fe6637be3c6f5f900c447c341dc360822328a1726b4476be6286d9db3a6bf",
+        "frontend": "22e546821ffce45e10d7cfe0d6891347cf0150dba2e3167c5e0d3ba758702373"
+      },
+      "versions": {
+        "os": "GitHub ubuntu-24.04 configured; actual runtime not in supplied step logs",
+        "node": "CI configured 22.23.2; actual runtime not in supplied step logs",
+        "npm": "CI configured 12.0.2; actual runtime not in supplied step logs",
+        "python": "CI configured 3.12.3; actual runtime not in supplied step logs",
+        "browser": "Backend-api CI installs Playwright Chromium; actual version not in supplied step logs",
+        "playwright": "1.63.0 lock binding",
+        "font": "CI Noto Sans CJK JP configured; actual font runtime not in supplied step logs"
+      },
+      "layer": "ci",
+      "command": "npm run test:e2e:api",
+      "cwd": "frontend",
+      "start": "2026-10-09T13:18:11.6498261Z",
+      "end": "2026-10-09T13:26:00.7428597Z",
+      "exit_code": 1,
+      "result": "FAIL",
+      "count": {
+        "collected": 257,
+        "executed": 166,
+        "passed": 165,
+        "failed": 1,
+        "skipped": 91
+      },
+      "evidence": "https://github.com/DomineYH/vibe_coding_archive/actions/runs/37932036263/attempts/1",
+      "log": "/home/dominelinux/.cache/vibe_coding_archive/coord/impl8/ci-t09-3.log",
+      "owner": "original admin-apps/health ticket (coordinator routing; not T09)",
+      "reason": "admin-apps.spec.js:275 expected 3600000, received 3601000: pre-existing fixture SQL clock flake. Runner stopped in prepared normal subrun; captures and later groups, including new native step, did not run.",
+      "frontend_job": "SUCCESS (coordinator relay)",
+      "coverage": "Historical invocation only; no current candidate acceptance PASS."
+    },
+    {
+      "run_id": "ci-37932036263-attempt-2",
+      "source_commit": "8d1cbec9c9a53b23ede3919f3011d1931be77527",
+      "release_id": "phase7-t09-candidate",
+      "lock_hashes": {
+        "backend": "257fe6637be3c6f5f900c447c341dc360822328a1726b4476be6286d9db3a6bf",
+        "frontend": "22e546821ffce45e10d7cfe0d6891347cf0150dba2e3167c5e0d3ba758702373"
+      },
+      "versions": {
+        "os": "GitHub ubuntu-24.04 configured; actual runtime not in supplied step logs",
+        "node": "CI configured 22.23.2; actual runtime not in supplied step logs",
+        "npm": "CI configured 12.0.2; actual runtime not in supplied step logs",
+        "python": "CI configured 3.12.3; actual runtime not in supplied step logs",
+        "browser": "Backend-api CI installs Playwright Chromium; actual version not in supplied step logs",
+        "playwright": "1.63.0 lock binding",
+        "font": "CI Noto Sans CJK JP configured; actual font runtime not in supplied step logs"
+      },
+      "layer": "ci",
+      "command": "npm run test:e2e:api -- --nginx-functional",
+      "cwd": "frontend",
+      "start": "2026-10-09T14:01:58.7126829Z",
+      "end": "2026-10-09T14:03:37.9390441Z",
+      "exit_code": 1,
+      "result": "FAIL",
+      "count": {
+        "collected": 48,
+        "executed": 48,
+        "passed": 46,
+        "failed": 2,
+        "skipped": 0
+      },
+      "evidence": "https://github.com/DomineYH/vibe_coding_archive/actions/runs/37932036263/attempts/2",
+      "log": "/home/dominelinux/.cache/vibe_coding_archive/coord/impl8/ci-t09-4.log",
+      "owner": "impl-t09 / #203",
+      "reason": "auth-login.spec.js:125 and :233 parse __Host- cookie names as empty kinds; expected recovery. Native normal moving-clock subrun failed; captures/support/restore/worker did not run. Existing API and frontend passed per coordinator.",
+      "frontend_job": "SUCCESS (coordinator relay)",
+      "coverage": "Historical invocation only; no current candidate acceptance PASS."
     }
   ]
 }

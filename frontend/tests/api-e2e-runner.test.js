@@ -4,6 +4,18 @@ import { afterEach, vi } from "vitest";
 import { expect, it } from "vitest";
 import { nginxNodeTrust, selectNginxRuns } from "../scripts/test-api-e2e.mjs";
 
+it("classifies HTTP and HTTPS recovery/session cookies identically", async () => {
+  const { authCookieKind } = await import("../e2e-api/helpers.js");
+  expect(
+    [
+      "eduvibe_recovery_dev_1",
+      "__Host-eduvibe_recovery_test_1",
+      "eduvibe_session_dev_2",
+      "__Host-eduvibe_session_test_2",
+    ].map((name) => authCookieKind({ name })),
+  ).toEqual(["recovery", "recovery", "session", "session"]);
+}, 30_000);
+
 it("trusts only the generated certificate in functional HTTPS child processes", () => {
   const certificate = "/test-owned/nginx/cert.pem";
   const env = nginxNodeTrust(true, certificate);

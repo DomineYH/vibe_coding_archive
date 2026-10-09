@@ -18,6 +18,16 @@ Local Node/npm are 24.21.0/12.2.0, differing from CI's configured 22.23.2/12.0.2
 
 PASS requires nonzero execution, passed = executed = collected, zero failed/skipped, the expected result, and a matching source/lock/release/run/evidence binding. NOT RUN/BLOCKED require a reason and owner. Each skipped case gets its own NOT RUN subset; do not give its parent scope a PASS. Keep the original failed command alongside any targeted retry. Case coverage is deduplicated by case, mode and release; counts for overlapping requirement rows must never be added together.
 
+## Repair 2 CI history
+
+Additional `ci_history` records preserve source `8d1cbec9c9a53b23ede3919f3011d1931be77527` separately from the original d97 candidate rows. They are historical invocation records with source/lock/runtime limitations, not current acceptance coverage or repair-source PASS. Phase D still requires actual-source evidence binding.
+
+Run [37932036263 attempt 1](https://github.com/DomineYH/vibe_coding_archive/actions/runs/37932036263/attempts/1) is **FAIL**: existing API subruns collected 257, executed 166, passed 165, failed 1, skipped 91. `admin-apps.spec.js:275` observed 3601000 instead of 3600000, a pre-existing fixture SQL clock flake owned by the original admin-apps/health ticket; T09 does not repair it. Remaining groups and the native step did not run.
+
+[Attempt 2](https://github.com/DomineYH/vibe_coding_archive/actions/runs/37932036263/attempts/2) is **FAIL**: native normal subrun collected/executed 48, passed 46, failed 2, skipped 0. The logout and committed-lost-reply assertions at `auth-login.spec.js:125` and `:233` still parsed `__Host-` names as empty cookie kinds. Existing API passed, and frontend succeeded both attempts, per coordinator relay. Native captures/support/restore/worker did not run after the failure. Original logs: `ci-t09-3.log` and `ci-t09-4.log` in the coordinator evidence directory.
+
+Repair 2 uses one `authCookieKind` helper for all three semantic cookie-kind assertions. The complete API spec/helper sweep found no other kind parser in the functional selection; identity comparisons and HTTPS prefix/Secure checks remain unchanged. Default Vite behavior is verified by the targeted login spec using `/tmp`, as authorized by repair order 2. Native verification awaits fresh CI; release remains BLOCKED.
+
 ## Complete required crosswalk
 
 Every ID below has its own ledger item and actual test-case references or an explicit human/host procedure. The source descriptions and case names in the JSON are the crosswalk, not inferred suite-wide approval.

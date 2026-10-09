@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  authCookieKind,
   blockExternalRequests,
   prepareViewportCapture,
   query,
@@ -70,9 +71,7 @@ test("an approved member logs in, keeps the session across refresh and logs out"
 }) => {
   await openLogin(page);
   const before = await authCookies(context);
-  expect(
-    before.map((c) => c.name.replace(/^__Host-/, "").split("_")[1]).sort(),
-  ).toEqual(["recovery", "session"]);
+  expect(before.map(authCookieKind).sort()).toEqual(["recovery", "session"]);
   await login(page, "member-a");
   const banner = page.getByRole("banner");
   // The header shows the nickname, never the login ID.
@@ -122,7 +121,7 @@ test("an approved member logs in, keeps the session across refresh and logs out"
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
   const final = await authCookies(context);
-  expect(final.map((c) => c.name.split("_")[1])).toEqual(["recovery"]);
+  expect(final.map(authCookieKind)).toEqual(["recovery"]);
   const me = await page.evaluate(async (k) => {
     const { flowId } = JSON.parse(localStorage.getItem(k));
     const state = await fetch("/api/v1/auth/flow-state", {
@@ -230,9 +229,9 @@ test("a committed login whose reply never arrives discards exactly that session 
   ).toBeVisible();
   expect(received).toEqual([]);
   // The revoked anonymous S is cleaned up and the new S was never received.
-  expect((await authCookies(context)).map((c) => c.name.split("_")[1])).toEqual(
-    ["recovery"],
-  );
+  expect((await authCookies(context)).map(authCookieKind)).toEqual([
+    "recovery",
+  ]);
   const sessions = () =>
     query(
       "SELECT issued_seq, revoked_at IS NOT NULL FROM sessions WHERE member_id = '00000000-0000-4000-8000-000000000100' ORDER BY rowid",
