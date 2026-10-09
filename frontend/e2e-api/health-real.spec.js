@@ -1,5 +1,10 @@
+import { spawn, spawnSync } from "node:child_process";
+import { writeFile } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import path from "node:path";
 import { expect } from "@playwright/test";
 import { blockExternalRequests, query } from "./helpers.js";
+import { approvalHeaders } from "./approval-helpers.js";
 import { openMonitor, signIn, test } from "./admin-apps-helpers.js";
 
 test.describe("connection checks over real API, queue and worker", () => {
@@ -249,5 +254,132 @@ test.describe("connection checks over real API, queue and worker", () => {
     expect(
       query(`SELECT count(*) FROM health_jobs WHERE app_id='${app.id}'`),
     ).toEqual([[1]]);
+  });
+  test("disable cancels queued work, closes intake and retains results after synthetic re-enable", async ({
+    page,
+    context,
+    owned,
+  }) => {
+    await blockExternalRequests(context);
+    const appId = owned.apps.find((app) => app.public).id;
+    await page.goto(`/apps/${appId}`);
+    const accepted = page.waitForResponse(
+      (r) =>
+        r.url().endsWith(`/apps/${appId}/health-checks`) &&
+        r.request().method() === "POST",
+    );
+    await page
+      .getByRole("button", { name: "연결 다시 확인", exact: true })
+      .click();
+    expect((await accepted).status()).toBe(202);
+    await expect
+      .poll(() =>
+        query(
+          `SELECT state,http_status FROM health_results WHERE app_id='${appId}'`,
+        ),
+      )
+      .toEqual([["healthy", 204]]);
+    const original = query(
+      `SELECT * FROM health_results WHERE app_id='${appId}'`,
+    );
+    const job = randomUUID();
+    query(
+      `INSERT INTO health_jobs(id,app_id,url_version,status,individual,created_at) VALUES ('${job}','${appId}',1,'queued',1,strftime('%Y-%m-%dT%H:%M:%f000Z','now'))`,
+    );
+    const activation = path.join(
+      path.dirname(process.env.DATABASE_PATH),
+      "synthetic-health.json",
+    );
+    await writeFile(
+      activation,
+      JSON.stringify({ version: 1, synthetic: true }),
+      { mode: 0o600, flag: "wx" },
+    );
+    const disabled = spawnSync(
+      "uv",
+      ["run", "--frozen", "python", "-m", "app.cli", "disable-health"],
+      {
+        cwd: "../backend",
+        env: { ...process.env, HEALTH_ACTIVATION_PATH: activation },
+        stdio: "pipe",
+      },
+    );
+    expect(disabled.status).toBe(3);
+    expect(disabled.stdout.toString().trim()).toBe("HEALTH_STOP_REQUIRED");
+    // This worker belongs to this runner's private DB; never signal another process.
+    const stopped = spawnSync(
+      "uv",
+      [
+        "run",
+        "--frozen",
+        "python",
+        "-c",
+        String.raw`
+import fcntl,os,signal,time
+from pathlib import Path
+lock = Path(os.environ['HEALTH_WORKER_LOCK_PATH'])
+info = lock.stat()
+identity = f"{os.major(info.st_dev):02x}:{os.minor(info.st_dev):02x}:{info.st_ino}"
+owners = [int(line.split()[4]) for line in Path('/proc/locks').read_text().splitlines() if line.split()[5] == identity]
+assert len(owners) == 1
+pid = owners[0]
+assert b'tests.health_e2e_worker' in Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0')
+environment = Path(f'/proc/{pid}/environ').read_bytes().split(b'\0')
+assert b'APP_ENV=test' in environment
+assert ('DATABASE_PATH='+os.environ['DATABASE_PATH']).encode() in environment
+os.kill(pid,signal.SIGTERM)
+end = time.monotonic()+16
+while Path(f'/proc/{pid}').exists():
+    assert time.monotonic() < end
+    time.sleep(.05)
+with lock.open('rb') as fd:
+    fcntl.flock(fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
+`,
+      ],
+      { cwd: "../backend", env: process.env, stdio: "pipe" },
+    );
+    expect(stopped.status, "owned worker OS termination").toBe(0);
+    expect(query(`SELECT status FROM health_jobs WHERE id='${job}'`)).toEqual([
+      ["cancelled"],
+    ]);
+    const unavailable = await page.request.post(
+      `/api/v1/apps/${appId}/health-checks`,
+      {
+        headers: {
+          ...(await approvalHeaders(page)),
+          Origin: "http://localhost:5174",
+        },
+      },
+    );
+    expect(unavailable.status()).toBe(503);
+    expect((await unavailable.json()).error.code).toBe("FEATURE_UNAVAILABLE");
+    expect(
+      query(`SELECT * FROM health_results WHERE app_id='${appId}'`),
+    ).toEqual(original);
+    const replacement = spawn(
+      "uv",
+      ["run", "--frozen", "python", "-m", "tests.health_e2e_worker"],
+      { cwd: "../backend", env: process.env, stdio: "ignore" },
+    );
+    try {
+      await expect
+        .poll(() => query("SELECT ready FROM health_worker"))
+        .toEqual([[1]]);
+      await page.waitForTimeout(300);
+      expect(query(`SELECT status FROM health_jobs WHERE id='${job}'`)).toEqual(
+        [["cancelled"]],
+      );
+      expect(
+        query(`SELECT * FROM health_results WHERE app_id='${appId}'`),
+      ).toEqual(original);
+    } finally {
+      if (replacement.exitCode === null && replacement.signalCode === null) {
+        const exited = new Promise((resolve) =>
+          replacement.once("exit", resolve),
+        );
+        replacement.kill("SIGTERM");
+        await exited;
+      }
+    }
   });
 });

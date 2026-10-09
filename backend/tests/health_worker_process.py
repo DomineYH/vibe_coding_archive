@@ -80,6 +80,12 @@ async def main():
     loop = asyncio.get_running_loop()
     loop.add_signal_handler(signal.SIGTERM, worker.stop)
     loop.add_signal_handler(signal.SIGUSR1, worker.disable)
+    if mode == "revocation":
+        activation = control.parent / "activation.json"
+        loop.add_signal_handler(
+            signal.SIGUSR2,
+            lambda: worker.disable() if not activation.exists() else None,
+        )
     try:
         await worker.run()
     finally:
