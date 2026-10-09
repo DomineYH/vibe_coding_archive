@@ -83,3 +83,5 @@ SIGTERM과 달리 **명시적 기능 중지**는 실행·대기 작업을 취소
 인증 후보의 별도 승인 경계는 [auth-candidate.md](auth-candidate.md)를 따른다.
 
 For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).
+
+운영 점검·명시 중지·reset HMAC 교체와 수동 재개는 [운영 점검 runbook](operational-checks.md)을 따른다.

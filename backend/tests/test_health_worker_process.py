@@ -383,3 +383,72 @@ def test_unclean_cleanup_exits_70_before_replacement_worker(harness):
     replacement.terminate()
     replacement.communicate(timeout=15)
     assert replacement.returncode == 0
+
+
+def test_disable_health_cli_stops_process_and_reenable_does_not_resurrect(harness):
+    import fcntl
+
+    activation = harness.database.parent / "activation.json"
+    activation.write_text('{"version":1,"synthetic":true}')
+    activation.chmod(0o600)
+    harness.database.chmod(0o600)
+    harness.admit(4)
+    worker = harness.spawn(mode="revocation")
+    probes = [harness.accept() for _ in range(3)]
+    inode = harness.lock.stat().st_ino
+    with harness.factory() as db:
+        results = db.execute(text("SELECT * FROM health_results ORDER BY app_id")).all()
+    result = subprocess.run(
+        [sys.executable, "-m", "app.cli", "disable-health"],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "APP_ENV": "test",
+            "HEALTH_CHECKS_ENABLED": "false",
+            "DATABASE_PATH": str(harness.database),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+            "HEALTH_ACTIVATION_PATH": str(activation),
+            "HEALTH_WORKER_LOCK_PATH": str(harness.lock),
+        },
+        capture_output=True,
+        check=False,
+        timeout=15,
+    )
+    assert result.returncode == 3 and b"HEALTH_STOP_REQUIRED" in result.stdout
+    assert not activation.exists()
+    cancelled = harness.states()
+    assert {j["status"] for j in cancelled} == {"cancelled"}
+    worker.send_signal(signal.SIGUSR2)
+    stdout, stderr = worker.communicate(timeout=10)
+    assert worker.returncode == 0, (stdout, stderr)
+    for connection, _ in probes:
+        assert connection.recv(1) == b""
+    with harness.lock.open("rb") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    assert harness.lock.stat().st_ino == inode
+    with harness.factory() as db:
+        assert not store.finish(
+            db,
+            cancelled[1],
+            {"state": "healthy", "checked_at": datetime.now(UTC)},
+            boot_id=cancelled[1]["boot_id"],
+            mono=0,
+            stamp=datetime.now(UTC),
+        )
+        assert (
+            db.execute(text("SELECT * FROM health_results ORDER BY app_id")).all()
+            == results
+        )
+    replacement = harness.spawn(release=1)
+
+    def ready():
+        with harness.factory() as db:
+            return store.current_worker(db)["ready"]
+
+    wait_until(ready)
+    with pytest.raises(TimeoutError):
+        harness.accept(timeout=0.3)
+    assert harness.states() == cancelled
+    replacement.terminate()
+    replacement.communicate(timeout=15)
+    assert replacement.returncode == 0

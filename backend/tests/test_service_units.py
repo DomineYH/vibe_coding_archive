@@ -17,6 +17,8 @@ EXPECTED = {
     "eduvibe-nginx.service",
     "eduvibe-backup.service",
     "eduvibe-backup.timer",
+    "eduvibe-ops-check.service",
+    "eduvibe-ops-check.timer",
 }
 
 
@@ -74,7 +76,7 @@ def test_unit_lifecycle_and_privilege_contracts():
         if path.suffix != ".service":
             continue
         nginx = path.name == "eduvibe-nginx.service"
-        backup = path.name == "eduvibe-backup.service"
+        backup = path.name in {"eduvibe-backup.service", "eduvibe-ops-check.service"}
         uid = "eduvibe-nginx" if nginx else "eduvibe"
         assert values["User"] == values["Group"] == [uid]
         assert values["UMask"] == ["0077"]
@@ -150,3 +152,25 @@ def test_backup_timer_preserves_kst_and_nonzero_status():
     ]
     assert "SuccessExitStatus" not in backup
     assert not backup["ExecStart"][0].startswith("-")
+
+
+def test_ops_timer_uses_safe_read_only_command_and_preserves_failures():
+    timer = directives(UNITS / "eduvibe-ops-check.timer")
+    assert timer["OnCalendar"] == ["*:0/5"]
+    assert timer["Persistent"] == ["true"]
+    assert timer["Unit"] == ["eduvibe-ops-check.service"]
+    service = directives(UNITS / "eduvibe-ops-check.service")
+    assert service["Type"] == ["oneshot"]
+    assert service["Restart"] == ["no"]
+    assert service["EnvironmentFile"] == [
+        "/etc/eduvibe/runtime.env",
+        "/etc/eduvibe/backup.env",
+    ]
+    assert service["ExecStart"] == [
+        f"{PYTHON} -m app.cli ops-check --backup-dir ${{BACKUP_ROOT}}"
+    ]
+    assert "SuccessExitStatus" not in service and "OnFailure" not in service
+    assert not any(
+        word in service["ExecStart"][0]
+        for word in ("systemctl", "purge-expired", "http://", "https://")
+    )

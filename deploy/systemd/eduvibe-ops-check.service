@@ -1,0 +1,24 @@
+[Unit]
+Description=EduVibe observational operational checks
+
+[Service]
+Type=oneshot
+User=eduvibe
+Group=eduvibe
+WorkingDirectory=/opt/eduvibe/current/backend
+EnvironmentFile=/etc/eduvibe/runtime.env
+EnvironmentFile=/etc/eduvibe/backup.env
+Environment=APP_ENV=production
+Environment=HEALTH_CHECKS_ENABLED=false
+ExecStart=/opt/eduvibe/current/backend/.venv/bin/python -m app.cli ops-check --backup-dir ${BACKUP_ROOT}
+Restart=no
+KillSignal=SIGTERM
+KillMode=control-group
+TimeoutStopSec=15s
+SendSIGKILL=yes
+UMask=0077
+NoNewPrivileges=yes
+LimitCORE=0
+LogNamespace=eduvibe
+StandardOutput=journal
+StandardError=journal

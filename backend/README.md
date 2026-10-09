@@ -375,3 +375,5 @@ replace a production DB or grant cutover permission. See
 source immutability and CI-only real-age verification.
 
 For systemd units and explicit operator migration steps, see [migration and service lifecycle](../docs/operations/migrations.md).
+
+운영 점검·명시 중지·reset HMAC 교체와 수동 재개는 [운영 점검 runbook](../docs/operations/operational-checks.md)을 따른다.

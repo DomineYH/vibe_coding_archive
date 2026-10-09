@@ -92,3 +92,5 @@ pass-through fixtures establish CLI/I/O and isolation behavior only. No VM loss,
 real operator activation or visual approval is inferred from those tests.
 
 For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).
+
+운영 점검·명시 중지·reset HMAC 교체와 수동 재개는 [운영 점검 runbook](operational-checks.md)을 따른다.

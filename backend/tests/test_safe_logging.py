@@ -475,3 +475,53 @@ assert not worker.enabled()
     assert events == ["RESTORE_MAINTENANCE_REQUIRED"] + (
         ["WORKER_FAILED"] if entrypoint else []
     )
+
+
+@pytest.mark.parametrize(
+    "command,args,module,function",
+    [
+        ("ops-check", ("--backup-dir", SECRET), "app.operations", "main"),
+        ("disable-health", (), "app.operational_commands", "disable_health"),
+        (
+            "rotate-reset-key",
+            ("--generate",),
+            "app.operational_commands",
+            "rotate_reset_key",
+        ),
+    ],
+)
+def test_operational_cli_sentinels_cover_usage_configuration_runtime_and_signals(
+    member_app, command, args, module, function
+):
+    import signal
+
+    _, database = member_app()
+    environment = {
+        "DATABASE_PATH": str(database),
+        "PUBLIC_ORIGIN": "http://localhost:5174",
+    }
+    usage = process(args=(command, *args, "--unknown", SECRET), env=environment)
+    assert usage.returncode == 2
+    config = process(args=(command, *args), env={**environment, "APP_ENV": SECRET})
+    assert config.returncode == 2
+    for result in (usage, config):
+        excludes_secrets(result.stdout + result.stderr)
+    for signum in (None, signal.SIGINT, signal.SIGTERM):
+        effect = (
+            f"lambda *a,**k: os.kill(os.getpid(),{int(signum)})"
+            if signum
+            else f"RuntimeError({SECRET!r})"
+        )
+        keyword = "side_effect"
+        code = f"""
+import os,sys
+from unittest.mock import patch
+from app.cli import main
+sys.argv = {["app.cli", command, *args]!r}
+with patch('{module}.{function}',{keyword}={effect}):
+    raise SystemExit(main())
+"""
+        result = process(code=code, env=environment)
+        assert result.returncode == (128 + int(signum) if signum else 1)
+        excludes_secrets(result.stdout + result.stderr)
+        assert b"Traceback" not in result.stderr

@@ -70,3 +70,5 @@ For expiry-minus-one-day local cleanup, unchanged original clocks, blocked copy 
 For test-only recovery into a fresh blocked target, see [isolated restore drills](restores.md).
 
 For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).
+
+운영 점검·명시 중지·reset HMAC 교체와 수동 재개는 [운영 점검 runbook](operational-checks.md)을 따른다.

@@ -482,3 +482,68 @@ def test_cancel_final_readiness_failure_rolls_back_result_and_audit(
         finally:
             event.remove(app.state.engine, "after_cursor_execute", close_auth)
         assert snapshot(path) == before
+
+
+def test_rotation_during_hashing_invalidates_late_commit(
+    make_test_app, tmp_path, monkeypatch
+):
+    from app.auth_login import HASHER
+    from app.operational_commands import rotate_reset_key
+    from tests.test_ops_commands import stopped
+
+    app, path, _secret = reset_app(make_test_app, tmp_path)
+    for file in path.parent.glob(path.name + "*"):
+        file.chmod(0o600)
+    entered, release = threading.Event(), threading.Event()
+    real = HASHER.hash
+    with TestClient(app) as client, ThreadPoolExecutor() as workers:
+        browser = admin(client)
+        success = issue(browser).json()["key"]
+        assert execute(browser, success).status_code == 204
+        key = issue(browser, version=2).json()["key"]
+        before = snapshot(path)
+        with sqlite3.connect(path) as db:
+            success_row = db.execute(
+                "SELECT * FROM write_operations WHERE key=?", (success,)
+            ).fetchall()
+            expiry = db.execute(
+                "SELECT created_at,expires_at FROM write_operations WHERE key=?", (key,)
+            ).fetchall()
+
+        def delayed(value):
+            hashed = real(value)
+            entered.set()
+            assert release.wait(15)
+            return hashed
+
+        monkeypatch.setattr(HASHER, "hash", delayed)
+        pending = workers.submit(execute, browser, key, version=2)
+        try:
+            assert entered.wait(10)
+            assert (
+                rotate_reset_key(
+                    app.state.settings, generate=True, process_state=stopped
+                )
+                == 0
+            )
+        finally:
+            release.set()
+        assert pending.result(timeout=15).status_code == 503
+        after = snapshot(path)
+        assert after["members"] == before["members"]
+        assert after["sessions"] == before["sessions"]
+        assert result(browser, key).json()["rejection_code"] == "OPERATION_INVALIDATED"
+        with sqlite3.connect(path) as db:
+            assert (
+                db.execute(
+                    "SELECT * FROM write_operations WHERE key=?", (success,)
+                ).fetchall()
+                == success_row
+            )
+            assert (
+                db.execute(
+                    "SELECT created_at,expires_at FROM write_operations WHERE key=?",
+                    (key,),
+                ).fetchall()
+                == expiry
+            )

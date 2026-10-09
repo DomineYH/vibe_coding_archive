@@ -1,10 +1,14 @@
 from __future__ import annotations
 
 import logging
+import os
+import resource
+import signal
 import sqlite3
 import sys
 from datetime import UTC, datetime
 from getpass import getpass
+from pathlib import Path
 from unicodedata import normalize
 
 from alembic.util.exc import CommandError
@@ -223,6 +227,15 @@ def _main() -> int:
     subparsers.add_parser(
         "maintenance-block", help="block services for explicit migration"
     )
+    rotate = subparsers.add_parser("rotate-reset-key", allow_abbrev=False)
+    choice = rotate.add_mutually_exclusive_group(required=True)
+    choice.add_argument("--invalidate-only", action="store_true")
+    choice.add_argument("--generate", action="store_true")
+    subparsers.add_parser("disable-health", allow_abbrev=False)
+    ops = subparsers.add_parser("ops-check", allow_abbrev=False)
+    ops.add_argument("--backup-dir", required=True)
+    ops.add_argument("--observations-file")
+    ops.add_argument("--required-free-bytes", type=int)
     subparsers.add_parser("seed", help="add missing synthetic development data")
     subparsers.add_parser(
         "sweep-pending", help="delete expired initial pending members"
@@ -234,6 +247,30 @@ def _main() -> int:
     for command in ("bootstrap-admin", "recover-admin", "prepare-password-blocklist"):
         subparsers.add_parser(command)
     args = parser.parse_args()
+    if args.command in ("ops-check", "disable-health", "rotate-reset-key"):
+        settings = Settings.from_environment()
+        raw = os.environ.get("DATABASE_PATH")
+        if raw is not None and Path(raw) != settings.database_path:
+            raise ConfigurationError("Invalid operational storage path")
+    if args.command == "rotate-reset-key":
+        from app.operational_commands import rotate_reset_key
+
+        return rotate_reset_key(settings, generate=args.generate)
+    if args.command == "disable-health":
+        from app.operational_commands import disable_health
+
+        return disable_health(settings)
+    if args.command == "ops-check":
+        from app.operations import main as ops_main
+
+        if args.required_free_bytes is not None and args.required_free_bytes < 0:
+            parser.error("Invalid headroom")
+        return ops_main(
+            settings,
+            backup_dir=args.backup_dir,
+            observations_file=args.observations_file,
+            required_free_bytes=args.required_free_bytes,
+        )
     if args.command == "maintenance-block":
         from app.maintenance import block
 
@@ -337,6 +374,9 @@ def main() -> int:
     command = sys.argv[1] if len(sys.argv) > 1 else None
     fixed_output = command in (
         "maintenance-block",
+        "ops-check",
+        "disable-health",
+        "rotate-reset-key",
         "backup-db",
         "restore-db",
         "verify-restore",
@@ -348,14 +388,35 @@ def main() -> int:
         logging.getLogger().handlers[0].addFilter(
             lambda record: record.name == "eduvibe.safe"
         )
+    previous = {}
+    if command in ("ops-check", "disable-health", "rotate-reset-key"):
+        from app.backup import BackupInterrupted
+
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+
+        def interrupted(signum, _frame):
+            for stop in (signal.SIGINT, signal.SIGTERM):
+                signal.signal(stop, signal.SIG_IGN)
+            raise BackupInterrupted(signum)
+
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous[signum] = signal.signal(signum, interrupted)
     try:
         result = _main()
-    except ConfigurationError:
-        emit("CLI_USAGE_INVALID")
-        return 2
-    except Exception:  # noqa: BLE001 - Never expose process exception text.
+    except BaseException as error:
+        if previous and isinstance(error, BackupInterrupted):
+            emit("CLI_FAILED")
+            return 128 + error.signum
+        if isinstance(error, ConfigurationError):
+            emit("CLI_USAGE_INVALID")
+            return 2
+        if not isinstance(error, Exception):
+            raise
         emit("CLI_FAILED")
         return 1
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
     if not fixed_output:
         emit("CLI_COMPLETED" if result in (0, 3) else "CLI_FAILED")
     return result
