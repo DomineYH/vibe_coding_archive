@@ -1,3 +1,4 @@
+import { publicOrigin } from "./helpers.js";
 import { expect, test as base } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -138,7 +139,7 @@ export async function issue(page, member, version = 1) {
   const response = await page.request.post("/api/v1/write-operations", {
     headers: {
       ...(await approvalHeaders(page)),
-      Origin: "http://localhost:5174",
+      Origin: publicOrigin,
     },
     data: {
       kind: "user_password_reset",

@@ -1,3 +1,4 @@
+import { browserContextOptions } from "./helpers.js";
 import { expect, test } from "@playwright/test";
 import { login } from "./approval-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
@@ -68,7 +69,7 @@ test("approved member creates a persisted public app and a private app", async (
   expect(
     query("SELECT count(*) FROM apps WHERE name='API 등록 공개 수업 도구 149'"),
   ).toEqual([[1]]);
-  const anonymous = await browser.newContext();
+  const anonymous = await browser.newContext(browserContextOptions);
   await blockExternalRequests(anonymous);
   const guest = await anonymous.newPage();
   try {

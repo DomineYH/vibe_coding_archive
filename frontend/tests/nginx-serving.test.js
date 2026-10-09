@@ -10,7 +10,12 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { afterEach, expect, it } from "vitest";
-import { renderNginx, startNginx } from "../scripts/nginx-serving.mjs";
+import {
+  renderNginx,
+  startNginx,
+  requireNginxTools,
+  prepareNginx,
+} from "../scripts/nginx-serving.mjs";
 
 const template = readFileSync("../deploy/nginx/eduvibe.conf.template", "utf8");
 const values = {
@@ -135,4 +140,39 @@ it("logs only generated IDs, constant route classes, status and duration", () =>
   );
   expect(template).toContain("error_log /dev/null;");
   expect(template).toContain("/nginx-access.log eduvibe;");
+});
+
+it("fails closed when native tools are missing", () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), "nginx-tools-test-"));
+  temporary.push(directory);
+  const previousPath = process.env.PATH;
+  process.env.PATH = directory;
+  try {
+    expect(() => requireNginxTools()).toThrow(/NOT RUN.*nginx/);
+  } finally {
+    process.env.PATH = previousPath;
+  }
+});
+it("refuses a release rejected by the dist check", async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), "nginx-dist-test-"));
+  temporary.push(directory);
+  for (const [name, script] of [
+    ["nginx", "exit 0"],
+    ["openssl", "exit 0"],
+    ["npm", '[ "$2" = "build" ] && exit 0; exit 1'],
+  ]) {
+    const executable = path.join(directory, name);
+    writeFileSync(executable, `#!/bin/sh\n${script}\n`);
+    chmodSync(executable, 0o700);
+  }
+  const previousPath = process.env.PATH;
+  process.env.PATH = directory;
+  try {
+    await expect(prepareNginx(directory)).rejects.toThrow(
+      /Checked API release build failed/,
+    );
+  } finally {
+    process.env.PATH = previousPath;
+  }
+  expect(existsSync(path.join(directory, "nginx-release"))).toBe(false);
 });

@@ -8,11 +8,12 @@ if (process.env.APP_ENV !== "test") {
 }
 
 const nginx = process.env.API_E2E_NGINX === "1";
+const staticNginx = nginx && process.env.API_E2E_NGINX_FUNCTIONAL !== "1";
 
 export default defineConfig({
   testDir: "./e2e-api",
-  ...(nginx ? { testMatch: "**/static-serving.spec.js" } : {}),
-  testIgnore: nginx
+  ...(staticNginx ? { testMatch: "**/static-serving.spec.js" } : {}),
+  testIgnore: staticNginx
     ? []
     : [
         "**/static-serving.spec.js",
@@ -23,7 +24,7 @@ export default defineConfig({
   outputDir: "test-results/api",
   fullyParallel: false,
   workers: 1,
-  timeout: nginx ? 120000 : 30000,
+  timeout: staticNginx ? 120000 : 30000,
   expect: { timeout: 10000 },
   reporter: "list",
   use: {
@@ -52,12 +53,12 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: nginx
+      command: staticNginx
         ? "node scripts/nginx-serving.mjs --upstream"
         : process.env.API_E2E_FAULTS === "1"
           ? "node e2e-api/auth-fault-launcher.mjs"
           : `uv run --frozen uvicorn ${process.env.API_E2E_HEALTH === "1" ? "tests.health_server" : process.env.API_E2E_AUTH_BOUNDARY === "prepared" ? "tests.auth_server" : "app.main"}:app --host 127.0.0.1 --port 8000`,
-      cwd: nginx
+      cwd: staticNginx
         ? "."
         : process.env.API_E2E_FAULTS === "1"
           ? "."

@@ -1,3 +1,4 @@
+import { browserContextOptions } from "./helpers.js";
 import { expect, test as base } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
@@ -66,7 +67,7 @@ export const test = base.extend({
       baseline: value.baseline,
       onCleanup: (release) => releases.push(release),
       async newContext() {
-        const ctx = await browser.newContext();
+        const ctx = await browser.newContext(browserContextOptions);
         contexts.push(ctx);
         track(ctx);
         return ctx;

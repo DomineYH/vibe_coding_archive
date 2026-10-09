@@ -1,3 +1,4 @@
+import { publicOrigin } from "./helpers.js";
 import { spawn, spawnSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
@@ -347,7 +348,7 @@ with lock.open('rb') as fd:
       {
         headers: {
           ...(await approvalHeaders(page)),
-          Origin: "http://localhost:5174",
+          Origin: publicOrigin,
         },
       },
     );

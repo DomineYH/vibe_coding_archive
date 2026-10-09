@@ -1,3 +1,5 @@
+import { browserContextOptions } from "./helpers.js";
+import { publicOrigin } from "./helpers.js";
 import { expect, test } from "@playwright/test";
 import { login as submitLogin } from "./approval-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
@@ -175,7 +177,7 @@ test("real edit conflict requires latest content then explicit deletion re-confi
   const id = await register(page, "API 삭제 충돌 원본 160");
   const headers = {
     ...(await approvalHeaders(page)),
-    Origin: "http://localhost:5174",
+    Origin: publicOrigin,
   };
   let competed = false;
   let issues = 0;
@@ -223,7 +225,7 @@ test("cached foreign public detail offers no delete and cannot return a deleted 
 }) => {
   await login(page, "approval-25");
   const id = await register(page, "API 삭제 타 회원 경계 160");
-  const context = await browser.newContext();
+  const context = await browser.newContext(browserContextOptions);
   await blockExternalRequests(context);
   const other = await context.newPage();
   await login(other, "approval-24");

@@ -1,3 +1,5 @@
+import { browserContextOptions } from "./helpers.js";
+import { publicOrigin } from "./helpers.js";
 import { expect, test } from "@playwright/test";
 import { login as submitLogin } from "./approval-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
@@ -95,7 +97,7 @@ test("owner persists edits and toggles public private public with current owner 
   expect(
     query(`SELECT grade FROM app_grades WHERE app_id='${id}' ORDER BY grade`),
   ).toEqual([["중1"], ["초3"]]);
-  const guestContext = await browser.newContext();
+  const guestContext = await browser.newContext(browserContextOptions);
   await blockExternalRequests(guestContext);
   const guest = await guestContext.newPage();
   try {
@@ -261,7 +263,7 @@ for (const privateApp of [false, true]) {
       .fill("보존할 충돌 초안 165");
     const headers = {
       ...(await approvalHeaders(page)),
-      Origin: "http://localhost:5174",
+      Origin: publicOrigin,
     };
     let competed = false;
     let issues = 0;

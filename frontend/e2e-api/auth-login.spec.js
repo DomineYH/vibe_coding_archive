@@ -1,3 +1,5 @@
+import { publicOrigin } from "./helpers.js";
+import { browserContextOptions } from "./helpers.js";
 import { expect, test } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -49,7 +51,13 @@ async function openLogin(page) {
 const authCookies = (context) =>
   context
     .cookies()
-    .then((all) => all.filter((c) => c.name.startsWith("eduvibe_")));
+    .then((all) =>
+      all.filter((c) =>
+        c.name.startsWith(
+          `${publicOrigin.startsWith("https:") ? "__Host-" : ""}eduvibe_`,
+        ),
+      ),
+    );
 
 test.skip(!prepared, "real login needs the prepared APP_ENV=test boundary");
 test.beforeEach(async ({ page }) => {
@@ -78,11 +86,20 @@ test("an approved member logs in, keeps the session across refresh and logs out"
     }),
   ).toBeVisible();
   const after = await authCookies(context);
-  const session = after.find((c) => c.name.startsWith("eduvibe_session_"));
+  const session = after.find((c) =>
+    c.name.startsWith(
+      `${publicOrigin.startsWith("https:") ? "__Host-" : ""}eduvibe_session_`,
+    ),
+  );
   expect(session.name).not.toBe(
-    before.find((c) => c.name.startsWith("eduvibe_session_")).name,
+    before.find((c) =>
+      c.name.startsWith(
+        `${publicOrigin.startsWith("https:") ? "__Host-" : ""}eduvibe_session_`,
+      ),
+    ).name,
   );
   expect(session).toMatchObject({
+    secure: publicOrigin.startsWith("https:"),
     httpOnly: true,
     sameSite: "Lax",
     expires: -1,
@@ -273,7 +290,7 @@ test("logging out one device leaves the member's other device signed in", async 
   const header = (p) =>
     p.getByRole("banner").getByText("관리 담당", { exact: true });
   await expect(header(page)).toBeVisible();
-  const other = await browser.newContext();
+  const other = await browser.newContext(browserContextOptions);
   await blockExternalRequests(other);
   const second = await other.newPage();
   await openLogin(second);
