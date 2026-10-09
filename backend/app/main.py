@@ -546,9 +546,9 @@ def create_app(
             "server_time": datetime.now(UTC),
             "capabilities": capabilities,
             "support": {
-                "email": None,
-                "service_url": None,
-                "announcement_url": None,
+                "email": request.app.state.settings.support_email,
+                "service_url": request.app.state.settings.support_service_url,
+                "announcement_url": request.app.state.settings.support_announcement_url,
             },
             "initial_pending_days": 90,
         }

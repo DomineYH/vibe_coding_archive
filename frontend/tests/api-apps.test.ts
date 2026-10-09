@@ -284,3 +284,21 @@ describe("API service errors", () => {
     });
   });
 });
+
+it("getMeta preserves configured support without auth requests", async () => {
+  const { mockMetaWire } = await import("../src/services/mock/apps");
+  const support = {
+    email: "support@example.test",
+    service_url: "https://service.example.test/help",
+    announcement_url: "https://notice.example.test/updates",
+  };
+  const fetch = vi.fn().mockResolvedValue(
+    new Response(JSON.stringify({ ...mockMetaWire, support }), {
+      status: 200,
+    }),
+  );
+  vi.stubGlobal("fetch", fetch);
+  expect((await appsService.getMeta()).support).toEqual(support);
+  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(String(fetch.mock.calls[0][0])).toContain("/api/v1/meta");
+});

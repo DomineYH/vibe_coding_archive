@@ -89,7 +89,7 @@ async function run() {
     nginx ||
     (!process.argv.includes("--auth-unavailable") &&
       arguments_.some((arg) =>
-        /health-real|auth-(candidate|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+        /health-real|auth-(candidate|support|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
           arg,
         ),
       ));
@@ -97,6 +97,10 @@ async function run() {
     ...process.env,
     APP_ENV: "test",
     HEALTH_CHECKS_ENABLED: "false",
+    SUPPORT_EMAIL: "",
+    SUPPORT_SERVICE_URL: "",
+    SUPPORT_ANNOUNCEMENT_URL: "",
+    API_E2E_SUPPORT_MODE: "",
     API_E2E_AGE_AVAILABLE:
       spawnSync("age", ["--version"], { stdio: "ignore" }).status === 0 &&
       spawnSync("age-keygen", ["--version"], { stdio: "ignore" }).status === 0
@@ -242,6 +246,17 @@ raise SystemExit(status)`,
       "e2e-api/auth-recovery-boundaries.spec.js",
       "e2e-api/auth-recovery-captures.spec.js",
     ];
+    const isSupport = (arg) => /auth-support/.test(arg);
+    const selectedSupport = arguments_.filter(isSupport);
+    const supportRuns = (files, prepared = true) =>
+      files.flatMap((file) =>
+        (prepared ? [true, false] : [false]).map((enabled) => ({
+          arguments_: [file, ...options],
+          prepared: enabled,
+          faults: false,
+          support: true,
+        })),
+      );
     const isCandidate = (arg) => /auth-candidate/.test(arg);
     const selectedCandidate = arguments_.filter(isCandidate);
     const isFault = (arg) => /auth-(races|recovery)/.test(arg);
@@ -249,7 +264,8 @@ raise SystemExit(status)`,
     const selectedFaults = arguments_.filter(isFault);
     const selectedHealth = arguments_.filter(isHealth);
     const selectedNormal = arguments_.filter(
-      (arg) => !isFault(arg) && !isHealth(arg) && !isCandidate(arg),
+      (arg) =>
+        !isFault(arg) && !isHealth(arg) && !isCandidate(arg) && !isSupport(arg),
     );
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
@@ -272,7 +288,8 @@ raise SystemExit(status)`,
             ...(normalFiles.length ||
             (!selectedFaults.length &&
               !selectedHealth.length &&
-              !selectedCandidate.length)
+              !selectedCandidate.length &&
+              !selectedSupport.length)
               ? [
                   {
                     arguments_: selectedNormal,
@@ -281,6 +298,7 @@ raise SystemExit(status)`,
                   },
                 ]
               : []),
+            ...supportRuns(selectedSupport, authPrepared),
             ...selectedCandidate.flatMap((file) =>
               (authPrepared
                 ? ["approved", "pending", "invalid", "revoked"]
@@ -313,7 +331,12 @@ raise SystemExit(status)`,
               : []),
           ]
         : [
-            { arguments_: [], prepared: false, faults: false },
+            {
+              arguments_: ["^(?!.*auth-support).*\\.spec\\.js$"],
+              prepared: false,
+              faults: false,
+            },
+            ...supportRuns(["e2e-api/auth-support.spec.js"]),
             { arguments_: normal, prepared: true, faults: false },
             ...["approved", "pending", "invalid", "revoked"].map(
               (candidate) => ({
@@ -392,6 +415,14 @@ raise SystemExit(status)`,
       await mkdir(runDirectory, { mode: 0o700 });
       const runEnv = {
         ...env,
+        ...(run.support
+          ? {
+              API_E2E_SUPPORT_MODE: "configured",
+              SUPPORT_EMAIL: "support@example.test",
+              SUPPORT_SERVICE_URL: "https://service.example.test/help",
+              SUPPORT_ANNOUNCEMENT_URL: "https://notice.example.test/updates",
+            }
+          : {}),
         DATABASE_PATH: path.join(runDirectory, "api.sqlite3"),
         AUTH_FAULT_CONTROL: path.join(runDirectory, "auth-control.sock"),
         AUTH_PROXY_CONTROL: path.join(runDirectory, "proxy-control.sock"),

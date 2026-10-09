@@ -57,6 +57,9 @@ test.describe("real pending registration", () => {
     context,
   }) => {
     await signup(page, "register-member");
+    await expect(
+      page.getByRole("link", { name: /이메일 문의|서비스 문의|공지사항/ }),
+    ).toHaveCount(0);
     let writes = 0;
     page.on("request", (req) => {
       if (req.url().endsWith("/auth/register")) writes++;

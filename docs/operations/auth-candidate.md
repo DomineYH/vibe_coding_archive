@@ -15,6 +15,11 @@
 | `APP_RELEASE_ID`           | auth path 지정 시 필수. 1–256자 비어 있지 않은 immutable full release ID, 제어문자 없음. backend digest는 frontend를 포함하지 않으므로 운영자가 전체 배포와 결합한다.                                                                                                 |
 | `PASSWORD_RESET_HMAC_PATH` | 기존 별도 0600 무결성 공급 정책. 누락/불일치/읽기 실패는 초기화 issue/execute만 `SERVICE_UNAVAILABLE`; auth 승인 유효 시 기존 result/cancel·로그인·앱·다른 관리자 작업은 유지. HMAC bytes는 승인 기록에 넣지 않는다.                                                  |
 | test-only factory flags    | `auth_testing`/`health_testing`은 실제 `APP_ENV=test`에서만 허용하며 그 밖에서는 DB 열기 전에 거절. 시험 DB는 전용 임시 subtree.                                                                                                                                      |
+| `SUPPORT_EMAIL`            | 승인된 공개 ASCII 이메일 주소 하나. 표시명·목록·mailto 헤더는 거절한다.                                                                                                                                                                                               |
+| `SUPPORT_SERVICE_URL`      | 승인된 공개 HTTPS 서비스 문의 URL. credentials·공백·제어 문자·역슬래시는 거절한다.                                                                                                                                                                                    |
+| `SUPPORT_ANNOUNCEMENT_URL` | 승인된 공개 HTTPS 공지 URL. 서비스 문의와 같은 구문 검증을 적용한다.                                                                                                                                                                                                  |
+
+세 support 설정은 미설정·빈 값·공백만 있으면 `/meta`에서 null이고 링크를 만들지 않는다. 비어 있지 않은 잘못된 값은 원문을 출력하지 않고 시작을 거절한다. T11 #194의 정확한 공개 값을 운영자가 승인한 뒤 서비스 환경에 지정하고 재시작한다. 프런트엔드 `VITE_*` 값으로 넣지 않는다. 설정 구문 검증은 운영 승인이나 DNS 목적지 검증을 대신하지 않는다. 인증 후보의 바인딩은 변하지 않으며 email_collection/phone_collection은 비활성, `HEALTH_CHECKS_ENABLED=false`를 유지한다.
 
 API와 health worker는 같은 전용 서비스 UID를 사용한다. Nginx 계정은 private data/record/HMAC에 접근하지 못한다. group permission 정책은 사용하지 않는다. 제한된 후보는 `HEALTH_CHECKS_ENABLED=false`를 유지하며 health 승인과 email/phone 수집을 함께 활성화하지 않는다. health의 별도 절차는 [health-checks.md](health-checks.md)에 있다.
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import re
 import stat
 import tempfile
 from collections.abc import Mapping
@@ -10,7 +11,13 @@ from typing import Literal
 from urllib.parse import urlsplit
 
 from dotenv import dotenv_values
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND_ROOT = ROOT / "backend"
@@ -45,7 +52,7 @@ def _is_valid_dns_hostname(hostname: str) -> bool:
 
 
 class Settings(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, hide_input_in_errors=True)
 
     app_env: Literal["development", "test", "production"]
     database_path: Path
@@ -60,6 +67,57 @@ class Settings(BaseModel):
     health_activation_path: Path | None = None
     auth_activation_path: Path | None = None
     app_release_id: str | None = None
+    support_email: str | None = None
+    support_service_url: str | None = None
+    support_announcement_url: str | None = None
+
+    @field_validator("support_email", "support_service_url", "support_announcement_url")
+    @classmethod
+    def validate_support(cls, value: str | None, info: ValidationInfo) -> str | None:
+        if not value or not value.strip():
+            return None
+        if info.field_name == "support_email":
+            if not re.fullmatch(
+                r"[A-Za-z0-9!$&'*+/=^_`{|}~-]+(?:\.[A-Za-z0-9!$&'*+/=^_`{|}~-]+)*"
+                r"@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                r"(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+",
+                value,
+            ):
+                raise ValueError("Support email must be one plain ASCII address.")
+            return value
+        valid = not any(
+            char.isspace() or ord(char) < 32 or ord(char) == 127 or char == "\\"
+            for char in value
+        ) and not re.search(r"%(?![0-9A-Fa-f]{2})", value)
+        try:
+            parsed = urlsplit(value)
+            hostname, port = parsed.hostname, parsed.port
+            if parsed.netloc.startswith("["):
+                bracket = parsed.netloc.index("]")
+                suffix = parsed.netloc[bracket + 1 :]
+                valid_host = bool(
+                    hostname
+                    and "%" not in hostname
+                    and ipaddress.IPv6Address(hostname)
+                    and (not suffix or suffix.startswith(":"))
+                )
+            else:
+                valid_host = bool(hostname and _is_valid_dns_hostname(hostname))
+            valid = (
+                valid
+                and value.startswith("https:")
+                and parsed.scheme == "https"
+                and valid_host
+                and parsed.username is None
+                and parsed.password is None
+                and not parsed.netloc.endswith(":")
+                and port != 0
+            )
+        except ValueError:
+            valid = False
+        if not valid:
+            raise ValueError("Support URL must be a valid HTTPS address.")
+        return value
 
     @classmethod
     def from_environment(
@@ -294,6 +352,9 @@ class Settings(BaseModel):
                 health_activation_path=health_activation,
                 auth_activation_path=auth_activation,
                 app_release_id=release_id,
+                support_email=values.get("SUPPORT_EMAIL"),
+                support_service_url=values.get("SUPPORT_SERVICE_URL"),
+                support_announcement_url=values.get("SUPPORT_ANNOUNCEMENT_URL"),
             )
         except ValidationError:
             raise ConfigurationError("Application configuration is invalid.") from None
@@ -307,6 +368,9 @@ class Settings(BaseModel):
                 "APP_ENV": "production",
                 "DATABASE_PATH": str(self.database_path),
                 "PUBLIC_ORIGIN": self.public_origin,
+                "SUPPORT_EMAIL": self.support_email or "",
+                "SUPPORT_SERVICE_URL": self.support_service_url or "",
+                "SUPPORT_ANNOUNCEMENT_URL": self.support_announcement_url or "",
                 "AUTH_ACTIVATION_PATH": str(self.auth_activation_path)
                 if self.auth_activation_path
                 else "",
