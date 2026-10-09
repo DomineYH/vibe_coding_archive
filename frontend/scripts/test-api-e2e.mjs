@@ -49,6 +49,10 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
   });
 }
 
+export function nginxNodeTrust(functional, certificate) {
+  return functional ? { NODE_EXTRA_CA_CERTS: certificate } : {};
+}
+
 export function selectNginxRuns(args) {
   const functional = args.includes("--nginx-functional");
   const nginx = args.includes("--nginx");
@@ -500,6 +504,10 @@ raise SystemExit(status)`,
       if (nginx) {
         const values = JSON.parse(
           await readFile(env.API_E2E_NGINX_VALUES, "utf8"),
+        );
+        Object.assign(
+          runEnv,
+          nginxNodeTrust(functionalNginx, values.TLS_CERTIFICATE),
         );
         values.RUNTIME_ROOT = path.join(runDirectory, "nginx-runtime");
         values.LOG_ROOT = path.join(runDirectory, "logs");

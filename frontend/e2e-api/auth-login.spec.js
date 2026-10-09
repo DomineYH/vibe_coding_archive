@@ -70,10 +70,9 @@ test("an approved member logs in, keeps the session across refresh and logs out"
 }) => {
   await openLogin(page);
   const before = await authCookies(context);
-  expect(before.map((c) => c.name.split("_")[1]).sort()).toEqual([
-    "recovery",
-    "session",
-  ]);
+  expect(
+    before.map((c) => c.name.replace(/^__Host-/, "").split("_")[1]).sort(),
+  ).toEqual(["recovery", "session"]);
   await login(page, "member-a");
   const banner = page.getByRole("banner");
   // The header shows the nickname, never the login ID.

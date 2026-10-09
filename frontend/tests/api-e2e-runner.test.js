@@ -2,7 +2,15 @@
 import { spawnSync } from "node:child_process";
 import { afterEach, vi } from "vitest";
 import { expect, it } from "vitest";
-import { selectNginxRuns } from "../scripts/test-api-e2e.mjs";
+import { nginxNodeTrust, selectNginxRuns } from "../scripts/test-api-e2e.mjs";
+
+it("trusts only the generated certificate in functional HTTPS child processes", () => {
+  const certificate = "/test-owned/nginx/cert.pem";
+  const env = nginxNodeTrust(true, certificate);
+  expect(env).toEqual({ NODE_EXTRA_CA_CERTS: certificate });
+  expect(env).not.toHaveProperty("NODE_TLS_REJECT_UNAUTHORIZED");
+  expect(nginxNodeTrust(false, certificate)).toEqual({});
+});
 
 it("selects only the approved HTTPS critical path, configured support, restore and controlled worker", () => {
   const runs = selectNginxRuns(["--nginx-functional"]);
