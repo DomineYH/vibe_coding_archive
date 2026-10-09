@@ -68,3 +68,5 @@ For stale-stage cleanup, stop scheduling, verify the old process has exited, acq
 For expiry-minus-one-day local cleanup, unchanged original clocks, blocked copy inventory and retry behavior, see [safe logging and local retention](logging-retention.md).
 
 For test-only recovery into a fresh blocked target, see [isolated restore drills](restores.md).
+
+For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).

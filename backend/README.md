@@ -373,3 +373,5 @@ API data, login, readiness and health execution remain unavailable. They never
 replace a production DB or grant cutover permission. See
 [the restore procedure](../docs/operations/restores.md) for limits, exit codes,
 source immutability and CI-only real-age verification.
+
+For systemd units and explicit operator migration steps, see [migration and service lifecycle](../docs/operations/migrations.md).

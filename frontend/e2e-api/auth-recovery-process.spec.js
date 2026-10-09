@@ -274,3 +274,103 @@ test("failed encrypted restore never reopens data", async ({
     await processControl({ action: "normal-target" });
   }
 });
+
+test("migration maintenance blocks old cookies then release restart preserves archive and deletion evidence", async ({
+  page,
+  owned,
+}) => {
+  test.setTimeout(90000);
+  // The delete fixture's hour window must match the detail contract's 15 minutes.
+  for (const id of owned.apps)
+    query(
+      `UPDATE health_results SET fresh_until=strftime('%Y-%m-%dT%H:%M:%S',substr(checked_at,1,19),'+15 minutes') || substr(checked_at,20) WHERE app_id='${id}'`,
+    );
+  await ownedLogin(page, owned.member.login, PASSWORD);
+  await expect(
+    page.getByRole("banner").getByText(owned.member.login, { exact: true }),
+  ).toBeVisible();
+  await page.goto(`/apps/${owned.apps[1]}`);
+  const headers = {
+    ...(await approvalHeaders(page)),
+    Origin: "http://localhost:5174",
+  };
+  await expect(page.locator("main pre")).toBeVisible();
+  const source = await page.locator("main pre").textContent();
+  const item = await page.request.get(`/api/v1/apps/${owned.apps[1]}`, {
+    headers,
+  });
+  expect(item.status()).toBe(200);
+  const original = await item.json();
+  const issued = await page.request.post("/api/v1/write-operations", {
+    headers,
+    data: { kind: "app_delete", target_id: owned.apps[0], expected_version: 1 },
+  });
+  expect(issued.status()).toBe(201);
+  expect(
+    (
+      await page.request.delete(`/api/v1/apps/${owned.apps[0]}`, {
+        headers: { ...headers, "Idempotency-Key": (await issued.json()).key },
+        data: { expected_version: 1 },
+      })
+    ).status(),
+  ).toBe(204);
+  const before = await processControl({ action: "migration-status" });
+  expect(before.deletionEvents).toBeGreaterThan(0);
+  try {
+    expect(await processControl({ action: "migration-block" })).toMatchObject({
+      ok: true,
+      fixtureReinjection: false,
+      migrationOnRestart: false,
+    });
+    await processControl({ action: "restart" });
+    await assertMaintenance(page, owned.apps);
+    await page.goto("/");
+    await expect(
+      page.getByRole("link", { name: /^둘째 공개 앱,/ }),
+    ).toHaveCount(0);
+    await expect(page.locator("main pre")).toHaveCount(0);
+    await expect(
+      page.getByRole("banner").getByText(owned.member.login, { exact: true }),
+    ).toHaveCount(0);
+    const blocked = await processControl({ action: "migration-status" });
+    expect(blocked.businessDigest).toBe(before.businessDigest);
+    expect(blocked.ledgerDigest).toBe(before.ledgerDigest);
+    expect(await processControl({ action: "migration-resume" })).toMatchObject({
+      ok: true,
+      fixtureReinjection: false,
+      migrationOnRestart: false,
+      releaseSwitched: true,
+    });
+    await page.goto(`/apps/${owned.apps[1]}`);
+    await expect(
+      page.getByRole("heading", { name: original.item.name, exact: true }),
+    ).toBeVisible();
+    expect(await page.locator("main pre").textContent()).toBe(source);
+    const after = await processControl({ action: "migration-status" });
+    expect(after.businessDigest).toBe(before.businessDigest);
+    expect(after.ledgerDigest).toBe(before.ledgerDigest);
+    expect(after.deletionEvents).toBe(before.deletionEvents);
+    expect(
+      (
+        await page.request.get(`/api/v1/apps/${owned.apps[1]}`, { headers })
+      ).status(),
+    ).toBe(200);
+    expect(
+      (
+        await (
+          await page.request.get(`/api/v1/apps/${owned.apps[1]}`, { headers })
+        ).json()
+      ).item,
+    ).toEqual(original.item);
+    expect(
+      (
+        await page.request.get(`/api/v1/apps/${owned.apps[0]}`, { headers })
+      ).status(),
+    ).toBe(404);
+    expect(
+      (await page.request.get("http://127.0.0.1:8000/readyz")).status(),
+    ).toBe(200);
+  } finally {
+    await processControl({ action: "migration-resume" });
+  }
+});

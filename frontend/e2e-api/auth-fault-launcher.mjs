@@ -1,6 +1,16 @@
 import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { chmod, mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  chmod,
+  mkdir,
+  open,
+  readFile,
+  readlink,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
@@ -26,6 +36,8 @@ if (resolvedPython.status !== 0) throw new Error("Prepared Python unavailable");
 const pythonExecutable = resolvedPython.stdout.trim();
 let child;
 let activeEnv = process.env;
+let activeBackend = backend;
+let migrationRoot;
 let encryptedRun;
 let stopping = false;
 let restarting = false;
@@ -42,7 +54,7 @@ function start() {
       String(upstreamPort),
       "--no-access-log",
     ],
-    { cwd: backend, env: activeEnv, stdio: "inherit", detached: false },
+    { cwd: activeBackend, env: activeEnv, stdio: "inherit", detached: false },
   );
   child.on("exit", () => {
     if (!stopping && !restarting) {
@@ -191,7 +203,53 @@ const lifecycle = net.createServer((socket) => {
     try {
       const message = JSON.parse(input);
       let details = {};
-      if (message.action === "encrypted-backup") {
+      if (message.action === "migration-status") {
+        const result = spawnSync(
+          pythonExecutable,
+          [
+            "-c",
+            `import hashlib, json, os, sqlite3
+from pathlib import Path
+def digest(database, tables):
+    with sqlite3.connect(database) as db:
+        values = {table: sorted(db.execute(f'SELECT * FROM "{table}"').fetchall(), key=repr) for table in tables}
+    return hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
+database = Path(os.environ['DATABASE_PATH'])
+ledger = database.with_suffix('.deletions.sqlite3')
+with sqlite3.connect(ledger) as db:
+    tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+    count = db.execute('SELECT count(*) FROM completed_app_delete_events').fetchone()[0]
+print(json.dumps({'businessDigest': digest(database, ('members','apps','app_grades')), 'ledgerDigest': digest(ledger, tables), 'deletionEvents': count}))`,
+          ],
+          {
+            cwd: activeBackend,
+            env: activeEnv,
+            stdio: "pipe",
+          },
+        );
+        if (result.status !== 0) throw new Error("Migration state unavailable");
+        details = JSON.parse(result.stdout);
+      } else if (message.action === "migration-block") {
+        if (activeEnv !== process.env)
+          throw new Error("Original target required");
+        if (restoreCli("maintenance-block", activeEnv).status !== 0)
+          throw new Error("Migration latch failed");
+        if (!migrationRoot) {
+          migrationRoot = path.join(
+            path.dirname(activeEnv.DATABASE_PATH),
+            `migration-${randomUUID()}`,
+          );
+          await mkdir(migrationRoot, { mode: 0o700 });
+          for (const release of ["release-one", "release-two"])
+            await symlink(backend, path.join(migrationRoot, release), "dir");
+          await symlink(
+            "release-one",
+            path.join(migrationRoot, "current"),
+            "dir",
+          );
+        }
+        activeBackend = path.join(migrationRoot, "current");
+      } else if (message.action === "encrypted-backup") {
         await encryptedBackup();
       } else if (message.action === "encrypted-restore") {
         await encryptedRestore(message.fault);
@@ -266,11 +324,43 @@ print(json.dumps(counts))`,
           "import os, sqlite3; source=sqlite3.connect(os.environ['DATABASE_PATH']+'.snapshot'); db=sqlite3.connect(os.environ['DATABASE_PATH']); source.backup(db); db.close(); source.close()",
         ]);
         python(["-m", "app.cli", "invalidate-restored-auth"]);
-      } else if (message.action === "restart" || message.action === "start") {
+      } else if (
+        ["restart", "start", "migration-resume"].includes(message.action)
+      ) {
         restarting = true;
-        if (message.action === "restart") await kill();
+        if (
+          message.action === "restart" ||
+          message.action === "migration-resume"
+        )
+          await kill();
         else if (child.exitCode === null && child.signalCode === null)
           throw new Error("Already running");
+        if (message.action === "migration-resume") {
+          if (activeEnv !== process.env)
+            throw new Error("Original target required");
+          const parent = path.dirname(activeEnv.DATABASE_PATH);
+          await rm(path.join(parent, ".migration-blocked"), { force: true });
+          if (migrationRoot) {
+            const candidate = path.join(migrationRoot, "next");
+            await symlink("release-two", candidate, "dir");
+            await rename(candidate, path.join(migrationRoot, "current"));
+            const directory = await open(migrationRoot, "r");
+            try {
+              await directory.sync();
+            } finally {
+              await directory.close();
+            }
+            details.releaseSwitched =
+              (await readlink(path.join(migrationRoot, "current"))) ===
+              "release-two";
+          }
+          const directory = await open(parent, "r");
+          try {
+            await directory.sync();
+          } finally {
+            await directory.close();
+          }
+        }
         start();
         const deadline = Date.now() + 4000;
         while (!(await probe())) {

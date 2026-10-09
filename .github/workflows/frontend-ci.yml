@@ -77,6 +77,14 @@ jobs:
       - name: API end-to-end tests
         working-directory: frontend
         run: npm run test:e2e:api
+      - name: Service unit syntax and explicit migration lifecycle contracts
+        working-directory: backend
+        env:
+          CI: "true"
+          HEALTH_CHECKS_ENABLED: "false"
+        run: |
+          systemd-analyze --version
+          APP_ENV=test uv run --frozen pytest tests/test_service_units.py tests/test_migration_lifecycle.py tests/test_health_worker_process.py -ra
   frontend:
     runs-on: ubuntu-24.04
     steps:
