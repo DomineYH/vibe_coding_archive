@@ -12,6 +12,7 @@ import { createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { prepareNginx, requireNginxTools } from "./nginx-serving.mjs";
 
 const frontend = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -48,38 +49,79 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 async function run() {
+  const nginx = process.argv.includes("--nginx");
+  if (
+    nginx &&
+    process.argv
+      .slice(2)
+      .some(
+        (arg) =>
+          /auth-|admin-apps-empty|health-real/.test(arg) ||
+          (/\.spec\.js$/.test(arg) && !arg.endsWith("static-serving.spec.js")),
+      )
+  )
+    throw new Error(
+      "--nginx requires an isolated static-serving run; fault/health/unavailable modes cannot be mixed.",
+    );
+  if (
+    !nginx &&
+    process.argv.some((arg) => arg.includes("static-serving.spec.js"))
+  )
+    throw new Error("static-serving.spec.js requires --nginx.");
+  if (nginx) requireNginxTools();
   await requireFreePort(8000, "127.0.0.1");
-  await requireFreePort(5174, "localhost");
+  if (nginx) {
+    await requireFreePort(8080, "0.0.0.0");
+    await requireFreePort(8443, "0.0.0.0");
+  } else await requireFreePort(5174, "localhost");
 
   const temporary = await mkdtemp(path.join(os.tmpdir(), "eduvibe-api-e2e-"));
   const emptyOnly = process.argv.includes("--admin-apps-empty");
   const arguments_ = process.argv
     .slice(2)
     .filter(
-      (arg) => arg !== "--auth-unavailable" && arg !== "--admin-apps-empty",
+      (arg) =>
+        arg !== "--auth-unavailable" &&
+        arg !== "--admin-apps-empty" &&
+        arg !== "--nginx",
     );
   const authPrepared =
-    !process.argv.includes("--auth-unavailable") &&
-    arguments_.some((arg) =>
-      /health-real|auth-(prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
-        arg,
-      ),
-    );
+    nginx ||
+    (!process.argv.includes("--auth-unavailable") &&
+      arguments_.some((arg) =>
+        /health-real|auth-(candidate|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+          arg,
+        ),
+      ));
   const env = {
     ...process.env,
     APP_ENV: "test",
+    HEALTH_CHECKS_ENABLED: "false",
+    API_E2E_AGE_AVAILABLE:
+      spawnSync("age", ["--version"], { stdio: "ignore" }).status === 0 &&
+      spawnSync("age-keygen", ["--version"], { stdio: "ignore" }).status === 0
+        ? "1"
+        : "",
     API_E2E_AUTH_BOUNDARY: authPrepared ? "prepared" : "unavailable",
     API_E2E_TEMP_ROOT: temporary,
     DATABASE_PATH: path.join(temporary, "api.sqlite3"),
     PASSWORD_BLOCKLIST_PATH: path.join(temporary, "ncsc.txt"),
     PASSWORD_RESET_HMAC_PATH: path.join(temporary, "reset-hmac.json"),
-    PUBLIC_ORIGIN: "http://localhost:5174",
+    PUBLIC_ORIGIN: nginx ? "https://localhost:8443" : "http://localhost:5174",
+    API_E2E_NGINX: nginx ? "1" : "",
+    ...(nginx
+      ? {
+          HEALTH_CHECKS_ENABLED: "false",
+          HEALTH_ACTIVATION_PATH: path.join(temporary, "no-activation.json"),
+        }
+      : {}),
     AUTH_FAULT_CONTROL: path.join(temporary, "auth-control.sock"),
     AUTH_PROXY_CONTROL: path.join(temporary, "proxy-control.sock"),
     AUTH_PROCESS_CONTROL: path.join(temporary, "process-control.sock"),
   };
 
   try {
+    if (nginx) Object.assign(env, await prepareNginx(temporary));
     const secret = randomBytes(32);
     await writeFile(
       env.PASSWORD_RESET_HMAC_PATH,
@@ -200,12 +242,14 @@ raise SystemExit(status)`,
       "e2e-api/auth-recovery-boundaries.spec.js",
       "e2e-api/auth-recovery-captures.spec.js",
     ];
+    const isCandidate = (arg) => /auth-candidate/.test(arg);
+    const selectedCandidate = arguments_.filter(isCandidate);
     const isFault = (arg) => /auth-(races|recovery)/.test(arg);
     const isHealth = (arg) => /health-real/.test(arg);
     const selectedFaults = arguments_.filter(isFault);
     const selectedHealth = arguments_.filter(isHealth);
     const selectedNormal = arguments_.filter(
-      (arg) => !isFault(arg) && !isHealth(arg),
+      (arg) => !isFault(arg) && !isHealth(arg) && !isCandidate(arg),
     );
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
@@ -226,7 +270,9 @@ raise SystemExit(status)`,
       : arguments_.length || process.argv.includes("--auth-unavailable")
         ? [
             ...(normalFiles.length ||
-            (!selectedFaults.length && !selectedHealth.length)
+            (!selectedFaults.length &&
+              !selectedHealth.length &&
+              !selectedCandidate.length)
               ? [
                   {
                     arguments_: selectedNormal,
@@ -235,6 +281,17 @@ raise SystemExit(status)`,
                   },
                 ]
               : []),
+            ...selectedCandidate.flatMap((file) =>
+              (authPrepared
+                ? ["approved", "pending", "invalid", "revoked"]
+                : ["pending"]
+              ).map((candidate) => ({
+                arguments_: [file, ...options],
+                prepared: authPrepared,
+                faults: false,
+                candidate,
+              })),
+            ),
             ...(selectedFaults.length
               ? [
                   {
@@ -258,6 +315,14 @@ raise SystemExit(status)`,
         : [
             { arguments_: [], prepared: false, faults: false },
             { arguments_: normal, prepared: true, faults: false },
+            ...["approved", "pending", "invalid", "revoked"].map(
+              (candidate) => ({
+                arguments_: ["e2e-api/auth-candidate.spec.js"],
+                prepared: true,
+                faults: false,
+                candidate,
+              }),
+            ),
             { arguments_: faults, prepared: true, faults: true },
             {
               arguments_: ["e2e-api/health-real.spec.js"],
@@ -267,11 +332,22 @@ raise SystemExit(status)`,
             },
             emptyRun(["e2e-api/admin-apps-empty.spec.js"]),
           ];
+    const selectedRuns = nginx
+      ? [
+          {
+            arguments_: arguments_.some((arg) => /\.spec\.js$/.test(arg))
+              ? arguments_
+              : ["e2e-api/static-serving.spec.js", ...arguments_],
+            prepared: true,
+            faults: false,
+          },
+        ]
+      : runs;
     // Functional contracts always use a moving clock. Only the card captures
     // get a separate server with a fixed clock, including the default CI run.
     const capture =
       "change-only card and field errors|registration cards|administrator approval cards|private access states|integration recovery captures";
-    const separated = runs.flatMap((run) => {
+    const separated = selectedRuns.flatMap((run) => {
       if (
         !run.prepared ||
         !run.arguments_.some((arg) =>
@@ -301,6 +377,7 @@ raise SystemExit(status)`,
                 arg,
               ),
             ),
+            ...options,
             "--grep",
             capture,
           ],
@@ -312,7 +389,7 @@ raise SystemExit(status)`,
     });
     for (const [index, run] of separated.entries()) {
       const runDirectory = path.join(temporary, `run-${index}`);
-      await mkdir(runDirectory);
+      await mkdir(runDirectory, { mode: 0o700 });
       const runEnv = {
         ...env,
         DATABASE_PATH: path.join(runDirectory, "api.sqlite3"),
@@ -325,6 +402,28 @@ raise SystemExit(status)`,
         run.empty ? emptyTemplate : template,
         runEnv.DATABASE_PATH,
       );
+      await chmod(runEnv.DATABASE_PATH, 0o600);
+      if (run.candidate) {
+        runEnv.AUTH_ACTIVATION_PATH = path.join(
+          runDirectory,
+          "synthetic-auth.json",
+        );
+        runEnv.APP_RELEASE_ID = "synthetic-api-e2e-release";
+        runEnv.API_E2E_CANDIDATE_STATUS = run.candidate;
+        const fixture = spawnSync(
+          "uv",
+          [
+            "run",
+            "--frozen",
+            "python",
+            "-c",
+            "import os; from app.settings import Settings; from tests.auth_candidate import write_fixture; write_fixture(Settings.from_environment(), os.environ['API_E2E_CANDIDATE_STATUS'])",
+          ],
+          { cwd: backend, env: runEnv, stdio: "inherit" },
+        );
+        if (fixture.error || fixture.status !== 0)
+          throw new Error("Synthetic candidate fixture preparation failed.");
+      }
       playwright = spawn(
         path.join(frontend, "node_modules", ".bin", "playwright"),
         ["test", "--config=playwright.api.config.js", ...run.arguments_],

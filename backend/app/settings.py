@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import stat
 import tempfile
 from collections.abc import Mapping
 from pathlib import Path
@@ -57,6 +58,8 @@ class Settings(BaseModel):
     health_worker_uid: int | None = None
     health_worker_lock_path: Path = Path("/run/eduvibe/health-worker.lock")
     health_activation_path: Path | None = None
+    auth_activation_path: Path | None = None
+    app_release_id: str | None = None
 
     @classmethod
     def from_environment(
@@ -67,13 +70,21 @@ class Settings(BaseModel):
         backend_root: Path = BACKEND_ROOT,
     ) -> Settings:
         process_app_env = environment.get("APP_ENV")
+        if process_app_env and process_app_env not in {
+            "development",
+            "test",
+            "production",
+        }:
+            raise ConfigurationError("APP_ENV must be set to a supported environment.")
         values = (
-            {} if process_app_env == "test" else dotenv_values(backend_root / ".env")
+            {}
+            if process_app_env in {"test", "production"}
+            else dotenv_values(backend_root / ".env")
         )
         app_env = process_app_env or values.get("APP_ENV")
-        if not process_app_env and app_env == "test":
+        if not process_app_env and app_env in {"test", "production"}:
             raise ConfigurationError(
-                "APP_ENV=test must be set in the process environment."
+                f"APP_ENV={app_env} must be set in the process environment."
             )
         if app_env not in {"development", "test", "production"}:
             raise ConfigurationError("APP_ENV must be set to a supported environment.")
@@ -121,14 +132,7 @@ class Settings(BaseModel):
                     "Test databases must be inside a dedicated temporary directory."
                 )
         elif app_env == "production":
-            try:
-                path.relative_to(temporary_root)
-            except ValueError:
-                pass
-            else:
-                raise ConfigurationError(
-                    "Production databases must be outside the temporary directory."
-                )
+            production_path(Path(raw_database_path).expanduser(), repo_root=repo_root)
 
         origin = raw_public_origin
         if any(
@@ -184,7 +188,15 @@ class Settings(BaseModel):
         if app_env == "production":
             normalized_hostname = hostname.rstrip(".").casefold()
             try:
-                loopback = ipaddress.ip_address(normalized_hostname).is_loopback
+                address = ipaddress.ip_address(normalized_hostname)
+                mapped = (
+                    address.ipv4_mapped
+                    if isinstance(address, ipaddress.IPv6Address)
+                    else None
+                )
+                loopback = address.is_loopback or (
+                    mapped is not None and mapped.is_loopback
+                )
             except ValueError:
                 loopback = (
                     normalized_hostname == "localhost"
@@ -238,6 +250,30 @@ class Settings(BaseModel):
                 "Health worker configuration is invalid."
             ) from None
 
+        auth_activation = None
+        release_id = values.get("APP_RELEASE_ID") or None
+        if values.get("AUTH_ACTIVATION_PATH"):
+            auth_activation = Path(values["AUTH_ACTIVATION_PATH"])
+            if not auth_activation.is_absolute():
+                raise ConfigurationError("Auth activation path must be absolute.")
+            if app_env == "production":
+                production_path(auth_activation, repo_root=repo_root)
+            if (
+                not release_id
+                or not release_id.strip()
+                or len(release_id) > 256
+                or any(ord(char) < 32 or ord(char) == 127 for char in release_id)
+            ):
+                raise ConfigurationError(
+                    "Auth activation requires a valid APP_RELEASE_ID."
+                )
+        if app_env == "production":
+            for name in ("PASSWORD_BLOCKLIST_PATH", "PASSWORD_RESET_HMAC_PATH"):
+                if values.get(name) and not Path(values[name]).is_absolute():
+                    raise ConfigurationError(
+                        "Production supply paths must be absolute."
+                    )
+
         try:
             return cls(
                 app_env=app_env,
@@ -256,6 +292,102 @@ class Settings(BaseModel):
                 health_worker_uid=worker_uid,
                 health_worker_lock_path=health_lock,
                 health_activation_path=health_activation,
+                auth_activation_path=auth_activation,
+                app_release_id=release_id,
             )
         except ValidationError:
             raise ConfigurationError("Application configuration is invalid.") from None
+
+    def validate_production_runtime(self) -> None:
+        if self.app_env != "production":
+            return
+        # Explicit Settings/model_copy must meet the same process-config invariants.
+        Settings.from_environment(
+            {
+                "APP_ENV": "production",
+                "DATABASE_PATH": str(self.database_path),
+                "PUBLIC_ORIGIN": self.public_origin,
+                "AUTH_ACTIVATION_PATH": str(self.auth_activation_path)
+                if self.auth_activation_path
+                else "",
+                "APP_RELEASE_ID": self.app_release_id or "",
+                "PASSWORD_BLOCKLIST_PATH": str(self.password_blocklist_path)
+                if self.password_blocklist_path
+                else "",
+                "PASSWORD_RESET_HMAC_PATH": str(self.password_reset_hmac_path)
+                if self.password_reset_hmac_path
+                else "",
+            }
+        )
+        try:
+            private_directory(self.database_path.parent)
+            for path in (
+                self.database_path,
+                Path(f"{self.database_path}-wal"),
+                Path(f"{self.database_path}-shm"),
+            ):
+                if (
+                    path != self.database_path
+                    and not path.exists()
+                    and not path.is_symlink()
+                ):
+                    continue
+                descriptor = os.open(path, os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK)
+                try:
+                    private_file(os.fstat(descriptor))
+                finally:
+                    os.close(descriptor)
+        except (OSError, ValueError):
+            raise ConfigurationError("Production storage is invalid.") from None
+
+
+def production_path(path: Path, *, repo_root: Path = ROOT) -> None:
+    temporary_roots = {
+        Path(tempfile.gettempdir()),
+        Path("/tmp"),
+        Path("/var/tmp"),
+        Path("/dev/shm"),
+    }
+    if not path.is_absolute():
+        raise ConfigurationError("Production paths must be absolute.")
+    if path != path.resolve():
+        raise ConfigurationError("Production paths must be canonical without symlinks.")
+    if path.is_relative_to(repo_root.resolve()):
+        raise ConfigurationError("Production paths must be outside the repository.")
+    if any(path.is_relative_to(root.resolve()) for root in temporary_roots):
+        raise ConfigurationError(
+            "Production paths must be outside the temporary directory."
+        )
+
+
+def private_file(metadata) -> None:
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_uid != os.geteuid()
+        or stat.S_IMODE(metadata.st_mode) != 0o600
+    ):
+        raise ValueError("Private file permissions are invalid.")
+
+
+def private_directory(path: Path) -> None:
+    metadata = path.lstat()
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_uid != os.geteuid()
+        or stat.S_IMODE(metadata.st_mode) != 0o700
+    ):
+        raise ValueError("Private directory permissions are invalid.")
+    for parent in path.parents:
+        metadata = parent.lstat()
+        # Root-owned sticky temp roots support only synthetic test fixtures.
+        sticky_root = (
+            parent in {Path("/tmp"), Path("/var/tmp"), Path("/dev/shm")}
+            and metadata.st_uid == 0
+            and bool(metadata.st_mode & stat.S_ISVTX)
+        )
+        if (
+            not stat.S_ISDIR(metadata.st_mode)
+            or metadata.st_uid not in {0, os.geteuid()}
+            or (metadata.st_mode & 0o022 and not sticky_root)
+        ):
+            raise ValueError("Untrusted storage ancestor.")

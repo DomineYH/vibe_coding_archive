@@ -76,6 +76,37 @@ def fingerprint(secret, key, actor_id, target_id, version, password):
     return hmac.new(secret, raw, hashlib.sha256).hexdigest()
 
 
+def invalidate_reset_operations(session_factory, key_id=None):
+    """Commit the existing reset invalidation transaction; propagate every failure."""
+    with session_factory() as db:
+        query = text(
+            "SELECT key,actor_id,target_id FROM write_operations WHERE kind='user_password_reset' AND state='unresolved' AND (:id IS NULL OR reset_key_id<>:id)"
+        )
+        # Disabled reset must not add a writer wait to unrelated auth maintenance.
+        pending = db.execute(query, {"id": key_id}).first() is not None
+        db.rollback()
+        if not pending:
+            return 0
+        db.execute(text("BEGIN IMMEDIATE"))
+        rows = db.execute(query, {"id": key_id}).mappings().all()
+        stamp = now()
+        for row in rows:
+            db.execute(
+                text(
+                    "UPDATE write_operations SET state='rejected',failure_code='OPERATION_INVALIDATED',applied_at=:stamp WHERE key=:key"
+                ),
+                {"stamp": stamp, "key": row["key"]},
+            )
+            db.execute(
+                text(
+                    "INSERT INTO audit_logs(action,actor_id,target_id,occurred_at,outcome) VALUES ('invalidate_user_password_reset',:actor_id,:target_id,:stamp,'rejected')"
+                ),
+                {**row, "stamp": stamp},
+            )
+        db.commit()
+        return len(rows)
+
+
 class ResetSecretGate:
     """Always acquire this gate before a SQLite writer; never hold it while hashing."""
 
@@ -89,32 +120,7 @@ class ResetSecretGate:
         self.startup()
 
     def invalidate(self, key_id):
-        with self.session_factory() as db:
-            query = text(
-                "SELECT key,actor_id,target_id FROM write_operations WHERE kind='user_password_reset' AND state='unresolved' AND (:id IS NULL OR reset_key_id<>:id)"
-            )
-            # Disabled reset must not add a writer wait to unrelated auth maintenance.
-            pending = db.execute(query, {"id": key_id}).first() is not None
-            db.rollback()
-            if not pending:
-                return
-            db.execute(text("BEGIN IMMEDIATE"))
-            rows = db.execute(query, {"id": key_id}).mappings().all()
-            stamp = now()
-            for row in rows:
-                db.execute(
-                    text(
-                        "UPDATE write_operations SET state='rejected',failure_code='OPERATION_INVALIDATED',applied_at=:stamp WHERE key=:key"
-                    ),
-                    {"stamp": stamp, "key": row["key"]},
-                )
-                db.execute(
-                    text(
-                        "INSERT INTO audit_logs(action,actor_id,target_id,occurred_at,outcome) VALUES ('invalidate_user_password_reset',:actor_id,:target_id,:stamp,'rejected')"
-                    ),
-                    {**row, "stamp": stamp},
-                )
-            db.commit()
+        return invalidate_reset_operations(self.session_factory, key_id)
 
     def startup(self):
         with self.lock:

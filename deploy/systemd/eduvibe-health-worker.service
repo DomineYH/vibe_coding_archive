@@ -1,0 +1,29 @@
+[Unit]
+Description=EduVibe disabled-by-default health worker
+Requires=eduvibe-api.service
+After=eduvibe-api.service
+StartLimitIntervalSec=60s
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=eduvibe
+Group=eduvibe
+WorkingDirectory=/opt/eduvibe/current/backend
+EnvironmentFile=/etc/eduvibe/runtime.env
+Environment=APP_ENV=production
+Environment=HEALTH_CHECKS_ENABLED=false
+Environment=HEALTH_WORKER_LOCK_PATH=/srv/eduvibe/worker/health-worker.lock
+ExecStart=/opt/eduvibe/current/backend/.venv/bin/python -m app.health_worker
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+KillMode=control-group
+TimeoutStopSec=15s
+SendSIGKILL=yes
+UMask=0077
+NoNewPrivileges=yes
+LimitCORE=0
+LogNamespace=eduvibe
+StandardOutput=journal
+StandardError=journal

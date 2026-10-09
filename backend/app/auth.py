@@ -32,6 +32,7 @@ from app.auth_boundary import (
     terminalize,
     transition_summary,
 )
+from app.auth_runtime import auth_available
 
 router = APIRouter(prefix="/auth")
 Seq = Annotated[str, Field(strict=True, pattern=r"^(0|[1-9][0-9]*)$")]
@@ -76,7 +77,7 @@ class Discard(Settle):
 
 
 def open_session(request: Request, *, immediate: bool):
-    if not request.app.state.auth_enabled or not request.app.state.auth_ready:
+    if not auth_available(request.app.state):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     with request.app.state.session_factory() as db:
         try:
@@ -84,6 +85,8 @@ def open_session(request: Request, *, immediate: bool):
                 origin(request)
                 if immediate:
                     db.execute(text("BEGIN IMMEDIATE"))
+            if not auth_available(request.app.state):
+                raise AuthError("FEATURE_UNAVAILABLE", 503)
             yield db
         except SQLAlchemyError as error:
             db.rollback()

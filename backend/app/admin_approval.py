@@ -23,6 +23,7 @@ from app.auth_boundary import (
     response,
 )
 from app.auth_login import member_session
+from app.auth_runtime import auth_available
 
 
 def unique_fields(pairs):
@@ -429,6 +430,8 @@ def administrator(db, request, *, write=False):
 
 
 def protected_member(db, request, *, write=False, admin=False):
+    if not auth_available(request.app.state):
+        raise AuthError("FEATURE_UNAVAILABLE", 503)
     if write:
         origin(request)
     elif not db.in_transaction():

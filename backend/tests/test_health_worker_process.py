@@ -27,12 +27,19 @@ class ProcessHarness:
         self.server = socket.socket(socket.AF_UNIX)
         self.server.bind(str(self.control))
         self.server.listen(10)
+        self.releases = []
+        for name in ("release-a", "release-b"):
+            release = directory / name
+            release.symlink_to(
+                Path(__file__).resolve().parents[1], target_is_directory=True
+            )
+            self.releases.append(release)
         self.processes = []
         self.probes = []
         self.engine = make_engine(database)
         self.factory = make_session_factory(self.engine)
 
-    def spawn(self):
+    def spawn(self, release=0, mode="normal"):
         process = subprocess.Popen(
             [
                 sys.executable,
@@ -41,11 +48,12 @@ class ProcessHarness:
                 str(self.database),
                 str(self.lock),
                 str(self.control),
+                mode,
             ],
-            cwd=Path(__file__).resolve().parents[1],
+            cwd=self.releases[release],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            env={**os.environ, "APP_ENV": "test"},
+            env={**os.environ, "APP_ENV": "test", "HEALTH_CHECKS_ENABLED": "false"},
         )
         self.processes.append(process)
         return process
@@ -121,6 +129,7 @@ def test_sigterm_drains_three_original_deadlines_without_claiming_fourth(harness
     harness.admit(4)
     worker = harness.spawn()
     probes = [harness.accept() for _ in range(3)]
+    inode = harness.lock.stat().st_ino
     first_at = time.monotonic()
     assert {record["pid"] for _, record in probes} == {worker.pid}
     assert sorted(row["status"] for row in harness.states()) == [
@@ -148,6 +157,16 @@ def test_sigterm_drains_three_original_deadlines_without_claiming_fourth(harness
         "queued",
     ]
     assert sum(row["attempts"] for row in states) == 3
+    replacement = harness.spawn(release=1)
+    connection, record = harness.accept()
+    assert record["pid"] == replacement.pid
+    assert harness.lock.stat().st_ino == inode
+    assert sorted(row["attempts"] for row in harness.states()) == [1, 1, 1, 1]
+    connection.sendall(b"complete\n")
+    wait_until(lambda: all(row["status"] == "completed" for row in harness.states()))
+    replacement.terminate()
+    replacement.communicate(timeout=15)
+    assert replacement.returncode == 0
 
 
 def test_second_worker_process_is_rejected_before_probe_or_registration(harness):
@@ -157,10 +176,12 @@ def test_second_worker_process_is_rejected_before_probe_or_registration(harness)
     assert record["pid"] == first.pid
     with harness.factory() as db:
         original = store.current_worker(db)["worker_id"]
-    second = harness.spawn()
+    inode = harness.lock.stat().st_ino
+    second = harness.spawn(release=1)
     _, stderr = second.communicate(timeout=15)
     assert second.returncode != 0
     assert b"already running" in stderr
+    assert harness.lock.stat().st_ino == inode
     with harness.factory() as db:
         assert store.current_worker(db)["worker_id"] == original
     with pytest.raises(TimeoutError):
@@ -179,6 +200,7 @@ def test_sigkill_wait_then_restart_obeys_real_cooldown_and_same_job_attempt_limi
     first = harness.spawn()
     connection, _ = harness.accept()
     initial = harness.states()[0]
+    inode = harness.lock.stat().st_ino
     first.kill()
     assert first.wait(timeout=10) == -signal.SIGKILL
     assert connection.recv(1) == b""
@@ -190,6 +212,7 @@ def test_sigkill_wait_then_restart_obeys_real_cooldown_and_same_job_attempt_limi
     assert recovering["id"] == initial["id"] and recovering["attempts"] == 1
     second_connection, second_record = harness.accept(timeout=65)
     assert second_record["pid"] == second.pid
+    assert harness.lock.stat().st_ino == inode
     retried = harness.states()[0]
     assert retried["id"] == initial["id"] and retried["attempts"] == 2
     assert retried["started_at"] == initial["started_at"]
@@ -206,6 +229,7 @@ def test_sigkill_wait_then_restart_obeys_real_cooldown_and_same_job_attempt_limi
     third = harness.spawn()
     wait_until(lambda: harness.states()[0]["status"] == "failed")
     assert harness.states()[0]["failure_code"] == "WORKER_RECOVERY_EXHAUSTED"
+    assert harness.lock.stat().st_ino == inode
     with pytest.raises(TimeoutError):
         harness.accept(timeout=0.3)
     third.terminate()
@@ -240,6 +264,28 @@ def test_explicit_disable_closes_each_probe_cancels_queue_and_preserves_last_res
         )
     assert result["health"]["result"]["checked_at"] == checked
     assert result["health"]["result"]["state"] == "healthy"
+    cancelled = harness.states()
+    inode = harness.lock.stat().st_ino
+    replacement = harness.spawn(release=1)
+
+    def ready():
+        with harness.factory() as db:
+            row = store.current_worker(db)
+            return row and row["ready"]
+
+    wait_until(ready)
+    with pytest.raises(TimeoutError):
+        harness.accept(timeout=0.5)
+    assert harness.states() == cancelled
+    assert harness.lock.stat().st_ino == inode
+    with harness.factory() as db:
+        after = store.snapshot(
+            db, "00000000-0000-4000-8000-000000000001", datetime.now(UTC)
+        )
+    assert after["health"]["result"] == result["health"]["result"]
+    replacement.terminate()
+    replacement.communicate(timeout=15)
+    assert replacement.returncode == 0
 
 
 def test_expired_lease_recovers_only_after_socket_cleanup_and_stops_at_two_attempts(
@@ -312,3 +358,97 @@ def test_expired_lease_recovers_only_after_socket_cleanup_and_stops_at_two_attem
     worker.terminate()
     worker.communicate(timeout=15)
     assert worker.returncode == 0
+
+
+def test_unclean_cleanup_exits_70_before_replacement_worker(harness):
+    harness.admit(1)
+    first = harness.spawn(mode="unclean")
+    connection, record = harness.accept()
+    assert record["pid"] == first.pid
+    inode = harness.lock.stat().st_ino
+    contender = harness.spawn(release=1)
+    _, stderr = contender.communicate(timeout=15)
+    assert contender.returncode != 0
+    assert b"already running" in stderr
+    connection.sendall(b"unclean\n")
+    assert first.wait(timeout=10) == 70
+    assert connection.recv(1) == b""  # OS death closed the retained probe FD.
+    replacement = harness.spawn(release=1)
+    new_socket, record = harness.accept()
+    assert record["pid"] == replacement.pid
+    assert harness.lock.stat().st_ino == inode
+    assert harness.states()[0]["attempts"] == 1
+    new_socket.sendall(b"complete\n")
+    wait_until(lambda: harness.states()[0]["status"] == "completed")
+    replacement.terminate()
+    replacement.communicate(timeout=15)
+    assert replacement.returncode == 0
+
+
+def test_disable_health_cli_stops_process_and_reenable_does_not_resurrect(harness):
+    import fcntl
+
+    activation = harness.database.parent / "activation.json"
+    activation.write_text('{"version":1,"synthetic":true}')
+    activation.chmod(0o600)
+    harness.database.chmod(0o600)
+    harness.admit(4)
+    worker = harness.spawn(mode="revocation")
+    probes = [harness.accept() for _ in range(3)]
+    inode = harness.lock.stat().st_ino
+    with harness.factory() as db:
+        results = db.execute(text("SELECT * FROM health_results ORDER BY app_id")).all()
+    result = subprocess.run(
+        [sys.executable, "-m", "app.cli", "disable-health"],
+        cwd=Path(__file__).resolve().parents[1],
+        env={
+            **os.environ,
+            "APP_ENV": "test",
+            "HEALTH_CHECKS_ENABLED": "false",
+            "DATABASE_PATH": str(harness.database),
+            "PUBLIC_ORIGIN": "http://localhost:5174",
+            "HEALTH_ACTIVATION_PATH": str(activation),
+            "HEALTH_WORKER_LOCK_PATH": str(harness.lock),
+        },
+        capture_output=True,
+        check=False,
+        timeout=15,
+    )
+    assert result.returncode == 3 and b"HEALTH_STOP_REQUIRED" in result.stdout
+    assert not activation.exists()
+    cancelled = harness.states()
+    assert {j["status"] for j in cancelled} == {"cancelled"}
+    worker.send_signal(signal.SIGUSR2)
+    stdout, stderr = worker.communicate(timeout=10)
+    assert worker.returncode == 0, (stdout, stderr)
+    for connection, _ in probes:
+        assert connection.recv(1) == b""
+    with harness.lock.open("rb") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    assert harness.lock.stat().st_ino == inode
+    with harness.factory() as db:
+        assert not store.finish(
+            db,
+            cancelled[1],
+            {"state": "healthy", "checked_at": datetime.now(UTC)},
+            boot_id=cancelled[1]["boot_id"],
+            mono=0,
+            stamp=datetime.now(UTC),
+        )
+        assert (
+            db.execute(text("SELECT * FROM health_results ORDER BY app_id")).all()
+            == results
+        )
+    replacement = harness.spawn(release=1)
+
+    def ready():
+        with harness.factory() as db:
+            return store.current_worker(db)["ready"]
+
+    wait_until(ready)
+    with pytest.raises(TimeoutError):
+        harness.accept(timeout=0.3)
+    assert harness.states() == cancelled
+    replacement.terminate()
+    replacement.communicate(timeout=15)
+    assert replacement.returncode == 0

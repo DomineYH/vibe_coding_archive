@@ -7,6 +7,7 @@ import fcntl
 import os
 import signal
 import stat
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -25,6 +26,8 @@ from app.database import (
     make_session_factory,
 )
 from app.health_runtime import boot_clock, runtime_enabled
+from app.restore_guard import maintenance_blocked, restore_blocked
+from app.safe_logging import background_error, emit, install
 from app.settings import Settings
 
 
@@ -116,7 +119,9 @@ class Worker:
         self.testing_probe = testing_probe
         self.worker_id = str(uuid4())
         self.stopping = asyncio.Event()
-        self.disabled = False
+        self.disabled = restore_blocked(settings.database_path)
+        if self.disabled:
+            emit("RESTORE_MAINTENANCE_REQUIRED")
         self.tasks = {}
         self.executor = None
         self.stop_deadline = None
@@ -427,6 +432,15 @@ class Worker:
 
 
 async def serve(settings):
+    asyncio.get_running_loop().set_exception_handler(background_error)
+    if maintenance_blocked(settings.database_path):
+        code = (
+            "RESTORE_MAINTENANCE_REQUIRED"
+            if restore_blocked(settings.database_path)
+            else "MIGRATION_MAINTENANCE_REQUIRED"
+        )
+        emit(code)
+        raise ActivationRequired(code)
     engine = make_engine(settings.database_path)
     try:
         if current_revision(engine) != current_head():
@@ -445,8 +459,17 @@ async def serve(settings):
 
 
 def main():
-    asyncio.run(serve(Settings.from_environment()))
+    install()
+    try:
+        asyncio.run(serve(Settings.from_environment()))
+    except KeyboardInterrupt:
+        return 130
+    except Exception:  # noqa: BLE001 - Preserve nonzero exit without a traceback.
+        emit("WORKER_FAILED")
+        return 1
+    emit("WORKER_COMPLETED")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

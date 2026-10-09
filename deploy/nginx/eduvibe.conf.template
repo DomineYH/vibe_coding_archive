@@ -1,0 +1,91 @@
+worker_processes 1;
+pid {{RUNTIME_ROOT}}/nginx.pid;
+error_log /dev/null;
+
+events { worker_connections 256; }
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    log_format eduvibe escape=json
+        '{"request_id":"$request_id","route":"$eduvibe_log_route","status":$status,"duration":$request_time}';
+    map $eduvibe_route $eduvibe_log_route {
+        default unmatched;
+        api api;
+        static static;
+        health health;
+        redirect redirect;
+    }
+    access_log {{LOG_ROOT}}/nginx-access.log eduvibe;
+    server_tokens off;
+    autoindex off;
+    disable_symlinks on;
+    client_body_temp_path {{RUNTIME_ROOT}}/body;
+    proxy_temp_path {{RUNTIME_ROOT}}/proxy;
+
+    # ponytail: force counted buffers; revisit if exact 16KiB acceptance replaces fail-closed packing.
+    client_header_buffer_size 1;
+    large_client_header_buffers 2 8k;
+    client_header_timeout 10s;
+
+    ssl_certificate {{TLS_CERTIFICATE}};
+    ssl_certificate_key {{TLS_CERTIFICATE_KEY}};
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    proxy_set_header Host {{HTTPS_AUTHORITY}};
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Forwarded "";
+    proxy_cache off;
+    proxy_intercept_errors off;
+    proxy_redirect off;
+    proxy_connect_timeout 2s;
+    proxy_read_timeout 5s;
+
+    server {
+        set $eduvibe_route unmatched;
+        listen {{HTTP_PORT}} default_server;
+        server_name _;
+        return 421;
+    }
+    server {
+        set $eduvibe_route unmatched;
+        listen {{HTTPS_PORT}} ssl default_server;
+        server_name _;
+        return 421;
+    }
+    server {
+        set $eduvibe_route unmatched;
+        listen {{HTTP_PORT}};
+        server_name {{SERVER_NAME}};
+        set $eduvibe_route redirect;
+        return 308 https://{{HTTPS_AUTHORITY}}$request_uri;
+    }
+    server {
+        set $eduvibe_route unmatched;
+        listen {{HTTPS_PORT}} ssl;
+        server_name {{SERVER_NAME}};
+        root {{RELEASE_ROOT}};
+
+        location = /api { set $eduvibe_route api; proxy_pass http://{{API_UPSTREAM}}; }
+        location ^~ /api/ { set $eduvibe_route api; proxy_pass http://{{API_UPSTREAM}}; }
+        location = /healthz { set $eduvibe_route health; proxy_pass http://{{API_UPSTREAM}}; }
+        location = /readyz { set $eduvibe_route health; proxy_pass http://{{API_UPSTREAM}}; }
+
+        location = / { set $eduvibe_route static; try_files /index.html =404; add_header Cache-Control no-store always; }
+        location = /index.html { set $eduvibe_route static; try_files $uri =404; add_header Cache-Control no-store always; }
+        location = /licenses/Pretendard-OFL.txt { set $eduvibe_route static; try_files $uri =404; }
+
+        # Denials precede both static and SPA regex locations.
+        location ~* (?:^|/)\. { return 404; }
+        location ~* (?:^|/)(?:fixtures|mock|reference|research|evidence|basic_design)(?:[./_-]|$) { return 404; }
+        location ~* \.(?:db|sqlite3?|age|bak|backup|old|orig|pem|key|p12|pfx|map|ts|tsx|jsx)(?:[./_-]|$) { return 404; }
+        location ~* ^/assets/[^/]+\.(?:css|js|woff2)$ { set $eduvibe_route static; try_files $uri =404; }
+        location ~ ^/(?:auth|admin|apps/new|apps/[^/]+(?:/edit)?)/?$ {
+            set $eduvibe_route static;
+            try_files /index.html =404;
+            add_header Cache-Control no-store always;
+        }
+        location / { return 404; }
+    }
+}

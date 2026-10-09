@@ -562,8 +562,9 @@ paths:
         password_confirm field is not accepted. While contact collection is
         disabled, omitted, null, or normalized-empty email/phone values are
         accepted and non-empty values receive field validation errors. No
-        partial account is created on validation failure. T04 is enabled only in
-        the APP_ENV=test prepared boundary until T05 completes. Requires the
+        partial account is created on validation failure. Registration is enabled
+        in verified development, explicitly prepared APP_ENV=test apps, or
+        operator-approved limited production candidates. Requires the
         current anonymous S and matching flow/revision/generation; full and
         change_only receive ALREADY_AUTHENTICATED. Registration does not admit
         an identity transition, rotate S, or sign in. Origin/CSRF-valid attempts,

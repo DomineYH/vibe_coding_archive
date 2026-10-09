@@ -15,7 +15,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 
 
 class AuthProcess:
-    def __init__(self, database, blocklist):
+    def __init__(self, database, blocklist, *, release=BACKEND):
         if not database.is_absolute() or not str(database).startswith("/tmp/"):
             raise ValueError("Process drills require an absolute temporary database.")
         self.directory = tempfile.TemporaryDirectory(prefix="auth-process-")
@@ -31,6 +31,7 @@ class AuthProcess:
             "PUBLIC_ORIGIN": "http://localhost:5174",
             "AUTH_FAULT_CONTROL": str(self.control_path),
         }
+        self.release = release
         self.process = None
 
     def start(self):
@@ -47,7 +48,7 @@ class AuthProcess:
                 str(self.port),
                 "--no-access-log",
             ],
-            cwd=BACKEND,
+            cwd=self.release,
             env=self.env,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,

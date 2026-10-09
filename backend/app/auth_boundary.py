@@ -14,6 +14,8 @@ from uuid import UUID, uuid4
 from sqlalchemy import text
 from starlette.responses import JSONResponse, Response
 
+from app.auth_runtime import auth_available
+
 PENDING = ("admitted", "executing")
 SEQUENCE = re.compile(r"^(0|[1-9][0-9]*)$")
 COOKIE = re.compile(
@@ -53,11 +55,7 @@ def read_context(request):
 
 def screen_read_context(db, request, context):
     """Resolve only the supplied flow. Caller holds the write reservation."""
-    if (
-        context is None
-        or not request.app.state.auth_enabled
-        or not request.app.state.auth_ready
-    ):
+    if context is None or not auth_available(request.app.state):
         return None, None, None
     flow_id, revision, _generation = context
     try:

@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from app import health_store
+from app.auth_runtime import auth_available, read_activation_record
 from app.settings import Settings
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -34,9 +35,9 @@ def boot_clock() -> tuple[str, float]:
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip(), time.monotonic()
 
 
-def checks_available(db, request) -> bool:
+def checks_available(db, request, *, auth_decision=None) -> bool:
     state = request.app.state
-    if not state.auth_enabled or not state.auth_ready:
+    if not (auth_available(state) if auth_decision is None else auth_decision):
         return False
     if not state.health_testing and not runtime_enabled(state.settings):
         return False
@@ -94,10 +95,7 @@ def runtime_enabled(settings: Settings) -> bool:
     ):
         return False
     try:
-        raw = settings.health_activation_path.read_bytes()
-        if len(raw) > 65536:
-            return False
-        record = json.loads(raw)
+        record = read_activation_record(settings.health_activation_path)
         if (
             not isinstance(record, dict)
             or record.get("version") != 1

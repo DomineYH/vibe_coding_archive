@@ -1,0 +1,32 @@
+[Unit]
+Description=EduVibe same-origin ingress
+Requires=eduvibe-api.service
+After=eduvibe-api.service
+StartLimitIntervalSec=60s
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=eduvibe-nginx
+Group=eduvibe-nginx
+EnvironmentFile=/etc/eduvibe/nginx.env
+Environment=APP_ENV=production
+Environment=HEALTH_CHECKS_ENABLED=false
+ExecStart=/usr/sbin/nginx -p /srv/eduvibe/nginx/ -c /etc/eduvibe/nginx.conf -g 'daemon off;'
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGTERM
+KillMode=control-group
+TimeoutStopSec=15s
+SendSIGKILL=yes
+UMask=0077
+NoNewPrivileges=yes
+LimitCORE=0
+LogNamespace=eduvibe
+StandardOutput=null
+StandardError=null
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target

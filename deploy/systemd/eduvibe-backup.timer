@@ -1,0 +1,12 @@
+[Unit]
+Description=EduVibe KST backup schedule
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 Asia/Seoul
+OnCalendar=*-*-* 19:00:00 Asia/Seoul
+Persistent=true
+RandomizedDelaySec=0
+Unit=eduvibe-backup.service
+
+[Install]
+WantedBy=timers.target

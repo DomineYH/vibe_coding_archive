@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-import argparse
+import logging
+import os
+import resource
+import signal
 import sqlite3
 import sys
 from datetime import UTC, datetime
 from getpass import getpass
+from pathlib import Path
 from unicodedata import normalize
 
 from alembic.util.exc import CommandError
@@ -17,6 +21,7 @@ from app.auth_boundary import normalized_login_id as _normalized_login_id
 from app.auth_maintenance import reconcile
 from app.database import current_head, current_revision, make_engine
 from app.models import App, AppGrade, HealthResult, Member
+from app.safe_logging import SafeParser, emit, install
 from app.settings import ROOT, ConfigurationError, Settings
 
 MEMBERS = (
@@ -201,9 +206,36 @@ def seed() -> None:
     print(f"Seeded {members_added} members and {apps_added} apps.")
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(prog="python -m app.cli")
+def _main() -> int:
+    if sys.argv[1:2] == ["backup-db"]:
+        from app.backup import main as backup_main
+
+        return backup_main(sys.argv[2:])
+    if sys.argv[1:2] in (["restore-db"], ["verify-restore"]):
+        from app.restore import main as restore_main
+
+        return restore_main(sys.argv[1], sys.argv[2:])
+    parser = SafeParser(prog="python -m app.cli", allow_abbrev=False)
     subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers.add_parser("backup-db", help="create a local encrypted database backup")
+    purge = subparsers.add_parser(
+        "purge-expired", help="purge eligible local records and backups"
+    )
+    purge.add_argument("--backup-dir", required=True)
+    for command in ("restore-db", "verify-restore"):
+        subparsers.add_parser(command, help="inspect an isolated blocked restore")
+    subparsers.add_parser(
+        "maintenance-block", help="block services for explicit migration"
+    )
+    rotate = subparsers.add_parser("rotate-reset-key", allow_abbrev=False)
+    choice = rotate.add_mutually_exclusive_group(required=True)
+    choice.add_argument("--invalidate-only", action="store_true")
+    choice.add_argument("--generate", action="store_true")
+    subparsers.add_parser("disable-health", allow_abbrev=False)
+    ops = subparsers.add_parser("ops-check", allow_abbrev=False)
+    ops.add_argument("--backup-dir", required=True)
+    ops.add_argument("--observations-file")
+    ops.add_argument("--required-free-bytes", type=int)
     subparsers.add_parser("seed", help="add missing synthetic development data")
     subparsers.add_parser(
         "sweep-pending", help="delete expired initial pending members"
@@ -215,6 +247,38 @@ def main() -> int:
     for command in ("bootstrap-admin", "recover-admin", "prepare-password-blocklist"):
         subparsers.add_parser(command)
     args = parser.parse_args()
+    if args.command in ("ops-check", "disable-health", "rotate-reset-key"):
+        settings = Settings.from_environment()
+        raw = os.environ.get("DATABASE_PATH")
+        if raw is not None and Path(raw) != settings.database_path:
+            raise ConfigurationError("Invalid operational storage path")
+    if args.command == "rotate-reset-key":
+        from app.operational_commands import rotate_reset_key
+
+        return rotate_reset_key(settings, generate=args.generate)
+    if args.command == "disable-health":
+        from app.operational_commands import disable_health
+
+        return disable_health(settings)
+    if args.command == "ops-check":
+        from app.operations import main as ops_main
+
+        if args.required_free_bytes is not None and args.required_free_bytes < 0:
+            parser.error("Invalid headroom")
+        return ops_main(
+            settings,
+            backup_dir=args.backup_dir,
+            observations_file=args.observations_file,
+            required_free_bytes=args.required_free_bytes,
+        )
+    if args.command == "maintenance-block":
+        from app.maintenance import block
+
+        return block(Settings.from_environment())
+    if args.command == "purge-expired":
+        from app.retention import purge_expired
+
+        return purge_expired(Settings.from_environment(), backup_dir=args.backup_dir)
     if args.command in (
         "bootstrap-admin",
         "recover-admin",
@@ -233,7 +297,7 @@ def main() -> int:
         except (ValueError, RuntimeError, SQLAlchemyError, OSError, EOFError) as error:
             # SQL errors can embed bound hashes; report no raw exception or parameters.
             print(
-                str(error)
+                _safe_guidance(error)
                 if isinstance(error, ValueError)
                 else "Administrator credential operation failed; no changes saved.",
                 file=sys.stderr,
@@ -272,9 +336,90 @@ def main() -> int:
         try:
             seed()
         except SeedError as error:
-            print(error, file=sys.stderr)
+            print(_safe_guidance(error), file=sys.stderr)
             return 1
     return 0
+
+
+_GUIDANCE = (
+    "Admin credentials require an interactive terminal.",
+    "Administrator credential change cancelled.",
+    "Bootstrap requires zero administrators.",
+    "Conflicting seed data; no changes were saved.",
+    "Database migration head could not be verified.",
+    "Database migration head does not match the application.",
+    "Invalid development configuration.",
+    "Invalid login ID.",
+    "Login ID collision; no member was promoted.",
+    "Nickname must contain 2 to 20 characters.",
+    "Password must contain 15 to 128 Unicode characters.",
+    "Recovery requires an existing administrator.",
+    "Run the explicit development migration first.",
+    "Run the explicit migration first.",
+    "Seed is available only in the development environment.",
+    "Seed requires an interactive terminal.",
+    "Seed requires the designated development database.",
+    "Temporary password does not meet the password policy.",
+    "The entered passwords do not match.",
+)
+
+
+def _safe_guidance(error):
+    message = str(error)
+    return next((fixed for fixed in _GUIDANCE if fixed == message), "CLI_FAILED")
+
+
+def main() -> int:
+    install()
+    command = sys.argv[1] if len(sys.argv) > 1 else None
+    fixed_output = command in (
+        "maintenance-block",
+        "ops-check",
+        "disable-health",
+        "rotate-reset-key",
+        "backup-db",
+        "restore-db",
+        "verify-restore",
+        "sweep-pending",
+        "invalidate-restored-auth",
+    )
+    if fixed_output:
+        # Preserve existing fixed CLI protocols without library diagnostics.
+        logging.getLogger().handlers[0].addFilter(
+            lambda record: record.name == "eduvibe.safe"
+        )
+    previous = {}
+    if command in ("ops-check", "disable-health", "rotate-reset-key"):
+        from app.backup import BackupInterrupted
+
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+
+        def interrupted(signum, _frame):
+            for stop in (signal.SIGINT, signal.SIGTERM):
+                signal.signal(stop, signal.SIG_IGN)
+            raise BackupInterrupted(signum)
+
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            previous[signum] = signal.signal(signum, interrupted)
+    try:
+        result = _main()
+    except BaseException as error:
+        if previous and isinstance(error, BackupInterrupted):
+            emit("CLI_FAILED")
+            return 128 + error.signum
+        if isinstance(error, ConfigurationError):
+            emit("CLI_USAGE_INVALID")
+            return 2
+        if not isinstance(error, Exception):
+            raise
+        emit("CLI_FAILED")
+        return 1
+    finally:
+        for signum, handler in previous.items():
+            signal.signal(signum, handler)
+    if not fixed_output:
+        emit("CLI_COMPLETED" if result in (0, 3) else "CLI_FAILED")
+    return result
 
 
 if __name__ == "__main__":

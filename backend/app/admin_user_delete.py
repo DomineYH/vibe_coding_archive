@@ -18,6 +18,7 @@ from app.app_create import idempotency_key
 from app.auth import Unlocked
 from app.auth_boundary import AuthError, after, now, response
 from app.auth_reauth import current_admin, require_recent_admin
+from app.auth_runtime import auth_available
 from app.member_deletion import delete_member
 from app.user_deletion_ledger import FIELDS, confirm, new_group
 
@@ -25,10 +26,8 @@ router = APIRouter(dependencies=[Depends(check_json)])
 
 
 def delete_administrator(db, request, *, recent=False):
-    if (
-        not request.app.state.auth_enabled
-        or not request.app.state.auth_ready
-        or (recent and not request.app.state.user_delete_ready)
+    if not auth_available(request.app.state) or (
+        recent and not request.app.state.user_delete_ready
     ):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
     if recent:
