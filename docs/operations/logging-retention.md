@@ -54,3 +54,5 @@ Unknown copy coverage is an unresolved operational prerequisite: retain independ
 `test_safe_logging.py` captures real API HTTP output and CLI/worker process stderr in private test runs, scans synthetic sentinels without dumping them, and exercises normal/validation/busy/exception, unmatched/body-limit, startup and asynchronous failure paths. `test_purge_expired.py` checks fixed clocks, existing sweeps/replay fences, audit/ledger preservation, copy/logical round trip, local artifact validation, interruption, retry and host template values.
 
 Native Nginx smoke captures safe access records and upstream stdout/stderr in a private directory with Playwright traces/screenshots/video disabled. It runs in CI with Nginx installed. Real age cryptography stays mandatory in CI; local controlled encryptors prove I/O and original-clock behavior only. No raw captures, database/dumps, identities, contacts, cookies, or test logs are published as evidence. T10/T11/T12 inputs and actual host/provider enforcement remain explicitly outstanding.
+
+For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).

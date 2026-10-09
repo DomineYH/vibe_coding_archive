@@ -81,3 +81,5 @@ SIGTERM과 달리 **명시적 기능 중지**는 실행·대기 작업을 취소
 보장도 로컬 테스트로 주장하지 않는다. 실제 VM·송신망 검증 전에는 활성화하지 않는다.
 
 인증 후보의 별도 승인 경계는 [auth-candidate.md](auth-candidate.md)를 따른다.
+
+For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).

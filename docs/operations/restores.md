@@ -90,3 +90,5 @@ existing CI job after age version recording. Missing local age/age-keygen is
 **NOT RUN**, not a passing crypto check. Missing tools in CI fail. Local controlled
 pass-through fixtures establish CLI/I/O and isolation behavior only. No VM loss,
 real operator activation or visual approval is inferred from those tests.
+
+For service units, persistent locks and manual migration maintenance, see [explicit migration and service lifecycle](migrations.md).

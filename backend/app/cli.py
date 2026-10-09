@@ -220,6 +220,9 @@ def _main() -> int:
     purge.add_argument("--backup-dir", required=True)
     for command in ("restore-db", "verify-restore"):
         subparsers.add_parser(command, help="inspect an isolated blocked restore")
+    subparsers.add_parser(
+        "maintenance-block", help="block services for explicit migration"
+    )
     subparsers.add_parser("seed", help="add missing synthetic development data")
     subparsers.add_parser(
         "sweep-pending", help="delete expired initial pending members"
@@ -231,6 +234,10 @@ def _main() -> int:
     for command in ("bootstrap-admin", "recover-admin", "prepare-password-blocklist"):
         subparsers.add_parser(command)
     args = parser.parse_args()
+    if args.command == "maintenance-block":
+        from app.maintenance import block
+
+        return block(Settings.from_environment())
     if args.command == "purge-expired":
         from app.retention import purge_expired
 
@@ -329,6 +336,7 @@ def main() -> int:
     install()
     command = sys.argv[1] if len(sys.argv) > 1 else None
     fixed_output = command in (
+        "maintenance-block",
         "backup-db",
         "restore-db",
         "verify-restore",

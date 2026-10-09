@@ -26,7 +26,7 @@ from app.database import (
     make_session_factory,
 )
 from app.health_runtime import boot_clock, runtime_enabled
-from app.restore_guard import restore_blocked
+from app.restore_guard import maintenance_blocked, restore_blocked
 from app.safe_logging import background_error, emit, install
 from app.settings import Settings
 
@@ -433,9 +433,14 @@ class Worker:
 
 async def serve(settings):
     asyncio.get_running_loop().set_exception_handler(background_error)
-    if restore_blocked(settings.database_path):
-        emit("RESTORE_MAINTENANCE_REQUIRED")
-        raise ActivationRequired("RESTORE_MAINTENANCE_REQUIRED")
+    if maintenance_blocked(settings.database_path):
+        code = (
+            "RESTORE_MAINTENANCE_REQUIRED"
+            if restore_blocked(settings.database_path)
+            else "MIGRATION_MAINTENANCE_REQUIRED"
+        )
+        emit(code)
+        raise ActivationRequired(code)
     engine = make_engine(settings.database_path)
     try:
         if current_revision(engine) != current_head():

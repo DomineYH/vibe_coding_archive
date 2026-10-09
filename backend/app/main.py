@@ -65,7 +65,7 @@ from app.password_policy import load_blocklist
 from app.password_reset_secret import ResetSecretGate
 from app.public_apps import ErrorEnvelope
 from app.public_apps import router as public_apps_router
-from app.restore_guard import restore_blocked
+from app.restore_guard import maintenance_blocked, restore_blocked
 from app.safe_logging import CompletionLog, background_error, emit
 from app.settings import ConfigurationError, Settings
 from app.user_deletion_ledger import prepare as prepare_user_delete
@@ -208,9 +208,13 @@ def create_app(
                         "PUBLIC_ORIGIN": resolved.public_origin,
                     }
                 )
-            app.state.restore_blocked = restore_blocked(resolved.database_path)
-            if app.state.restore_blocked:
-                emit("RESTORE_MAINTENANCE_REQUIRED")
+            app.state.maintenance_blocked = maintenance_blocked(resolved.database_path)
+            if app.state.maintenance_blocked:
+                emit(
+                    "RESTORE_MAINTENANCE_REQUIRED"
+                    if restore_blocked(resolved.database_path)
+                    else "MIGRATION_MAINTENANCE_REQUIRED"
+                )
                 try:
                     yield
                 finally:
@@ -368,7 +372,7 @@ def create_app(
 
     @app.middleware("http")
     async def isolate_restore(request, call_next):
-        if getattr(request.app.state, "restore_blocked", False):
+        if getattr(request.app.state, "maintenance_blocked", False):
             if request.url.path.startswith("/api/"):
                 return error_response(AuthError("SERVICE_UNAVAILABLE", 503))
             if request.url.path == "/readyz":

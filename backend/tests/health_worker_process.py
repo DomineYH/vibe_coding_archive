@@ -4,16 +4,18 @@ import asyncio
 import json
 import os
 import signal
+import socket
 import sys
 from pathlib import Path
 
 from app.database import make_engine, make_session_factory
-from app.health_worker import Worker, utc_stamp
+from app.health_worker import UncleanShutdown, Worker, WorkerLock, serve, utc_stamp
 from app.settings import Settings
 
 
 async def main():
-    database, lock, control = map(Path, sys.argv[1:])
+    database, lock, control = map(Path, sys.argv[1:4])
+    mode = sys.argv[4] if len(sys.argv) > 4 else "normal"
     engine = make_engine(database)
     settings = Settings(
         app_env="test",
@@ -54,6 +56,25 @@ async def main():
         finally:
             writer.close()
             await writer.wait_closed()
+
+    if mode == "unclean":
+        # Test-only OS resources survive the raised error until production serve
+        # takes os._exit(70); there is no activation or outbound network probe.
+        retained = []
+
+        async def unclean(self):
+            lifetime_lock = WorkerLock(lock)
+            lifetime_lock.__enter__()
+            connection = socket.socket(socket.AF_UNIX)
+            retained.extend((lifetime_lock, connection))
+            connection.connect(str(control))
+            connection.sendall((json.dumps({"pid": os.getpid()}) + "\n").encode())
+            assert connection.recv(100) == b"unclean\n"
+            raise UncleanShutdown()
+
+        Worker.run = unclean
+        await serve(settings)
+        raise AssertionError("Unclean production serve returned")
 
     worker = Worker(settings, make_session_factory(engine), testing_probe=probe)
     loop = asyncio.get_running_loop()
