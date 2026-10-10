@@ -37,6 +37,123 @@ test.describe("administrator app list over real HTTP", () => {
     await blockExternalRequests(context);
   });
 
+  test("operational notices describe disabled admin actions at mobile and desktop widths", async ({
+    page,
+    owned,
+  }, testInfo) => {
+    const resetNote =
+      "비밀번호 초기화 운영 준비가 확인되지 않아 임시 비밀번호를 설정할 수 없어요.";
+    const healthNote =
+      "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
+    let restricted = true;
+    await page.route("**/api/v1/meta", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      for (const key of [
+        "admin_password_reset",
+        "health_check",
+        "health_batch",
+      ])
+        body.capabilities[key] = {
+          enabled: !restricted,
+          reasons: restricted ? ["operational_restriction"] : [],
+        };
+      await route.fulfill({ response, json: body });
+    });
+    await signIn(page, owned.admin);
+    const writes = collectWrites(page);
+    for (const viewport of [
+      { width: 1440, height: 1000 },
+      { width: 390, height: 844 },
+      { width: 360, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      for (const [tab, copy, actions] of [
+        ["users", resetNote, ["임시 비밀번호 설정"]],
+        ["health", healthNote, ["전체 재검사", "즉시 재검사"]],
+      ]) {
+        await page.goto(tab === "users" ? "/admin" : "/admin?tab=health");
+        await expect(
+          page.getByRole("list", {
+            name: tab === "users" ? "회원 목록" : "전체 앱 목록",
+          }),
+        ).toBeVisible();
+        const note = page.getByText(copy, { exact: true });
+        await expect(note).toBeVisible();
+        for (const action of actions) {
+          const buttons = page.getByRole("button", {
+            name: action,
+            exact: true,
+          });
+          expect(await buttons.count()).toBeGreaterThan(0);
+          for (const button of await buttons.all()) {
+            await expect(button).toBeDisabled();
+            await expect(button).toHaveAccessibleDescription(copy);
+            await button.evaluate((element) => element.click());
+          }
+        }
+        for (const row of await page
+          .getByRole("listitem")
+          .filter({ hasText: "보호된 계정" })
+          .all())
+          await expect(
+            row.getByRole("button", { name: "임시 비밀번호 설정" }),
+          ).toHaveCount(0);
+        expect(
+          await page.evaluate(() => {
+            const ids = [...document.querySelectorAll("[id]")].map(
+              (element) => element.id,
+            );
+            return (
+              new Set(ids).size === ids.length &&
+              [...document.querySelectorAll("[aria-describedby]")].every(
+                (element) =>
+                  element
+                    .getAttribute("aria-describedby")
+                    .split(/\s+/)
+                    .every((id) => document.getElementById(id)),
+              )
+            );
+          }),
+        ).toBe(true);
+        expect(
+          await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(viewport.width);
+        await page.evaluate(async () => {
+          await document.fonts.ready;
+        });
+        await page.screenshot({
+          path: testInfo.outputPath(
+            `admin-${tab}-operational-${viewport.width}x${viewport.height}.png`,
+          ),
+          fullPage: true,
+          animations: "disabled",
+        });
+      }
+    }
+    expect(writes).toEqual([]);
+    restricted = false;
+    await page.reload();
+    await expect(monitorList(page)).toBeVisible();
+    await expect(page.getByText(healthNote, { exact: true })).toHaveCount(0);
+    for (const action of ["전체 재검사", "즉시 재검사"])
+      for (const button of await page
+        .getByRole("button", { name: action, exact: true })
+        .all()) {
+        await expect(button).toBeEnabled();
+        await expect(button).not.toHaveAccessibleDescription(healthNote);
+      }
+    await page.goto("/admin");
+    await expect(page.getByRole("list", { name: "회원 목록" })).toBeVisible();
+    await expect(page.getByText(resetNote, { exact: true })).toHaveCount(0);
+    for (const button of await page
+      .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
+      .all()) {
+      await expect(button).toBeEnabled();
+      await expect(button).not.toHaveAttribute("aria-describedby");
+    }
+  });
+
   test("the Health Monitor reads every owner's public and private apps with default and additional pages", async ({
     page,
     owned,

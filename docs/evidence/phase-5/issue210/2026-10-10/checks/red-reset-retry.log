@@ -1,0 +1,31 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'vitest' run tests/admin-view.test.jsx -t connects only operationally restricted --pool=threads --maxWorkers=1 --no-cache --configLoader=runner
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-wt/b210/frontend
+
+ ❯ tests/admin-view.test.jsx (42 tests | 1 failed | 38 skipped) 924ms
+   × connects only operationally restricted reset actions to a visible notice: {"enabled":false,"reasons":["operational_restriction","not_implemented"]} / {"enabled":false,"reasons":["not_implemented"]} 111ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/admin-view.test.jsx > connects only operationally restricted reset actions to a visible notice: {"enabled":false,"reasons":["operational_restriction","not_implemented"]} / {"enabled":false,"reasons":["not_implemented"]}
+Error: expect(received).toBeVisible()
+
+received value must be an HTMLElement or an SVGElement.
+Received has type:  Null
+Received has value: null
+ ❯ tests/admin-view.test.jsx:113:22
+    111|       const note = screen.queryByText(copy);
+    112|       if (shown) {
+    113|         expect(note).toBeVisible();
+       |                      ^
+    114|         expect(button).toBeDisabled();
+    115|         expect(note.id).not.toBe("");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed | 38 skipped (42)
+   Start at  14:42:21
+   Duration  60.04s (import 37%, environment 32%, setup 23%, transform 5%, tests 2%, worker 1%)

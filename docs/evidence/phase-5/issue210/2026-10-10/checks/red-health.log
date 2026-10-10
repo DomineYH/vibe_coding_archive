@@ -1,0 +1,195 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'vitest' run tests/admin-view-apps.test.jsx -t explains .* independently --pool=threads --maxWorkers=1 --no-cache --configLoader=runner
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-wt/b210/frontend
+
+ ❯ tests/admin-view-apps.test.jsx (14 tests | 2 failed | 12 skipped) 713ms
+   × explains health_check independently for every affected button and removes the notice when enabled 513ms
+   × explains health_batch independently for every affected button and removes the notice when enabled 189ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/admin-view-apps.test.jsx > explains health_check independently for every affected button and removes the notice when enabled
+ FAIL  tests/admin-view-apps.test.jsx > explains health_batch independently for every affected button and removes the notice when enabled
+TestingLibraryElementError: Unable to find an element with the text: 연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<main[39m
+      [33mclass[39m=[32m"mx-auto w-full max-w-[1016px] px-5 pb-24 pt-12 sm:px-8"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"flex flex-wrap items-end justify-between gap-5"[39m
+      [36m>[39m
+        [36m<div>[39m
+          [36m<h1[39m
+            [33mclass[39m=[32m"text-[26px] font-extrabold tracking-tight text-neutral-900"[39m
+          [36m>[39m
+            [0m관리자 대시보드[0m
+          [36m</h1>[39m
+          [36m<p[39m
+            [33mclass[39m=[32m"mt-2 text-[14px] text-neutral-500"[39m
+          [36m>[39m
+            [0m사용자 승인과 플랫폼 상태를 관리해요.[0m
+          [36m</p>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"관리자 메뉴"[39m
+          [33mclass[39m=[32m"inline-flex rounded-full bg-neutral-200/70 p-1 text-[12px] font-semibold text-neutral-500"[39m
+          [33mrole[39m=[32m"tablist"[39m
+        [36m>[39m
+          [36m<button[39m
+            [33maria-controls[39m=[32m"admin-users-panel"[39m
+            [33maria-selected[39m=[32m"false"[39m
+            [33mclass[39m=[32m"rounded-full px-4 py-2 hover:text-neutral-700"[39m
+            [33mdata-admin-tab[39m=[32m"users"[39m
+            [33mid[39m=[32m"admin-users-tab"[39m
+            [33mrole[39m=[32m"tab"[39m
+            [33mtabindex[39m=[32m"-1"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0m사용자 관리[0m
+          [36m</button>[39m
+          [36m<button[39m
+            [33maria-controls[39m=[32m"admin-health-panel"[39m
+            [33maria-current[39m=[32m"page"[39m
+            [33maria-selected[39m=[32m"true"[39m
+            [33mclass[39m=[32m"rounded-full px-4 py-2 bg-white text-neutral-900 shadow-sm"[39m
+            [33mdata-admin-tab[39m=[32m"health"[39m
+            [33mid[39m=[32m"admin-health-tab"[39m
+            [33mrole[39m=[32m"tab"[39m
+            [33mtabindex[39m=[32m"0"[39m
+            [33mtype[39m=[32m"button"[39m
+          [36m>[39m
+            [0mHealth Monitor[0m
+          [36m</button>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+      [36m<section[39m
+        [33maria-label[39m=[32m"전체 통계"[39m
+        [33mclass[39m=[32m"mt-7"[39m
+      [36m>[39m
+        [36m<dl[39m
+          [33mclass[39m=[32m"grid grid-cols-2 gap-3 sm:grid-cols-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"min-h-[92px] rounded-[22px] border-l-[3px] border-l-[#4C7A96] bg-white px-5 py-4 shadow-sm"[39m
+          [36m>[39m
+            [36m<dt[39m
+              [33mclass[39m=[32m"text-[11px] tracking-[0.12em] text-neutral-500"[39m
+            [36m>[39m
+              [0m전체 사용자[0m
+            [36m</dt>[39m
+            [36m<dd[39m
+              [33mclass[39m=[32m"mt-1 text-[25px] font-extrabold tracking-tight text-neutral-900"[39m
+            [36m>[39m
+              [0m7[0m
+            [36m</dd>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"min-h-[92px] rounded-[22px] border-l-[3px] border-l-[#B77A36] bg-white px-5 py-4 shadow-sm"[39m
+          [36m>[39m
+            [36m<dt[39m
+              [33mclass[39m=[32m"text-[11px] tracking-[0.12em] text-neutral-500"[39m
+            [36m>[39m
+              [0m승인 대기[0m
+            [36m</dt>[39m
+            [36m<dd[39m
+              [33mclass[39m=[32m"mt-1 text-[25px] font-extrabold tracking-tight text-neutral-900"[39m
+            [36m>[39m
+              [0m2[0m
+            [36m</dd>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"min-h-[92px] rounded-[22px] border-l-[3px] border-l-[#4C7A96] bg-white px-5 py-4 shadow-sm"[39m
+          [36m>[39m
+            [36m<dt[39m
+              [33mclass[39m=[32m"text-[11px] tracking-[0.12em] text-neutral-500"[39m
+            [36m>[39m
+              [0m등록된 앱[0m
+            [36m</dt>[39m
+            [36m<dd[39m
+              [33mclass[39m=[32m"mt-1 text-[25px] font-extrabold tracking-tight text-neutral-900"[39m
+            [36m>[39m
+              [0m17[0m
+            [36m</dd>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"min-h-[92px] rounded-[22px] border-l-[3px] border-l-[#A33C43] bg-white px-5 py-4 shadow-sm"[39m
+          [36m>[39m
+            [36m<dt[39m
+              [33mclass[39m=[32m"text-[11px] tracking-[0.12em] text-neutral-500"[39m
+            [36m>[39m
+              [0m정상 가동[0m
+            [36m</dt>[39m
+            [36m<dd[39m
+              [33mclass[39m=[32m"mt-1 text-[25px] font-extrabold tracking-tight text-neutral-900"[39m
+            [36m>[39m
+              [0m15 / 17[0m
+            [36m</dd>[39m
+          [36m</div>[39m
+        [36m</dl>[39m
+      [36m</section>[39m
+      [36m<section[39m
+        [33maria-labelledby[39m=[32m"admin-users-tab"[39m
+        [33mclass[39m=[32m"mt-8 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm"[39m
+        [33mhidden[39m=[32m""[39m
+        [33mid[39m=[32m"admin-users-panel"[39m
+        [33mrole[39m=[32m"tabpanel"[39m
+        [33mtabindex[39m=[32m"0"[39m
+      [36m>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"flex items-center justify-between border-b border-neutral-200/70 px-6 py-4"[39m
+        [36m>[39m
+          [36m<h2[39m
+            [33mclass[39m=[32m"text-[14px] font-bold text-neutral-900"[39m
+            [33mid[39m=[32m"admin-users-title"[39m
+          [36m>[39m
+            [0m사용자 승인·계정 관리[0m
+          [36m</h2>[39m
+          [36m<span[39m
+            [33mclass[39m=[32m"rounded-full border border-[#B77A36]/25 bg-[#B77A36]/[0.07] px-3 py-1 text-[11px] font-semibold text-[#8B5E29]"[39m
+          [36m>[39m
+            [0m대기 [0m
+            [0m2[0m
+            [0m명[0m
+          [36m</span>[39m
+        [36m</div>[39m
+        [36m<div[39m
+          [33maria-label[39m=[32m"회원 목록"[39m
+          [33mrole[39m=[32m"list"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"border-b border-neutral-200/70 last:border-0 bg-[#B77A36]/[0.025]"[39m
+            [33mrole[39m=[32m"listitem"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"[39m
+            [36m>[39m
+              [36m<div[39m
+                [33mclass[39m=[32m"flex min-w-0 items-start gap-3"[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33maria-hidden[39m=[32m"true"[39m
+                  [33mclass[39m=[32m"acc-bg inline-flex shrink-0 items-center justify-center rounded-full font-bold text-white"[39m
+                  [33mstyle[39m=[32m"width: 36px; height: ...
+ ❯ Object.getElementError ../../../vibe_coding_archive/frontend/node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../../vibe_coding_archive/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../../vibe_coding_archive/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../../vibe_coding_archive/frontend/node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ tests/admin-view-apps.test.jsx:117:25
+    115|     const view = await mount({ props: { meta } });
+    116|     await screen.findByText("모니터 앱 1");
+    117|     const note = screen.getByText(healthOperationalNote);
+       |                         ^
+    118|     expect(note).toBeVisible();
+    119|     expect(note).not.toHaveClass("sr-only");
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 skipped (14)
+   Start at  14:45:46
+   Duration  49.26s (environment 51%, import 28%, setup 12%, transform 7%, tests 2%, worker 1%)

@@ -3,7 +3,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { healthService } from "@services/health";
 import { Btn } from "../../components/ui";
 
-export function HealthCheckControl({ app, canRequest, readContext, scopeKey }) {
+export function HealthCheckControl({
+  app,
+  canRequest,
+  readContext,
+  scopeKey,
+  descriptionId = "health-row-check-note",
+}) {
   const queryClient = useQueryClient();
   const [accepted, setAccepted] = useState(null);
   const [pending, setPending] = useState(false);
@@ -68,7 +74,7 @@ export function HealthCheckControl({ app, canRequest, readContext, scopeKey }) {
         variant="line"
         disabled={!canRequest || pending || Boolean(job && !finished)}
         onClick={() => void requestCheck()}
-        aria-describedby="health-row-check-note"
+        aria-describedby={descriptionId}
       >
         {pending ? "접수 중…" : "즉시 재검사"}
       </Btn>

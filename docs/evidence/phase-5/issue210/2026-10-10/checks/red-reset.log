@@ -1,0 +1,28 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'vitest' run tests/admin-view.test.jsx -t connects only operationally restricted
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-wt/b210/frontend
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-pool]: Failed to start forks worker for test files /mnt/c/dev/vibe_coding_archive-wt/b210/frontend/tests/admin-view.test.jsx.
+ ❯ ../../../vibe_coding_archive/frontend/node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:94
+ ❯ Pool.schedule ../../../vibe_coding_archive/frontend/node_modules/vitest/dist/chunks/index.DzobfTyw.js:11466:5
+
+Caused by: Error: [vitest-pool-runner]: Timeout waiting for worker to respond
+ ❯ Timeout.<anonymous> ../../../vibe_coding_archive/frontend/node_modules/vitest/dist/chunks/index.DzobfTyw.js:10965:58
+ ❯ listOnTimeout node:internal/timers:685:17
+ ❯ processTimers node:internal/timers:618:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  no tests
+      Tests  no tests
+     Errors  1 error
+   Start at  14:40:47
+   Duration  60.07s

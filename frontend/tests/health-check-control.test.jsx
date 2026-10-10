@@ -7,6 +7,9 @@ import { authService } from "../src/services/mock/auth";
 import { healthService } from "../src/services/mock/health";
 import { resetMockState, setMockScenario } from "../src/services/mock/state";
 
+const operationalNote =
+  "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
+
 let client;
 const app = { id: "00000000-0000-4000-8000-000000000001", urlVersion: 1 };
 beforeEach(async () => {
@@ -22,11 +25,22 @@ afterEach(() => {
   localStorage.clear();
 });
 function mount(canRequest) {
-  return render(
+  const tree = (allowed, descriptionId = "health-row-check-note") => (
     <QueryClientProvider client={client}>
-      <HealthCheckControl app={app} canRequest={canRequest} scopeKey="admin" />
-    </QueryClientProvider>,
+      <p id={descriptionId}>
+        {descriptionId === "health-operational-note"
+          ? operationalNote
+          : "검사 접수 후 이 행에서 진행 상태를 확인합니다."}
+      </p>
+      <HealthCheckControl
+        app={app}
+        canRequest={allowed}
+        scopeKey="admin"
+        descriptionId={descriptionId}
+      />
+    </QueryClientProvider>
   );
+  return { ...render(tree(canRequest)), tree };
 }
 it("disables admission when the health capability is unavailable", async () => {
   mount(false);
@@ -46,6 +60,37 @@ it("runs a row check and reports its completed job inline", async () => {
     "healthy",
   );
   expect(screen.getByRole("button", { name: "즉시 재검사" })).toBeEnabled();
+});
+
+it.each(["health_job_queued", "health_job_running"])(
+  "does not label an enabled %s job as an operational restriction",
+  async (scenario) => {
+    setMockScenario(scenario);
+    mount(true);
+    await userEvent.click(screen.getByRole("button", { name: "즉시 재검사" }));
+    await screen.findByRole("status");
+    expect(screen.getByRole("button", { name: "즉시 재검사" })).toBeDisabled();
+    expect(screen.queryByText(operationalNote)).not.toBeInTheDocument();
+  },
+);
+
+it("keeps job read recovery available when capability admission becomes restricted", async () => {
+  setMockScenario("health_job_query_failure");
+  const request = vi.spyOn(healthService, "requestCheck");
+  const view = mount(true);
+  await userEvent.click(screen.getByRole("button", { name: "즉시 재검사" }));
+  await screen.findByRole("button", { name: "진행 다시 조회" });
+  view.rerender(view.tree(false, "health-operational-note"));
+  const button = screen.getByRole("button", { name: "즉시 재검사" });
+  expect(button).toBeDisabled();
+  expect(button).toHaveAccessibleDescription(operationalNote);
+  await userEvent.click(button);
+  setMockScenario("health_result_healthy");
+  await userEvent.click(screen.getByRole("button", { name: "진행 다시 조회" }));
+  await waitFor(() =>
+    expect(screen.getByRole("status")).toHaveTextContent("검사 완료"),
+  );
+  expect(request).toHaveBeenCalledTimes(1);
 });
 
 it.each([

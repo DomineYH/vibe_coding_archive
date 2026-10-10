@@ -1,0 +1,10 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'vitest' run tests/admin-view-apps.test.jsx -t explains .* independently --pool=threads --maxWorkers=1 --no-cache --configLoader=runner
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-wt/b210/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 17 skipped (19)
+   Start at  14:47:23
+   Duration  43.85s (environment 45%, import 26%, setup 14%, transform 12%, tests 4%)

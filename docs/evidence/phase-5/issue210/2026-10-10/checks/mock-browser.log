@@ -1,0 +1,370 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test --config=/home/dominelinux/.cache/vibe_coding_archive/coord/b210/playwright.mock.config.mjs e2e/admin.spec.js e2e/admin-apps.spec.js e2e/health-check.spec.js
+[WebServer] (node:69055) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 34 tests using 1 worker
+
+(node:69249) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   1 e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor (30.3s)
+(node:69546) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘   2 e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths (30.5s)
+(node:69796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer]
+[WebServer] - /mnt/c/dev/vibe_coding_archive-wt/b210/frontend
+[WebServer] - /mnt/c/dev/vibe_coding_archive-wt/b210/contracts
+[WebServer] - /mnt/c/dev/vibe_coding_archive/frontend/node_modules/vite/dist/client
+[WebServer]
+[WebServer] Refer to docs https://vite.dev/config/server-options.html#server-fs-allow for configurations and more details.
+[WebServer]
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+  ✘   3 e2e/admin-apps.spec.js:262:1 › authenticated header text stays on one line at narrow widths (4.4s)
+(node:69915) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+  ✓   4 e2e/admin-apps.spec.js:290:1 › admin monitor retains the first page and retries a failed next page (4.8s)
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+  ✓   5 e2e/admin-apps.spec.js:324:1 › admin monitor deduplicates an overlapping page and keeps empty/error states clear (9.7s)
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.77.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.77.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+  ✓   6 e2e/admin-apps.spec.js:371:1 › whole scan rediscovers the active batch by ID after reload (7.7s)
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.71.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.81.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.78.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.91.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.90.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.89.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.85.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.88.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.87.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.83.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.86.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.80.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.82.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.84.woff2" is outside of Vite serving allow list.
+[WebServer] The request url "/mnt/c/dev/vibe_coding_archive/frontend/node_modules/pretendard/dist/web/variable/woff2-dynamic-subset/PretendardVariable.subset.79.woff2" is outside of Vite serving allow list.
+  ✘   7 e2e/admin-apps.spec.js:424:1 › whole scan reports mixed terminal counts and marks stale rows (7.0s)
+
+
+  1) e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/auth?mode=login", waiting until "load"
+
+
+       5 |
+       6 | async function loginAsAdmin(page) {
+    >  7 |   await page.goto("/auth?mode=login");
+         |              ^
+       8 |   const form = page.locator('[data-screen-label="로그인"] form');
+       9 |   await expect(form).toBeVisible();
+      10 |   await form.getByLabel("로그인 아이디", { exact: true }).fill("admin");
+        at loginAsAdmin (/mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:7:14)
+        at /mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:109:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-admin-can-edit--4c7e1-rivate-app-from-the-monitor/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-admin-can-edit--4c7e1-rivate-app-from-the-monitor/error-context.md
+
+  2) e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths
+
+    Test timeout of 30000ms exceeded.
+
+    Error: page.goto: Test timeout of 30000ms exceeded.
+    Call log:
+      - navigating to "http://localhost:5173/auth?mode=login", waiting until "load"
+
+
+       5 |
+       6 | async function loginAsAdmin(page) {
+    >  7 |   await page.goto("/auth?mode=login");
+         |              ^
+       8 |   const form = page.locator('[data-screen-label="로그인"] form');
+       9 |   await expect(form).toBeVisible();
+      10 |   await form.getByLabel("로그인 아이디", { exact: true }).fill("admin");
+        at loginAsAdmin (/mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:7:14)
+        at /mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:201:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-Health-Monitor--e6652-tus-badges-at-narrow-widths/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-Health-Monitor--e6652-tus-badges-at-narrow-widths/error-context.md
+
+  3) e2e/admin-apps.spec.js:262:1 › authenticated header text stays on one line at narrow widths ───
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 72
+    Received:   60
+
+      100 |   expect(await textLineCount(logo)).toBe(1);
+      101 |   expect(await textLineCount(logout)).toBe(1);
+    > 102 |   expect(nicknameSlotWidth).toBeGreaterThan(72);
+          |                             ^
+      103 |   expect(documentWidth).toBe(await page.evaluate(() => window.innerWidth));
+      104 | }
+      105 |
+        at expectHeaderTextOnOneLine (/mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:102:29)
+        at /mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:273:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-authenticated-h-10a3a-n-one-line-at-narrow-widths/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-authenticated-h-10a3a-n-one-line-at-narrow-widths/error-context.md
+
+  4) e2e/admin-apps.spec.js:424:1 › whole scan reports mixed terminal counts and marks stale rows ──
+
+    Test was interrupted.
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('tabpanel', { name: 'Health Monitor' }).getByRole('region', { name: '전체 검사 진행 상황' })
+    Expected substring: "전체 검사 완료"
+    Received string:    "전체 검사 진행 중처리 0/17 · 결과 확보 0 · 실패 0 · 취소 0이전 결과 재사용 0건 (결과 확보에 포함)"
+
+    Call log:
+      - Expect "toContainText" getByRole('tabpanel', { name: 'Health Monitor' }).getByRole('region', { name: '전체 검사 진행 상황' }) with timeout 10000ms
+      - waiting for getByRole('tabpanel', { name: 'Health Monitor' }).getByRole('region', { name: '전체 검사 진행 상황' })
+        7 × locator resolved to <section aria-live="off" aria-label="전체 검사 진행 상황" class="border-b border-neutral-200/70 bg-neutral-50/70 px-6 py-3 text-[12px] text-neutral-600">…</section>
+          - unexpected value "전체 검사 진행 중처리 0/17 · 결과 확보 0 · 실패 0 · 취소 0이전 결과 재사용 0건 (결과 확보에 포함)"
+      - Test ended.
+
+
+      434 |     name: "전체 검사 진행 상황",
+      435 |   });
+    > 436 |   await expect(summary).toContainText("전체 검사 완료", { timeout: 10000 });
+          |                         ^
+      437 |   await expect(summary).toContainText("실패 1");
+      438 |   await expect(summary).toContainText("취소 1");
+      439 |   await expect(summary).toContainText("처리 17/17");
+        at /mnt/c/dev/vibe_coding_archive-wt/b210/frontend/e2e/admin-apps.spec.js:436:25
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-whole-scan-repo-c5051-counts-and-marks-stale-rows/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b210/test-results/mock/admin-apps-whole-scan-repo-c5051-counts-and-marks-stale-rows/error-context.md
+
+  3 failed
+    e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor
+    e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths
+    e2e/admin-apps.spec.js:262:1 › authenticated header text stays on one line at narrow widths ────
+  1 interrupted
+    e2e/admin-apps.spec.js:424:1 › whole scan reports mixed terminal counts and marks stale rows ───
+  27 did not run
+  3 passed (2.5m)

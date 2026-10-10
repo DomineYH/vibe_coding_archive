@@ -1,0 +1,17 @@
+{
+  "state": "admin-health",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "baseline": "21-admin-health.png",
+  "screenshot": "admin-health-390x844.png",
+  "width": 390,
+  "height": 3751,
+  "expectedWidth": 390,
+  "expectedHeight": 2977,
+  "comparisonStatus": "dimensions_mismatch",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "bounds": null
+}

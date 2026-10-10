@@ -16,7 +16,8 @@ import { ServiceError } from "../src/services/service-error";
 import { adminService } from "../src/services/mock/admin";
 import { appsService } from "../src/services/mock/apps";
 import { authService } from "../src/services/mock/auth";
-import { resetMockState } from "../src/services/mock/state";
+import { healthService } from "../src/services/mock/health";
+import { resetMockState, setMockScenario } from "../src/services/mock/state";
 
 let client;
 beforeEach(async () => {
@@ -98,6 +99,129 @@ const firstPage = (count = 24, total = 30) =>
     0,
     total,
   );
+
+const healthOperationalNote =
+  "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
+
+it.each(["health_check", "health_batch"])(
+  "explains %s independently for every affected button and removes the notice when enabled",
+  async (key) => {
+    vi.stubGlobal("__DATA_MODE__", "api");
+    vi.spyOn(adminService, "listApps").mockResolvedValue(firstPage(2, 2));
+    const requestCheck = vi.spyOn(healthService, "requestCheck");
+    const requestBatch = vi.spyOn(healthService, "requestBatch");
+    const meta = await appsService.getMeta();
+    meta.capabilities[key] = capability(false);
+    const view = await mount({ props: { meta } });
+    await screen.findByText("모니터 앱 1");
+    const note = screen.getByText(healthOperationalNote);
+    expect(note).toBeVisible();
+    expect(note).not.toHaveClass("sr-only");
+    expect(note.closest('[role="alert"], [aria-live="assertive"]')).toBeNull();
+    const rows = screen.getAllByRole("button", { name: "즉시 재검사" });
+    expect(rows).toHaveLength(2);
+    const batch = screen.getByRole("button", { name: "전체 재검사" });
+    const restricted = key === "health_check" ? rows : [batch];
+    const available = key === "health_check" ? [batch] : rows;
+    for (const button of restricted) {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAccessibleDescription(healthOperationalNote);
+      expect(button).toHaveAttribute("aria-describedby", note.id);
+      await userEvent.click(button);
+    }
+    for (const button of available) {
+      expect(button).toBeEnabled();
+      expect(button).not.toHaveAccessibleDescription(healthOperationalNote);
+    }
+    const ids = [...view.container.querySelectorAll("[id]")].map(
+      (element) => element.id,
+    );
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const button of view.container.querySelectorAll("[aria-describedby]"))
+      for (const id of button.getAttribute("aria-describedby").split(/\s+/))
+        expect(document.getElementById(id)).not.toBeNull();
+    expect(screen.getAllByLabelText("연결 결과: 정상")).toHaveLength(2);
+    expect(requestCheck).not.toHaveBeenCalled();
+    expect(requestBatch).not.toHaveBeenCalled();
+
+    const enabledMeta = {
+      ...meta,
+      capabilities: {
+        ...meta.capabilities,
+        [key]: { ...capability(false), enabled: true },
+      },
+    };
+    view.rerender(view.tree("scope-a", { meta: enabledMeta }));
+    expect(screen.queryByText(healthOperationalNote)).not.toBeInTheDocument();
+    expect(document.getElementById(note.id)).toBeNull();
+    for (const button of restricted) {
+      expect(button).toBeEnabled();
+      expect(button.getAttribute("aria-describedby")).not.toContain(note.id);
+    }
+  },
+);
+
+it.each([
+  undefined,
+  { enabled: false, reasons: [] },
+  { enabled: false, reasons: ["not_implemented"] },
+  { enabled: false, reasons: ["verification_pending"] },
+  { enabled: true, reasons: ["operational_restriction"] },
+])("does not invent health operational restrictions for %j", async (value) => {
+  vi.stubGlobal("__DATA_MODE__", "api");
+  vi.spyOn(adminService, "listApps").mockResolvedValue(firstPage(2, 2));
+  const meta = await appsService.getMeta();
+  if (value) {
+    meta.capabilities.health_check = value;
+    meta.capabilities.health_batch = value;
+  }
+  await mount({ props: { meta: value ? meta : undefined } });
+  await screen.findByText(
+    value ? "모니터 앱 1" : "앱 목록을 지금은 불러올 수 없어요.",
+  );
+  expect(screen.queryByText(healthOperationalNote)).not.toBeInTheDocument();
+  for (const button of screen.getAllByRole("button", {
+    name: /^(즉시 재검사|전체 재검사)$/,
+  })) {
+    expect(button.disabled).toBe(value?.enabled === true ? false : true);
+    expect(button).not.toHaveAccessibleDescription(healthOperationalNote);
+  }
+});
+
+it("keeps existing batch progress read recovery available while both health admissions are restricted", async () => {
+  setMockScenario("health_batch_query_failure");
+  await healthService.requestBatch();
+  vi.stubGlobal("__DATA_MODE__", "api");
+  const request = vi.spyOn(healthService, "requestBatch");
+  const meta = await appsService.getMeta();
+  meta.capabilities.health_check = capability(false);
+  meta.capabilities.health_batch = capability(false);
+  await mount({ props: { meta } });
+  await screen.findByText("전체 검사 진행 상태를 불러오지 못했어요.");
+  expect(screen.getAllByText(healthOperationalNote)).toHaveLength(1);
+  expect(screen.getByRole("button", { name: "전체 재검사" })).toBeDisabled();
+  const retry = screen.getByRole("button", { name: "진행 다시 조회" });
+  expect(retry).toBeEnabled();
+  setMockScenario("original");
+  await userEvent.click(retry);
+  await screen.findByRole("region", { name: "전체 검사 진행 상황" });
+  expect(
+    screen.queryByText("전체 검사 진행 상태를 불러오지 못했어요."),
+  ).not.toBeInTheDocument();
+  expect(request).not.toHaveBeenCalled();
+});
+
+it("does not describe a pending enabled batch request as an operational restriction", async () => {
+  const pending = deferred();
+  const original = healthService.requestBatch;
+  vi.spyOn(healthService, "requestBatch").mockReturnValue(pending.promise);
+  await mount();
+  await userEvent.click(screen.getByRole("button", { name: "전체 재검사" }));
+  expect(screen.getByRole("button", { name: "접수 중…" })).toBeDisabled();
+  expect(screen.queryByText(healthOperationalNote)).not.toBeInTheDocument();
+  await act(async () => pending.resolve(await original()));
+  await screen.findByRole("region", { name: "전체 검사 진행 상황" });
+});
 
 it("passes the captured read context to every apps read", async () => {
   vi.stubGlobal("__DATA_MODE__", "api");

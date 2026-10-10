@@ -1,0 +1,13 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'vitest' run tests/admin-view.test.jsx tests/admin-view-apps.test.jsx tests/health-check-control.test.jsx --pool=threads --maxWorkers=1 --no-cache --configLoader=runner
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-wt/b210/frontend
+
+
+ Test Files  3 passed (3)
+      Tests  73 passed (73)
+   Start at  14:49:31
+   Duration  251.09s (environment 50%, tests 18%, import 18%, setup 10%, transform 3%, worker 1%)
+
+    Isolate  3 workers spawned · ~43.43s startup each (spawn + environment, per file)
+             at least ~86.86s faster with isolate: false — reuses workers across files instead of one per file

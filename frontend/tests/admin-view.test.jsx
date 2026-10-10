@@ -38,6 +38,8 @@ afterEach(() => {
 });
 
 const resetNote = "임시 비밀번호 설정 기능은 아직 준비 중이에요.";
+const resetOperationalNote =
+  "비밀번호 초기화 운영 준비가 확인되지 않아 임시 비밀번호를 설정할 수 없어요.";
 const deleteNote = "회원 삭제 기능은 아직 준비 중이에요.";
 
 async function renderApiMembers(reset, deletion, entry = "/admin") {
@@ -64,28 +66,36 @@ async function renderApiMembers(reset, deletion, entry = "/admin") {
 const enabled = { enabled: true, reasons: [] };
 const unimplemented = { enabled: false, reasons: ["not_implemented"] };
 
-it("keeps mock actions enabled without preparation notes for unimplemented metadata", async () => {
-  vi.stubGlobal("__DATA_MODE__", "mock");
-  const meta = await appsService.getMeta();
-  expect(meta.capabilities.admin_password_reset).toEqual(unimplemented);
-  expect(meta.capabilities.admin_user_delete).toEqual(unimplemented);
-  render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <AdminView scopeKey="mock-disabled-reasons" meta={meta} />
-      </MemoryRouter>
-    </QueryClientProvider>,
-  );
-  const row = (await screen.findByText("비기너개발자")).closest(
-    '[role="listitem"]',
-  );
-  for (const name of ["임시 비밀번호 설정", "삭제"]) {
-    const button = within(row).getByRole("button", { name, exact: true });
-    expect(button).toBeEnabled();
-    expect(button).not.toHaveAttribute("aria-describedby");
-  }
-  expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
-});
+it.each(["not_implemented", "operational_restriction"])(
+  "keeps mock actions enabled without restriction notes for %s metadata",
+  async (reason) => {
+    vi.stubGlobal("__DATA_MODE__", "mock");
+    const meta = await appsService.getMeta();
+    expect(meta.capabilities.admin_password_reset).toEqual(unimplemented);
+    expect(meta.capabilities.admin_user_delete).toEqual(unimplemented);
+    meta.capabilities.admin_password_reset = {
+      enabled: false,
+      reasons: [reason],
+    };
+    render(
+      <QueryClientProvider client={client}>
+        <MemoryRouter>
+          <AdminView scopeKey="mock-disabled-reasons" meta={meta} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    const row = (await screen.findByText("비기너개발자")).closest(
+      '[role="listitem"]',
+    );
+    for (const name of ["임시 비밀번호 설정", "삭제"]) {
+      const button = within(row).getByRole("button", { name, exact: true });
+      expect(button).toBeEnabled();
+      expect(button).not.toHaveAttribute("aria-describedby");
+    }
+    expect(screen.queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+    expect(screen.queryByText(resetOperationalNote)).not.toBeInTheDocument();
+  },
+);
 
 it.each([
   [unimplemented, unimplemented, false, false],
@@ -94,19 +104,19 @@ it.each([
   [
     { enabled: false, reasons: ["operational_restriction", "not_implemented"] },
     unimplemented,
-    false,
+    true,
     false,
   ],
 ])(
-  "connects only unavailable member actions to visible preparation notes: %j / %j",
+  "connects only operationally restricted reset actions to a visible notice: %j / %j",
   async (reset, deletion, hasResetNote, hasDeleteNote) => {
     const row = await renderApiMembers(reset, deletion);
     for (const [name, copy, shown] of [
-      ["임시 비밀번호 설정", resetNote, hasResetNote],
+      ["임시 비밀번호 설정", resetOperationalNote, hasResetNote],
       ["삭제", deleteNote, hasDeleteNote],
     ]) {
       const button = within(row).getByRole("button", { name, exact: true });
-      const note = within(row).queryByText(copy);
+      const note = screen.queryByText(copy);
       if (shown) {
         expect(note).toBeVisible();
         expect(button).toBeDisabled();
@@ -130,18 +140,21 @@ it.each([
         .map((button) => button.textContent),
     ).toEqual(["임시 비밀번호 설정", "삭제", "승인하기"]);
     expect(within(row).getByRole("button", { name: "승인하기" })).toBeEnabled();
+    expect(screen.queryByText(resetNote)).not.toBeInTheDocument();
   },
 );
 
 it.each([
   [enabled, enabled],
-  [{ enabled: false, reasons: ["operational_restriction"] }, unimplemented],
+  [unimplemented, unimplemented],
   [{ enabled: false, reasons: ["verification_pending"] }, unimplemented],
+  [{ enabled: true, reasons: ["operational_restriction"] }, enabled],
 ])(
   "does not label other reset restrictions as preparation: %j",
   async (reset, deletion) => {
     const row = await renderApiMembers(reset, deletion);
     expect(within(row).queryByText(resetNote)).not.toBeInTheDocument();
+    expect(screen.queryByText(resetOperationalNote)).not.toBeInTheDocument();
     expect(
       within(row).getByRole("button", { name: "임시 비밀번호 설정" }),
     ).not.toHaveAttribute("aria-describedby");
@@ -159,6 +172,57 @@ it.each([
     }
   },
 );
+
+it("shares one visible reset restriction across members, protects admins and removes its references when enabled", async () => {
+  vi.stubGlobal("__DATA_MODE__", "api");
+  const issue = vi.spyOn(adminService, "createPasswordResetOperation");
+  const execute = vi.spyOn(adminService, "setPasswordReset");
+  const readTarget = vi.spyOn(adminService, "getUser");
+  const meta = await appsService.getMeta();
+  meta.capabilities.admin_password_reset = {
+    enabled: false,
+    reasons: ["operational_restriction"],
+  };
+  const tree = (metadata) => (
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <AdminView scopeKey="reset-restriction" meta={metadata} />
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+  const view = render(tree(meta));
+  await screen.findByText("비기너개발자");
+  const note = screen.getByText(resetOperationalNote);
+  expect(note).toBeVisible();
+  const buttons = screen.getAllByRole("button", { name: "임시 비밀번호 설정" });
+  expect(buttons.length).toBeGreaterThanOrEqual(2);
+  for (const button of buttons) {
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription(resetOperationalNote);
+    expect(button).toHaveAttribute("aria-describedby", note.id);
+    await userEvent.click(button);
+  }
+  expect(view.container.querySelectorAll(`#${note.id}`)).toHaveLength(1);
+  const protectedRow = screen
+    .getByText("보호된 계정")
+    .closest('[role="listitem"]');
+  expect(within(protectedRow).queryByRole("button")).not.toBeInTheDocument();
+  expect(issue).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+  expect(readTarget).not.toHaveBeenCalled();
+
+  view.rerender(
+    tree({
+      ...meta,
+      capabilities: { ...meta.capabilities, admin_password_reset: enabled },
+    }),
+  );
+  expect(screen.queryByText(resetOperationalNote)).not.toBeInTheDocument();
+  for (const button of buttons) {
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-describedby");
+  }
+});
 
 it.each(["operational_restriction", "verification_pending"])(
   "does not label deletion reason %s as preparation",
@@ -195,6 +259,7 @@ it("keeps unresolved metadata free of preparation notes", async () => {
     expect(button).not.toHaveAttribute("aria-describedby");
   }
   expect(within(row).queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+  expect(screen.queryByText(resetOperationalNote)).not.toBeInTheDocument();
 });
 
 it("keeps unavailable deletion disabled without preparation text and protects administrators", async () => {
@@ -251,6 +316,7 @@ it("does not show preparation notes while an approval request alone locks action
     expect(button).not.toHaveAttribute("aria-describedby");
   }
   expect(within(row).queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+  expect(screen.queryByText(resetOperationalNote)).not.toBeInTheDocument();
   await act(async () => release());
   await waitFor(() =>
     expect(
@@ -285,6 +351,7 @@ it("does not show preparation notes while an unresolved password reset alone loc
     expect(button).not.toHaveAttribute("aria-describedby");
   }
   expect(within(row).queryByText(/아직 준비 중이에요/)).not.toBeInTheDocument();
+  expect(screen.queryByText(resetOperationalNote)).not.toBeInTheDocument();
 });
 
 it.each(["original", "admin_write_unknown"])(
