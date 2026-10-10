@@ -1,0 +1,1042 @@
+[
+  {
+    "changeId": "I216-C",
+    "state": "app-create",
+    "viewport": "1440x1000",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/16-submit.png",
+    "beforeSha256": "c7038731a506efdc3edd95f9566988299d766640c1eceff6ce152cb9247f4d91",
+    "beforeDimensions": [1440, 1528],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/16-submit.png",
+    "afterSha256": "c7038731a506efdc3edd95f9566988299d766640c1eceff6ce152cb9247f4d91",
+    "afterDimensions": [1440, 1528],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 1182,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 1228,
+        "bottom": 164.25,
+        "left": 1182
+      },
+      "textLines": [
+        {
+          "x": 1194,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 1216,
+          "bottom": 154.875,
+          "left": 1194
+        }
+      ],
+      "description": {
+        "x": 212,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 563,
+        "bottom": 164.25,
+        "left": 212
+      },
+      "header": {
+        "x": 212,
+        "y": 98,
+        "width": 1016,
+        "height": 66.25,
+        "top": 98,
+        "right": 1228,
+        "bottom": 164.25,
+        "left": 212
+      },
+      "scrollWidth": 1440,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create",
+    "viewport": "1024x900",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/16-submit.png",
+    "beforeSha256": "23fe58695f8bf540e86ab109bae42fd7c0c89188187885d4c5b3d93fc85183bc",
+    "beforeDimensions": [1024, 1528],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/16-submit.png",
+    "afterSha256": "23fe58695f8bf540e86ab109bae42fd7c0c89188187885d4c5b3d93fc85183bc",
+    "afterDimensions": [1024, 1528],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 946,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 992,
+        "bottom": 164.25,
+        "left": 946
+      },
+      "textLines": [
+        {
+          "x": 958,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 980,
+          "bottom": 154.875,
+          "left": 958
+        }
+      ],
+      "description": {
+        "x": 32,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 383,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "header": {
+        "x": 32,
+        "y": 98,
+        "width": 960,
+        "height": 66.25,
+        "top": 98,
+        "right": 992,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "scrollWidth": 1024,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create",
+    "viewport": "768x1024",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/16-submit.png",
+    "beforeSha256": "0449b065cf876c9abc3bde4ce3d8bffd8a6fbce81c80d151d9b47f6717198c37",
+    "beforeDimensions": [768, 2600],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/16-submit.png",
+    "afterSha256": "0449b065cf876c9abc3bde4ce3d8bffd8a6fbce81c80d151d9b47f6717198c37",
+    "afterDimensions": [768, 2600],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 690,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 736,
+        "bottom": 164.25,
+        "left": 690
+      },
+      "textLines": [
+        {
+          "x": 702,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 724,
+          "bottom": 154.875,
+          "left": 702
+        }
+      ],
+      "description": {
+        "x": 32,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 383,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "header": {
+        "x": 32,
+        "y": 98,
+        "width": 704,
+        "height": 66.25,
+        "top": 98,
+        "right": 736,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "scrollWidth": 768,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create",
+    "viewport": "390x844",
+    "changed": true,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/16-submit.png",
+    "beforeSha256": "22bc4293675a5d559d0b6a26f273b64bc75386b3975f5736e5aa501415df6f3c",
+    "beforeDimensions": [390, 2535],
+    "after": "visual-state-baselines/390x844/16-submit.png",
+    "afterSha256": "114ca63d909ce6252cb147aa405aa78580c271acae68f37a1088cf176cde7898",
+    "afterDimensions": [390, 2535],
+    "differentPixels": 337,
+    "changeBoundsInclusive": {
+      "minX": 336,
+      "minY": 153,
+      "maxX": 358,
+      "maxY": 181
+    },
+    "headerLayout": {
+      "control": {
+        "x": 324,
+        "y": 152.5,
+        "width": 46,
+        "height": 32,
+        "top": 152.5,
+        "right": 370,
+        "bottom": 184.5,
+        "left": 324
+      },
+      "textLines": [
+        {
+          "x": 336,
+          "y": 160.125,
+          "width": 22,
+          "height": 15,
+          "top": 160.125,
+          "right": 358,
+          "bottom": 175.125,
+          "left": 336
+        }
+      ],
+      "description": {
+        "x": 20,
+        "y": 98,
+        "width": 288,
+        "height": 86.5,
+        "top": 98,
+        "right": 308,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "header": {
+        "x": 20,
+        "y": 98,
+        "width": 350,
+        "height": 86.5,
+        "top": 98,
+        "right": 370,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "scrollWidth": 390,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "Cancel label changes from two lines to one; all pixels outside the cancel label bounds and full-page dimensions remain unchanged.",
+    "approvalScope": "Cancel stays on one line and necessary adjacent description reflow/height only.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create",
+    "viewport": "360x844",
+    "changed": true,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/16-submit.png",
+    "beforeSha256": "ed22739ef188a1b9c19479b328883c4dd01923ade721f2e275d3d249e07b0cbd",
+    "beforeDimensions": [360, 2501],
+    "after": "visual-state-baselines/360x844/16-submit.png",
+    "afterSha256": "6f3673c411908b7b34144be1026165133f7ebf31bb694215e64c304048596741",
+    "afterDimensions": [360, 2501],
+    "differentPixels": 339,
+    "changeBoundsInclusive": {
+      "minX": 306,
+      "minY": 153,
+      "maxX": 328,
+      "maxY": 181
+    },
+    "headerLayout": {
+      "control": {
+        "x": 294,
+        "y": 152.5,
+        "width": 46,
+        "height": 32,
+        "top": 152.5,
+        "right": 340,
+        "bottom": 184.5,
+        "left": 294
+      },
+      "textLines": [
+        {
+          "x": 306,
+          "y": 160.125,
+          "width": 22,
+          "height": 15,
+          "top": 160.125,
+          "right": 328,
+          "bottom": 175.125,
+          "left": 306
+        }
+      ],
+      "description": {
+        "x": 20,
+        "y": 98,
+        "width": 258,
+        "height": 86.5,
+        "top": 98,
+        "right": 278,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "header": {
+        "x": 20,
+        "y": 98,
+        "width": 320,
+        "height": 86.5,
+        "top": 98,
+        "right": 340,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "scrollWidth": 360,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "Cancel label changes from two lines to one; all pixels outside the cancel label bounds and full-page dimensions remain unchanged.",
+    "approvalScope": "Cancel stays on one line and necessary adjacent description reflow/height only.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create-validation-error",
+    "viewport": "1440x1000",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/17-submit-error.png",
+    "beforeSha256": "0169aced25a0bae8fb5a6b3d221b6787ee5c7ea8d3c581de7bdee7db59a61ed5",
+    "beforeDimensions": [1440, 1738],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/17-submit-error.png",
+    "afterSha256": "0169aced25a0bae8fb5a6b3d221b6787ee5c7ea8d3c581de7bdee7db59a61ed5",
+    "afterDimensions": [1440, 1738],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 1182,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 1228,
+        "bottom": 164.25,
+        "left": 1182
+      },
+      "textLines": [
+        {
+          "x": 1194,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 1216,
+          "bottom": 154.875,
+          "left": 1194
+        }
+      ],
+      "description": {
+        "x": 212,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 563,
+        "bottom": 164.25,
+        "left": 212
+      },
+      "header": {
+        "x": 212,
+        "y": 98,
+        "width": 1016,
+        "height": 66.25,
+        "top": 98,
+        "right": 1228,
+        "bottom": 164.25,
+        "left": 212
+      },
+      "scrollWidth": 1440,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create-validation-error",
+    "viewport": "1024x900",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/17-submit-error.png",
+    "beforeSha256": "5935a2e239ba6d3fb792098887ff38c4dbdef3e36120238dab68057c82525552",
+    "beforeDimensions": [1024, 1738],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/17-submit-error.png",
+    "afterSha256": "5935a2e239ba6d3fb792098887ff38c4dbdef3e36120238dab68057c82525552",
+    "afterDimensions": [1024, 1738],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 946,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 992,
+        "bottom": 164.25,
+        "left": 946
+      },
+      "textLines": [
+        {
+          "x": 958,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 980,
+          "bottom": 154.875,
+          "left": 958
+        }
+      ],
+      "description": {
+        "x": 32,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 383,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "header": {
+        "x": 32,
+        "y": 98,
+        "width": 960,
+        "height": 66.25,
+        "top": 98,
+        "right": 992,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "scrollWidth": 1024,
+      "scrollX": 0,
+      "scrollY": 0
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create-validation-error",
+    "viewport": "768x1024",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/17-submit-error.png",
+    "beforeSha256": "e464ce041314d4753bcf6b478f3e96181118da7628d144cca13745ff2c3b8f26",
+    "beforeDimensions": [768, 2809],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/17-submit-error.png",
+    "afterSha256": "e464ce041314d4753bcf6b478f3e96181118da7628d144cca13745ff2c3b8f26",
+    "afterDimensions": [768, 2809],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 690,
+        "y": -1652.75,
+        "width": 46,
+        "height": 32,
+        "top": -1652.75,
+        "right": 736,
+        "bottom": -1620.75,
+        "left": 690
+      },
+      "textLines": [
+        {
+          "x": 702,
+          "y": -1645.125,
+          "width": 22,
+          "height": 15,
+          "top": -1645.125,
+          "right": 724,
+          "bottom": -1630.125,
+          "left": 702
+        }
+      ],
+      "description": {
+        "x": 32,
+        "y": -1687,
+        "width": 351,
+        "height": 66.25,
+        "top": -1687,
+        "right": 383,
+        "bottom": -1620.75,
+        "left": 32
+      },
+      "header": {
+        "x": 32,
+        "y": -1687,
+        "width": 704,
+        "height": 66.25,
+        "top": -1687,
+        "right": 736,
+        "bottom": -1620.75,
+        "left": 32
+      },
+      "scrollWidth": 768,
+      "scrollX": 0,
+      "scrollY": 1785
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create-validation-error",
+    "viewport": "390x844",
+    "changed": true,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/17-submit-error.png",
+    "beforeSha256": "9d03bfaf4c55e79c79a4a938a061834574797cba5f1598401832687bff90bca9",
+    "beforeDimensions": [390, 2744],
+    "after": "visual-state-baselines/390x844/17-submit-error.png",
+    "afterSha256": "d0a8ed7ba9f5bbbd3d8c1f26cc0d29f6f0230e6c997d5195cc973041ca858180",
+    "afterDimensions": [390, 2744],
+    "differentPixels": 337,
+    "changeBoundsInclusive": {
+      "minX": 336,
+      "minY": 153,
+      "maxX": 358,
+      "maxY": 181
+    },
+    "headerLayout": {
+      "control": {
+        "x": 324,
+        "y": -1747.5,
+        "width": 46,
+        "height": 32,
+        "top": -1747.5,
+        "right": 370,
+        "bottom": -1715.5,
+        "left": 324
+      },
+      "textLines": [
+        {
+          "x": 336,
+          "y": -1739.875,
+          "width": 22,
+          "height": 15,
+          "top": -1739.875,
+          "right": 358,
+          "bottom": -1724.875,
+          "left": 336
+        }
+      ],
+      "description": {
+        "x": 20,
+        "y": -1802,
+        "width": 288,
+        "height": 86.5,
+        "top": -1802,
+        "right": 308,
+        "bottom": -1715.5,
+        "left": 20
+      },
+      "header": {
+        "x": 20,
+        "y": -1802,
+        "width": 350,
+        "height": 86.5,
+        "top": -1802,
+        "right": 370,
+        "bottom": -1715.5,
+        "left": 20
+      },
+      "scrollWidth": 390,
+      "scrollX": 0,
+      "scrollY": 1900
+    },
+    "cause": "Cancel label changes from two lines to one; all pixels outside the cancel label bounds and full-page dimensions remain unchanged.",
+    "approvalScope": "Cancel stays on one line and necessary adjacent description reflow/height only.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-create-validation-error",
+    "viewport": "360x844",
+    "changed": true,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/17-submit-error.png",
+    "beforeSha256": "e0f0b84ef5089c63167b1ec2dafafe4aca889b85068bc6c77ca1e0c0ce11c9a1",
+    "beforeDimensions": [360, 2711],
+    "after": "visual-state-baselines/360x844/17-submit-error.png",
+    "afterSha256": "922239bf2ee0189646e26d4ca0a1d5d5d43b27b2af5680391b685404d3fddd6e",
+    "afterDimensions": [360, 2711],
+    "differentPixels": 339,
+    "changeBoundsInclusive": {
+      "minX": 306,
+      "minY": 153,
+      "maxX": 328,
+      "maxY": 181
+    },
+    "headerLayout": {
+      "control": {
+        "x": 294,
+        "y": -1713.5,
+        "width": 46,
+        "height": 32,
+        "top": -1713.5,
+        "right": 340,
+        "bottom": -1681.5,
+        "left": 294
+      },
+      "textLines": [
+        {
+          "x": 306,
+          "y": -1705.875,
+          "width": 22,
+          "height": 15,
+          "top": -1705.875,
+          "right": 328,
+          "bottom": -1690.875,
+          "left": 306
+        }
+      ],
+      "description": {
+        "x": 20,
+        "y": -1768,
+        "width": 258,
+        "height": 86.5,
+        "top": -1768,
+        "right": 278,
+        "bottom": -1681.5,
+        "left": 20
+      },
+      "header": {
+        "x": 20,
+        "y": -1768,
+        "width": 320,
+        "height": 86.5,
+        "top": -1768,
+        "right": 340,
+        "bottom": -1681.5,
+        "left": 20
+      },
+      "scrollWidth": 360,
+      "scrollX": 0,
+      "scrollY": 1866
+    },
+    "cause": "Cancel label changes from two lines to one; all pixels outside the cancel label bounds and full-page dimensions remain unchanged.",
+    "approvalScope": "Cancel stays on one line and necessary adjacent description reflow/height only.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-edit",
+    "viewport": "1440x1000",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/13-edit.png",
+    "beforeSha256": "69073a6c79ef0eca1c40f690a8349ccea0993b918b5025b5311327a8e8c350a9",
+    "beforeDimensions": [1440, 1528],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/13-edit.png",
+    "afterSha256": "69073a6c79ef0eca1c40f690a8349ccea0993b918b5025b5311327a8e8c350a9",
+    "afterDimensions": [1440, 1528],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 1182,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 1228,
+        "bottom": 164.25,
+        "left": 1182
+      },
+      "textLines": [
+        {
+          "x": 1194,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 1216,
+          "bottom": 154.875,
+          "left": 1194
+        }
+      ],
+      "description": {
+        "x": 212,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 563,
+        "bottom": 164.25,
+        "left": 212
+      },
+      "header": {
+        "x": 212,
+        "y": 98,
+        "width": 1016,
+        "height": 66.25,
+        "top": 98,
+        "right": 1228,
+        "bottom": 164.25,
+        "left": 212
+      },
+      "scrollWidth": 1440
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-edit",
+    "viewport": "1024x900",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/13-edit.png",
+    "beforeSha256": "04a6c7a78443fcb6d37aaf10f5aff1e5f9f1c7c26038386d5631515a3a32c34f",
+    "beforeDimensions": [1024, 1528],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/13-edit.png",
+    "afterSha256": "04a6c7a78443fcb6d37aaf10f5aff1e5f9f1c7c26038386d5631515a3a32c34f",
+    "afterDimensions": [1024, 1528],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 946,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 992,
+        "bottom": 164.25,
+        "left": 946
+      },
+      "textLines": [
+        {
+          "x": 958,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 980,
+          "bottom": 154.875,
+          "left": 958
+        }
+      ],
+      "description": {
+        "x": 32,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 383,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "header": {
+        "x": 32,
+        "y": 98,
+        "width": 960,
+        "height": 66.25,
+        "top": 98,
+        "right": 992,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "scrollWidth": 1024
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-edit",
+    "viewport": "768x1024",
+    "changed": false,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/13-edit.png",
+    "beforeSha256": "7ba644de685b2b4cfe3d462c3296c728c92fa4977c3b5907066fbff418f6a0be",
+    "beforeDimensions": [768, 2600],
+    "after": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/13-edit.png",
+    "afterSha256": "7ba644de685b2b4cfe3d462c3296c728c92fa4977c3b5907066fbff418f6a0be",
+    "afterDimensions": [768, 2600],
+    "differentPixels": 0,
+    "changeBoundsInclusive": null,
+    "headerLayout": {
+      "control": {
+        "x": 690,
+        "y": 132.25,
+        "width": 46,
+        "height": 32,
+        "top": 132.25,
+        "right": 736,
+        "bottom": 164.25,
+        "left": 690
+      },
+      "textLines": [
+        {
+          "x": 702,
+          "y": 139.875,
+          "width": 22,
+          "height": 15,
+          "top": 139.875,
+          "right": 724,
+          "bottom": 154.875,
+          "left": 702
+        }
+      ],
+      "description": {
+        "x": 32,
+        "y": 98,
+        "width": 351,
+        "height": 66.25,
+        "top": 98,
+        "right": 383,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "header": {
+        "x": 32,
+        "y": 98,
+        "width": 704,
+        "height": 66.25,
+        "top": 98,
+        "right": 736,
+        "bottom": 164.25,
+        "left": 32
+      },
+      "scrollWidth": 768
+    },
+    "cause": "No pixel change; retain #105 baseline.",
+    "approvalScope": "No new approval; historical baseline unchanged.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-edit",
+    "viewport": "390x844",
+    "changed": true,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/13-edit.png",
+    "beforeSha256": "b288e289213b0b53d81f25fc1e65168982dfb7ef05453acbd399f290c6afa6ac",
+    "beforeDimensions": [390, 2535],
+    "after": "visual-state-baselines/390x844/13-edit.png",
+    "afterSha256": "d6ccda5fea97b7a46ff55dae6595cf45a9a01cfb007dd9999931745efdecbca1",
+    "afterDimensions": [390, 2535],
+    "differentPixels": 337,
+    "changeBoundsInclusive": {
+      "minX": 336,
+      "minY": 153,
+      "maxX": 358,
+      "maxY": 181
+    },
+    "headerLayout": {
+      "control": {
+        "x": 324,
+        "y": 152.5,
+        "width": 46,
+        "height": 32,
+        "top": 152.5,
+        "right": 370,
+        "bottom": 184.5,
+        "left": 324
+      },
+      "textLines": [
+        {
+          "x": 336,
+          "y": 160.125,
+          "width": 22,
+          "height": 15,
+          "top": 160.125,
+          "right": 358,
+          "bottom": 175.125,
+          "left": 336
+        }
+      ],
+      "description": {
+        "x": 20,
+        "y": 98,
+        "width": 288,
+        "height": 86.5,
+        "top": 98,
+        "right": 308,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "header": {
+        "x": 20,
+        "y": 98,
+        "width": 350,
+        "height": 86.5,
+        "top": 98,
+        "right": 370,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "scrollWidth": 390
+    },
+    "cause": "Cancel label changes from two lines to one; all pixels outside the cancel label bounds and full-page dimensions remain unchanged.",
+    "approvalScope": "Cancel stays on one line and necessary adjacent description reflow/height only.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  },
+  {
+    "changeId": "I216-C",
+    "state": "app-edit",
+    "viewport": "360x844",
+    "changed": true,
+    "before": "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/13-edit.png",
+    "beforeSha256": "614bd989b4b7d386d915462d17a0e84553e6f3158b45788d1ea38e19c0b86f8f",
+    "beforeDimensions": [360, 2501],
+    "after": "visual-state-baselines/360x844/13-edit.png",
+    "afterSha256": "ba0f18263d711676a291d61dbcbf966c283be0f2175f0c29188b264d3ccfb47e",
+    "afterDimensions": [360, 2501],
+    "differentPixels": 339,
+    "changeBoundsInclusive": {
+      "minX": 306,
+      "minY": 153,
+      "maxX": 328,
+      "maxY": 181
+    },
+    "headerLayout": {
+      "control": {
+        "x": 294,
+        "y": 152.5,
+        "width": 46,
+        "height": 32,
+        "top": 152.5,
+        "right": 340,
+        "bottom": 184.5,
+        "left": 294
+      },
+      "textLines": [
+        {
+          "x": 306,
+          "y": 160.125,
+          "width": 22,
+          "height": 15,
+          "top": 160.125,
+          "right": 328,
+          "bottom": 175.125,
+          "left": 306
+        }
+      ],
+      "description": {
+        "x": 20,
+        "y": 98,
+        "width": 258,
+        "height": 86.5,
+        "top": 98,
+        "right": 278,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "header": {
+        "x": 20,
+        "y": 98,
+        "width": 320,
+        "height": 86.5,
+        "top": 98,
+        "right": 340,
+        "bottom": 184.5,
+        "left": 20
+      },
+      "scrollWidth": 360
+    },
+    "cause": "Cancel label changes from two lines to one; all pixels outside the cancel label bounds and full-page dimensions remain unchanged.",
+    "approvalScope": "Cancel stays on one line and necessary adjacent description reflow/height only.",
+    "approvalSource": "https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918",
+    "judge": "DomineYH (delegated triage recommendation)",
+    "recordedBy": "Codex gpt-6.1-sol",
+    "recordedAt": "2026-10-11",
+    "comparisonScope": "Entire PNG and dimensions; 0 different pixels in final baseline verification; no crop, mask or tolerance."
+  }
+]

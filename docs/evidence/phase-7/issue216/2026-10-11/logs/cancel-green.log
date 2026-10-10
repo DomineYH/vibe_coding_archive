@@ -1,0 +1,15 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test -c /home/dominelinux/.cache/vibe_coding_archive/coord/b216/playwright.mock.config.mjs e2e/app-create.spec.js e2e/app-edit.spec.js --grep cancel stays on one line
+[WebServer] (node:323921) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:324107) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 360px and activates by keyboard (23.8s)
+  ✓  2 e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 390px and activates by keyboard (3.1s)
+  ✓  3 e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 360px and activates by keyboard (3.3s)
+  ✓  4 e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 390px and activates by keyboard (3.6s)
+
+  4 passed (1.0m)

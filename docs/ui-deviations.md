@@ -504,3 +504,29 @@ This follows the [#215 adopted triage decision](https://github.com/DomineYH/vibe
 #175 UUID detail/edit returns and private 404, #214 ordinary-member admin-return
 fallback, gallery query validation and ADR-0001 remain unchanged. Existing screens
 and visual baselines are preserved; #216 layout changes are outside this issue.
+
+## Issue #216 single-line cancel label · I216-C / UI-D09
+
+The registration and edit header keeps “취소” on one line at 360×844 and
+390×844 for both the gallery link and callback button. The adjacent description
+may reflow within the existing header. Copy, colors, fonts, cancel destinations,
+keyboard activation and focus presentation retain their existing behavior.
+
+The original reproduced registration screen also wrapped “취 / 소”; this is a
+narrow readability improvement to that preserved behavior. Approval source:
+[the #216 adopted triage recommendation](https://github.com/DomineYH/vibe_coding_archive/issues/216#issuecomment-6095807918),
+adopted under DomineYH's prior delegation. Change ID **I216-C** approves only the
+single-line cancel label and necessary adjacent description reflow/height.
+Recorder: **Codex gpt-6.1-sol**, **2026-10-11**. Earlier UI-D and #105 approvals
+do not authorize this change.
+
+The [#216 evidence ledger](evidence/phase-7/issue216/2026-10-11/README.md)
+compares initial registration, validation-error and initial edit at 1440×1000,
+1024×900, 768×1024, 390×844 and 360×844. It links full before/after PNGs,
+dimensions, hashes and exact change bounds. Only changed images receive new
+versioned product baselines; source references and historical #105 baselines
+remain intact. Full-PNG comparisons retain dimension checks and a 0px threshold,
+without masks, crops or tolerance. States without a baseline remain product-only
+observations. The delegated approval scope and automated verification results
+are recorded separately; no new human, screen-reader or physical-device
+acceptance is claimed.

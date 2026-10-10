@@ -1,0 +1,134 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test -c /home/dominelinux/.cache/vibe_coding_archive/coord/b216/playwright.mock.config.mjs e2e/app-create.spec.js e2e/app-edit.spec.js --grep cancel stays on one line
+[WebServer] (node:323337) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:323384) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  1 e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 360px and activates by keyboard (19.1s)
+(node:323532) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  2 e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 390px and activates by keyboard (2.7s)
+(node:323618) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  3 e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 360px and activates by keyboard (2.9s)
+(node:323704) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✘  4 e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 390px and activates by keyboard (3.3s)
+
+
+  1) e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 360px and activates by keyboard
+
+    Error: 취소 must occupy one text line
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+       at cancel-layout.js:27
+
+      25 |     };
+      26 |   });
+    > 27 |   expect(layout.lines, "취소 must occupy one text line").toBe(1);
+         |                                                        ^
+      28 |   expect(layout.contained, "취소 must fit inside its control").toBe(true);
+      29 |   expect(layout.separated, "header text must not overlap 취소").toBe(true);
+      30 |   expect(layout.controlRight).toBeLessThanOrEqual(width);
+        at expectSingleLineCancel (/mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/cancel-layout.js:27:56)
+        at /mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/app-create.spec.js:14:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-create-registration-ca-c337a-x-and-activates-by-keyboard/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-create-registration-ca-c337a-x-and-activates-by-keyboard/error-context.md
+
+  2) e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 390px and activates by keyboard
+
+    Error: 취소 must occupy one text line
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+       at cancel-layout.js:27
+
+      25 |     };
+      26 |   });
+    > 27 |   expect(layout.lines, "취소 must occupy one text line").toBe(1);
+         |                                                        ^
+      28 |   expect(layout.contained, "취소 must fit inside its control").toBe(true);
+      29 |   expect(layout.separated, "header text must not overlap 취소").toBe(true);
+      30 |   expect(layout.controlRight).toBeLessThanOrEqual(width);
+        at expectSingleLineCancel (/mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/cancel-layout.js:27:56)
+        at /mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/app-create.spec.js:14:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-create-registration-ca-08492-x-and-activates-by-keyboard/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-create-registration-ca-08492-x-and-activates-by-keyboard/error-context.md
+
+  3) e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 360px and activates by keyboard ───
+
+    Error: 취소 must occupy one text line
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+       at cancel-layout.js:27
+
+      25 |     };
+      26 |   });
+    > 27 |   expect(layout.lines, "취소 must occupy one text line").toBe(1);
+         |                                                        ^
+      28 |   expect(layout.contained, "취소 must fit inside its control").toBe(true);
+      29 |   expect(layout.separated, "header text must not overlap 취소").toBe(true);
+      30 |   expect(layout.controlRight).toBeLessThanOrEqual(width);
+        at expectSingleLineCancel (/mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/cancel-layout.js:27:56)
+        at /mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/app-edit.spec.js:15:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-edit-edit-cancel-stays-49450-x-and-activates-by-keyboard/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-edit-edit-cancel-stays-49450-x-and-activates-by-keyboard/error-context.md
+
+  4) e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 390px and activates by keyboard ───
+
+    Error: 취소 must occupy one text line
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 2
+
+       at cancel-layout.js:27
+
+      25 |     };
+      26 |   });
+    > 27 |   expect(layout.lines, "취소 must occupy one text line").toBe(1);
+         |                                                        ^
+      28 |   expect(layout.contained, "취소 must fit inside its control").toBe(true);
+      29 |   expect(layout.separated, "header text must not overlap 취소").toBe(true);
+      30 |   expect(layout.controlRight).toBeLessThanOrEqual(width);
+        at expectSingleLineCancel (/mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/cancel-layout.js:27:56)
+        at /mnt/c/dev/vibe_coding_archive-wt/b216/frontend/e2e/app-edit.spec.js:15:5
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-edit-edit-cancel-stays-0f310-x-and-activates-by-keyboard/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../../../home/dominelinux/.cache/vibe_coding_archive/coord/b216/test-results/mock/app-edit-edit-cancel-stays-0f310-x-and-activates-by-keyboard/error-context.md
+
+  4 failed
+    e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 360px and activates by keyboard
+    e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 390px and activates by keyboard
+    e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 360px and activates by keyboard ────
+    e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 390px and activates by keyboard ────

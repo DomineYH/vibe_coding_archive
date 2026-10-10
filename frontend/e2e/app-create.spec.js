@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test";
+import { expectSingleLineCancel } from "./cancel-layout.js";
 
 const key = "eduvibe-archive-mock-v1";
+
+for (const width of [360, 390]) {
+  test(`registration cancel stays on one line at ${width}px and activates by keyboard`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await login(page);
+    await page.goto("/apps/new");
+    const cancel = page.getByRole("link", { name: "취소", exact: true });
+    await expectSingleLineCancel(page, cancel, width);
+    await expect(cancel).toHaveAttribute("href", "/");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL("/");
+  });
+}
 
 async function login(page, loginId = "교사김코딩") {
   await page.goto("/auth?mode=login");

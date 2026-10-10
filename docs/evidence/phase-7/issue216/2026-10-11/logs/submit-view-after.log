@@ -1,0 +1,10 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test
+npm notice run VITE_DATA_MODE=mock vitest run --config /home/dominelinux/.cache/vibe_coding_archive/coord/b216/vite.config.mjs --configLoader runner --maxWorkers=1 tests/submit-view.test.jsx
+
+ RUN  v5.0.1 /mnt/c/dev/vibe_coding_archive-wt/b216/frontend
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  00:31:52
+   Duration  74.72s (environment 35%, tests 32%, import 16%, transform 9%, setup 8%)
