@@ -6,6 +6,49 @@ API는 작업 접수·조회만 하고 실제 HTTP는 같은 Linux 호스트의 
 실행한다. SQLite migration `0012_health_checks`가 필요하다. 자동 정기 검사는 없다.
 로컬 결합 검증은 [검증 기록](../evidence/phase-6/verification.md)에 기록한다.
 
+## 개발 중 기대 상태와 검증
+
+개발 API(`APP_ENV=development`)의 기본 재검사 비활성은 의도된 안전 제한이다.
+기능 미구현이나 외부 사이트 장애를 뜻하지 않는다. `/api/v1/meta`의
+`health_check`·`health_batch`는 `enabled=false`, 사유는 `operational_restriction`이다.
+development 지정만으로 실제 송신을 허가하지 않으며, 승인 증거 없는 개발 우회는 없다.
+
+화면·상태 흐름 시연은 [프로젝트 시작 안내](../../README.md)의 `frontend/`에서
+`npm run dev`로 실행하는 기존 mock 모드를 쓴다. 연결 결과는 외부 요청 없는 합성
+데이터로, 실제 외부 사이트 관찰이 아니다. API 모드의 실패를 mock 성공으로 바꾸지 않는다.
+
+API·큐·worker는 기존 `APP_ENV=test` 하네스로 검증한다. `backend/`에서 아래
+명령을 실행한다. 인증 API 시험은 [백엔드 안내](../../backend/README.md)의 검증된
+R15 비밀번호 차단 목록을 미리 준비하고 `PASSWORD_BLOCKLIST_PATH`로 지정해야 한다.
+시험은 `.env`를 읽지 않고 전용 임시 DB와 합성 fixture·통제 I/O를 사용한다.
+
+```sh
+APP_ENV=test HEALTH_CHECKS_ENABLED=false uv run --frozen pytest \
+  tests/contracts/test_health_api.py tests/test_health_worker.py tests/test_health_worker_process.py
+```
+
+`test_health_api.py`는 실제 인증·검사 접수·작업/배치 조회 계약을,
+`test_health_worker.py`는 영속 큐와 통제 probe를,
+`test_health_worker_process.py`는 별도 프로세스·잠금·로컬 Unix 소켓의 종료를 확인한다.
+`create_app(..., health_testing=True)`와 worker의 `testing_probe`는 `APP_ENV=test`에만
+허용하며 development 서버에 적용하지 않는다. 테스트 fixture와 승인 템플릿은
+실제 호스트 승인 증거가 아니다.
+
+`HEALTH_CHECKS_ENABLED=true` 하나나 worker 실행만으로 접수가 열리지 않는다.
+[설정과 승인 기록](#설정과-승인-기록)의 조건과 API/worker의 동일 실행 설정,
+인증 준비가 필요하다. worker는 같은 boot의 ready heartbeat가 15초 미만이어야
+하며 다른 boot/worker 또는 만료된 lease의 `running` 작업이 없어야 한다.
+`build_digest()`는 `backend/app/**/*.py`, `backend/alembic/**/*.py`,
+`backend/pyproject.toml`, `backend/uv.lock`을 포함한다. 해당 코드·잠금·프로젝트 설정이나
+승인 구성이 바뀌면 기록이 불일치하여 접수가 닫힌다. `--reload` 개발 루프에서도
+승인 기록은 자동 갱신되지 않는다.
+
+비활성일 때 현재 권한·Origin·CSRF 등 요청 조건을 통과한 새 개별/전체 검사 접수는
+`503 FEATURE_UNAVAILABLE`로 닫힌다. 기존 연결 결과·검사 작업·배치 진행은
+현재 권한에 따라 계속 조회할 수 있다. 실제 호스트 검증·송신 활성화 승인은
+[#204](https://github.com/DomineYH/vibe_coding_archive/issues/204)의 사람 작업 범위다.
+관리자 버튼의 비활성 사유 UI 보완은 [#210](https://github.com/DomineYH/vibe_coding_archive/issues/210)에서 다룬다.
+
 ## 설정과 승인 기록
 
 API와 worker에 동일한 DB·DNS·차단 목록·UID·잠금 경로·승인 기록을 제공한다.
