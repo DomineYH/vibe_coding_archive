@@ -1,0 +1,110 @@
+{
+  "pixelTolerance": 0,
+  "comparisonEnforced": false,
+  "review": "Human UI-D approval pending",
+  "results": [
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-1440x1000.png",
+      "width": 1440,
+      "height": 1378,
+      "expectedWidth": 1440,
+      "expectedHeight": 1111,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-health",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "baseline": "21-admin-health.png",
+      "screenshot": "admin-health-1440x1000.png",
+      "width": 1440,
+      "height": 1893,
+      "expectedWidth": 1440,
+      "expectedHeight": 1966,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-390x844.png",
+      "width": 390,
+      "height": 1870,
+      "expectedWidth": 390,
+      "expectedHeight": 2456,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-health",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "baseline": "21-admin-health.png",
+      "screenshot": "admin-health-390x844.png",
+      "width": 390,
+      "height": 3751,
+      "expectedWidth": 390,
+      "expectedHeight": 2977,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-users",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "18-admin-users.png",
+      "screenshot": "admin-users-360x844.png",
+      "width": 360,
+      "height": 2110,
+      "expectedWidth": 360,
+      "expectedHeight": 1560,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    },
+    {
+      "state": "admin-health",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "baseline": "21-admin-health.png",
+      "screenshot": "admin-health-360x844.png",
+      "width": 360,
+      "height": 3768,
+      "expectedWidth": 360,
+      "expectedHeight": 3069,
+      "comparisonStatus": "dimensions_mismatch",
+      "differentPixels": null,
+      "maxChannelDelta": null,
+      "bounds": null
+    }
+  ],
+  "scope": "Member-list and Health Monitor source comparisons; other product-only states from the same passing visual tests remain in frontend/test-results/visual/admin."
+}

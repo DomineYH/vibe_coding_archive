@@ -1,0 +1,45 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test --config=/home/dominelinux/.cache/vibe_coding_archive/coord/b210/playwright.mock.config.mjs e2e/admin.spec.js e2e/admin-apps.spec.js e2e/health-check.spec.js
+[WebServer] (node:70410) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 34 tests using 1 worker
+
+(node:70542) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/admin-apps.spec.js:106:1 › admin can edit and delete another member's private app from the monitor (40.4s)
+  ✓   2 e2e/admin-apps.spec.js:198:1 › Health Monitor metadata stays clear of status badges at narrow widths (10.5s)
+  ✓   3 e2e/admin-apps.spec.js:262:1 › authenticated header text stays on one line at narrow widths (8.2s)
+  ✓   4 e2e/admin-apps.spec.js:290:1 › admin monitor retains the first page and retries a failed next page (4.2s)
+  ✓   5 e2e/admin-apps.spec.js:324:1 › admin monitor deduplicates an overlapping page and keeps empty/error states clear (5.7s)
+  ✓   6 e2e/admin-apps.spec.js:371:1 › whole scan rediscovers the active batch by ID after reload (4.4s)
+  ✓   7 e2e/admin-apps.spec.js:424:1 › whole scan reports mixed terminal counts and marks stale rows (11.5s)
+  ✓   8 e2e/admin-apps.spec.js:455:1 › empty batches show cooldown time and unavailable health capability (3.5s)
+  ✓   9 e2e/admin-apps.spec.js:486:1 › admin tabs are operable with the keyboard (3.6s)
+  ✓  10 e2e/admin.spec.js:58:1 › an approved member can log in and loses access after approval is revoked (9.0s)
+  ✓  11 e2e/admin.spec.js:114:1 › non-admins are denied and the protected admin account has no approval control (5.9s)
+  ✓  12 e2e/admin.spec.js:129:1 › admins see the complete public and private app monitor summaries (3.9s)
+  ✓  13 e2e/admin.spec.js:179:1 › member password reset requires reauthentication and an explicit submit (9.0s)
+  ✓  14 e2e/admin.spec.js:328:1 › member deletion reauthenticates, preserves cancellation, and removes owned apps (5.0s)
+  ✓  15 e2e/admin.spec.js:399:1 › app-count conflict requires an explicit current-member refresh (2.6s)
+  ✓  16 e2e/admin.spec.js:440:1 › unknown deletion result needs lookup and an explicit same-key retry (2.5s)
+  ✓  17 e2e/admin.spec.js:481:1 › a lost delete response is resolved with its issued key without replay (3.1s)
+  ✓  18 e2e/admin.spec.js:510:1 › pending deletion confirmation stays distinct and resolves by its known key (3.2s)
+  ✓  19 e2e/admin.spec.js:545:1 › reauthenticating an expired recent-auth delete preserves its key without replay (4.3s)
+  ✓  20 e2e/admin.spec.js:605:1 › a delayed delete cannot apply after the admin permission changes (4.4s)
+  ✓  21 e2e/admin.spec.js:641:1 › unknown password-reset results require explicit query, same-key retry, or cancel (4.3s)
+  ✓  22 e2e/admin.spec.js:728:1 › a lost reset response stays unknown until the member operation is read (4.5s)
+  ✓  23 e2e/admin.spec.js:798:1 › a delayed password reset is rejected after the admin session changes (2.9s)
+  ✓  24 e2e/admin.spec.js:860:1 › reauthenticating an expired recent-auth reset preserves its key without replay (3.1s)
+  ✓  25 e2e/admin.spec.js:1007:1 › unknown approval results require explicit query, same-key resubmit, or cancel (2.7s)
+  ✓  26 e2e/admin.spec.js:1062:1 › expired approval keys stay unknown and require a current-state recheck (2.8s)
+  ✓  27 e2e/admin.spec.js:1125:1 › list failures retry and offset pages keep their rows on an additional-load error (2.9s)
+  ✓  28 e2e/admin.spec.js:1182:1 › a late approval response is rejected after the auth flow changes (2.7s)
+  ✓  29 e2e/health-check.spec.js:62:1 › runs each synthetic result and labels its state (17.2s)
+  ✓  30 e2e/health-check.spec.js:90:1 › preserves the last result on job failure and requires explicit progress retry (6.2s)
+  ✓  31 e2e/health-check.spec.js:127:1 › shows queued and running work as separate active job states (4.1s)
+  ✓  32 e2e/health-check.spec.js:148:1 › shows HTTP measurements only to a current administrator (3.5s)
+  ✓  33 e2e/health-check.spec.js:168:1 › marks the exact freshness boundary stale and rejects stale cooldown reuse (2.3s)
+  ✓  34 e2e/health-check.spec.js:184:1 › administrator error identifiers persist through mock storage reload (22.2s)
+
+  34 passed (4.2m)

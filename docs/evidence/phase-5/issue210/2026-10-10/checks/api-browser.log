@@ -1,0 +1,27 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:e2e:api
+npm notice run node scripts/test-api-e2e.mjs e2e-api/admin-apps.spec.js --config=/home/dominelinux/.cache/vibe_coding_archive/coord/b210/playwright.api.config.mjs
+[WebServer] INFO:     Started server process [73909]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+[WebServer] (node:73933) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:74057) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+admin-apps owned leftovers {"members":0,"apps":0,"operations":0,"audit":0,"flows":0,"rates":0,"grades_health":0}
+  ✓  1 e2e-api/admin-apps.spec.js:40:3 › administrator app list over real HTTP › operational notices describe disabled admin actions at mobile and desktop widths (1.1m)
+admin-apps owned leftovers {"members":0,"apps":0,"operations":0,"audit":0,"flows":0,"rates":0,"grades_health":0}
+  ✓  2 e2e-api/admin-apps.spec.js:157:3 › administrator app list over real HTTP › the Health Monitor reads every owner's public and private apps with default and additional pages (11.5s)
+admin-apps owned leftovers {"members":0,"apps":0,"operations":0,"audit":0,"flows":0,"rates":0,"grades_health":0}
+  ✓  3 e2e-api/admin-apps.spec.js:250:3 › administrator app list over real HTTP › offset paging across inserts and deletes keeps unique rows and reconciles on refresh (18.1s)
+admin-apps owned leftovers {"members":0,"apps":0,"operations":0,"audit":0,"flows":0,"rates":0,"grades_health":0}
+  ✓  4 e2e-api/admin-apps.spec.js:278:3 › administrator app list over real HTTP › reading is CSRF-free, needs no recent authentication and writes nothing (17.8s)
+admin-apps owned leftovers {"members":0,"apps":0,"operations":0,"audit":0,"flows":0,"rates":0,"grades_health":0}
+  ✓  5 e2e-api/admin-apps.spec.js:361:3 › administrator app list over real HTTP › anonymous, headerless, ordinary-member and de-privileged requests never receive the list (12.2s)
+admin-apps owned leftovers {"members":0,"apps":0,"operations":0,"audit":0,"flows":0,"rates":0,"grades_health":0}
+  ✓  6 e2e-api/admin-apps.spec.js:392:3 › administrator app list over real HTTP › recorded health results with other freshness windows are listed, not rejected (12.7s)
+
+  6 passed (2.8m)

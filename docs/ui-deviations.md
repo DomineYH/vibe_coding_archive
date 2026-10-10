@@ -459,3 +459,25 @@ are product-only evidence, including a separately identified long-nickname
 response fixture. Automated capture and relation checks do not claim human visual
 or screen-reader acceptance. Existing mock visual comparisons remain separate;
 no preserved reference, visual baseline, mask or tolerance is changed.
+
+## Issue #210 administrator operational restrictions · UI-D03/UI-D09
+
+The member list and Health Monitor add visible, static Korean notices when an
+action is disabled by an explicitly disabled capability whose reasons include
+`operational_restriction`. The notices explain that operational readiness has
+not been confirmed; the health notice also says that existing results remain
+readable. They do not identify internal settings, secrets, worker faults or a
+specific cause.
+
+| Difference                               | Product behavior                                                                                                                                                  | Reason and evidence                                                                                                                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Password reset                           | One notice below the member-list heading describes every disabled ordinary-member reset button; protected administrator rows retain no reset action.              | #210 requires visible copy and an accessible description without repeating the notice in every row.                                                                             |
+| Individual and batch health checks       | One notice above the app list describes only the controls whose own capability is operationally restricted; individual and batch capabilities remain independent. | The shared ID exists once, including when both controls are restricted. Existing result, progress and explicit read-recovery controls remain available.                         |
+| Capability transitions and narrow layout | Notices wrap within the existing section padding at 360/390px; enabled controls resume their existing descriptions and remove the operational reference.          | The [#210 evidence](evidence/phase-5/issue210/2026-10-10/README.md) records API notice captures, existing mock visual comparisons, accessibility checks and local verification. |
+
+Operational notice captures at 1440×1000, 390×844 and 360×844 are product-only
+observations using isolated test fixtures and controlled capability responses.
+Existing mock admin captures retain comparisons to the preserved member-list
+and Health Monitor references. No source reference, baseline or pixel threshold
+is changed. Automated browser and DOM checks do not claim human UI-D,
+screen-reader or physical-device acceptance.

@@ -1,0 +1,74 @@
+{
+  "dataMode": "api",
+  "capabilityResponse": "test-controlled operational_restriction followed by enabled",
+  "backend": "isolated prepared test authentication and admin lists",
+  "baselineChanged": false,
+  "results": [
+    {
+      "state": "health",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "height": 2480,
+      "screenshot": "admin-health-operational-1440x1000.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "health",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "width": 360,
+      "height": 5508,
+      "screenshot": "admin-health-operational-360x844.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "health",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "height": 5508,
+      "screenshot": "admin-health-operational-390x844.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "users",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "width": 1440,
+      "height": 3487,
+      "screenshot": "admin-users-operational-1440x1000.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "users",
+      "viewport": {
+        "width": 360,
+        "height": 844
+      },
+      "width": 360,
+      "height": 5626,
+      "screenshot": "admin-users-operational-360x844.png",
+      "comparisonStatus": "product_only"
+    },
+    {
+      "state": "users",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "width": 390,
+      "height": 4746,
+      "screenshot": "admin-users-operational-390x844.png",
+      "comparisonStatus": "product_only"
+    }
+  ]
+}

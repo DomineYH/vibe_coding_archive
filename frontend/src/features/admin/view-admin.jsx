@@ -330,7 +330,13 @@ function batchRequestMessage(error) {
   return error.message;
 }
 
-function HealthBatchControls({ stats, scopeKey, readContext, canRequest }) {
+function HealthBatchControls({
+  stats,
+  scopeKey,
+  readContext,
+  canRequest,
+  descriptionId = "health-check-note",
+}) {
   const queryClient = useQueryClient();
   const [acceptedBatchId, setAcceptedBatchId] = useState(null);
   const [acceptedDisposition, setAcceptedDisposition] = useState(null);
@@ -449,7 +455,7 @@ function HealthBatchControls({ stats, scopeKey, readContext, canRequest }) {
           variant="line"
           onClick={() => void requestBatch()}
           disabled={requestPending || !canRequest}
-          aria-describedby="health-check-note"
+          aria-describedby={descriptionId}
         >
           {requestPending ? "접수 중…" : "전체 재검사"}
         </Btn>
@@ -1024,6 +1030,12 @@ export function AdminView({
   const canReset =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_password_reset.enabled === true;
+  const resetOperationallyRestricted =
+    !canReset &&
+    meta?.capabilities.admin_password_reset.enabled === false &&
+    meta.capabilities.admin_password_reset.reasons.includes(
+      "operational_restriction",
+    );
   const canDelete =
     __DATA_MODE__ === "mock" ||
     meta?.capabilities.admin_user_delete.enabled === true;
@@ -1035,6 +1047,14 @@ export function AdminView({
     meta?.capabilities.admin_approval.enabled === true;
   const canCheckHealth = meta?.capabilities.health_check.enabled === true;
   const canRequestBatch = meta?.capabilities.health_batch.enabled === true;
+  const healthCheckOperationallyRestricted =
+    !canCheckHealth &&
+    meta?.capabilities.health_check.enabled === false &&
+    meta.capabilities.health_check.reasons.includes("operational_restriction");
+  const healthBatchOperationallyRestricted =
+    !canRequestBatch &&
+    meta?.capabilities.health_batch.enabled === false &&
+    meta.capabilities.health_batch.reasons.includes("operational_restriction");
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -2494,6 +2514,16 @@ export function AdminView({
           ) : null}
         </div>
 
+        {resetOperationallyRestricted ? (
+          <p
+            id="admin-password-reset-note"
+            className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
+          >
+            비밀번호 초기화 운영 준비가 확인되지 않아 임시 비밀번호를 설정할 수
+            없어요.
+          </p>
+        ) : null}
+
         {selection &&
         !query.isPending &&
         !users.some((user) => user.id === selection.id)
@@ -2604,6 +2634,11 @@ export function AdminView({
                           size="sm"
                           variant="line"
                           onClick={() => beginPasswordReset(user.id)}
+                          aria-describedby={
+                            resetOperationallyRestricted
+                              ? "admin-password-reset-note"
+                              : undefined
+                          }
                           disabled={
                             !canReset ||
                             busy ||
@@ -2726,12 +2761,28 @@ export function AdminView({
             scopeKey={scopeKey}
             readContext={readContext}
             canRequest={canRequestBatch}
+            descriptionId={
+              healthBatchOperationallyRestricted
+                ? "health-operational-note"
+                : "health-check-note"
+            }
           />
           <p id="health-row-check-note" className="sr-only">
             {canCheckHealth
               ? "검사 접수 후 이 행에서 진행 상태를 확인합니다."
               : "현재 개별 연결 검사를 사용할 수 없어요."}
           </p>
+
+          {healthCheckOperationallyRestricted ||
+          healthBatchOperationallyRestricted ? (
+            <p
+              id="health-operational-note"
+              className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
+            >
+              연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요.
+              기존 연결 결과는 확인할 수 있어요.
+            </p>
+          ) : null}
 
           {!canReadApps ? (
             <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
@@ -2860,6 +2911,11 @@ export function AdminView({
                           key={`${scopeKey}:${app.id}:${app.urlVersion}`}
                           app={app}
                           canRequest={canCheckHealth}
+                          descriptionId={
+                            healthCheckOperationallyRestricted
+                              ? "health-operational-note"
+                              : "health-row-check-note"
+                          }
                           readContext={readContext}
                           scopeKey={scopeKey}
                         />

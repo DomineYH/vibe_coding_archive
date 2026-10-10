@@ -1,0 +1,14 @@
+npm notice run eduvibe-archive-frontend@1.0.0 test:visual
+npm notice run playwright test --config=playwright.visual.config.js --config=/home/dominelinux/.cache/vibe_coding_archive/coord/b210/playwright.visual.config.mjs visual/admin.spec.js --grep=1440x1000|390x844|360x844
+[WebServer] (node:72978) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:73046) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 visual/admin.spec.js:183:3 › admin approval screen at 1440x1000 (55.1s)
+  ✓  2 visual/admin.spec.js:183:3 › admin approval screen at 390x844 (24.1s)
+  ✓  3 visual/admin.spec.js:183:3 › admin approval screen at 360x844 (25.3s)
+
+  3 passed (2.0m)
