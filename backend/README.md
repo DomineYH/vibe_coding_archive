@@ -2,9 +2,12 @@
 
 명령은 `backend/`에서 실행한다. 처음 한 번 `.env.example`을 `.env`로 복사하고
 값을 편집한다. 기존 `.env`는 덮어쓰지 않으며 이 파일은 버전 관리에서 제외한다.
-개발과 운영 모두 `.env`를 읽고, 프로세스 환경 변수가 파일 값보다 우선한다.
-프로세스 `APP_ENV`가 없거나 비어 있으면 파일의 `APP_ENV`를 사용하며 두 곳 모두
-없으면 실행을 거절한다. 편집한 설정을 적용하려면 서버를 재시작한다.
+개발의 일반 설정은 `.env`를 읽고, 프로세스 환경 변수가 파일 값보다 우선한다.
+예외인 `PASSWORD_RESET_HMAC_PATH`는 프로세스 환경에서만 읽으며 `.env` 값은
+사용하지 않는다. production/test는 프로세스의 `APP_ENV`로 선택하고 `.env`를
+읽지 않는다. 프로세스 `APP_ENV`가 없거나 비어 있으면 파일의 `APP_ENV=development`를
+사용하며 두 곳 모두 없으면 실행을 거절한다. 파일만으로 production/test를 선택하면
+거절한다. 편집한 설정을 적용하려면 서버를 재시작한다.
 
 Phase 6의 검사 API·영속 큐·별도 worker가 구현되어 있다. 연결 결과 조회는
 가능하며 실제 검사는 기본 비활성이다. 활성화 설정, worker 실행과 종료,
@@ -64,6 +67,11 @@ read twice without echo and stored as a hash.
 갱신하지 않는다. 관리자가 필요하면 선택적으로
 `uv run --frozen python -m app.cli bootstrap-admin`을 실행하고,
 브라우저 로그인 뒤 본인 비밀번호를 변경한다.
+
+관리자 비밀번호 초기화는 [개발 HMAC 최초 준비·실행 안내](../docs/development/password-reset.md)를
+따른다. 저장소 밖 0600 파일을 한 번 준비하고 절대 경로만 프로세스 환경으로 공급한다.
+보통 재시작에는 같은 파일을 재사용하며, 공급 실패 후에는 파일을 복구하고 API를
+완전히 재시작해야 한다.
 
 ## T01 authentication preparation
 

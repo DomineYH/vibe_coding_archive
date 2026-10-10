@@ -77,14 +77,15 @@ uv run --frozen python -m app.cli bootstrap-admin              # 선택. 관리�
 uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-- **실행 환경 전환:** `backend/.env`의 `APP_ENV`로 고릅니다(`development` 또는 `production`). 바꾼 뒤에는 서버를 다시 시작합니다. 셸에서 `APP_ENV=...`를 직접 주면 `.env`보다 우선합니다. 테스트(`APP_ENV=test`)는 `.env`를 읽지 않으며 항상 명령 앞에 직접 붙여야 합니다.
-- **실사용(`production`) 조건:** 저장소·임시 폴더 밖의 절대 DB 경로와 로컬이 아닌 HTTPS `PUBLIC_ORIGIN`이 필요하고, 아니면 서버가 시작하지 않습니다. 운영 인증은 공개 검수 전까지 꺼져 있습니다. `.env`가 `production`이면 위의 `alembic`·관리자 CLI 명령도 운영 DB에 적용되므로 실행 전에 `APP_ENV`를 확인하세요. 자세한 내용은 [backend/README.md](backend/README.md)를 봅니다.
+- **실행 환경 전환:** 개발은 `backend/.env`의 `APP_ENV=development`를 사용할 수 있고, 셸의 `APP_ENV`가 우선합니다. `production`/`test`는 프로세스 환경에 직접 지정해야 하며 `.env`를 읽지 않습니다. 파일만으로 `production`/`test`를 선택하면 거절합니다. 바꾼 뒤에는 서버를 다시 시작합니다.
+- **실사용(`production`) 조건:** 저장소·임시 폴더 밖의 절대 DB 경로와 로컬이 아닌 HTTPS `PUBLIC_ORIGIN`이 필요하고, 아니면 서버가 시작하지 않습니다. 제한된 운영 인증 후보와 공개 검수는 별도 승인 절차입니다. 프로세스의 `APP_ENV=production`이면 위의 `alembic`·관리자 CLI 명령도 운영 DB에 적용되므로 실행 전에 환경을 확인하세요. 자세한 내용은 [backend/README.md](backend/README.md)를 봅니다.
 - DB는 저장소 루트의 `storage/development.sqlite3` 파일입니다(상대 경로는 저장소 루트 기준). 서버를 다시 시작해도 데이터가 남습니다.
-- `backend/.env`는 개발·운영에서 읽고, 프로세스 환경 변수가 우선합니다. 개발 기본값은 `DATABASE_PATH=storage/development.sqlite3`, `PUBLIC_ORIGIN=http://localhost:5174`입니다.
+- `backend/.env`는 개발의 일반 설정에만 사용하며 프로세스 환경 변수가 우선합니다. 개발 기본값은 `DATABASE_PATH=storage/development.sqlite3`, `PUBLIC_ORIGIN=http://localhost:5174`입니다. 예외인 `PASSWORD_RESET_HMAC_PATH`는 `.env`에 적어도 사용되지 않습니다.
 - 서버는 migration이 최신(head)이 아니면 시작하지 않습니다. 먼저 `alembic upgrade head`를 실행하세요.
 - `seed`는 빠진 합성 개발 데이터만 추가하므로 여러 번 실행해도 됩니다. 대화형 터미널에서 실행해야 하고, 시드 회원을 처음 만들 때 공통 비밀번호를 두 번 입력받습니다.
 - 개발 환경은 실제 인증을 켜므로 검증된 비밀번호 차단 목록이 필요합니다. 기본 위치는 `storage/password-blocklist-ncsc.txt`이고 `PASSWORD_BLOCKLIST_PATH`로 바꿀 수 있습니다. 없거나 손상되면 서버가 시작하지 않고 `prepare-password-blocklist` 실행을 안내합니다.
 - 시드 회원 `seed-member-one`, `seed-member-two`는 `seed`에서 입력한 공통 비밀번호로 로그인합니다. `bootstrap-admin`으로 만든 관리자는 임시 비밀번호로 로그인한 뒤 비밀번호를 바꿔야 합니다.
+- 관리자 비밀번호 초기화가 필요하면 [개발 HMAC 최초 준비·실행 안내](docs/development/password-reset.md)를 따릅니다. 비밀은 저장소 밖 0600 파일에 보관하고 절대 경로만 프로세스 환경으로 공급합니다. 공급 실패 후에는 파일을 복구하고 API를 완전히 재시작해야 합니다.
 - 상태 확인: `GET /healthz`(프로세스 생존), `GET /readyz`(DB·인증 준비).
 
 **프런트엔드** (`frontend/`):
