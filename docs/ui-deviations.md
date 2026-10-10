@@ -481,3 +481,26 @@ Existing mock admin captures retain comparisons to the preserved member-list
 and Health Monitor references. No source reference, baseline or pixel threshold
 is changed. Automated browser and DOM checks do not claim human UI-D,
 screen-reader or physical-device acceptance.
+
+
+## Issue #215 exact registration return · UI-D07
+
+Anonymous `/apps/new` entry preserves that exact destination in the login URL;
+already signed-in change-only sessions preserve it in the password-change URL.
+Login requiring a password change carries the same `return_to` until completion.
+The explicit authentication recovery link also keeps the destination without
+automatic navigation before recovery.
+
+Only `/apps/new` without query, fragment or extra path segments joins the return
+allowlist. Before replace navigation, registration returns recheck the approved,
+ready full user/admin session, completed password change, current authentication
+observation and enabled `apps_read`/`apps_create` capabilities. Metadata failures,
+disabled capabilities, incomplete authority and stale observations retain the
+existing error/recovery behavior. No app detail read or automatic registration
+occurs, and checking/concealed/unapproved states retain the existing form guards
+and draft isolation.
+
+This follows the [#215 adopted triage decision](https://github.com/DomineYH/vibe_coding_archive/issues/215#issuecomment-6095807247).
+#175 UUID detail/edit returns and private 404, #214 ordinary-member admin-return
+fallback, gallery query validation and ADR-0001 remain unchanged. Existing screens
+and visual baselines are preserved; #216 layout changes are outside this issue.

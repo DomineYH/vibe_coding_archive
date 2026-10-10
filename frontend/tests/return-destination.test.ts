@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { recheckReturnDestination } from "../src/features/auth/return-destination";
 import { appsService } from "../src/services/api/apps";
 import type { CurrentAuthState } from "../src/services/auth-service";
@@ -84,7 +84,10 @@ function stubMeta(enabled = true) {
   vi.stubGlobal("fetch", fetch);
   return fetch;
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 describe("return destination current availability and authority", () => {
   it("permits a public gallery destination without an auth observation", async () => {
@@ -344,5 +347,136 @@ describe("return destination current availability and authority", () => {
         () => false,
       ),
     ).rejects.toMatchObject({ name: "AbortError" });
+  });
+});
+
+describe("exact create return destination", () => {
+  let get: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    get = vi.spyOn(appsService, "get");
+  });
+  afterEach(() => expect(get).not.toHaveBeenCalled());
+  function createMeta(read = true, create = true) {
+    const value = meta(true, read);
+    value.capabilities.apps_create = {
+      enabled: create,
+      reasons: create ? [] : ["not_implemented"],
+    };
+    return value;
+  }
+
+  it.each(["user", "admin"] as const)(
+    "permits an approved full %s without reading an app",
+    async (role) => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(createMeta())));
+      vi.stubGlobal("fetch", fetch);
+      await expect(
+        recheckReturnDestination(
+          "/apps/new",
+          { ...current, user: { ...current.user!, role } },
+          appsService,
+          () => true,
+        ),
+      ).resolves.toBe("/apps/new");
+      expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
+    },
+  );
+
+  it.each([
+    ["null", null],
+    ["anonymous", { ...current, user: null }],
+    ...(["checking", "unresolved", "error", "unavailable"] as const).map(
+      (status) => [status, { ...current, status }] as const,
+    ),
+    ["unapproved", { ...current, user: { ...current.user!, approved: false } }],
+    [
+      "change_only",
+      {
+        ...current,
+        user: { ...current.user!, sessionKind: "change_only" as const },
+      },
+    ],
+    [
+      "password change required",
+      { ...current, user: { ...current.user!, mustChangePassword: true } },
+    ],
+    [
+      "unsupported role",
+      { ...current, user: { ...current.user!, role: "guest" } },
+    ],
+  ] as const)("refuses %s without reading an app", async (_name, state) => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify(createMeta())));
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      recheckReturnDestination(
+        "/apps/new",
+        state as CurrentAuthState | null,
+        appsService,
+        () => true,
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
+  });
+
+  it.each(["apps_read", "apps_create"])(
+    "refuses disabled %s without reading an app",
+    async (capability) => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify(
+              createMeta(
+                capability !== "apps_read",
+                capability !== "apps_create",
+              ),
+            ),
+          ),
+        );
+      vi.stubGlobal("fetch", fetch);
+      await expect(
+        recheckReturnDestination("/apps/new", current, appsService, () => true),
+      ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
+      expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
+    },
+  );
+
+  it("preserves metadata errors without reading an app", async () => {
+    const error = new Error("metadata failed");
+    const fetch = vi.fn().mockRejectedValue(error);
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      recheckReturnDestination("/apps/new", current, appsService, () => true),
+    ).rejects.toMatchObject({ code: "NETWORK_ERROR" });
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
+  });
+
+  it("refuses an observation changed during metadata loading without reading an app", async () => {
+    let release!: (response: Response) => void;
+    let fresh = true;
+    const fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = resolve;
+        }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const result = recheckReturnDestination(
+      "/apps/new",
+      current,
+      appsService,
+      () => fresh,
+    );
+    const rejection = expect(result).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    fresh = false;
+    release?.(new Response(JSON.stringify(createMeta())));
+    await rejection;
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
   });
 });

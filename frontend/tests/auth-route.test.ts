@@ -15,6 +15,49 @@ describe("authentication route parameters", () => {
     });
   });
 
+  it.each(["login", "password-change"])(
+    "accepts the exact create return destination in %s mode",
+    (mode) => {
+      expect(readAuthRoute(`?mode=${mode}&return_to=%2Fapps%2Fnew`)).toEqual({
+        mode,
+        returnTo: "/apps/new",
+        invalid: false,
+      });
+    },
+  );
+
+  it.each([
+    "/apps/new?x=1",
+    "/apps/new?",
+    "/apps/new#x",
+    "/apps/new/",
+    "/apps/new/edit",
+    "https://evil/apps/new",
+    "//evil/apps/new",
+    "/apps\\new",
+    "/apps/new\n",
+    "/apps/new\u0085",
+    "%2Fapps%2Fnew",
+  ])(
+    "rejects unsafe or unsupported create return destination %j",
+    (returnTo) => {
+      expect(
+        readAuthRoute(`?return_to=${encodeURIComponent(returnTo)}`).invalid,
+      ).toBe(true);
+    },
+  );
+
+  it.each([
+    "?mode=login&mode=password-change&return_to=%2Fapps%2Fnew",
+    "?return_to=%2Fapps%2Fnew&return_to=%2Fapps%2Fnew",
+    "?return_to=%252Fapps%252Fnew",
+  ])(
+    "rejects duplicated or repeatedly encoded create parameters %s",
+    (search) => {
+      expect(readAuthRoute(search).invalid).toBe(true);
+    },
+  );
+
   it.each([
     "/apps/00000000-0000-4000-8000-000000000001/edit?x=1",
     "/apps/00000000-0000-4000-8000-000000000001/edit?",
@@ -27,7 +70,6 @@ describe("authentication route parameters", () => {
     "/apps/00000000-0000-4000-8000-000000000001/%65dit",
     "/apps/00000000-0000-4000-8000-000000000001/edit\n",
     "/apps/00000000-0000-4000-8000-000000000001/edit\u0085",
-    "/apps/new",
   ])("rejects unsafe or unsupported edit return destination %j", (returnTo) => {
     expect(
       readAuthRoute(`?mode=login&return_to=${encodeURIComponent(returnTo)}`),
