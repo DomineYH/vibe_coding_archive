@@ -433,7 +433,7 @@ export function SubmitView({
       data-screen-label={editing ? "편집" : "등록"}
     >
       <div className="mb-8 flex items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-[28px] font-extrabold tracking-tight text-neutral-900">
             {editing ? "앱 정보 편집" : "새 앱 등록"}
           </h1>
@@ -445,14 +445,14 @@ export function SubmitView({
           <button
             type="button"
             onClick={onCancel}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-center text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
+            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 text-center text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
           >
             <span>취소</span>
           </button>
         ) : (
           <Link
             to="/"
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full px-3 text-center text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
+            className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3 text-center text-[12.5px] font-semibold text-neutral-600 hover:bg-neutral-100"
           >
             <span>취소</span>
           </Link>

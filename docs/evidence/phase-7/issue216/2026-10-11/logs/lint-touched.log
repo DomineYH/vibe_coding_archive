@@ -1,0 +1,2 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'eslint' e2e/cancel-layout.js e2e/app-create.spec.js e2e/app-edit.spec.js src/features/submit/view-submit.jsx visual/app-create.spec.js

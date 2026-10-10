@@ -1,0 +1,18 @@
+{
+  "visualTests": {
+    "admin.spec.js": 5,
+    "app-create.spec.js": 25,
+    "auth.spec.js": 15,
+    "gallery.spec.js": 89
+  },
+  "totalVisualTests": 134,
+  "appCreate": {
+    "records": 70,
+    "fullPngCompared": 20,
+    "dimensionMatches": 20,
+    "zeroPixelMatches": 20,
+    "productOnly": 50
+  },
+  "historicalBaselinesPreserved": 20,
+  "newBaselines": 6
+}

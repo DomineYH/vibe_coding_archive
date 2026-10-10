@@ -1,0 +1,26 @@
+{
+  "historicalPngCount": 20,
+  "unchanged": true,
+  "sha256": {
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/12-detail-private.png": "3baae289061e1de025373e7bd631253ad4d78dc54cab6f42b04d2c67c29480a2",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/13-edit.png": "04a6c7a78443fcb6d37aaf10f5aff1e5f9f1c7c26038386d5631515a3a32c34f",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/16-submit.png": "23fe58695f8bf540e86ab109bae42fd7c0c89188187885d4c5b3d93fc85183bc",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1024x900/17-submit-error.png": "5935a2e239ba6d3fb792098887ff38c4dbdef3e36120238dab68057c82525552",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/12-detail-private.png": "b914a285064a754c2ede2dd912a63ccce91bdb6f6b1e8ef190e025e91744859f",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/13-edit.png": "69073a6c79ef0eca1c40f690a8349ccea0993b918b5025b5311327a8e8c350a9",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/16-submit.png": "c7038731a506efdc3edd95f9566988299d766640c1eceff6ce152cb9247f4d91",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/1440x1000/17-submit-error.png": "0169aced25a0bae8fb5a6b3d221b6787ee5c7ea8d3c581de7bdee7db59a61ed5",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/12-detail-private.png": "d928d221d7314eea516b6dc22e2296c277090228f960a41d893e5567e23b49d0",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/13-edit.png": "614bd989b4b7d386d915462d17a0e84553e6f3158b45788d1ea38e19c0b86f8f",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/16-submit.png": "ed22739ef188a1b9c19479b328883c4dd01923ade721f2e275d3d249e07b0cbd",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/360x844/17-submit-error.png": "e0f0b84ef5089c63167b1ec2dafafe4aca889b85068bc6c77ca1e0c0ce11c9a1",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/12-detail-private.png": "8c46cd684fd2f95f097fe98c76b1e354aa6d656a927395237dbb2bcce2912ae6",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/13-edit.png": "b288e289213b0b53d81f25fc1e65168982dfb7ef05453acbd399f290c6afa6ac",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/16-submit.png": "22bc4293675a5d559d0b6a26f273b64bc75386b3975f5736e5aa501415df6f3c",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/390x844/17-submit-error.png": "9d03bfaf4c55e79c79a4a938a061834574797cba5f1598401832687bff90bca9",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/12-detail-private.png": "37fe8577913d58f3e842c67e48e5359e64366c5075d7d9b490a235fe26597cd5",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/13-edit.png": "7ba644de685b2b4cfe3d462c3296c728c92fa4977c3b5907066fbff418f6a0be",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/16-submit.png": "0449b065cf876c9abc3bde4ce3d8bffd8a6fbce81c80d151d9b47f6717198c37",
+    "docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines/768x1024/17-submit-error.png": "e464ce041314d4753bcf6b478f3e96181118da7628d144cca13745ff2c3b8f26"
+  }
+}

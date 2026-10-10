@@ -1,0 +1,36 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test -c /home/dominelinux/.cache/vibe_coding_archive/coord/b216/playwright.visual.config.mjs visual/app-create.spec.js
+[WebServer] (node:321553) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 25 tests using 1 worker
+
+(node:321712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 visual/app-create.spec.js:101:3 › app registration form at 1440x1000 (37.4s)
+  ✓   2 visual/app-create.spec.js:188:3 › app edit form at 1440x1000 (20.1s)
+  ✓   3 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1440x1000 (10.8s)
+  ✓   4 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1440x1000 (10.3s)
+  ✓   5 visual/app-create.spec.js:379:3 › private app detail after owner update at 1440x1000 (9.2s)
+  ✓   6 visual/app-create.spec.js:101:3 › app registration form at 1024x900 (17.8s)
+  ✓   7 visual/app-create.spec.js:188:3 › app edit form at 1024x900 (27.5s)
+  ✓   8 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 1024x900 (8.7s)
+  ✓   9 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 1024x900 (7.9s)
+  ✓  10 visual/app-create.spec.js:379:3 › private app detail after owner update at 1024x900 (8.6s)
+  ✓  11 visual/app-create.spec.js:101:3 › app registration form at 768x1024 (18.0s)
+  ✓  12 visual/app-create.spec.js:188:3 › app edit form at 768x1024 (17.7s)
+  ✓  13 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 768x1024 (6.2s)
+  ✓  14 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 768x1024 (6.7s)
+  ✓  15 visual/app-create.spec.js:379:3 › private app detail after owner update at 768x1024 (6.9s)
+  ✓  16 visual/app-create.spec.js:101:3 › app registration form at 390x844 (11.9s)
+  ✓  17 visual/app-create.spec.js:188:3 › app edit form at 390x844 (14.3s)
+  ✓  18 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 390x844 (4.7s)
+  ✓  19 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 390x844 (4.4s)
+  ✓  20 visual/app-create.spec.js:379:3 › private app detail after owner update at 390x844 (4.6s)
+  ✓  21 visual/app-create.spec.js:101:3 › app registration form at 360x844 (8.1s)
+  ✓  22 visual/app-create.spec.js:188:3 › app edit form at 360x844 (13.6s)
+  ✓  23 visual/app-create.spec.js:294:3 › conceals an unresolved create draft during auth checks at 360x844 (6.1s)
+  ✓  24 visual/app-create.spec.js:327:3 › shows confirmed create when its target is later unavailable at 360x844 (5.6s)
+  ✓  25 visual/app-create.spec.js:379:3 › private app detail after owner update at 360x844 (4.7s)
+
+  25 passed (5.2m)

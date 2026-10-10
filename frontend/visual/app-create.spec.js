@@ -9,6 +9,15 @@ import { capture as captureImage } from "./app-create-capture.js";
 const referenceRoot = path.resolve(
   "../docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines",
 );
+// I216-C approves only the narrow cancel label and adjacent description reflow.
+const cancelReferenceRoot = path.resolve(
+  "../docs/evidence/phase-7/issue216/2026-10-11/visual-state-baselines",
+);
+const cancelBaselines = new Set([
+  "16-submit.png",
+  "17-submit-error.png",
+  "13-edit.png",
+]);
 const outputRoot = path.resolve("test-results/visual/app-create");
 const viewports = [
   { width: 1440, height: 1000 },
@@ -70,7 +79,10 @@ async function setScenario(page, scenario) {
 
 async function capture(page, state, viewport, testInfo, baseline = null) {
   return captureImage(page, state, viewport, testInfo, baseline, {
-    referenceRoot,
+    referenceRoot:
+      viewport.width <= 390 && cancelBaselines.has(baseline)
+        ? cancelReferenceRoot
+        : referenceRoot,
     outputRoot,
     results,
   });

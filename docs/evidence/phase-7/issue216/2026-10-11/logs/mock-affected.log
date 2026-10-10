@@ -1,0 +1,47 @@
+npm notice run eduvibe-archive-frontend@1.0.0 npx
+npm notice run 'playwright' test -c /home/dominelinux/.cache/vibe_coding_archive/coord/b216/playwright.mock.config.mjs e2e/app-create.spec.js e2e/app-edit.spec.js
+[WebServer] (node:328247) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 36 tests using 1 worker
+
+(node:328282) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 360px and activates by keyboard (13.3s)
+  ✓   2 e2e/app-create.spec.js:7:3 › registration cancel stays on one line at 390px and activates by keyboard (2.2s)
+  ✓   3 e2e/app-create.spec.js:104:3 › protects direct access to the registration route and returns 교사김코딩 to the form (1.6s)
+  ✓   4 e2e/app-create.spec.js:104:3 › protects direct access to the registration route and returns admin to the form (2.4s)
+  ✓   5 e2e/app-create.spec.js:138:3 › temporary member returns to registration after password change with existing session=false (2.5s)
+  ✓   6 e2e/app-create.spec.js:138:3 › temporary member returns to registration after password change with existing session=true (3.9s)
+  ✓   7 e2e/app-create.spec.js:185:1 › approved member registers, refreshes, and returns to the updated gallery (7.7s)
+  ✓   8 e2e/app-create.spec.js:220:1 › keeps over-limit and invalid URL values for correction (3.3s)
+  ✓   9 e2e/app-create.spec.js:256:1 › supports keyboard selection for categories, theme, and visibility (2.8s)
+  ✓  10 e2e/app-create.spec.js:293:1 › locks the form on an unknown result and only retries the same request after an explicit choice (4.2s)
+  ✓  11 e2e/app-create.spec.js:352:1 › waits for a delayed save before taking a blocked navigation to the created detail (4.5s)
+  ✓  12 e2e/app-create.spec.js:375:1 › reads a committed result after the create response is lost (4.2s)
+  ✓  13 e2e/app-create.spec.js:399:1 › keeps confirmed create success distinct when the app is later unavailable (4.1s)
+  ✓  14 e2e/app-create.spec.js:455:1 › keeps an expired write locked after its result can no longer be checked (4.5s)
+  ✓  15 e2e/app-create.spec.js:488:1 › hides an unresolved draft during repeated auth failures and restores it only after recheck (4.6s)
+  ✓  16 e2e/app-create.spec.js:533:1 › discards the in-tab draft after logout even when the same member returns (5.6s)
+  ✓  17 e2e/app-create.spec.js:553:1 › discards old drafts across an A to B to A member switch (7.9s)
+  ✓  18 e2e/app-create.spec.js:588:1 › shows a rejected save without clearing the draft (4.3s)
+  ✓  19 e2e/app-create.spec.js:608:1 › defers internal navigation until a dirty draft is kept or discarded (3.7s)
+  ✓  20 e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 360px and activates by keyboard (3.3s)
+  ✓  21 e2e/app-edit.spec.js:7:3 › edit cancel stays on one line at 390px and activates by keyboard (3.2s)
+  ✓  22 e2e/app-edit.spec.js:102:1 › owner edits an app, changes visibility, and the gallery no longer lists it (3.9s)
+  ✓  23 e2e/app-edit.spec.js:140:1 › private app content stays hidden from non-owner members (8.3s)
+  ✓  24 e2e/app-edit.spec.js:195:1 › locks a delayed edit and waits before leaving for the confirmed detail (4.4s)
+  ✓  25 e2e/app-edit.spec.js:227:1 › version conflict preserves the draft until the author confirms loading latest content (6.2s)
+  ✓  26 e2e/app-edit.spec.js:280:1 › unknown update outcome requires an explicit result check before completion (6.2s)
+  ✓  27 e2e/app-edit.spec.js:310:1 › hides and restores an unresolved edit draft around failed auth checks (4.5s)
+  ✓  28 e2e/app-edit.spec.js:357:1 › unresolved update can only be retried with the original request (4.2s)
+  ✓  29 e2e/app-edit.spec.js:397:1 › confirmed rejection keeps the form values available for correction (3.5s)
+  ✓  30 e2e/app-edit.spec.js:418:1 › keyboard privacy control and field errors have accessible state (3.7s)
+  ✓  31 e2e/app-edit.spec.js:448:1 › owner cancels the inline delete prompt without changing the app (3.5s)
+  ✓  32 e2e/app-edit.spec.js:470:1 › a different approved member can view a public app but cannot delete it (5.1s)
+  ✓  33 e2e/app-edit.spec.js:484:1 › owner confirms a delayed delete once and returns to a refreshed gallery (3.8s)
+  ✓  34 e2e/app-edit.spec.js:515:1 › unknown delete result stays on detail until the issued key confirms success (3.3s)
+  ✓  35 e2e/app-edit.spec.js:552:1 › keeps an expired deletion unknown and never repeats it with a new key (3.1s)
+  ✓  36 e2e/app-edit.spec.js:589:1 › unresolved deletion warns before refresh and keeps its key when the author stays (3.3s)
+
+  36 passed (3.0m)

@@ -1,6 +1,22 @@
 import { expect, test } from "@playwright/test";
+import { expectSingleLineCancel } from "./cancel-layout.js";
 
 const key = "eduvibe-archive-mock-v1";
+
+for (const width of [360, 390]) {
+  test(`edit cancel stays on one line at ${width}px and activates by keyboard`, async ({
+    page,
+  }) => {
+    const id = "00000000-0000-4000-8000-000000000091";
+    await page.setViewportSize({ width, height: 844 });
+    await loginAs(page, "교사김코딩");
+    await page.goto(`/apps/${id}/edit`);
+    const cancel = page.getByRole("button", { name: "취소", exact: true });
+    await expectSingleLineCancel(page, cancel, width);
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(`/apps/${id}`);
+  });
+}
 
 async function loginAs(page, loginId, password = "1234") {
   await page.goto("/auth?mode=login");
