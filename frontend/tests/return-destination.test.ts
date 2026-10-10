@@ -54,7 +54,7 @@ const capabilityKeys = [
   "email_collection",
   "phone_collection",
 ];
-function meta(adminEnabled = true) {
+function meta(adminEnabled = true, appsEnabled = true) {
   return {
     ...catalog,
     server_time: "2026-10-02T00:00:00Z",
@@ -65,9 +65,11 @@ function meta(adminEnabled = true) {
         key,
         {
           enabled:
-            key === "apps_read" || (key === "admin_users_read" && adminEnabled),
+            (key === "apps_read" && appsEnabled) ||
+            (key === "admin_users_read" && adminEnabled),
           reasons:
-            key === "apps_read" || (key === "admin_users_read" && adminEnabled)
+            (key === "apps_read" && appsEnabled) ||
+            (key === "admin_users_read" && adminEnabled)
               ? []
               : ["not_implemented"],
         },
@@ -125,12 +127,95 @@ describe("return destination current availability and authority", () => {
       );
     },
   );
-  it("rejects admin for a full ordinary member before navigation", async () => {
+  it.each([true, false])(
+    "returns a full ordinary member to the gallery with admin capability %s",
+    async (adminEnabled) => {
+      stubMeta(adminEnabled);
+      await expect(
+        recheckReturnDestination("/admin", current, appsService, () => true),
+      ).resolves.toBe("/");
+    },
+  );
+  it("returns an administrator to admin", async () => {
     stubMeta();
     await expect(
-      recheckReturnDestination("/admin", current, appsService, () => true),
-    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      recheckReturnDestination(
+        "/admin",
+        { ...current, user: { ...current.user!, role: "admin" } },
+        appsService,
+        () => true,
+      ),
+    ).resolves.toBe("/admin");
   });
+  it("rejects unavailable gallery and failed metadata for the member fallback", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(new Response(JSON.stringify(meta(true, false)))),
+    );
+    await expect(
+      recheckReturnDestination("/admin", current, appsService, () => true),
+    ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
+    await expect(
+      recheckReturnDestination("/admin", current, appsService, () => true),
+    ).rejects.toMatchObject({ code: "NETWORK_ERROR" });
+  });
+  it("rejects a member observation changed while metadata is pending", async () => {
+    let release!: (value: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        () =>
+          new Promise<Response>((resolve) => {
+            release = resolve;
+          }),
+      ),
+    );
+    let fresh = true;
+    const result = recheckReturnDestination(
+      "/admin",
+      current,
+      appsService,
+      () => fresh,
+    );
+    const rejected = expect(result).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    fresh = false;
+    release(new Response(JSON.stringify(meta())));
+    await rejected;
+  });
+  it.each([
+    ["null", null],
+    ["anonymous", { ...current, user: null }],
+    ...["checking", "unresolved", "error"].map(
+      (status) => [status, { ...current, status }] as const,
+    ),
+    ["unapproved", { ...current, user: { ...current.user!, approved: false } }],
+    [
+      "change_only",
+      { ...current, user: { ...current.user!, sessionKind: "change_only" } },
+    ],
+    [
+      "mustChangePassword",
+      { ...current, user: { ...current.user!, mustChangePassword: true } },
+    ],
+  ] as const)(
+    "does not promote %s authentication to a member fallback",
+    async (_, state) => {
+      stubMeta();
+      await expect(
+        recheckReturnDestination(
+          "/admin",
+          state as CurrentAuthState | null,
+          appsService,
+          () => true,
+        ),
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    },
+  );
   it("does not treat capability false or failed metadata as permission", async () => {
     const admin = {
       ...current,

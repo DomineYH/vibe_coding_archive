@@ -450,8 +450,14 @@ test("an authenticated member gets 403 for the admin route while admin can open 
   await page.goto("/admin");
   await expect(page).toHaveURL("/auth?mode=login&return_to=%2Fadmin");
   await login(page);
-  await expect(page).toHaveURL("/auth?mode=login&return_to=%2Fadmin");
-  await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요해요");
+  await expect(page).toHaveURL("/");
+  await expect(page.locator('[data-screen-label="로그인"] form')).toHaveCount(
+    0,
+  );
+  await expect(
+    page.getByRole("banner").getByText("교사김코딩", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
   await page.goto("/admin");
   await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요해요");
 
@@ -844,4 +850,29 @@ test("temporary administrator is kept out of admin tools until changing password
   await expect(
     page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
   ).toBeVisible();
+});
+
+test("temporary member returns from admin login to the gallery only after password change", async ({
+  page,
+}) => {
+  await page.goto("/auth?mode=login&return_to=%2Fadmin");
+  await login(page, "임시교사38", "Temporary Demo Password 38");
+  await expect(page).toHaveURL("/auth?mode=password-change&return_to=%2Fadmin");
+  await expect(
+    page.getByRole("heading", { name: "관리자 대시보드", exact: true }),
+  ).toHaveCount(0);
+  const form = page.locator('[data-screen-label="비밀번호 변경"] form');
+  await form.locator("#new-password").fill("New member phrase for 214!");
+  await form
+    .locator("#new-password-confirm")
+    .fill("New member phrase for 214!");
+  await form
+    .getByRole("button", { name: "비밀번호 변경", exact: true })
+    .click();
+  await expect(page).toHaveURL("/");
+  await expect(form).toHaveCount(0);
+  await expect(
+    page.getByRole("banner").getByText("임시 계정 교사", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
 });

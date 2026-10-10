@@ -17,6 +17,7 @@ import {
   DEMO_ACCOUNTS,
   TEMPORARY_DEMO_ACCOUNTS,
 } from "../src/services/mock/accounts";
+import { ServiceError } from "../src/services/service-error";
 import { resetMockState } from "../src/services/mock/state";
 
 let client;
@@ -944,3 +945,123 @@ it.each(
     expect(call?.[1]?.readContext?.state.flow.sessionGeneration).toBeTruthy();
   },
 );
+
+async function submitAdminReturnLogin(
+  account = DEMO_ACCOUNTS[1],
+  beforeSubmit = () => {},
+) {
+  await visit("/auth?mode=login&return_to=%2Fadmin", null);
+  const form = (
+    await screen.findByLabelText("로그인 아이디", { exact: true })
+  ).closest("form");
+  fireEvent.change(
+    within(form).getByLabelText("로그인 아이디", { exact: true }),
+    { target: { value: account.loginId } },
+  );
+  fireEvent.change(within(form).getByLabelText("비밀번호", { exact: true }), {
+    target: { value: account.password },
+  });
+  beforeSubmit();
+  fireEvent.click(
+    within(form).getByRole("button", { name: "로그인", exact: true }),
+  );
+}
+
+it.each([true, false])(
+  "replaces member admin login with the verified gallery when admin capability is %s",
+  async (adminEnabled) => {
+    if (!adminEnabled) disable("admin_users_read");
+    await submitAdminReturnLogin();
+    await waitFor(() =>
+      expect(
+        document.querySelector('[data-screen-label="로그인"] form'),
+      ).not.toBeInTheDocument(),
+    );
+    expect(router.state.location.pathname).toBe("/");
+    expect(router.state.historyAction).toBe("REPLACE");
+    const banner = within(screen.getByRole("banner"));
+    expect(
+      banner.getByText(DEMO_ACCOUNTS[1].nickname, { exact: true }),
+    ).toBeInTheDocument();
+    expect(
+      banner.getByRole("button", { name: "로그아웃" }),
+    ).toBeInTheDocument();
+  },
+);
+
+it.each(["metadata", "apps_read"])(
+  "keeps member admin login on the safe error route after %s failure",
+  async (failure) => {
+    await submitAdminReturnLogin(DEMO_ACCOUNTS[1], () => {
+      if (failure === "metadata")
+        metadata.mockRejectedValue(
+          new ServiceError("NETWORK_ERROR", "메타 조회 실패"),
+        );
+      else disable("apps_read");
+    });
+    await screen.findByText(
+      failure === "metadata"
+        ? "로그인하지 못했어요. 연결을 확인해 주세요."
+        : "아카이브를 현재 사용할 수 없어요.",
+    );
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(router.state.location.search).toBe("?mode=login&return_to=%2Fadmin");
+    expect(
+      document.querySelector('[data-screen-label="로그인"] form'),
+    ).toBeInTheDocument();
+  },
+);
+
+it("does not navigate after the member observation changes during the admin return check", async () => {
+  let release;
+  await submitAdminReturnLogin(DEMO_ACCOUNTS[1], () => {
+    metadata.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          release = resolve;
+        }),
+    );
+  });
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  await act(async () => window.dispatchEvent(new Event("blur")));
+  const locationKey = router.state.location.key;
+  await act(async () => release(meta));
+  expect(router.state.location.pathname).toBe("/auth");
+  expect(router.state.location.key).toBe(locationKey);
+});
+
+it("replaces temporary member admin return with gallery after required password change", async () => {
+  await submitAdminReturnLogin(TEMPORARY_DEMO_ACCOUNTS[0]);
+  await waitFor(() =>
+    expect(router.state.location.search).toBe(
+      "?mode=password-change&return_to=%2Fadmin",
+    ),
+  );
+  expect(router.state.location.pathname).toBe("/auth");
+  const form = (
+    await screen.findByLabelText("새 비밀번호 (필수)", { exact: true })
+  ).closest("form");
+  fireEvent.change(
+    within(form).getByLabelText("새 비밀번호 (필수)", { exact: true }),
+    { target: { value: "New member phrase for 214!" } },
+  );
+  fireEvent.change(
+    within(form).getByLabelText("새 비밀번호 확인 (필수)", { exact: true }),
+    { target: { value: "New member phrase for 214!" } },
+  );
+  fireEvent.click(
+    within(form).getByRole("button", { name: "비밀번호 변경", exact: true }),
+  );
+  await waitFor(() => expect(router.state.location.pathname).toBe("/"));
+  expect(router.state.historyAction).toBe("REPLACE");
+  expect(
+    document.querySelector('[data-screen-label="비밀번호 변경"] form'),
+  ).not.toBeInTheDocument();
+  expect(
+    within(screen.getByRole("banner")).getByText(
+      TEMPORARY_DEMO_ACCOUNTS[0].nickname,
+      { exact: true },
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
+});
