@@ -24,6 +24,14 @@ export async function recheckReturnDestination(
   const context = full ? captureAuthObservation(current, isCurrent) : undefined;
   if (destination === "/admin") {
     if (context) assertAuthObservation(context);
+    if (full && current.user?.role === "user") {
+      if (!meta.capabilities.apps_read.enabled)
+        throw new ServiceError(
+          "FEATURE_UNAVAILABLE",
+          "아카이브를 현재 사용할 수 없어요.",
+        );
+      return "/";
+    }
     if (!meta.capabilities.admin_users_read.enabled)
       throw new ServiceError(
         "FEATURE_UNAVAILABLE",
