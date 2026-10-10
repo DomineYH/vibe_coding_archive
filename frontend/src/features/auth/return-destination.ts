@@ -45,7 +45,22 @@ export async function recheckReturnDestination(
         "FEATURE_UNAVAILABLE",
         "아카이브를 현재 사용할 수 없어요.",
       );
-    if (destination.startsWith("/apps/")) {
+    if (destination === "/apps/new") {
+      if (
+        !full ||
+        (current.user?.role !== "user" && current.user?.role !== "admin")
+      )
+        throw new ServiceError(
+          "FORBIDDEN",
+          "승인된 회원만 앱을 등록할 수 있어요.",
+        );
+      assertAuthObservation(context!);
+      if (!meta.capabilities.apps_create.enabled)
+        throw new ServiceError(
+          "FEATURE_UNAVAILABLE",
+          "앱 등록 기능을 현재 사용할 수 없어요.",
+        );
+    } else if (destination.startsWith("/apps/")) {
       const id = destination.split("/")[2];
       let app;
       try {

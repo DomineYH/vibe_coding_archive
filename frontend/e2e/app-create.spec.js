@@ -81,14 +81,90 @@ async function advanceBeyondOperationExpiry(page) {
   }, key);
 }
 
-test("protects direct access to the registration route", async ({ page }) => {
-  await page.goto("/apps/new");
-  await expect(page).toHaveURL(/\/auth\?mode=login$/);
-  await expect(page.locator('[data-screen-label="로그인"] form')).toBeVisible();
-  await expect(
-    page.getByRole("form", { name: "새 앱 등록 양식", exact: true }),
-  ).toHaveCount(0);
-});
+for (const [loginId, password] of [
+  ["교사김코딩", "1234"],
+  ["admin", "admin123"],
+]) {
+  test(`protects direct access to the registration route and returns ${loginId} to the form`, async ({
+    page,
+  }) => {
+    await page.goto("/apps/new");
+    await expect(page).toHaveURL("/auth?mode=login&return_to=%2Fapps%2Fnew");
+    const form = page.locator('[data-screen-label="로그인"] form');
+    await expect(form).toBeVisible();
+    await expect(
+      page.getByRole("form", { name: "새 앱 등록 양식", exact: true }),
+    ).toHaveCount(0);
+    await form.getByLabel("로그인 아이디", { exact: true }).fill(loginId);
+    await form.getByLabel("비밀번호", { exact: true }).fill(password);
+    await form.getByRole("button", { name: "로그인", exact: true }).click();
+    await expect(page).toHaveURL("/apps/new");
+    await expect(
+      page.getByRole("form", { name: "새 앱 등록 양식", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel("어플리케이션 이름", { exact: true }),
+    ).toHaveValue("");
+    await expect(page.locator('[data-screen-label="로그인"] form')).toHaveCount(
+      0,
+    );
+    await expect(
+      page.getByRole("button", { name: "로그아웃", exact: true }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: test.info().outputPath("create-login-return.png"),
+      animations: "disabled",
+    });
+  });
+}
+
+for (const alreadySignedIn of [false, true]) {
+  test(`temporary member returns to registration after password change with existing session=${alreadySignedIn}`, async ({
+    page,
+  }) => {
+    await page.goto(alreadySignedIn ? "/auth?mode=login" : "/apps/new");
+    if (!alreadySignedIn)
+      await expect(page).toHaveURL("/auth?mode=login&return_to=%2Fapps%2Fnew");
+    const loginForm = page.locator('[data-screen-label="로그인"] form');
+    await loginForm
+      .getByLabel("로그인 아이디", { exact: true })
+      .fill("임시교사38");
+    await loginForm
+      .getByLabel("비밀번호", { exact: true })
+      .fill("Temporary Demo Password 38");
+    await loginForm
+      .getByRole("button", { name: "로그인", exact: true })
+      .click();
+    await expect(
+      page.locator('[data-screen-label="비밀번호 변경"] form'),
+    ).toBeVisible();
+    if (alreadySignedIn) await page.goto("/apps/new");
+    await expect(page).toHaveURL(
+      "/auth?mode=password-change&return_to=%2Fapps%2Fnew",
+    );
+    await expect(
+      page.getByRole("form", { name: "새 앱 등록 양식", exact: true }),
+    ).toHaveCount(0);
+    const changeForm = page.locator('[data-screen-label="비밀번호 변경"] form');
+    await changeForm
+      .getByLabel("새 비밀번호 (필수)", { exact: true })
+      .fill("New member phrase for 215!");
+    await changeForm
+      .getByLabel("새 비밀번호 확인 (필수)", { exact: true })
+      .fill("New member phrase for 215!");
+    await changeForm
+      .getByRole("button", { name: "비밀번호 변경", exact: true })
+      .click();
+    await expect(page).toHaveURL("/apps/new");
+    await expect(
+      page.getByRole("form", { name: "새 앱 등록 양식", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel("어플리케이션 이름", { exact: true }),
+    ).toHaveValue("");
+    await expect(changeForm).toHaveCount(0);
+  });
+}
 
 test("approved member registers, refreshes, and returns to the updated gallery", async ({
   page,

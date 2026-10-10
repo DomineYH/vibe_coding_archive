@@ -1488,7 +1488,7 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
           <div role="status" aria-live="polite">
             <EmptyState title="인증 상태를 복구해 주세요">
               <Link
-                to="/auth?mode=login"
+                to={`/auth?mode=login&return_to=${encodeURIComponent("/apps/new")}`}
                 className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold"
               >
                 인증 복구
@@ -1498,9 +1498,20 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
         </main>
       </>
     );
-  if (!auth.user) return <Navigate to="/auth?mode=login" replace />;
+  if (!auth.user)
+    return (
+      <Navigate
+        to={`/auth?mode=login&return_to=${encodeURIComponent("/apps/new")}`}
+        replace
+      />
+    );
   if (auth.user.mustChangePassword || auth.user.sessionKind !== "full")
-    return <Navigate to="/auth?mode=password-change" replace />;
+    return (
+      <Navigate
+        to={`/auth?mode=password-change&return_to=${encodeURIComponent("/apps/new")}`}
+        replace
+      />
+    );
   if (!member)
     return (
       <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">

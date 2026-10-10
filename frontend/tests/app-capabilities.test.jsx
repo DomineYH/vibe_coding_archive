@@ -946,11 +946,12 @@ it.each(
   },
 );
 
-async function submitAdminReturnLogin(
+async function submitReturnLogin(
   account = DEMO_ACCOUNTS[1],
   beforeSubmit = () => {},
+  path = "/auth?mode=login&return_to=%2Fadmin",
 ) {
-  await visit("/auth?mode=login&return_to=%2Fadmin", null);
+  await visit(path, null);
   const form = (
     await screen.findByLabelText("로그인 아이디", { exact: true })
   ).closest("form");
@@ -971,7 +972,7 @@ it.each([true, false])(
   "replaces member admin login with the verified gallery when admin capability is %s",
   async (adminEnabled) => {
     if (!adminEnabled) disable("admin_users_read");
-    await submitAdminReturnLogin();
+    await submitReturnLogin();
     await waitFor(() =>
       expect(
         document.querySelector('[data-screen-label="로그인"] form'),
@@ -992,7 +993,7 @@ it.each([true, false])(
 it.each(["metadata", "apps_read"])(
   "keeps member admin login on the safe error route after %s failure",
   async (failure) => {
-    await submitAdminReturnLogin(DEMO_ACCOUNTS[1], () => {
+    await submitReturnLogin(DEMO_ACCOUNTS[1], () => {
       if (failure === "metadata")
         metadata.mockRejectedValue(
           new ServiceError("NETWORK_ERROR", "메타 조회 실패"),
@@ -1014,7 +1015,7 @@ it.each(["metadata", "apps_read"])(
 
 it("does not navigate after the member observation changes during the admin return check", async () => {
   let release;
-  await submitAdminReturnLogin(DEMO_ACCOUNTS[1], () => {
+  await submitReturnLogin(DEMO_ACCOUNTS[1], () => {
     metadata.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -1031,7 +1032,7 @@ it("does not navigate after the member observation changes during the admin retu
 });
 
 it("replaces temporary member admin return with gallery after required password change", async () => {
-  await submitAdminReturnLogin(TEMPORARY_DEMO_ACCOUNTS[0]);
+  await submitReturnLogin(TEMPORARY_DEMO_ACCOUNTS[0]);
   await waitFor(() =>
     expect(router.state.location.search).toBe(
       "?mode=password-change&return_to=%2Fadmin",
@@ -1064,4 +1065,170 @@ it("replaces temporary member admin return with gallery after required password 
     ),
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "로그아웃" })).toBeInTheDocument();
+});
+
+it.each([
+  [DEMO_ACCOUNTS[1], false],
+  [DEMO_ACCOUNTS[0], false],
+  [TEMPORARY_DEMO_ACCOUNTS[0], false],
+  [TEMPORARY_DEMO_ACCOUNTS[0], true],
+])(
+  "replaces exact create return with the registration form for %j, signed in=%s",
+  async (account, signedIn) => {
+    const create = vi.spyOn(appsService, "create");
+    const get = vi.spyOn(appsService, "get");
+    await visit("/apps/new", signedIn ? account : null);
+    await waitFor(() =>
+      expect(router.state.location.search).toBe(
+        signedIn
+          ? "?mode=password-change&return_to=%2Fapps%2Fnew"
+          : "?mode=login&return_to=%2Fapps%2Fnew",
+      ),
+    );
+    expect(router.state.historyAction).toBe("REPLACE");
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+    if (!signedIn) {
+      const form = (
+        await screen.findByLabelText("로그인 아이디", { exact: true })
+      ).closest("form");
+      fireEvent.change(
+        within(form).getByLabelText("로그인 아이디", { exact: true }),
+        { target: { value: account.loginId } },
+      );
+      fireEvent.change(
+        within(form).getByLabelText("비밀번호", { exact: true }),
+        { target: { value: account.password } },
+      );
+      fireEvent.click(
+        within(form).getByRole("button", { name: "로그인", exact: true }),
+      );
+    }
+    if (account.mustChangePassword) {
+      await waitFor(() =>
+        expect(router.state.location.search).toBe(
+          "?mode=password-change&return_to=%2Fapps%2Fnew",
+        ),
+      );
+      expect(
+        screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+      ).not.toBeInTheDocument();
+      const form = (
+        await screen.findByLabelText("새 비밀번호 (필수)", { exact: true })
+      ).closest("form");
+      fireEvent.change(
+        within(form).getByLabelText("새 비밀번호 (필수)", { exact: true }),
+        { target: { value: "New member phrase for 215!" } },
+      );
+      fireEvent.change(
+        within(form).getByLabelText("새 비밀번호 확인 (필수)", { exact: true }),
+        { target: { value: "New member phrase for 215!" } },
+      );
+      fireEvent.click(
+        within(form).getByRole("button", {
+          name: "비밀번호 변경",
+          exact: true,
+        }),
+      );
+    }
+    await screen.findByRole("form", { name: "새 앱 등록 양식" });
+    expect(router.state.location.pathname).toBe("/apps/new");
+    expect(router.state.historyAction).toBe("REPLACE");
+    expect(
+      screen.getByLabelText("어플리케이션 이름", { exact: true }),
+    ).toHaveValue("");
+    expect(create).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
+  },
+);
+
+it("keeps the exact create destination in the explicit authentication recovery link", async () => {
+  await authService.login(DEMO_ACCOUNTS[1]);
+  const observed = await authService.getCurrentAuthState();
+  vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue({
+    ...observed,
+    status: "unresolved",
+    unresolvedTransitionId: "00000000-0000-4000-8000-000000000215",
+  });
+  await visit("/apps/new", null);
+  expect(
+    await screen.findByRole("link", { name: "인증 복구", exact: true }),
+  ).toHaveAttribute("href", "/auth?mode=login&return_to=%2Fapps%2Fnew");
+  expect(
+    screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+  ).not.toBeInTheDocument();
+});
+
+it.each(["metadata", "apps_read", "apps_create"])(
+  "keeps exact create login on a safe error after %s failure",
+  async (failure) => {
+    const create = vi.spyOn(appsService, "create");
+    const get = vi.spyOn(appsService, "get");
+    await submitReturnLogin(
+      DEMO_ACCOUNTS[1],
+      () => {
+        if (failure === "metadata")
+          metadata.mockRejectedValue(
+            new ServiceError("NETWORK_ERROR", "메타 조회 실패"),
+          );
+        else disable(failure);
+      },
+      "/auth?mode=login&return_to=%2Fapps%2Fnew",
+    );
+    await screen.findByText(
+      failure === "metadata"
+        ? "로그인하지 못했어요. 연결을 확인해 주세요."
+        : failure === "apps_read"
+          ? "아카이브를 현재 사용할 수 없어요."
+          : "앱 등록 기능을 현재 사용할 수 없어요.",
+    );
+    expect(router.state.location.search).toBe(
+      "?mode=login&return_to=%2Fapps%2Fnew",
+    );
+    expect(
+      screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+    ).not.toBeInTheDocument();
+    expect(create).not.toHaveBeenCalled();
+    expect(get).not.toHaveBeenCalled();
+  },
+);
+
+it("does not navigate to exact create after the observation changes during metadata loading", async () => {
+  let release;
+  await submitReturnLogin(
+    DEMO_ACCOUNTS[1],
+    () => {
+      metadata.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            release = resolve;
+          }),
+      );
+    },
+    "/auth?mode=login&return_to=%2Fapps%2Fnew",
+  );
+  await waitFor(() => expect(release).toBeTypeOf("function"));
+  await act(async () => window.dispatchEvent(new Event("blur")));
+  const locationKey = router.state.location.key;
+  await act(async () => release(meta));
+  expect(router.state.location.pathname).toBe("/auth");
+  expect(router.state.location.key).toBe(locationKey);
+  expect(
+    screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+  ).not.toBeInTheDocument();
+});
+
+it("refuses direct create for an unapproved ordinary member", async () => {
+  await authService.login(DEMO_ACCOUNTS[1]);
+  const observed = await authService.getCurrentAuthState();
+  vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue({
+    ...observed,
+    user: { ...observed.user, approved: false },
+  });
+  await visit("/apps/new", null);
+  await screen.findByText("승인된 회원만 앱을 등록할 수 있어요");
+  expect(
+    screen.queryByRole("form", { name: "새 앱 등록 양식" }),
+  ).not.toBeInTheDocument();
 });
