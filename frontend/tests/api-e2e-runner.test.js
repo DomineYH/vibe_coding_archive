@@ -2,7 +2,51 @@
 import { spawnSync } from "node:child_process";
 import { afterEach, vi } from "vitest";
 import { expect, it } from "vitest";
-import { nginxNodeTrust, selectNginxRuns } from "../scripts/test-api-e2e.mjs";
+import {
+  nginxNodeTrust,
+  selectNginxRuns,
+  selectNormalRuns,
+} from "../scripts/test-api-e2e.mjs";
+
+it("isolates reset-key rotation in default and explicitly selected normal runs", () => {
+  const recovery = "e2e-api/admin-password-reset-recovery.spec.js";
+  const reset = "e2e-api/admin-password-reset.spec.js";
+  for (const runs of [
+    selectNormalRuns(),
+    selectNormalRuns([recovery, reset]),
+    selectNormalRuns([reset, recovery]),
+  ]) {
+    expect(runs.find((run) => run.arguments_.includes(recovery))).toEqual({
+      arguments_: [recovery],
+      prepared: true,
+      faults: false,
+    });
+    expect(runs.find((run) => run.arguments_.includes(reset))).toBeDefined();
+    expect(
+      runs.filter((run) => run.arguments_.includes(recovery)),
+    ).toHaveLength(1);
+  }
+});
+
+it("preserves options and avoids an empty normal run when isolating reset recovery", () => {
+  const recovery = "e2e-api/admin-password-reset-recovery.spec.js";
+  const reset = "e2e-api/admin-password-reset.spec.js";
+  const options = [
+    "--grep",
+    "rotation|recent login",
+    "--config=/test/config.mjs",
+  ];
+  expect(selectNormalRuns([recovery, reset, ...options])).toEqual([
+    { arguments_: [reset, ...options], prepared: true, faults: false },
+    { arguments_: [recovery, ...options], prepared: true, faults: false },
+  ]);
+  expect(selectNormalRuns([recovery, ...options])).toEqual([
+    { arguments_: [recovery, ...options], prepared: true, faults: false },
+  ]);
+  expect(selectNormalRuns([reset, ...options], false)).toEqual([
+    { arguments_: [reset, ...options], prepared: false, faults: false },
+  ]);
+});
 
 it("classifies HTTP and HTTPS recovery/session cookies identically", async () => {
   const { authCookieKind } = await import("../e2e-api/helpers.js");

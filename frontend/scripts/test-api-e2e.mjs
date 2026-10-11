@@ -125,6 +125,45 @@ export function selectNginxRuns(args) {
   });
 }
 
+export function selectNormalRuns(
+  arguments_ = [
+    "e2e-api/auth-prepare.spec.js",
+    "e2e-api/auth-login.spec.js",
+    "e2e-api/auth-reauth.spec.js",
+    "e2e-api/auth-password.spec.js",
+    "e2e-api/auth-register.spec.js",
+    "e2e-api/admin-approval.spec.js",
+    "e2e-api/admin-password-reset.spec.js",
+    "e2e-api/admin-password-reset-recovery.spec.js",
+    "e2e-api/admin-user-delete.spec.js",
+    "e2e-api/admin-user-delete-recovery.spec.js",
+    "e2e-api/admin-apps.spec.js",
+    "e2e-api/admin-apps-recovery.spec.js",
+    "e2e-api/admin-apps-manage.spec.js",
+    "e2e-api/admin-apps-manage-recovery.spec.js",
+    "e2e-api/auth-lifecycle.spec.js",
+    "e2e-api/auth-access.spec.js",
+    "e2e-api/app-create.spec.js",
+    "e2e-api/app-edit.spec.js",
+    "e2e-api/app-delete.spec.js",
+  ],
+  prepared = true,
+) {
+  // Key rotation latches the server's reset gate until restart.
+  const recovery = arguments_.filter((arg) =>
+    arg.endsWith("admin-password-reset-recovery.spec.js"),
+  );
+  if (!recovery.length) return [{ arguments_, prepared, faults: false }];
+  const normal = arguments_.filter((arg) => !recovery.includes(arg));
+  const options = normal.filter((arg) => !/\.spec\.js$/.test(arg));
+  return [
+    ...(normal.some((arg) => /\.spec\.js$/.test(arg))
+      ? [{ arguments_: normal, prepared, faults: false }]
+      : []),
+    { arguments_: [...recovery, ...options], prepared, faults: false },
+  ];
+}
+
 async function run() {
   const functionalNginx = process.argv.includes("--nginx-functional");
   const nginx = process.argv.includes("--nginx") || functionalNginx;
@@ -208,15 +247,6 @@ async function run() {
 
   try {
     if (nginx) Object.assign(env, await prepareNginx(temporary));
-    const secret = randomBytes(32);
-    await writeFile(
-      env.PASSWORD_RESET_HMAC_PATH,
-      JSON.stringify({
-        secret_hex: secret.toString("hex"),
-        key_id: createHash("sha256").update(secret).digest("hex"),
-      }),
-      { mode: 0o600, flag: "wx" },
-    );
     const migration = spawnSync(
       "uv",
       ["run", "--frozen", "alembic", "upgrade", "head"],
@@ -298,27 +328,6 @@ raise SystemExit(status)`,
     // database. In-process restart/restore drills never reinsert fixtures.
     const template = path.join(temporary, "prepared.sqlite3");
     if (!emptyOnly) await copyFile(env.DATABASE_PATH, template);
-    const normal = [
-      "e2e-api/auth-prepare.spec.js",
-      "e2e-api/auth-login.spec.js",
-      "e2e-api/auth-reauth.spec.js",
-      "e2e-api/auth-password.spec.js",
-      "e2e-api/auth-register.spec.js",
-      "e2e-api/admin-approval.spec.js",
-      "e2e-api/admin-password-reset.spec.js",
-      "e2e-api/admin-password-reset-recovery.spec.js",
-      "e2e-api/admin-user-delete.spec.js",
-      "e2e-api/admin-user-delete-recovery.spec.js",
-      "e2e-api/admin-apps.spec.js",
-      "e2e-api/admin-apps-recovery.spec.js",
-      "e2e-api/admin-apps-manage.spec.js",
-      "e2e-api/admin-apps-manage-recovery.spec.js",
-      "e2e-api/auth-lifecycle.spec.js",
-      "e2e-api/auth-access.spec.js",
-      "e2e-api/app-create.spec.js",
-      "e2e-api/app-edit.spec.js",
-      "e2e-api/app-delete.spec.js",
-    ];
     const faults = [
       "e2e-api/auth-races.spec.js",
       "e2e-api/auth-races-orders.spec.js",
@@ -372,13 +381,7 @@ raise SystemExit(status)`,
               !selectedHealth.length &&
               !selectedCandidate.length &&
               !selectedSupport.length)
-              ? [
-                  {
-                    arguments_: selectedNormal,
-                    prepared: authPrepared,
-                    faults: false,
-                  },
-                ]
+              ? selectNormalRuns(selectedNormal, authPrepared)
               : []),
             ...supportRuns(selectedSupport, authPrepared),
             ...selectedCandidate.flatMap((file) =>
@@ -419,7 +422,7 @@ raise SystemExit(status)`,
               faults: false,
             },
             ...supportRuns(["e2e-api/auth-support.spec.js"]),
-            { arguments_: normal, prepared: true, faults: false },
+            ...selectNormalRuns(),
             ...["approved", "pending", "invalid", "revoked"].map(
               (candidate) => ({
                 arguments_: ["e2e-api/auth-candidate.spec.js"],
@@ -496,11 +499,21 @@ raise SystemExit(status)`,
             }
           : {}),
         DATABASE_PATH: path.join(runDirectory, "api.sqlite3"),
+        PASSWORD_RESET_HMAC_PATH: path.join(runDirectory, "reset-hmac.json"),
         AUTH_FAULT_CONTROL: path.join(runDirectory, "auth-control.sock"),
         AUTH_PROXY_CONTROL: path.join(runDirectory, "proxy-control.sock"),
         AUTH_PROCESS_CONTROL: path.join(runDirectory, "process-control.sock"),
         HEALTH_WORKER_LOCK_PATH: path.join(runDirectory, "health-worker.lock"),
       };
+      const secret = randomBytes(32);
+      await writeFile(
+        runEnv.PASSWORD_RESET_HMAC_PATH,
+        JSON.stringify({
+          secret_hex: secret.toString("hex"),
+          key_id: createHash("sha256").update(secret).digest("hex"),
+        }),
+        { mode: 0o600, flag: "wx" },
+      );
       if (nginx) {
         const values = JSON.parse(
           await readFile(env.API_E2E_NGINX_VALUES, "utf8"),
