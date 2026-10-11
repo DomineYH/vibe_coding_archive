@@ -30,7 +30,7 @@ const state: CurrentAuthState = {
   unresolvedTransitionId: null,
 };
 const body = {
-  item: { ...publicApps[0], is_public: false },
+  item: { ...publicApps[0], is_public: true },
   server_time: "2026-10-02T00:00:00Z",
 };
 const metadata = {
@@ -53,7 +53,7 @@ describe("protected detail captured observation", () => {
     const app = await appsService.get(publicApps[0].id, {
       readContext: captureAuthObservation(state, () => true),
     });
-    expect(app.isPublic).toBe(false);
+    expect(app.isPublic).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(1);
     const request = fetch.mock.calls[0][1];
     expect(request.headers.get("X-EduVibe-Auth-Revision")).toBe("8");
@@ -118,4 +118,14 @@ describe("protected detail captured observation", () => {
     ).rejects.toMatchObject({ name: "AbortError" });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+});
+
+it("rejects public detail without member context before any HTTP request", async () => {
+  const fetch = vi.fn().mockResolvedValue(response());
+  vi.stubGlobal("fetch", fetch);
+  await expect(appsService.get(publicApps[0].id)).rejects.toMatchObject({
+    code: "AUTH_REQUIRED",
+    httpStatus: 401,
+  });
+  expect(fetch).not.toHaveBeenCalled();
 });

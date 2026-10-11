@@ -1,6 +1,7 @@
 import { browserContextOptions } from "./helpers.js";
-import { expect, test } from "@playwright/test";
-import { login } from "./approval-helpers.js";
+import { expect } from "@playwright/test";
+import { loginMember, test } from "./detail-login-helpers.js";
+import { approvalHeaders, login } from "./approval-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
 
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
@@ -74,15 +75,24 @@ test("approved member creates a persisted public app and a private app", async (
   const guest = await anonymous.newPage();
   try {
     await guest.goto(publicUrl);
-    await expect(
-      guest.getByRole("heading", { name, exact: true }),
-    ).toBeVisible();
+    await expect(guest).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(new URL(publicUrl).pathname)}`,
+    );
+    await expect(guest.getByRole("heading", { name, exact: true })).toHaveCount(
+      0,
+    );
+    await expect(guest.getByLabel("로그인 아이디")).toBeVisible();
     await guest.goto("/");
     await expect(
       guest.getByRole("link", {
         name: `${name}, 승인 교사 24, 수학 상세 보기`,
         exact: true,
       }),
+    ).toBeVisible();
+    await loginMember(guest);
+    await guest.goto(publicUrl);
+    await expect(
+      guest.getByRole("heading", { name, exact: true }),
     ).toBeVisible();
     const privateName = "API 등록 비공개 수업 도구 149";
     const privateForm = await fillApp(page, privateName);
@@ -98,7 +108,11 @@ test("approved member creates a persisted public app and a private app", async (
     ).toBeVisible();
     const id = page.url().split("/").at(-1);
     const response = await guest.request.get(`/api/v1/apps/${id}`);
-    expect(response.status()).toBe(404);
+    expect(response.status()).toBe(401);
+    const memberResponse = await guest.request.get(`/api/v1/apps/${id}`, {
+      headers: await approvalHeaders(guest),
+    });
+    expect(memberResponse.status()).toBe(404);
     const listed = await (
       await guest.request.get("/api/v1/apps?q=API%20등록%20비공개")
     ).json();

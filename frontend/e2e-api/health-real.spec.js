@@ -15,13 +15,39 @@ test.describe("connection checks over real API, queue and worker", () => {
     "requires the owned controlled-I/O worker",
   );
 
-  test("anonymous inspection persists the observed result and reload creates no new job", async ({
+  test("anonymous health reads and checks do not create work", async ({
+    page,
+    owned,
+  }) => {
+    const appId = owned.apps.find((app) => app.public).id;
+    const before = query("SELECT count(*) FROM health_jobs");
+    for (const resource of [
+      `apps/${appId}/health`,
+      "health-checks/00000000-0000-4000-8000-000000000099",
+    ]) {
+      const response = await page.request.get(`/api/v1/${resource}`);
+      expect(response.status()).toBe(401);
+      expect((await response.json()).error.code).toBe("AUTH_REQUIRED");
+    }
+    const response = await page.request.post(
+      `/api/v1/apps/${appId}/health-checks`,
+      {
+        headers: { Origin: publicOrigin },
+      },
+    );
+    expect(response.status()).toBe(401);
+    expect((await response.json()).error.code).toBe("AUTH_REQUIRED");
+    expect(query("SELECT count(*) FROM health_jobs")).toEqual(before);
+  });
+
+  test("member inspection persists the observed result and reload creates no new job", async ({
     page,
     context,
     owned,
   }) => {
     await blockExternalRequests(context);
     const appId = owned.apps.find((app) => app.public).id;
+    await signIn(page, owned.member);
     await page.goto(`/apps/${appId}`);
     const panel = page.locator("aside section").filter({
       has: page.getByRole("heading", { name: "연결 상태", exact: true }),
@@ -263,6 +289,7 @@ test.describe("connection checks over real API, queue and worker", () => {
   }) => {
     await blockExternalRequests(context);
     const appId = owned.apps.find((app) => app.public).id;
+    await signIn(page, owned.member);
     await page.goto(`/apps/${appId}`);
     const accepted = page.waitForResponse(
       (r) =>

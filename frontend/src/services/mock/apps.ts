@@ -8,6 +8,10 @@ import {
 import type { components } from "../../contracts/api";
 import { ServiceError } from "../service-error";
 import {
+  assertAuthObservation,
+  type ProtectedReadContext,
+} from "../auth-state";
+import {
   appPatchToWire,
   appInputToWire,
   caseFold,
@@ -201,6 +205,47 @@ async function beginRead(signal?: AbortSignal) {
   await Promise.resolve();
   assertCurrentGeneration(state.generation, signal);
   return state;
+}
+
+export function requireMemberRead(context?: ProtectedReadContext) {
+  if (!context)
+    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+      httpStatus: 401,
+    });
+  assertAuthObservation(context);
+  const state = getMockSnapshot();
+  const { user, flow } = context.state;
+  if (
+    flow.flowId !== state.auth_flow.flow_id ||
+    flow.revision !== state.auth_flow.revision ||
+    flow.sessionGeneration !== state.auth_flow.session_generation ||
+    context.state.observationGeneration !== state.observation_generation
+  )
+    throw new DOMException("Authentication context changed", "AbortError");
+  const account = getMockAccounts(state).find(
+    (item) => item.id === state.principal_id,
+  );
+  const session = state.principal_session;
+  if (
+    context.state.status !== "ready" ||
+    !user?.approved ||
+    user.sessionKind !== "full" ||
+    user.mustChangePassword ||
+    user.id !== account?.id ||
+    !account?.approved ||
+    account.mustChangePassword ||
+    !state.auth_flow.recovery_ready ||
+    !state.auth_flow.session_cookie_present ||
+    state.auth_flow.pending_transition ||
+    state.auth_flow.unresolved_transition_id ||
+    Date.parse(state.mock_now) >= Date.parse(state.auth_flow.expires_at) ||
+    session?.session_kind !== "full" ||
+    Date.parse(state.mock_now) >= Date.parse(session.expires_at)
+  )
+    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+      httpStatus: 401,
+    });
+  return { state, account };
 }
 
 function currentMember() {
@@ -445,44 +490,28 @@ export const appsService: AppsService = {
     return mapAppPage(page);
   },
 
-  async get(id, { signal } = {}) {
+  async get(id, { signal, readContext } = {}) {
+    requireMemberRead(readContext);
     const state = await beginRead(signal);
     if (state.scenario === "detail_delayed") {
       await new Promise((resolve) => setTimeout(resolve, readDelayMs));
       assertCurrentGeneration(state.generation, signal);
     }
+    const { account } = requireMemberRead(readContext);
     const app = [...scenarioApps(state), ...state.private_apps].find(
       (item) => item.id === id,
     );
-    const account = getMockAccounts(state).find(
-      (item) => item.id === state.principal_id,
-    );
-    const session = state.principal_session;
-    const authReady =
-      state.auth_flow.recovery_ready &&
-      Date.parse(state.mock_now) < Date.parse(state.auth_flow.expires_at) &&
-      state.auth_flow.session_cookie_present &&
-      !state.auth_flow.pending_transition &&
-      !state.auth_flow.unresolved_transition_id;
-    const fullSession =
-      authReady &&
-      session?.session_kind === "full" &&
-      Date.parse(state.mock_now) < Date.parse(session.expires_at);
-    const canReadPrivate =
-      app?.is_public ||
-      (fullSession &&
-        account !== undefined &&
-        (account.role === "admin" || app?.owner.id === account.id));
-    if (!app || !canReadPrivate)
+    if (
+      !app ||
+      (!app.is_public &&
+        account.role !== "admin" &&
+        app.owner.id !== account.id)
+    )
       throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
         outcome: "rejected",
         httpStatus: 404,
       });
-    const result = mapAppDetailResponse({
-      item: app,
-      server_time: fixedTime,
-    }).item;
-    return result;
+    return mapAppDetailResponse({ item: app, server_time: fixedTime }).item;
   },
 
   async issueCreateOperation(value) {

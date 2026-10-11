@@ -13,6 +13,8 @@ from sqlalchemy import text, update
 from sqlalchemy.exc import IntegrityError
 
 from app.models import App
+from tests.auth_client import signed_in
+from tests.support import populate_auth_members
 
 ROOT = Path(__file__).resolve().parents[3]
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
@@ -23,19 +25,31 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     tmp_path: Path, make_test_app, seed_public_and_private_apps
 ):
     database_path = tmp_path / "apps.sqlite3"
-    app = make_test_app(database_path)
+    app = make_test_app(database_path, auth_testing=True)
     seed_public_and_private_apps(database_path)
 
+    populate_auth_members(database_path)
     with TestClient(app) as client:
+        browser = signed_in(client, "hangul")
+        context = {
+            **browser.session_headers(),
+            "X-EduVibe-Auth-Revision": browser.revision,
+        }
         first_page = client.get("/api/v1/apps?limit=1&offset=0")
         second_page = client.get("/api/v1/apps?limit=1&offset=1")
         maximum_page = client.get("/api/v1/apps?limit=100")
         past_end = client.get("/api/v1/apps?limit=1&offset=10")
         oversized_offset = client.get("/api/v1/apps?offset=9223372036854775808")
-        detail = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000002")
-        private_detail = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000003")
-        missing_detail = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000099")
-        invalid_id_detail = client.get("/api/v1/apps/not-a-uuid")
+        detail = client.get(
+            "/api/v1/apps/00000000-0000-4000-8000-000000000002", headers=context
+        )
+        private_detail = client.get(
+            "/api/v1/apps/00000000-0000-4000-8000-000000000003", headers=context
+        )
+        missing_detail = client.get(
+            "/api/v1/apps/00000000-0000-4000-8000-000000000099", headers=context
+        )
+        invalid_id_detail = client.get("/api/v1/apps/not-a-uuid", headers=context)
         forged_identity_detail = client.get(
             "/api/v1/apps/00000000-0000-4000-8000-000000000003",
             headers={
@@ -155,8 +169,8 @@ def test_public_list_and_detail_use_contract_dtos_and_hide_private_fields(
     assert private_detail.json() == missing_detail.json()
     assert invalid_id_detail.status_code == missing_detail.status_code == 404
     assert invalid_id_detail.json() == missing_detail.json()
-    assert forged_identity_detail.status_code == missing_detail.status_code == 404
-    assert forged_identity_detail.json() == missing_detail.json()
+    assert forged_identity_detail.status_code == 401
+    assert forged_identity_detail.json()["error"]["code"] == "AUTH_REQUIRED"
     assert (
         too_large.status_code
         == repeated_limit.status_code
@@ -515,6 +529,28 @@ def test_public_apps_fastapi_declarations_match_openapi(
         actual_detail_parameters["id"]["in"] == expected_detail_parameters["id"]["in"]
     )
     assert actual_detail_parameters["id"]["required"] is True
+    for name in (
+        "X-EduVibe-Flow-Id",
+        "X-EduVibe-Auth-Revision",
+        "X-EduVibe-Session-Generation",
+    ):
+        assert actual_detail_parameters[name]["required"] is True
+        assert expected_detail_parameters[name]["required"] is True
+    assert actual["paths"]["/api/v1/apps/{id}"]["get"]["security"] == [
+        {"SessionCookie": []}
+    ]
+    for path in ("/apps/{id}/health", "/health-checks/{id}"):
+        operation = actual["paths"]["/api/v1" + path]["get"]
+        assert (
+            operation["security"]
+            == source["paths"][path]["get"]["security"]
+            == [{"SessionCookie": []}]
+        )
+        assert all(
+            parameter["required"]
+            for parameter in operation["parameters"]
+            if parameter["in"] == "header"
+        )
     assert (
         actual_detail_parameters["id"]["schema"]["type"]
         == expected_detail_parameters["id"]["schema"]["type"]
@@ -553,9 +589,15 @@ def test_public_apps_fastapi_declarations_match_openapi(
 def test_public_app_errors_use_safe_contract_envelopes(
     tmp_path: Path, make_test_app, seed_public_and_private_apps
 ):
-    app = make_test_app(tmp_path / "errors.sqlite3")
+    app = make_test_app(tmp_path / "errors.sqlite3", auth_testing=True)
     seed_public_and_private_apps(tmp_path / "errors.sqlite3")
+    populate_auth_members(tmp_path / "errors.sqlite3")
     with TestClient(app) as client:
+        browser = signed_in(client, "hangul")
+        context = {
+            **browser.session_headers(),
+            "X-EduVibe-Auth-Revision": browser.revision,
+        }
         with app.state.engine.begin() as connection:
             connection.execute(
                 text("UPDATE apps SET name = 'public-error-sentinel' WHERE id = :id"),
@@ -563,7 +605,9 @@ def test_public_app_errors_use_safe_contract_envelopes(
             )
             connection.execute(text("DROP TABLE apps"))
         list_error = client.get("/api/v1/apps")
-        detail_error = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000099")
+        detail_error = client.get(
+            "/api/v1/apps/00000000-0000-4000-8000-000000000099", headers=context
+        )
 
     assert list_error.status_code == detail_error.status_code == 503
     assert set(list_error.json()) == set(detail_error.json()) == {"error"}
@@ -698,13 +742,23 @@ def test_public_detail_uuid_format_and_query_precedence(
     tmp_path: Path, make_test_app, seed_public_and_private_apps
 ):
     database_path = tmp_path / "uuid.sqlite3"
-    app = make_test_app(database_path)
+    app = make_test_app(database_path, auth_testing=True)
     seed_public_and_private_apps(database_path)
     previous_id = "00000000-0000-4000-8000-000000000001"
 
+    populate_auth_members(database_path)
     with TestClient(app) as client:
-        missing = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000099")
-        private = client.get("/api/v1/apps/00000000-0000-4000-8000-000000000003")
+        browser = signed_in(client, "hangul")
+        context = {
+            **browser.session_headers(),
+            "X-EduVibe-Auth-Revision": browser.revision,
+        }
+        missing = client.get(
+            "/api/v1/apps/00000000-0000-4000-8000-000000000099", headers=context
+        )
+        private = client.get(
+            "/api/v1/apps/00000000-0000-4000-8000-000000000003", headers=context
+        )
         assert missing.status_code == private.status_code == 404
         assert missing.json() == private.json()
         assert missing.json()["error"]["code"] == "NOT_FOUND"
@@ -727,9 +781,11 @@ def test_public_detail_uuid_format_and_query_precedence(
                     )
             previous_id = stored_id
             path = f"/api/v1/apps/{quote(app_id, safe='')}"
-            response = client.get(path)
+            response = client.get(path, headers=context)
             if app_id in UUID_CASES["valid"]:
-                lowercase = client.get(f"/api/v1/apps/{app_id.lower()}")
+                lowercase = client.get(
+                    f"/api/v1/apps/{app_id.lower()}", headers=context
+                )
                 assert response.status_code == lowercase.status_code == 200, app_id
                 assert response.json()["item"] == lowercase.json()["item"]
                 assert response.json()["item"]["id"] == app_id.lower()

@@ -1,7 +1,8 @@
 import { browserContextOptions } from "./helpers.js";
 import { publicOrigin } from "./helpers.js";
-import { expect, test } from "@playwright/test";
-import { login as submitLogin } from "./approval-helpers.js";
+import { expect } from "@playwright/test";
+import { loginMember, test } from "./detail-login-helpers.js";
+import { approvalHeaders, login as submitLogin } from "./approval-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
 
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
@@ -70,7 +71,7 @@ async function save(page, form, name) {
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 }
 
-test("owner persists edits and toggles public private public with current owner and guest reads", async ({
+test("owner persists edits and toggles public private public with current owner and other member reads", async ({
   page,
   browser,
 }) => {
@@ -102,6 +103,15 @@ test("owner persists edits and toggles public private public with current owner 
   const guest = await guestContext.newPage();
   try {
     await guest.goto(`/apps/${id}`);
+    await expect(guest).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}`)}`,
+    );
+    await expect(guest.getByRole("heading", { name, exact: true })).toHaveCount(
+      0,
+    );
+    await expect(guest.getByLabel("로그인 아이디")).toBeVisible();
+    await loginMember(guest);
+    await guest.goto(`/apps/${id}`);
     await expect(
       guest.getByRole("heading", { name, exact: true }),
     ).toBeVisible();
@@ -112,7 +122,14 @@ test("owner persists edits and toggles public private public with current owner 
     await expect(
       page.getByRole("heading", { name, exact: true }),
     ).toBeVisible();
-    expect((await guest.request.get(`/api/v1/apps/${id}`)).status()).toBe(404);
+    expect((await guest.request.get(`/api/v1/apps/${id}`)).status()).toBe(401);
+    expect(
+      (
+        await guest.request.get(`/api/v1/apps/${id}`, {
+          headers: await approvalHeaders(guest),
+        })
+      ).status(),
+    ).toBe(404);
     const listed = await (
       await guest.request.get(`/api/v1/apps?q=${encodeURIComponent(name)}`)
     ).json();
@@ -127,9 +144,10 @@ test("owner persists edits and toggles public private public with current owner 
       history.pushState({}, "", `/apps/${appId}`);
       window.dispatchEvent(new PopStateEvent("popstate"));
     }, id);
-    await expect(
-      page.getByText("아카이브 앱을 찾을 수 없어요", { exact: true }),
-    ).toBeVisible();
+    await expect(page).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}`)}`,
+    );
+    await expect(page.getByLabel("로그인 아이디")).toBeVisible();
     await expect(page.getByRole("heading", { name, exact: true })).toHaveCount(
       0,
     );

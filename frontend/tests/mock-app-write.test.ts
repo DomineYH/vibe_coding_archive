@@ -1,3 +1,4 @@
+import { captureAuthObservation } from "../src/services/auth-state";
 import { beforeEach, describe, expect, it } from "vitest";
 import { authService } from "../src/services/mock/auth";
 import { appsService } from "../src/services/mock/apps";
@@ -202,7 +203,9 @@ describe("mock app updates", () => {
     const appId = "00000000-0000-4000-8000-000000000013";
     const patch = { description: "역사수업연구가의 수정" };
     await authService.login({ loginId: "과학덕후박샘", password: "1234" });
-    expect(await appsService.get(appId)).toMatchObject({
+    expect(
+      await appsService.get(appId, { readContext: await memberContext() }),
+    ).toMatchObject({
       owner: "역사수업연구가",
       ownerId: "00000000-0000-4000-8000-000000000105",
     });
@@ -224,7 +227,9 @@ describe("mock app updates", () => {
     );
     const deletion = await appsService.issueDeleteOperation(appId, 2);
     await appsService.delete(appId, 2, deletion.key);
-    await expect(appsService.get(appId)).rejects.toMatchObject({
+    await expect(
+      appsService.get(appId, { readContext: await memberContext() }),
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
@@ -410,7 +415,9 @@ describe("mock app updates", () => {
       state: "rejected",
       rejectionCode: "VERSION_CONFLICT",
     });
-    await expect(appsService.get(created.id)).resolves.toMatchObject({
+    await expect(
+      appsService.get(created.id, { readContext: await memberContext() }),
+    ).resolves.toMatchObject({
       name: "첫 번째 수정",
       version: 2,
     });
@@ -441,7 +448,9 @@ describe("mock app updates", () => {
       code: "AUTH_STATE_CHANGED",
       outcome: "rejected",
     });
-    await expect(appsService.get(created.id)).resolves.toMatchObject({
+    await expect(
+      appsService.get(created.id, { readContext: await memberContext() }),
+    ).resolves.toMatchObject({
       name: input.name,
       version: 1,
     });
@@ -474,7 +483,9 @@ describe("mock app updates", () => {
     ).toBe(true);
     await authService.logout();
     await authService.login({ loginId: "과학덕후박샘", password: "1234" });
-    await expect(appsService.get(created.id)).rejects.toMatchObject({
+    await expect(
+      appsService.get(created.id, { readContext: await memberContext() }),
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
     expect((await appsService.list()).items).not.toContainEqual(
@@ -503,7 +514,9 @@ describe("mock app updates", () => {
     await expect(
       appsService.getUpdateOperation(operation.key),
     ).resolves.toMatchObject({ state: "unresolved" });
-    expect(await appsService.get(created.id)).toMatchObject({ version: 1 });
+    expect(
+      await appsService.get(created.id, { readContext: await memberContext() }),
+    ).toMatchObject({ version: 1 });
     setMockScenario("original");
     await expect(
       appsService.update(created.id, patch, created.version, operation.key),
@@ -576,7 +589,9 @@ describe("mock app deletion", () => {
     const deletedSnapshot = getMockSnapshot();
     await appsService.delete(appId, 1, operation.key);
     expect(getMockSnapshot().generation).toBe(deletedSnapshot.generation);
-    await expect(appsService.get(appId)).rejects.toMatchObject({
+    await expect(
+      appsService.get(appId, { readContext: await memberContext() }),
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
       outcome: "rejected",
     });
@@ -601,7 +616,9 @@ describe("mock app deletion", () => {
     const ownerBefore = before.items.find(
       (user) => user.id === "00000000-0000-4000-8000-000000000101",
     );
-    const app = await appsService.get(appId);
+    const app = await appsService.get(appId, {
+      readContext: await memberContext(),
+    });
     const update = await appsService.issueUpdateOperation(
       appId,
       { isPublic: true },
@@ -743,3 +760,10 @@ describe("mock app deletion", () => {
     );
   });
 });
+
+async function memberContext() {
+  return captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
+}

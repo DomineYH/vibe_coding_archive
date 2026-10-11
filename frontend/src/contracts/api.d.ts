@@ -491,7 +491,7 @@ export interface paths {
         };
         /**
          * Read the current connection result and latest check job
-         * @description Requires current permission to read the app. This read never starts a new external check. Administrator-only measurement fields are omitted for other viewers.
+         * @description Requires an approved full member without a required password change and current permission to read the app. Query validation precedes proof validation; missing member proof returns 401 before identifier lookup. This read never starts a new external check. Administrator-only measurement fields are omitted for other viewers.
          */
         get: operations["getAppHealth"];
         put?: never;
@@ -513,7 +513,7 @@ export interface paths {
         put?: never;
         /**
          * Request an individual connection check
-         * @description Requires a current session and CSRF proof. A public app may be checked from an anonymous session; a private app requires current read access. This endpoint accepts no arbitrary URL. New and active-reused jobs use 202; completed-result reuse uses 200. No browser request is sent to the external site.
+         * @description Requires an approved full member without a required password change, current read access and Origin/CSRF proof. Anonymous requests return 401 before lookup or admission; malformed/stale/pending proof errors remain. This endpoint accepts no arbitrary URL. New and active-reused jobs use 202; completed-result reuse uses 200. No browser request is sent to the external site.
          */
         post: operations["requestAppHealthCheck"];
         delete?: never;
@@ -531,7 +531,7 @@ export interface paths {
         };
         /**
          * Read one check job and its current app result
-         * @description Requires current permission to read the associated app. This read never starts a new external check. The requested job and latest app result remain separate values.
+         * @description Requires an approved full member without a required password change and current permission to read the associated app. Query validation precedes proof validation; missing member proof returns 401 before job lookup. This read never starts a new external check. The requested job and latest app result remain separate values.
          */
         get: operations["getHealthCheckJob"];
         put?: never;
@@ -2398,29 +2398,29 @@ export interface operations {
     getApp: {
         parameters: {
             query?: never;
-            header?: {
-                "X-EduVibe-Flow-Id"?: string;
-                "X-EduVibe-Auth-Revision"?: string;
-                "X-EduVibe-Session-Generation"?: string;
+            header: {
+                "X-EduVibe-Flow-Id": string;
+                "X-EduVibe-Auth-Revision": string;
+                "X-EduVibe-Session-Generation": string;
             };
             path: {
-                /** @description Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant 8/9/a/b. Hex is case-insensitive and normalized to lowercase. Other formats return 404 NOT_FOUND; query errors take precedence. */
+                /** @description Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant 8/9/a/b. Hex is case-insensitive and normalized to lowercase. Query errors take precedence, then member authentication; other formats return 404 NOT_FOUND for authenticated members. */
                 id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Public detail, or private detail authorized for the current approved full owner or full administrator. Headerless requests ignore cookies. Supplied context is all-or-none and canonical; stale or pending context is rejected without replay. Missing and unauthorized detail share 404. Member-bound responses include verified context and are never cached. */
+            /** @description Requires an approved full member without a required password change. Public detail is available to members; private detail to its owner or administrator. Missing member proof returns 401 before target lookup. Supplied context is all-or-none and canonical; stale or pending context is rejected without replay. Missing and unauthorized detail share 404. Member-bound responses include verified context and are never cached. */
             200: {
                 headers: {
-                    /** @description Present on member-bound responses only. */
+                    /** @description Present on every successful response. */
                     "Cache-Control"?: "private, no-store";
-                    /** @description Verified flow ID, present on member-bound responses only. */
+                    /** @description Verified flow ID, present on every successful response. */
                     "X-EduVibe-Flow-Id"?: string;
-                    /** @description Verified revision, present on member-bound responses only. */
+                    /** @description Verified revision, present on every successful response. */
                     "X-EduVibe-Auth-Revision"?: string;
-                    /** @description Verified generation, present on member-bound responses only. */
+                    /** @description Verified generation, present on every successful response. */
                     "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
@@ -2526,10 +2526,10 @@ export interface operations {
     getAppHealth: {
         parameters: {
             query?: never;
-            header?: {
-                "X-EduVibe-Flow-Id"?: string;
-                "X-EduVibe-Auth-Revision"?: string;
-                "X-EduVibe-Session-Generation"?: string;
+            header: {
+                "X-EduVibe-Flow-Id": string;
+                "X-EduVibe-Auth-Revision": string;
+                "X-EduVibe-Session-Generation": string;
             };
             path: {
                 id: string;
@@ -2541,6 +2541,10 @@ export interface operations {
             /** @description Current result, freshness, and latest job. */
             200: {
                 headers: {
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -2603,10 +2607,10 @@ export interface operations {
     getHealthCheckJob: {
         parameters: {
             query?: never;
-            header?: {
-                "X-EduVibe-Flow-Id"?: string;
-                "X-EduVibe-Auth-Revision"?: string;
-                "X-EduVibe-Session-Generation"?: string;
+            header: {
+                "X-EduVibe-Flow-Id": string;
+                "X-EduVibe-Auth-Revision": string;
+                "X-EduVibe-Session-Generation": string;
             };
             path: {
                 id: string;
@@ -2618,6 +2622,10 @@ export interface operations {
             /** @description The requested job and current health snapshot. */
             200: {
                 headers: {
+                    "Cache-Control"?: "private, no-store";
+                    "X-EduVibe-Flow-Id"?: string;
+                    "X-EduVibe-Auth-Revision"?: string;
+                    "X-EduVibe-Session-Generation"?: string;
                     [name: string]: unknown;
                 };
                 content: {

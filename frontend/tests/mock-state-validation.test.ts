@@ -1,3 +1,4 @@
+import { captureAuthObservation } from "../src/services/auth-state";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { appsService } from "../src/services/mock/apps";
 import { authService } from "../src/services/mock/auth";
@@ -283,7 +284,11 @@ describe("persisted mock state validation", () => {
       );
     }
     await authService.login({ loginId: "admin", password: "admin123" });
-    expect(await appsService.get(String(privateApp.id))).toMatchObject({
+    expect(
+      await appsService.get(String(privateApp.id), {
+        readContext: await memberContext(),
+      }),
+    ).toMatchObject({
       ownerId: accounts[0].id,
       owner: "과학덕후박샘",
       isPublic: false,
@@ -588,3 +593,10 @@ describe("persisted health identifiers", () => {
     );
   }
 });
+
+async function memberContext() {
+  return captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
+}

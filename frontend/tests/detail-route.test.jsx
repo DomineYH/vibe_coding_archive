@@ -1,3 +1,4 @@
+import { authService } from "../src/services/mock/auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -51,13 +52,14 @@ const meta = {
 let queryClient;
 let fetch;
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
+  await authService.login({ loginId: "교사김코딩", password: "1234" });
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  fetch = vi.fn(async (url) => {
+  fetch = vi.fn(async (url, options) => {
     const body =
       url === "/api/v1/meta"
         ? meta
@@ -66,7 +68,11 @@ beforeEach(() => {
             server_time: serverTime,
           };
     return new Response(JSON.stringify(body), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "private, no-store",
+        ...Object.fromEntries(options.headers),
+      },
     });
   });
   vi.stubGlobal("fetch", fetch);
@@ -130,4 +136,14 @@ describe("detail route UUID boundaries", () => {
       "/api/v1/apps/not-a-uuid",
     );
   });
+});
+
+it("conceals anonymous detail and makes no detail or health request before login", async () => {
+  await authService.logout();
+  visit(publicApps[0].id);
+  await screen.findByLabelText("로그인 아이디", { exact: true });
+  expect(
+    screen.queryByRole("link", { name: "앱 열기" }),
+  ).not.toBeInTheDocument();
+  expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
 });

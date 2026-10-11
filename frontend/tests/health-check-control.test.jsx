@@ -5,17 +5,23 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { HealthCheckControl } from "../src/features/admin/health-check-control";
 import { authService } from "../src/services/mock/auth";
 import { healthService } from "../src/services/mock/health";
+import { captureAuthObservation } from "../src/services/auth-state";
 import { resetMockState, setMockScenario } from "../src/services/mock/state";
 
 const operationalNote =
   "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
 
 let client;
+let readContext;
 const app = { id: "00000000-0000-4000-8000-000000000001", urlVersion: 1 };
 beforeEach(async () => {
   localStorage.clear();
   resetMockState();
   await authService.login({ loginId: "admin", password: "admin123" });
+  readContext = captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 afterEach(() => {
@@ -34,6 +40,7 @@ function mount(canRequest) {
       </p>
       <HealthCheckControl
         app={app}
+        readContext={readContext}
         canRequest={allowed}
         scopeKey="admin"
         descriptionId={descriptionId}
@@ -46,7 +53,8 @@ it("disables admission when the health capability is unavailable", async () => {
   mount(false);
   expect(screen.getByRole("button", { name: "즉시 재검사" })).toBeDisabled();
   expect(
-    (await healthService.getAppHealth(app.id)).health.latestJob,
+    (await healthService.getAppHealth(app.id, { readContext })).health
+      .latestJob,
   ).toBeNull();
 });
 it("runs a row check and reports its completed job inline", async () => {
@@ -56,9 +64,10 @@ it("runs a row check and reports its completed job inline", async () => {
   await waitFor(() =>
     expect(screen.getByRole("status")).toHaveTextContent("검사 완료"),
   );
-  expect((await healthService.getAppHealth(app.id)).health.result.state).toBe(
-    "healthy",
-  );
+  expect(
+    (await healthService.getAppHealth(app.id, { readContext })).health.result
+      .state,
+  ).toBe("healthy");
   expect(screen.getByRole("button", { name: "즉시 재검사" })).toBeEnabled();
 });
 
@@ -107,7 +116,7 @@ it.each([
       expect(screen.getByRole("status")).toHaveTextContent("검사 완료"),
     );
     expect(
-      (await healthService.getAppHealth(app.id)).health.result,
+      (await healthService.getAppHealth(app.id, { readContext })).health.result,
     ).toMatchObject({ state, error_kind: kind, error_stage: "dns" });
     expect(invalidate).toHaveBeenCalledWith({
       queryKey: [__DATA_MODE__, "admin", "apps", "admin"],

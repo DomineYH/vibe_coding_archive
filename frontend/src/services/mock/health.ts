@@ -9,7 +9,11 @@ import type { components } from "../../contracts/api";
 import { ServiceError } from "../service-error";
 import type { HealthService } from "../health-service";
 import { authService } from "./auth";
-import { appsService } from "./apps";
+import { appsService, requireMemberRead } from "./apps";
+import {
+  captureAuthObservation,
+  type ProtectedReadContext,
+} from "../auth-state";
 import {
   assertCurrentGeneration,
   getMockSnapshot,
@@ -145,9 +149,13 @@ function rawJob(id: string) {
   return app ? { state, app, job: app.health.latest_job! } : null;
 }
 
-async function readableApp(appId: string, signal?: AbortSignal) {
+async function readableApp(
+  appId: string,
+  signal?: AbortSignal,
+  readContext?: ProtectedReadContext,
+) {
   const observed = getMockSnapshot();
-  await appsService.get(appId, { signal });
+  await appsService.get(appId, { signal, readContext });
   assertCurrentGeneration(observed.generation, signal);
   const state = getMockSnapshot();
   const app = rawApp(appId, state);
@@ -175,16 +183,6 @@ function healthView(
         }
       : app.health.result,
   };
-}
-
-async function isAdmin() {
-  const { user } = await authService.getCurrentAuthState();
-  return Boolean(
-    user?.approved &&
-    user.role === "admin" &&
-    user.sessionKind === "full" &&
-    !user.mustChangePassword,
-  );
 }
 
 async function requireAdmin() {
@@ -320,13 +318,13 @@ function checkCapability(state: ReturnType<typeof getMockSnapshot>) {
 }
 
 export const healthService: HealthService = {
-  async getAppHealth(appId, { signal } = {}) {
-    const { state, app } = await readableApp(appId, signal);
-    return snapshot(app, state, await isAdmin());
+  async getAppHealth(appId, { signal, readContext } = {}) {
+    const { state, app } = await readableApp(appId, signal, readContext);
+    const { account } = requireMemberRead(readContext);
+    return snapshot(app, state, account.role === "admin");
   },
 
   async requestCheck(appId) {
-    const { app } = await readableApp(appId);
     const auth = await authService.getCurrentAuthState();
     if (auth.status !== "ready")
       throw new ServiceError(
@@ -334,6 +332,10 @@ export const healthService: HealthService = {
         "인증 상태를 확인한 뒤 다시 시도해 주세요.",
         { httpStatus: 409, outcome: "rejected" },
       );
+    if (!auth.user)
+      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+        httpStatus: 401,
+      });
     if (
       auth.user &&
       (!auth.user.approved ||
@@ -348,10 +350,12 @@ export const healthService: HealthService = {
         { httpStatus: 403, outcome: "rejected" },
       );
 
+    const readContext = captureAuthObservation(auth, () => true);
+    const { app } = await readableApp(appId, undefined, readContext);
     const state = getMockSnapshot();
     checkCapability(state);
     const now = state.mock_now;
-    const actor = auth.user?.id ?? auth.flow?.flowId ?? "anonymous";
+    const actor = auth.user.id;
     const { windows, recent, timestamp } = recentRequests(actor, now);
     if (state.scenario === "health_actor_rate_limit" || recent.length >= 10)
       throwRateLimit(
@@ -444,11 +448,12 @@ export const healthService: HealthService = {
     );
   },
 
-  async getJob(jobId, { signal } = {}) {
+  async getJob(jobId, { signal, readContext } = {}) {
+    requireMemberRead(readContext);
     const found = rawJob(jobId);
     if (!found) throw notFound(true);
     const observedGeneration = found.state.generation;
-    await readableApp(found.app.id, signal);
+    await readableApp(found.app.id, signal, readContext);
     if (found.state.scenario === "health_job_query_failure")
       throw new ServiceError(
         "SERVICE_UNAVAILABLE",
@@ -528,12 +533,13 @@ export const healthService: HealthService = {
     }
 
     if (!app || !job) throw notFound(true);
+    const { account } = requireMemberRead(readContext);
     return mapHealthJobResponse({
       app_id: app.id,
       url_version: app.url_version,
       server_time: state.mock_now,
       job,
-      health: healthView(app, state, await isAdmin()),
+      health: healthView(app, state, account.role === "admin"),
     });
   },
 

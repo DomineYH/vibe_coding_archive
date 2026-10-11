@@ -1,3 +1,4 @@
+import { memberReadContext } from "./member-read-fixture";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/api/apps";
 import { authService } from "../src/services/api/auth";
@@ -10,7 +11,8 @@ afterEach(() => {
 const requests = {
   "GET /meta": () => appsService.getMeta(),
   "GET /apps": () => appsService.list(),
-  "GET /apps/{id}": () => appsService.get("missing"),
+  "GET /apps/{id}": () =>
+    appsService.get("missing", { readContext: memberReadContext }),
 };
 
 const allowedErrors = [
@@ -106,7 +108,9 @@ describe("API service errors", () => {
     );
 
     for (const id of ["private", "missing"]) {
-      await expect(appsService.get(id)).rejects.toMatchObject({
+      await expect(
+        appsService.get(id, { readContext: memberReadContext }),
+      ).rejects.toMatchObject({
         code: "NOT_FOUND",
         httpStatus: 404,
         message: "아카이브 앱을 찾을 수 없어요.",
@@ -117,7 +121,9 @@ describe("API service errors", () => {
   it("keeps detail transport and successful-response contract errors distinct", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
 
-    await expect(appsService.get("offline")).rejects.toMatchObject({
+    await expect(
+      appsService.get("offline", { readContext: memberReadContext }),
+    ).rejects.toMatchObject({
       code: "NETWORK_ERROR",
       httpStatus: undefined,
     });
@@ -131,7 +137,9 @@ describe("API service errors", () => {
       ),
     );
 
-    await expect(appsService.get("malformed")).rejects.toMatchObject({
+    await expect(
+      appsService.get("malformed", { readContext: memberReadContext }),
+    ).rejects.toMatchObject({
       code: "CONTRACT_ERROR",
     });
   });
@@ -155,7 +163,7 @@ describe("API service errors", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    for (const request of Object.values(requests))
+    for (const request of [requests["GET /meta"], requests["GET /apps"]])
       await expect(request()).rejects.toMatchObject({
         code: "SERVICE_UNAVAILABLE",
         httpStatus: 503,
@@ -163,7 +171,7 @@ describe("API service errors", () => {
 
     expect(getCurrentAuthState).not.toHaveBeenCalled();
     expect(getCsrf).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     for (const [, request] of vi.mocked(fetch).mock.calls) {
       expect((request?.headers as Headers).has("X-EduVibe-Flow-Id")).toBe(
         false,

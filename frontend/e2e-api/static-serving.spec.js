@@ -78,20 +78,17 @@ test("serves built routes on direct entry reload and history", async ({
       scripts.push(new URL(request.url()).pathname);
   });
   await entry(page, "/", page.locator("a.card-r").first());
-  await entry(
-    page,
-    `/apps/${publicId}`,
-    page.getByRole("heading", { name: "둘째 공개 앱", exact: true }),
+  await page.goto(`/apps/${publicId}`);
+  await expect(page).toHaveURL(
+    `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${publicId}`)}`,
   );
-  await page
-    .getByRole("button", { name: "갤러리로", exact: true })
-    .first()
-    .click();
+  await page.reload();
+  await expect(page.getByLabel("로그인 아이디", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await page.goto("/");
   await expect(page.locator("a.card-r").first()).toBeVisible();
   await page.goBack();
-  await expect(
-    page.getByRole("heading", { name: "둘째 공개 앱", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByLabel("로그인 아이디", { exact: true })).toBeVisible();
   await page.goForward();
   await expect(page.locator("a.card-r").first()).toBeVisible();
   await entry(
@@ -168,7 +165,7 @@ test("denies anonymous protected UI and API without private values", async ({
     await expect(page.locator("body")).not.toContainText("회원 A 비공개 자료");
   }
   const privateApp = await request.get(`/api/v1/apps/${A}`);
-  expect(privateApp.status()).toBe(404);
+  expect(privateApp.status()).toBe(401);
   expect((await privateApp.text()).includes("회원 A 비공개 자료")).toBe(false);
   const admin = await page.request.get("/api/v1/admin/users", {
     headers: await approvalHeaders(page),

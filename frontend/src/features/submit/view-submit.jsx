@@ -112,7 +112,7 @@ export function SubmitView({
   onSaved,
   onLatest,
   onCancel,
-  readLatest = (id) => appsService.get(id),
+  readLatest,
 }) {
   const editing = Boolean(app);
   const initialDraft = app ? draftFromApp(app) : emptyDraft;

@@ -202,3 +202,16 @@ it("functional HTTPS uses production assets and the fault/health upstreams with 
     "node scripts/nginx-serving.mjs --upstream",
   );
 }, 30000);
+
+it("prepares apps and detail while preserving isolated reset recovery", () => {
+  const runs = selectNormalRuns();
+  for (const spec of ["e2e-api/apps.spec.js", "e2e-api/detail.spec.js"])
+    expect(runs.find((run) => run.arguments_.includes(spec))).toMatchObject({
+      prepared: true,
+    });
+  expect(
+    runs.find((run) =>
+      run.arguments_.includes("e2e-api/admin-password-reset-recovery.spec.js"),
+    ).arguments_,
+  ).toEqual(["e2e-api/admin-password-reset-recovery.spec.js"]);
+});

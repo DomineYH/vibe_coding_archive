@@ -331,8 +331,10 @@ def test_visibility_changes_immediately_hide_lists_facets_and_detail(
                 )
             for reader, selected in ((guest, {}), (other_client, headers(other))):
                 response = reader.get(f"{API}/apps/{item['id']}", headers=selected)
-                assert response.status_code == (200 if public else 404)
-                if not public:
+                assert response.status_code == (
+                    401 if reader is guest else 200 if public else 404
+                )
+                if reader is other_client and not public:
                     assert (
                         response.json()
                         == reader.get(f"{API}/apps/{uuid4()}", headers=selected).json()

@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import os
 import socket
+import sqlite3
 import subprocess
 import sys
 import time
 from pathlib import Path
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -66,11 +67,14 @@ def _read_public_apps(port: int) -> dict:
         return json.load(response)
 
 
-def _read_public_app_detail(port: int, app_id: str) -> dict:
-    with urlopen(
-        f"http://127.0.0.1:{port}/api/v1/apps/{app_id}", timeout=3
-    ) as response:
-        return json.load(response)
+def _read_public_app_detail(port: int, app_id: str) -> None:
+    try:
+        urlopen(f"http://127.0.0.1:{port}/api/v1/apps/{app_id}", timeout=3)
+    except HTTPError as response:
+        assert response.code == 401
+        assert json.load(response)["error"]["code"] == "AUTH_REQUIRED"
+    else:
+        raise AssertionError("Anonymous detail was exposed")
 
 
 def test_public_apps_remain_after_api_process_restart(
@@ -99,12 +103,16 @@ def test_public_apps_remain_after_api_process_restart(
             "00000000-0000-4000-8000-000000000001",
         ]
         assert second["pagination"]["total"] == 2
-        detail = _read_public_app_detail(port, "00000000-0000-4000-8000-000000000002")[
-            "item"
-        ]
-        assert detail["name"] == "둘째 공개 앱"
-        assert detail["url"] == "https://example.test/app"
-        assert detail["prompt"] == "line 1\nline 2"
+        _read_public_app_detail(port, "00000000-0000-4000-8000-000000000002")
+        with sqlite3.connect(database_path) as db:
+            assert db.execute(
+                "SELECT name,url,prompt FROM apps WHERE id=?",
+                ("00000000-0000-4000-8000-000000000002",),
+            ).fetchone() == (
+                "둘째 공개 앱",
+                "https://example.test/app",
+                "line 1\nline 2",
+            )
     finally:
         second_process.terminate()
         second_process.communicate(timeout=10)

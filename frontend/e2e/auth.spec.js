@@ -56,16 +56,17 @@ test("private detail is hidden until auth restore, then available to its owner a
   page,
 }) => {
   await page.goto(memberApp);
-  await expect(page.getByRole("alert")).toContainText(
-    "아카이브 앱을 찾을 수 없어요",
+  await expect(page).toHaveURL(
+    `/auth?mode=login&return_to=${encodeURIComponent(memberApp)}`,
   );
-  const privateFailure = await page.getByRole("alert").innerText();
-  await page.goto("/apps/00000000-0000-4000-8000-000000000099");
-  await expect(page.getByRole("alert")).toContainText(
-    "아카이브 앱을 찾을 수 없어요",
+  await expect(
+    page.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
+  ).toHaveCount(0);
+  const missing = "/apps/00000000-0000-4000-8000-000000000099";
+  await page.goto(missing);
+  await expect(page).toHaveURL(
+    `/auth?mode=login&return_to=${encodeURIComponent(missing)}`,
   );
-  expect(await page.getByRole("alert").innerText()).toBe(privateFailure);
-
   await page.goto(
     `/auth?mode=login&return_to=${encodeURIComponent(memberApp)}`,
   );
@@ -246,9 +247,7 @@ test("a logout in another tab removes the old protected view", async ({
   await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
 
   await page.getByRole("button", { name: "로그아웃" }).click();
-  await expect(otherTab.getByRole("alert")).toContainText(
-    "아카이브 앱을 찾을 수 없어요",
-  );
+  await expect(otherTab).toHaveURL(/\/auth\?mode=login&return_to=/);
   await expect(
     otherTab.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
   ).toHaveCount(0);
@@ -286,9 +285,7 @@ test("a delayed private read is discarded when authentication changes", async ({
     window.dispatchEvent(new PopStateEvent("popstate"));
   }, memberApp);
 
-  await expect(main.getByRole("alert")).toContainText(
-    "아카이브 앱을 찾을 수 없어요",
-  );
+  await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
   await expect(
     main.getByRole("heading", { name: "과학 수행평가 루브릭 채점기" }),
   ).toHaveCount(0);
@@ -392,10 +389,10 @@ test("private detail stays hidden until a visible-tab auth check succeeds", asyn
     );
     window.dispatchEvent(new StorageEvent("storage", { key }));
   });
-  await expect(publicHeading).toBeVisible();
+  await expect(publicHeading).toHaveCount(0);
 });
 
-test("direct public detail remains available when auth observation fails", async ({
+test("direct public detail stays concealed when auth observation fails", async ({
   page,
 }) => {
   await page.goto("/");
@@ -416,9 +413,15 @@ test("direct public detail remains available when auth observation fails", async
     name: "분수 피자 가게",
     exact: true,
   });
-  await expect(publicHeading).toBeVisible();
+  await expect(publicHeading).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "로그인 상태를 확인할 수 없습니다",
+  );
   await page.reload();
-  await expect(publicHeading).toBeVisible();
+  await expect(publicHeading).toHaveCount(0);
+  await expect(page.getByRole("main").getByRole("alert")).toContainText(
+    "로그인 상태를 확인할 수 없습니다",
+  );
 });
 
 test("a private route keeps explicit recovery for damaged mock storage", async ({
@@ -753,20 +756,17 @@ test("temporary member can browse publicly, then change to a full session", asyn
     page.getByRole("button", { name: "로그아웃", exact: true }),
   ).toBeVisible();
 
-  await page.goto("/apps/00000000-0000-4000-8000-000000000001");
-  await expect(
-    page.getByRole("heading", { name: "분수 피자 가게", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "복사하기", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "앱 열기", exact: true }),
-  ).toHaveAttribute("rel", "noopener noreferrer");
-
+  await page.goto("/");
+  await expect(page.locator("a.card-r")).toHaveCount(16);
+  const path = "/apps/00000000-0000-4000-8000-000000000001";
+  await page.goto(path);
+  await expect(page).toHaveURL(
+    `/auth?mode=password-change&return_to=${encodeURIComponent(path)}`,
+  );
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
   await page.goto(memberApp);
-  await expect(page.getByRole("alert")).toContainText(
-    "아카이브 앱을 찾을 수 없어요",
+  await expect(page).toHaveURL(
+    `/auth?mode=password-change&return_to=${encodeURIComponent(memberApp)}`,
   );
   await page.goto("/auth?mode=password-change");
   await expect(changeForm).toBeVisible();

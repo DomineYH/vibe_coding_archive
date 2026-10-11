@@ -127,6 +127,8 @@ export function selectNginxRuns(args) {
 
 export function selectNormalRuns(
   arguments_ = [
+    "e2e-api/apps.spec.js",
+    "e2e-api/detail.spec.js",
     "e2e-api/auth-prepare.spec.js",
     "e2e-api/auth-login.spec.js",
     "e2e-api/auth-reauth.spec.js",
@@ -209,7 +211,7 @@ async function run() {
     nginx ||
     (!process.argv.includes("--auth-unavailable") &&
       arguments_.some((arg) =>
-        /health-real|auth-(candidate|support|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+        /(?:apps|detail)\.spec|health-real|auth-(candidate|support|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
           arg,
         ),
       ));

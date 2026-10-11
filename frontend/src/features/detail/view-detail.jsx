@@ -534,12 +534,7 @@ export function AppDetailView({
       </main>
     );
   }
-  const protectedScreen = app?.isPublic !== true;
-  if (
-    (protectedScreen && (concealed || authStatus !== "ready")) ||
-    loading ||
-    error
-  ) {
+  if (concealed || authStatus !== "ready" || loading || error) {
     return (
       <main
         ref={mainRef}
@@ -550,9 +545,9 @@ export function AppDetailView({
           loading={loading}
           error={error}
           retry={retry}
-          authStatus={protectedScreen ? authStatus : "ready"}
-          authError={protectedScreen ? authError : null}
-          concealed={protectedScreen && concealed}
+          authStatus={authStatus}
+          authError={authError}
+          concealed={concealed}
         />
       </main>
     );

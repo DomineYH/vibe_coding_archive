@@ -13,7 +13,7 @@ import {
   normalizeQueryForService,
   type AppsService,
 } from "../apps-service";
-import { authService, prepareApiAuth } from "./auth";
+import { authService } from "./auth";
 import { assertAuthObservation } from "../auth-state";
 import { isUuid } from "../../contracts/uuid";
 
@@ -27,7 +27,6 @@ export async function getJson(
     requestBody,
     authenticated = false,
     write = false,
-    allowAnonymousWrite = false,
     idempotencyKey,
     uncertain = false,
     noContent = false,
@@ -38,7 +37,6 @@ export async function getJson(
     requestBody?: unknown;
     authenticated?: boolean;
     write?: boolean;
-    allowAnonymousWrite?: boolean;
     idempotencyKey?: string;
     uncertain?: boolean;
     noContent?: boolean;
@@ -49,9 +47,7 @@ export async function getJson(
   if (authenticated || write) {
     let auth;
     try {
-      auth = allowAnonymousWrite
-        ? await prepareApiAuth({ signal })
-        : await authService.getCurrentAuthState({ signal });
+      auth = await authService.getCurrentAuthState({ signal });
     } catch (error) {
       if (!uncertain) throw error;
       throw new ServiceError(
@@ -64,11 +60,7 @@ export async function getJson(
       );
     }
     const user = auth.user;
-    if (
-      auth.status !== "ready" ||
-      (!user && !allowAnonymousWrite) ||
-      (user !== null && !user.approved)
-    )
+    if (auth.status !== "ready" || !user?.approved)
       throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
         outcome: uncertain ? "unknown" : "rejected",
         httpStatus: 401,
@@ -213,9 +205,9 @@ export const appsService: AppsService = {
   async get(id, { signal, readContext } = {}) {
     const path = `/apps/${encodeURIComponent(id)}`;
     if (!readContext)
-      return mapAppDetailResponse(
-        await getJson("GET /apps/{id}", path, { signal }),
-      ).item;
+      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+        httpStatus: 401,
+      });
     assertAuthObservation(readContext);
     const { user, flow, status } = readContext.state;
     if (

@@ -57,6 +57,11 @@ for (const [width, height] of sizes) {
         page.getByText("인증 기능은 아직 준비 중이에요"),
       ).toBeVisible();
       expect(authRequests).toHaveLength(0);
+      await page.goto("/apps/00000000-0000-4000-8000-000000000002");
+      await expect(
+        page.getByText("로그인 기능을 현재 사용할 수 없어요", { exact: true }),
+      ).toBeVisible();
+      await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
       return;
     }
     await expect(
@@ -163,6 +168,16 @@ test("storage failure never issues R and public reading remains available", asyn
   await expect(
     page.getByRole("link", { name: /^둘째 공개 앱,/ }),
   ).toBeVisible();
+  await page.goto("/apps/00000000-0000-4000-8000-000000000002");
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await expect(
+    page.getByText(
+      prepared
+        ? "로그인 상태를 확인할 수 없어요"
+        : "로그인 기능을 현재 사용할 수 없어요",
+      { exact: true },
+    ),
+  ).toBeVisible();
 });
 
 test("unsupported Web Locks keeps public reading and denies preparation", async ({
@@ -195,6 +210,16 @@ test("unsupported Web Locks keeps public reading and denies preparation", async 
   await page.goto("/");
   await expect(
     page.getByRole("link", { name: /^둘째 공개 앱,/ }),
+  ).toBeVisible();
+  await page.goto("/apps/00000000-0000-4000-8000-000000000002");
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await expect(
+    page.getByText(
+      prepared
+        ? "로그인 상태를 확인할 수 없어요"
+        : "로그인 기능을 현재 사용할 수 없어요",
+      { exact: true },
+    ),
   ).toBeVisible();
 });
 

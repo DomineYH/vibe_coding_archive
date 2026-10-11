@@ -1,3 +1,4 @@
+import { captureAuthObservation } from "../src/services/auth-state";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { authService } from "../src/services/mock/auth";
 import { healthService } from "../src/services/mock/health";
@@ -15,9 +16,10 @@ const appId = "00000000-0000-4000-8000-000000000001";
 const privateAppId = "00000000-0000-4000-8000-000000000091";
 
 describe("individual health check mock", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
     resetMockState();
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
   });
 
   afterEach(() => {
@@ -25,8 +27,10 @@ describe("individual health check mock", () => {
     localStorage.clear();
   });
 
-  it("reads without starting work and accepts an anonymous public check", async () => {
-    const before = await healthService.getAppHealth(appId);
+  it("reads without starting work and accepts a member public check", async () => {
+    const before = await healthService.getAppHealth(appId, {
+      readContext: await memberContext(),
+    });
     expect(before.health.latestJob).toBeNull();
     expect(before.health.result.state).toBe("healthy");
 
@@ -49,15 +53,24 @@ describe("individual health check mock", () => {
   it("returns technical measurements only to administrators", async () => {
     setMockScenario("health_result_healthy");
     const accepted = await healthService.requestCheck(appId);
-    await healthService.getJob(accepted.health.latestJob!.id);
-    await expect(healthService.getAppHealth(appId)).resolves.toMatchObject({
+    await healthService.getJob(accepted.health.latestJob!.id, {
+      readContext: await memberContext(),
+    });
+    await expect(
+      healthService.getAppHealth(appId, { readContext: await memberContext() }),
+    ).resolves.toMatchObject({
       health: { result: { state: "healthy" } },
     });
-    const anonymous = await healthService.getAppHealth(appId);
+    const anonymous = await healthService.getAppHealth(appId, {
+      readContext: await memberContext(),
+    });
     expect(anonymous.health.result).not.toHaveProperty("http_status");
 
+    await authService.logout();
     await authService.login({ loginId: "admin", password: "admin123" });
-    await expect(healthService.getAppHealth(appId)).resolves.toMatchObject({
+    await expect(
+      healthService.getAppHealth(appId, { readContext: await memberContext() }),
+    ).resolves.toMatchObject({
       health: {
         result: {
           http_status: 204,
@@ -107,10 +120,13 @@ describe("individual health check mock", () => {
   ] as const)(
     "shows synthetic %s result without treating it as real traffic",
     async (scenario, state, httpStatus, responseMs, kind, stage) => {
+      await authService.logout();
       await authService.login({ loginId: "admin", password: "admin123" });
       setMockScenario(scenario);
       const { health } = await healthService.requestCheck(appId);
-      const completed = await healthService.getJob(health.latestJob!.id);
+      const completed = await healthService.getJob(health.latestJob!.id, {
+        readContext: await memberContext(),
+      });
 
       const result = {
         state,
@@ -134,12 +150,20 @@ describe("individual health check mock", () => {
         JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY)!).health_measurements,
       ).toContainEqual(measurement);
       expect(getMockSnapshot().health_measurements).toContainEqual(measurement);
-      expect((await healthService.getAppHealth(appId)).health.result).toEqual(
-        result,
-      );
+      expect(
+        (
+          await healthService.getAppHealth(appId, {
+            readContext: await memberContext(),
+          })
+        ).health.result,
+      ).toEqual(result);
       expect(completed.job.status).toBe("completed");
       expect(completed.health.result.state).toBe(state);
-      await expect(healthService.getAppHealth(appId)).resolves.toMatchObject({
+      await expect(
+        healthService.getAppHealth(appId, {
+          readContext: await memberContext(),
+        }),
+      ).resolves.toMatchObject({
         health: {
           result: { state, fresh_until: "2026-09-22T00:27:00.000Z" },
         },
@@ -156,12 +180,15 @@ describe("individual health check mock", () => {
   ] as const)(
     "preserves the last result when work is %s",
     async (scenario, status) => {
-      const before = await healthService.getAppHealth(appId);
+      const before = await healthService.getAppHealth(appId, {
+        readContext: await memberContext(),
+      });
       const accepted = await healthService.requestCheck(appId);
       setMockScenario(scenario);
 
       const completed = await healthService.getJob(
         accepted.health.latestJob!.id,
+        { readContext: await memberContext() },
       );
       expect(completed.job.status).toBe(status);
       expect(completed.health.result).toEqual(before.health.result);
@@ -196,6 +223,7 @@ describe("individual health check mock", () => {
   });
 
   it("blocks change-only sessions and reports unavailable capability", async () => {
+    await authService.logout();
     await authService.login({
       loginId: "임시교사38",
       password: "Temporary Demo Password 38",
@@ -206,6 +234,7 @@ describe("individual health check mock", () => {
     });
 
     await authService.logout();
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
     setMockScenario("health_check_unavailable");
     await expect(healthService.requestCheck(appId)).rejects.toMatchObject({
       code: "FEATURE_UNAVAILABLE",
@@ -214,17 +243,24 @@ describe("individual health check mock", () => {
   });
 
   it("requires the current private-app read permission", async () => {
+    await authService.logout();
     await expect(
-      healthService.getAppHealth(privateAppId),
-    ).rejects.toMatchObject({ code: "NOT_FOUND", httpStatus: 404 });
+      healthService.getAppHealth(privateAppId, {
+        readContext: await memberContext(),
+      }),
+    ).rejects.toMatchObject({ code: "AUTH_REQUIRED", httpStatus: 401 });
     await authService.login({ loginId: "교사김코딩", password: "1234" });
     await expect(
-      healthService.getAppHealth(privateAppId),
+      healthService.getAppHealth(privateAppId, {
+        readContext: await memberContext(),
+      }),
     ).resolves.toMatchObject({ appId: privateAppId });
     await authService.logout();
     await authService.login({ loginId: "과학덕후박샘", password: "1234" });
     await expect(
-      healthService.getAppHealth(privateAppId),
+      healthService.getAppHealth(privateAppId, {
+        readContext: await memberContext(),
+      }),
     ).rejects.toMatchObject({ code: "NOT_FOUND", httpStatus: 404 });
   });
 
@@ -232,7 +268,9 @@ describe("individual health check mock", () => {
     setMockScenario("health_late_response");
     const accepted = await healthService.requestCheck(appId);
     const jobId = accepted.health.latestJob!.id;
-    const pending = healthService.getJob(jobId);
+    const pending = healthService.getJob(jobId, {
+      readContext: await memberContext(),
+    });
     const app = getMockSnapshot().apps.find((item) => item.id === appId)!;
     setTimeout(() => {
       const changed = {
@@ -260,3 +298,10 @@ describe("individual health check mock", () => {
     });
   });
 });
+
+async function memberContext() {
+  return captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
+}

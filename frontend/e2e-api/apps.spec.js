@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test, loginMember } from "./detail-login-helpers.js";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +31,10 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   page,
   context,
 }) => {
+  test.skip(
+    process.env.API_E2E_AUTH_BOUNDARY !== "prepared",
+    "member detail requires prepared authentication",
+  );
   const requests = [];
   const writeRequests = [];
   const externalRequests = [];
@@ -56,7 +61,7 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   const privateDetail = await page.request.get(
     "/api/v1/apps/00000000-0000-4000-8000-000000000028",
   );
-  expect(privateDetail.status()).toBe(404);
+  expect(privateDetail.status()).toBe(401);
   expect(await privateDetail.text()).not.toContain("private-app-sentinel");
   for (const viewport of viewports) await capture(page, "gallery", viewport);
 
@@ -99,6 +104,12 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   await search.fill("추가 공개 앱");
   const app = page.getByRole("link", { name: /추가 공개 앱 27/ });
   await expect(app).toBeVisible();
+  expect(requests.some((path) => path.startsWith("/api/v1/auth/"))).toBe(false);
+  const galleryUrl = page.url();
+  await loginMember(page);
+  await page.goto(galleryUrl);
+  requests.length = 0;
+  writeRequests.length = 0;
   await app.click();
   await expect(
     page.getByRole("heading", { name: "추가 공개 앱 27" }),
@@ -125,8 +136,7 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   await expect(grade).toHaveValue("초1");
   expect(requests).toContain("/api/v1/meta");
   expect(requests).toContain("/api/v1/apps");
-  expect(requests.some((path) => path.startsWith("/api/v1/auth/"))).toBe(false);
-  expect(requests.some((path) => path.includes("csrf"))).toBe(false);
+  expect(requests.some((path) => path.startsWith("/api/v1/auth/"))).toBe(true);
   await expect
     .poll(() =>
       requests.includes(

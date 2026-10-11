@@ -353,3 +353,23 @@ describe("administrator health measurements", () => {
       expect(screen.queryByText(label)).not.toBeInTheDocument();
   });
 });
+
+it.each(["checking", "unresolved", "error", "concealed"])(
+  "hides even a cached public body during %s authentication",
+  (state) => {
+    render(
+      <MemoryRouter>
+        <AppDetailView
+          app={app}
+          meta={meta}
+          authStatus={state === "concealed" ? "ready" : state}
+          concealed={state === "concealed"}
+        />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.queryByRole("link", { name: "앱 열기" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(app.prompt)).not.toBeInTheDocument();
+  },
+);

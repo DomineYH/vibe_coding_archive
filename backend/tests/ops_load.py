@@ -17,7 +17,10 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 from uuid import NAMESPACE_URL, uuid5
 
-from tests.support import ROOT, populate_public_and_private_apps
+import httpx
+
+from tests.auth_client import Browser
+from tests.support import ROOT, _auth_hash, populate_public_and_private_apps
 
 
 def isolated(database):
@@ -48,6 +51,7 @@ def seed(database, *, members, apps):
             raise ValueError("LOAD_EMPTY_DATABASE_REQUIRED")
     populate_public_and_private_apps(path, public_count=apps - 1)
     with sqlite3.connect(path) as db:
+        db.execute("UPDATE members SET password_hash=?", (_auth_hash(),))
         for index in range(members - 2):
             member_id = str(uuid5(NAMESPACE_URL, f"synthetic-load-member-{index}"))
             login = f"synthetic-load-{index}"
@@ -100,8 +104,22 @@ def measure(base_url, database, *, concurrency, requests=None, seconds=None):
         app = db.execute(
             "SELECT id FROM apps WHERE is_public=1 ORDER BY id LIMIT 1"
         ).fetchone()
+        login = db.execute(
+            "SELECT login_id FROM members WHERE approval_status='approved' ORDER BY id LIMIT 1"
+        ).fetchone()
     if not app:
         raise ValueError("LOAD_FIXTURE_REQUIRED")
+    with httpx.Client(base_url=base_url, timeout=10, trust_env=False) as client:
+        browser = Browser(client).prepare().anonymous()
+        browser.login(login[0]).raise_for_status()
+        headers = {
+            "X-EduVibe-Flow-Id": browser.flow,
+            "X-EduVibe-Auth-Revision": browser.revision,
+            "X-EduVibe-Session-Generation": browser.generation,
+            "Cookie": "; ".join(
+                f"{cookie.name}={cookie.value}" for cookie in client.cookies.jar
+            ),
+        }
     paths = ["/api/v1/apps", f"/api/v1/apps/{app[0]}"]
     latencies, errors = [], []
     lock = threading.Lock()
@@ -123,7 +141,7 @@ def measure(base_url, database, *, concurrency, requests=None, seconds=None):
             failed = False
             try:
                 with opener.open(
-                    Request(base_url + paths[number % 2]), timeout=10
+                    Request(base_url + paths[number % 2], headers=headers), timeout=10
                 ) as response:
                     failed = response.status != 200
                     json.load(response)

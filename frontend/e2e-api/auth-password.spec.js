@@ -90,7 +90,7 @@ test.describe("administrator own password change over real HTTP and cookies", ()
           "/api/v1/apps/00000000-0000-4000-8000-000000000030",
         )
       ).status(),
-    ).toBe(404);
+    ).toBe(401);
     await change(page);
     await expect(
       page.getByRole("banner").getByText("첫 관리자", { exact: true }),

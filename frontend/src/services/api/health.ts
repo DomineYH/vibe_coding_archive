@@ -6,6 +6,7 @@ import {
   mapHealthSnapshot,
 } from "../../contracts/mappers";
 import { getJson } from "./apps";
+import { AUTH_FLOW_KEY } from "./auth-flow";
 import { isUuid } from "../../contracts/uuid";
 import { ServiceError } from "../service-error";
 import type { HealthReadOptions, HealthService } from "../health-service";
@@ -26,10 +27,22 @@ async function readHealth(
   { signal, readContext }: HealthReadOptions,
   authenticated = false,
 ) {
-  if (!readContext) return getJson(endpoint, path, { signal, authenticated });
+  if (!readContext) {
+    if (authenticated)
+      return getJson(endpoint, path, { signal, authenticated });
+    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+      httpStatus: 401,
+    });
+  }
   assertAuthObservation(readContext);
-  const { flow, status } = readContext.state;
-  if (status !== "ready" || !flow.sessionGeneration)
+  const { user, flow, status } = readContext.state;
+  if (
+    status !== "ready" ||
+    !user?.approved ||
+    user.sessionKind !== "full" ||
+    user.mustChangePassword ||
+    !flow.sessionGeneration
+  )
     throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
       httpStatus: 401,
     });
@@ -77,13 +90,17 @@ export const healthService: HealthService = {
   },
 
   async requestCheck(appId) {
+    const id = requireUuid(appId);
+    if (!localStorage.getItem(AUTH_FLOW_KEY))
+      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+        httpStatus: 401,
+      });
     const response = (await getJson(
       "POST /apps/{id}/health-checks",
-      `/apps/${requireUuid(appId)}/health-checks`,
+      `/apps/${id}/health-checks`,
       {
         method: "POST",
         write: true,
-        allowAnonymousWrite: true,
         includeStatus: true,
       },
     )) as { status: number; body: unknown };

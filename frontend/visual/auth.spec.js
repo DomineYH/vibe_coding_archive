@@ -210,6 +210,20 @@ for (const viewport of viewports) {
     await capture(page, "auth-login", viewport, testInfo, "07-login.png");
 
     await reset(page, viewport);
+    const detailPath = "/apps/00000000-0000-4000-8000-000000000001";
+    await page.goto(detailPath);
+    await expect(page).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(detailPath)}`,
+    );
+    await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+    await capture(page, "detail-login-entry", viewport, testInfo);
+    await login(page, "임시교사38", "Temporary Demo Password 38");
+    await expect(page).toHaveURL(
+      `/auth?mode=password-change&return_to=${encodeURIComponent(detailPath)}`,
+    );
+    await capture(page, "detail-password-change-entry", viewport, testInfo);
+
+    await reset(page, viewport);
     await page.goto("/auth?mode=signup");
     await expect(page.getByLabel("비밀번호 확인")).toBeVisible();
     await capture(page, "auth-signup", viewport, testInfo, "09-signup.png");

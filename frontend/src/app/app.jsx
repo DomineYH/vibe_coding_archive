@@ -284,7 +284,7 @@ function usePublicMetadata() {
     loading: query.isPending || query.isFetching,
     error: query.error ?? unavailable,
     retry(refetch) {
-      void (query.isError || !canRead ? query.refetch() : refetch());
+      void (query.isError || !canRead ? query.refetch() : refetch?.());
     },
   };
 }
@@ -532,23 +532,6 @@ function DetailRoute({
     auth.user?.approved &&
     auth.user.sessionKind === "full" &&
     !auth.user.mustChangePassword;
-  const publicDetail = useQuery({
-    queryKey: [__DATA_MODE__, "apps", "detail", id, "public"],
-    enabled: !routeError && access.canRead && !retired,
-    queryFn: async ({ signal }) => {
-      const app = await appsService.get(id, { signal });
-      if (!app.isPublic)
-        throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
-          httpStatus: 404,
-        });
-      if (isAppRetired(id)) throw new DOMException("App deleted", "AbortError");
-      assertThemeIds(access.meta, [app]);
-      return app;
-    },
-    retry: false,
-  });
-  const publicApp =
-    publicDetail.error?.code === "NOT_FOUND" ? undefined : publicDetail.data;
   const memberDetail = useQuery({
     queryKey: [
       __DATA_MODE__,
@@ -558,8 +541,7 @@ function DetailRoute({
       "member",
       memberCacheScope(auth),
     ],
-    enabled:
-      !routeError && access.canRead && eligible && !publicApp && !retired,
+    enabled: !routeError && access.canRead && eligible && !retired,
     queryFn: async ({ signal }) => {
       const context = captureAuthObservation(auth, () =>
         isCurrentObservation(auth.observationId),
@@ -580,17 +562,11 @@ function DetailRoute({
     },
     retry: false,
   });
-  const detail = publicApp
-    ? publicDetail
-    : eligible
-      ? memberDetail
-      : publicDetail;
-  const app = retired
-    ? undefined
-    : (publicApp ??
-      (eligible && memberDetail.error?.code !== "NOT_FOUND"
-        ? memberDetail.data
-        : undefined));
+  const detail = memberDetail;
+  const app =
+    eligible && !retired && memberDetail.error?.code !== "NOT_FOUND"
+      ? memberDetail.data
+      : undefined;
   const healthReadEnabled =
     access.meta?.capabilities.health_read.enabled === true;
   const healthCheckEnabled =
@@ -610,7 +586,7 @@ function DetailRoute({
   ];
   const healthQuery = useQuery({
     queryKey: healthKey,
-    enabled: Boolean(app && healthReadEnabled),
+    enabled: Boolean(eligible && app && healthReadEnabled),
     queryFn: ({ signal }) =>
       healthService.getAppHealth(id, {
         signal,
@@ -638,7 +614,7 @@ function DetailRoute({
   ];
   const jobQuery = useQuery({
     queryKey: jobKey,
-    enabled: Boolean(activeJobId && healthReadEnabled),
+    enabled: Boolean(eligible && app && activeJobId && healthReadEnabled),
     queryFn: ({ signal }) =>
       healthService.getJob(activeJobId, {
         signal,
@@ -647,6 +623,7 @@ function DetailRoute({
     retry: false,
     refetchOnWindowFocus: false,
     refetchInterval: (query) =>
+      eligible &&
       activeJobId &&
       document.visibilityState === "visible" &&
       query.state.status !== "error" &&
@@ -674,7 +651,13 @@ function DetailRoute({
       ? healthQuery.dataUpdatedAt
       : detail.dataUpdatedAt;
   const checkMutation = useMutation({
-    mutationFn: () => healthService.requestCheck(id),
+    mutationFn: () => {
+      if (!eligible || !healthReadContext?.isCurrent())
+        throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+          httpStatus: 401,
+        });
+      return healthService.requestCheck(id);
+    },
     retry: false,
     onMutate: () =>
       queryClient.cancelQueries({ queryKey: healthKey, exact: true }),
@@ -698,6 +681,7 @@ function DetailRoute({
   const refetchHealth = healthQuery.refetch;
   const refreshStaleHealth = useCallback(() => {
     if (
+      !eligible ||
       !healthReadEnabled ||
       !healthSnapshot ||
       !freshnessKey ||
@@ -709,7 +693,14 @@ function DetailRoute({
       return;
     staleReadKey.current = freshnessKey;
     void refetchHealth();
-  }, [freshnessKey, healthReadEnabled, healthSnapshot, staleAt, refetchHealth]);
+  }, [
+    eligible,
+    freshnessKey,
+    healthReadEnabled,
+    healthSnapshot,
+    staleAt,
+    refetchHealth,
+  ]);
   useEffect(() => {
     if (staleAt === null) return undefined;
     const delay = staleAt - Date.now();
@@ -730,20 +721,15 @@ function DetailRoute({
       const isHidden = document.visibilityState === "hidden";
       if (wasHidden && !isHidden) {
         refreshStaleHealth();
-        if (jobIsActive && !jobQueryError) void refetchJob();
+        if (eligible && jobIsActive && !jobQueryError) void refetchJob();
       }
       wasHidden = isHidden;
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [jobIsActive, jobQueryError, refetchJob, refreshStaleHealth]);
-  const canCheckHealth =
-    healthCheckEnabled &&
-    auth.status === "ready" &&
-    !auth.concealed &&
-    (!auth.user ||
-      (auth.user.sessionKind === "full" && !auth.user.mustChangePassword));
+  }, [eligible, jobIsActive, jobQueryError, refetchJob, refreshStaleHealth]);
+  const canCheckHealth = Boolean(app && eligible && healthCheckEnabled);
   const isHealthStale = staleAt !== null && freshnessNow >= staleAt;
   const checkFeedback = checkMutation.data
     ? {
@@ -752,7 +738,6 @@ function DetailRoute({
         result_reused: "최근 연결 검사 결과를 다시 표시합니다.",
       }[checkMutation.data.disposition]
     : "";
-  const protectedDetail = app?.isPublic !== true;
   const adminCanManage =
     auth.user?.role === "admin" &&
     access.meta?.capabilities.admin_apps_manage.enabled === true;
@@ -1017,15 +1002,6 @@ function DetailRoute({
       });
       assertAuthObservation(context);
       if (isAppRetired(id)) throw new DOMException("App deleted", "AbortError");
-      if (latest.isPublic)
-        queryClient.setQueryData(
-          [__DATA_MODE__, "apps", "detail", id, "public"],
-          latest,
-        );
-      else
-        queryClient.removeQueries({
-          queryKey: [__DATA_MODE__, "apps", "detail", id, "public"],
-        });
       setCurrentDeletion(
         {
           id,
@@ -1067,14 +1043,37 @@ function DetailRoute({
       return;
     setDeletionState(null);
   };
-  const authError = protectedDetail && auth.status === "error";
+  const authError = !routeError && auth.status === "error";
+  if (!routeError && !auth.concealed && auth.status === "ready") {
+    const returnTo = encodeURIComponent(`/apps/${id}`);
+    if (!auth.user?.approved)
+      return <Navigate to={`/auth?mode=login&return_to=${returnTo}`} replace />;
+    if (auth.user.mustChangePassword || auth.user.sessionKind !== "full")
+      return (
+        <Navigate
+          to={`/auth?mode=password-change&return_to=${returnTo}`}
+          replace
+        />
+      );
+  }
+  if (!routeError && auth.status === "unavailable")
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <div role="status">
+          <EmptyState
+            title="로그인 기능을 현재 사용할 수 없어요"
+            desc="갤러리는 계속 둘러볼 수 있습니다."
+          />
+        </div>
+      </main>
+    );
   return (
     <AppDetailView
       app={app}
       meta={access.meta}
-      authStatus={protectedDetail ? auth.status : "ready"}
+      authStatus={routeError ? "ready" : auth.status}
       authError={authError ? auth.error : null}
-      concealed={protectedDetail && auth.concealed}
+      concealed={!routeError && auth.concealed}
       loading={
         !retired &&
         !routeError &&
@@ -1091,9 +1090,9 @@ function DetailRoute({
           : authError
             ? async () => {
                 await onRetryAuth();
-                access.retry(publicDetail.refetch);
+                access.retry();
               }
-            : () => access.retry(detail.refetch)
+            : () => access.retry(eligible ? detail.refetch : undefined)
       }
       canEdit={canEdit}
       canDelete={canDelete}
@@ -1912,11 +1911,7 @@ export default function App() {
           [__DATA_MODE__, "admin"],
         ].map((queryKey) => queryClient.cancelQueries({ queryKey })),
       );
-      // Reset active public views as well as caches across auth observations.
-      void queryClient.resetQueries({
-        queryKey: [...detailKey, "public"],
-        exact: true,
-      });
+      void queryClient.resetQueries({ queryKey: detailKey });
       void queryClient.resetQueries({
         queryKey: [__DATA_MODE__, "apps", "list"],
       });
@@ -1928,11 +1923,6 @@ export default function App() {
         return;
       queryClient.removeQueries({ queryKey: [...detailKey, "member"] });
       queryClient.removeQueries({ queryKey: healthKey });
-      if (app.isPublic)
-        queryClient.setQueryData(
-          [__DATA_MODE__, "apps", "detail", app.id, "public"],
-          app,
-        );
       void queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "admin"],
       });
@@ -2001,26 +1991,14 @@ export default function App() {
     return (
       (key[0] === __DATA_MODE__ && key[1] === "health") ||
       (key[0] === __DATA_MODE__ && key[1] === "admin") ||
-      (key[0] === __DATA_MODE__ &&
-        key[1] === "apps" &&
-        key[2] === "detail" &&
-        key[4] === "member")
+      (key[0] === __DATA_MODE__ && key[1] === "apps" && key[2] === "detail")
     );
   }, []);
   const cancelProtectedQueries = useCallback(async () => {
     await queryClient.cancelQueries({ predicate: isProtectedQuery });
     queryClient.removeQueries({ predicate: isProtectedQuery });
   }, [isProtectedQuery, queryClient]);
-  const clearChangedScopeQueries = useCallback(async () => {
-    const changedScope = (query) =>
-      isProtectedQuery(query) ||
-      (query.queryKey[0] === __DATA_MODE__ &&
-        query.queryKey[1] === "apps" &&
-        query.queryKey[2] === "detail" &&
-        query.queryKey[4] === "public");
-    await queryClient.cancelQueries({ predicate: changedScope });
-    queryClient.removeQueries({ predicate: changedScope });
-  }, [isProtectedQuery, queryClient]);
+  const clearChangedScopeQueries = cancelProtectedQueries;
 
   const restoreAuth = useCallback(
     async ({ concealed = false } = {}) => {

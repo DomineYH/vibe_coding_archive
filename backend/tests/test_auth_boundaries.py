@@ -122,7 +122,7 @@ def test_absolute_eight_hours_caps_legitimate_private_screen_activity(
         )
         assert client.get(
             "/api/v1/apps/00000000-0000-4000-8000-000000000003", headers=headers
-        ).status_code == (200 if offset < 0 else 404)
+        ).status_code == (200 if offset < 0 else 401)
         assert browser.me().status_code == (200 if offset < 0 else 401)
         with sqlite3.connect(database) as db:
             idle, absolute = db.execute(

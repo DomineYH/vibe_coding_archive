@@ -3,13 +3,17 @@
 from fastapi.testclient import TestClient
 
 from tests.admin_apps_fixtures import APPROVED_ID, STAMP, app_id, seed_apps
+from tests.auth_client import signed_in
 
 
 def test_public_snapshot_available_while_checks_disabled_and_private_hidden(member_app):
     app, path = member_app()
     seed_apps(path, [(1, APPROVED_ID, True, STAMP), (2, APPROVED_ID, False, STAMP)])
     with TestClient(app) as client:
-        public = client.get(f"/api/v1/apps/{app_id(1)}/health")
+        browser = signed_in(client, "hangul")
+        public = client.get(
+            f"/api/v1/apps/{app_id(1)}/health", headers=write_headers(browser)
+        )
         assert public.status_code == 200, public.text
         assert public.json()["health"] == {
             "result": {"state": "unchecked", "checked_at": None, "fresh_until": None},
@@ -17,7 +21,9 @@ def test_public_snapshot_available_while_checks_disabled_and_private_hidden(memb
             "next_check_at": None,
         }
         for id_ in (app_id(2), app_id(900), "invalid"):
-            result = client.get(f"/api/v1/apps/{id_}/health")
+            result = client.get(
+                f"/api/v1/apps/{id_}/health", headers=write_headers(browser)
+            )
             assert result.status_code == 404
             assert result.json()["error"]["code"] == "NOT_FOUND"
         capabilities = client.get("/api/v1/meta").json()["capabilities"]
@@ -42,7 +48,7 @@ def test_disabled_post_still_checks_session_csrf_private_access_and_empty_body(
             client.post(
                 public_url, headers={"Origin": "http://localhost:5174"}
             ).status_code
-            == 422
+            == 401
         )
         browser = Browser(client).prepare().anonymous()
         headers = write_headers(browser)
@@ -57,12 +63,15 @@ def test_disabled_post_still_checks_session_csrf_private_access_and_empty_body(
             == 403
         )
         hidden = client.post(f"/api/v1/apps/{app_id(2)}/health-checks", headers=headers)
-        assert hidden.status_code == 404
+        assert hidden.status_code == 401
         for content in ("{}", "null", " ", '{"url":"http://127.0.0.1"}'):
             assert (
                 client.post(public_url, content=content, headers=headers).status_code
                 == 422
             )
+        assert client.post(public_url, headers=headers).status_code == 401
+        client.cookies.clear()
+        headers = write_headers(signed_in(client, "hangul"))
         unavailable = client.post(public_url, headers=headers)
         assert unavailable.status_code == 503, unavailable.text
         assert unavailable.json()["error"]["reasons"] == ["operational_restriction"]
@@ -90,7 +99,7 @@ def test_real_queue_admission_job_polling_permissions_and_admin_batch(
     from app import health_store
     from app.auth_boundary import now
     from app.health_runtime import boot_clock
-    from tests.auth_client import Browser, signed_in
+    from tests.auth_client import signed_in
     from tests.support import populate_auth_members
 
     path = tmp_path / "health-enabled.sqlite3"
@@ -104,7 +113,7 @@ def test_real_queue_admission_job_polling_permissions_and_admin_batch(
                 db, worker_id="api-test-worker", boot_id=boot_id, mono=mono, stamp=now()
             )
             db.commit()
-        anonymous = Browser(client).prepare().anonymous()
+        anonymous = signed_in(client, "hangul")
         check_url = f"/api/v1/apps/{app_id(1)}/health-checks"
         first = client.post(check_url, headers=write_headers(anonymous))
         assert first.status_code == 202, first.text
@@ -116,7 +125,9 @@ def test_real_queue_admission_job_polling_permissions_and_admin_batch(
         assert again.json()["disposition"] == "active_reused"
         assert again.json()["health"]["latest_job"]["id"] == job_id
         assert (
-            client.get(f"/api/v1/health-checks/{job_id}").json()["job"]["status"]
+            client.get(
+                f"/api/v1/health-checks/{job_id}", headers=write_headers(anonymous)
+            ).json()["job"]["status"]
             == "queued"
         )
         card = client.get("/api/v1/apps").json()["items"][0]
@@ -127,7 +138,7 @@ def test_real_queue_admission_job_polling_permissions_and_admin_batch(
         private = client.post(private_url, headers=write_headers(owner))
         assert private.status_code == 202, private.text
         private_job = private.json()["health"]["latest_job"]["id"]
-        assert client.get(f"/api/v1/health-checks/{private_job}").status_code == 404
+        assert client.get(f"/api/v1/health-checks/{private_job}").status_code == 401
         with sqlite3.connect(path) as db:
             before = db.execute(
                 "SELECT token_hash,last_activity_at,expires_at FROM sessions ORDER BY token_hash"
@@ -192,24 +203,23 @@ def test_real_queue_admission_job_polling_permissions_and_admin_batch(
                 "UPDATE members SET approval_status='revoked' WHERE id=?",
                 (APPROVED_ID,),
             )
-        assert client.get(f"/api/v1/health-checks/{job_id}").status_code == 404
+        assert client.get(f"/api/v1/health-checks/{job_id}").status_code == 401
         client.cookies.clear()
         client.cookies.update(owner_cookies)
         assert (
             client.get(
                 f"/api/v1/health-checks/{private_job}", headers=write_headers(owner)
             ).status_code
-            == 404
+            == 401
         )
 
 
-def test_anonymous_actor_quota_ignores_forwarded_ip_and_worker_gate_precedes_reuse(
+def test_member_actor_quota_ignores_forwarded_ip_and_worker_gate_precedes_reuse(
     make_test_app, tmp_path
 ):
     from app import health_store
     from app.auth_boundary import now
     from app.health_runtime import boot_clock
-    from tests.auth_client import Browser
     from tests.support import populate_auth_members
 
     path = tmp_path / "health-limits.sqlite3"
@@ -217,7 +227,7 @@ def test_anonymous_actor_quota_ignores_forwarded_ip_and_worker_gate_precedes_reu
     populate_auth_members(path)
     seed_apps(path, [(1, APPROVED_ID, True, STAMP)])
     with TestClient(app, client=("127.0.0.1", 50000)) as client:
-        browser = Browser(client).prepare().anonymous()
+        browser = signed_in(client, "hangul")
         boot_id, mono = boot_clock()
         with app.state.session_factory() as db:
             health_store.heartbeat(
@@ -248,7 +258,12 @@ def test_anonymous_actor_quota_ignores_forwarded_ip_and_worker_gate_precedes_reu
             )
             db.commit()
         snapshot_url = f"/api/v1/apps/{app_id(1)}/health"
-        assert client.get(snapshot_url).json()["health"]["next_check_at"] is None
+        assert (
+            client.get(snapshot_url, headers=write_headers(browser)).json()["health"][
+                "next_check_at"
+            ]
+            is None
+        )
         with app.state.session_factory() as db:
             boot_id, mono = boot_clock()
             health_store.finish(
@@ -265,7 +280,12 @@ def test_anonymous_actor_quota_ignores_forwarded_ip_and_worker_gate_precedes_reu
                 stamp=now(),
             )
             db.commit()
-        assert client.get(snapshot_url).json()["health"]["next_check_at"] is not None
+        assert (
+            client.get(snapshot_url, headers=write_headers(browser)).json()["health"][
+                "next_check_at"
+            ]
+            is not None
+        )
         with app.state.session_factory() as db:
             health_store.invalidate(db, "quota-worker", now())
             db.commit()
@@ -276,7 +296,12 @@ def test_anonymous_actor_quota_ignores_forwarded_ip_and_worker_gate_precedes_reu
             client.get("/api/v1/meta").json()["capabilities"]["health_check"]["enabled"]
             is False
         )
-        assert client.get(snapshot_url).json()["health"]["next_check_at"] is None
+        assert (
+            client.get(snapshot_url, headers=write_headers(browser)).json()["health"][
+                "next_check_at"
+            ]
+            is None
+        )
 
 
 def test_disabled_restart_cancels_persisted_work_and_keeps_saved_result(
@@ -296,7 +321,10 @@ def test_disabled_restart_cancels_persisted_work_and_keeps_saved_result(
         job_id = accepted["health"]["latest_job"]["id"]
     restarted = make_test_app(path, auth_testing=True)
     with TestClient(restarted) as client:
-        result = client.get(f"/api/v1/health-checks/{job_id}")
+        browser = signed_in(client, "hangul")
+        result = client.get(
+            f"/api/v1/health-checks/{job_id}", headers=write_headers(browser)
+        )
         assert result.status_code == 200
         assert result.json()["job"]["status"] == "cancelled"
         assert result.json()["job"]["failure_code"] is None

@@ -435,3 +435,33 @@ it("documents nullable extensible administrator health identifiers without expos
       expect(schemas[name].properties).not.toHaveProperty(field);
   expect(schemas.Job.properties.failure_code.type).toEqual(["string", "null"]);
 });
+
+it("requires session and current proof for detail-only reads while list cards stay public", () => {
+  for (const path of [
+    "/apps/{id}",
+    "/apps/{id}/health",
+    "/health-checks/{id}",
+  ]) {
+    const get = openapi.paths[path].get;
+    expect(get.security).toEqual([{ SessionCookie: [] }]);
+    for (const name of [
+      "X-EduVibe-Flow-Id",
+      "X-EduVibe-Auth-Revision",
+      "X-EduVibe-Session-Generation",
+    ])
+      expect(
+        get.parameters.find((parameter) => parameter.name === name).required,
+      ).toBe(true);
+  }
+  const fields = Object.keys(openapi.components.schemas.AppCard.properties);
+  for (const field of [
+    "url",
+    "description",
+    "prompt",
+    "stack_db",
+    "stack_backend",
+    "stack_frontend",
+    "stack_hosting",
+  ])
+    expect(fields).not.toContain(field);
+});

@@ -473,18 +473,22 @@ def test_revocation_permanently_revokes_all_old_sessions_and_preserves_public_ap
         admin = signed_in(client, "admin")
         old = [signed_in(first), signed_in(second)]
         with TestClient(app) as public:
-            detail = public.get(f"{API}/apps/{app_id}")
+            reader = signed_in(public, "hangul")
+            detail = public.get(f"{API}/apps/{app_id}", headers=headers(reader))
             assert detail.status_code == 200
             assert detail.json()["item"]["owner"]["id"] == id_
         key = issue(admin, id_, approved=False).json()["key"]
         assert execute(admin, key, id_, approved=False).status_code == 200
         with TestClient(app) as public:
+            reader = signed_in(public, "hangul")
             listed = public.get(f"{API}/apps").json()["items"]
             assert any(
                 item["id"] == app_id and item["owner"]["id"] == id_ for item in listed
             )
             assert (
-                public.get(f"{API}/apps/{app_id}").json()["item"]
+                public.get(f"{API}/apps/{app_id}", headers=headers(reader)).json()[
+                    "item"
+                ]
                 == detail.json()["item"]
             )
         for browser in old:
@@ -497,12 +501,15 @@ def test_revocation_permanently_revokes_all_old_sessions_and_preserves_public_ap
         for browser in old:
             assert browser.me().status_code == 401
         with TestClient(app) as public:
+            reader = signed_in(public, "hangul")
             listed = public.get(f"{API}/apps").json()["items"]
             assert any(
                 item["id"] == app_id and item["owner"]["id"] == id_ for item in listed
             )
             assert (
-                public.get(f"{API}/apps/{app_id}").json()["item"]
+                public.get(f"{API}/apps/{app_id}", headers=headers(reader)).json()[
+                    "item"
+                ]
                 == detail.json()["item"]
             )
         with sqlite3.connect(path) as db:

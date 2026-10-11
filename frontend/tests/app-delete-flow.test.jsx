@@ -6,6 +6,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
@@ -410,7 +411,15 @@ it.each(["different member", "logged out"])(
     expect(screen.queryByText("앱을 삭제했어요.")).not.toBeInTheDocument();
     expect(router.state.location.key).toBe(locationKey);
     await act(async () => router.navigate(`/apps/${item.id}`));
-    await screen.findByRole("heading", { name: input.name });
+    if (identity === "logged out") {
+      await screen.findByLabelText("로그인 아이디");
+      expect(router.state.location.search).toBe(
+        `?mode=login&return_to=${encodeURIComponent(`/apps/${item.id}`)}`,
+      );
+      expect(
+        screen.queryByRole("heading", { name: input.name }),
+      ).not.toBeInTheDocument();
+    } else await screen.findByRole("heading", { name: input.name });
     expect(
       screen.queryByRole("button", { name: "삭제 결과 확인" }),
     ).not.toBeInTheDocument();
@@ -546,11 +555,12 @@ it("preserves the issued key across temporary auth loss and same-member re-login
     await authService.logout();
     window.dispatchEvent(new Event("focus"));
   });
-  await screen.findByRole("button", { name: "로그인", exact: true });
-  await act(async () => {
-    await authService.login({ loginId: "교사김코딩", password: "1234" });
-    window.dispatchEvent(new Event("focus"));
-  });
+  const form = (await screen.findByLabelText("로그인 아이디")).closest("form");
+  await userEvent.type(screen.getByLabelText("로그인 아이디"), "교사김코딩");
+  await userEvent.type(screen.getByLabelText("비밀번호"), "1234");
+  await userEvent.click(
+    within(form).getByRole("button", { name: "로그인", exact: true }),
+  );
   await screen.findByRole("button", { name: "삭제 결과 확인" });
   await userEvent.click(
     screen.getByRole("button", { name: "같은 삭제 요청 다시 보내기" }),

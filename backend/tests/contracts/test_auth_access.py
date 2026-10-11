@@ -92,12 +92,20 @@ def test_private_detail_permission_matrix_and_identical_missing(access_server, n
             assert private.headers[key] == value
         assert set(private.json()["item"]["owner"]) == {"id", "nickname"}
     else:
-        assert private.status_code == missing.status_code == 404
-        assert private.json() == missing.json()
+        assert (
+            private.status_code
+            == missing.status_code
+            == (401 if name in ("anonymous", "limited") else 404)
+        )
+        assert {
+            k: v for k, v in private.json()["error"].items() if k != "request_id"
+        } == {k: v for k, v in missing.json()["error"].items() if k != "request_id"}
         assert private.headers["Cache-Control"] == missing.headers["Cache-Control"]
+    public = client.get(f"{API}/apps/{PUBLIC}", headers=context)
+    assert public.status_code == (401 if name in ("anonymous", "limited") else 200)
     # Cookies and forged identity claims do not authorize headerless requests.
-    assert client.get(f"{API}/apps/{PRIVATE}").status_code == 404
-    assert client.get(f"{API}/apps/{PUBLIC}").status_code == 200
+    assert client.get(f"{API}/apps/{PRIVATE}").status_code == 401
+    assert client.get(f"{API}/apps/{PUBLIC}").status_code == 401
     page = client.get(f"{API}/apps", headers=context).json()
     assert page["pagination"]["total"] == 2
     assert all(item["is_public"] for item in page["items"])
@@ -110,7 +118,8 @@ def test_private_detail_permission_matrix_and_identical_missing(access_server, n
 
 
 @pytest.mark.parametrize(
-    "endpoint", ["/meta", "/apps", f"/apps/{PRIVATE}", f"/apps/{MISSING}"]
+    "endpoint",
+    ["/meta", "/apps", f"/apps/{PUBLIC}", f"/apps/{PRIVATE}", f"/apps/{MISSING}"],
 )
 @pytest.mark.parametrize(
     "context",
@@ -193,7 +202,7 @@ def test_authorized_screen_activity_extends_idle_without_advancing_revision(
         client.get(f"{API}/apps/{MISSING}", headers=headers(browser)).status_code == 404
     )
     assert browser.me().status_code == 200
-    assert client.get(f"{API}/apps/{PUBLIC}").status_code == 200
+    assert client.get(f"{API}/apps/{PUBLIC}").status_code == 401
     with sqlite3.connect(path) as db:
         assert db.execute(
             "SELECT last_activity_at FROM auth_flows WHERE id=?", (browser.flow,)
@@ -227,8 +236,10 @@ def test_exact_expiry_cannot_authorize_or_resurrect_private_screen(
     monkeypatch.setattr("app.auth_boundary.now", lambda: expiry)
     private = client.get(f"{API}/apps/{PRIVATE}", headers=headers(browser))
     missing = client.get(f"{API}/apps/{MISSING}", headers=headers(browser))
-    assert private.status_code == missing.status_code == 404
-    assert private.json() == missing.json()
+    assert private.status_code == missing.status_code == 401
+    assert {k: v for k, v in private.json()["error"].items() if k != "request_id"} == {
+        k: v for k, v in missing.json()["error"].items() if k != "request_id"
+    }
     with sqlite3.connect(path) as db:
         assert db.execute(
             "SELECT last_activity_at FROM auth_flows WHERE id=?", (browser.flow,)
@@ -273,10 +284,10 @@ def test_only_session_activity_is_capped_at_original_absolute_expiry(
         ).fetchone() == (stamp if expired_recovery else after(stamp, 1801),)
     # Flow/R retain their own idle lifetime, but never revive the absolute-expired S.
     monkeypatch.setattr("app.auth_boundary.now", lambda: absolute)
-    for app_id in (PRIVATE, MISSING):
+    for app_id in (PUBLIC, PRIVATE, MISSING):
         assert (
             client.get(f"{API}/apps/{app_id}", headers=headers(browser)).status_code
-            == 404
+            == 401
         )
     with sqlite3.connect(path) as db:
         assert db.execute(
@@ -329,15 +340,15 @@ def test_private_read_and_revoke_both_commit_orders_and_reapprove(
             release.set()
             event.remove(app.state.engine, "before_cursor_execute", hold_first)
         result = first_result if read_first else second_result
-        assert result.status_code == (200 if read_first else 404)
+        assert result.status_code == (200 if read_first else 401)
         assert (second_result if read_first else first_result).status_code == 200
         key = issue(admin, target, version=2).json()["key"]
         assert execute(admin, key, target, version=2).status_code == 200
         assert (
             client.get(f"{API}/apps/{PRIVATE}", headers=headers(owner)).status_code
-            == 404
+            == 401
         )
-        assert client.get(f"{API}/apps/{PUBLIC}").status_code == 200
+        assert client.get(f"{API}/apps/{PUBLIC}").status_code == 401
         with sqlite3.connect(path) as db:
             assert db.execute(
                 "SELECT count(*) FROM sessions WHERE member_id=? AND revoked_at IS NULL",
@@ -376,7 +387,7 @@ def test_original_read_after_terminal_transition_keeps_same_s_but_rejects_old_re
     browser.revision = state["revision"]
     assert client.get(
         f"{API}/apps/{PRIVATE}", headers=headers(browser)
-    ).status_code == (404 if finish == "failed" else 200)
+    ).status_code == (401 if finish == "failed" else 200)
 
 
 def test_old_a_read_context_cannot_adopt_current_b_cookie(access_server):
@@ -392,3 +403,42 @@ def test_old_a_read_context_cannot_adopt_current_b_cookie(access_server):
         assert result.json()["error"]["code"] == "AUTH_STATE_CHANGED"
     denied = client.get(f"{API}/apps/{PRIVATE}", headers=headers(browser))
     assert denied.status_code == 404
+
+
+@pytest.mark.parametrize("proof", ["none", "anonymous", "cookie_only"])
+@pytest.mark.parametrize("id_", [PUBLIC, PRIVATE, MISSING, "invalid"])
+def test_detail_and_health_require_full_member_before_lookup(access_server, proof, id_):
+    _, path, client = access_server
+    context = {}
+    if proof == "anonymous":
+        context = headers(Browser(client).prepare().anonymous())
+    elif proof == "cookie_only":
+        signed_in(client)
+    for endpoint in (f"/apps/{id_}", f"/apps/{id_}/health", f"/health-checks/{id_}"):
+        result = client.get(f"{API}{endpoint}", headers=context)
+        assert result.status_code == 401, result.text
+        assert result.json()["error"]["code"] == "AUTH_REQUIRED"
+        assert result.headers["Cache-Control"] == "no-store"
+        assert "example.test" not in result.text
+        assert "private-app-sentinel" not in result.text
+    with sqlite3.connect(path) as db:
+        before = tuple(
+            db.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+            for table in ("health_jobs", "health_requests")
+        )
+    write = {"Origin": "http://localhost:5174", **context}
+    if proof == "anonymous":
+        write["X-CSRF-Token"] = client.get(f"{API}/auth/csrf", headers=context).json()[
+            "csrf_token"
+        ]
+    result = client.post(f"{API}/apps/{id_}/health-checks", headers=write)
+    assert result.status_code == 401, result.text
+    assert result.json()["error"]["code"] == "AUTH_REQUIRED"
+    with sqlite3.connect(path) as db:
+        assert (
+            tuple(
+                db.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
+                for table in ("health_jobs", "health_requests")
+            )
+            == before
+        )

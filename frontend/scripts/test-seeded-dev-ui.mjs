@@ -122,7 +122,7 @@ try {
   const privateResponse = await page.request.get(
     new URL(`/api/v1/apps/${privateId}`, origin).href,
   );
-  expect(privateResponse.status()).toBe(404);
+  expect(privateResponse.status()).toBe(401);
   expect(await privateResponse.text()).not.toContain("sentinel");
 
   const appLink = page.getByRole("link", { name: /Existing app edit/ });
@@ -166,23 +166,13 @@ try {
   await tabTo(page, appLink);
   await expect(appLink).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("main")).toBeFocused();
   await expect(
-    page.getByRole("heading", { name: "Existing app edit", exact: true }),
+    page.getByText("로그인 기능을 현재 사용할 수 없어요", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("main")).toContainText("시연 교사");
-  await expect(page.getByRole("main")).not.toContainText(publicId);
-  await expect(page.getByRole("main")).not.toContainText("seed-member-one");
-  await expect(page.getByRole("main")).toContainText(
-    "분수와 수직선을 함께 살펴보는 합성 자료입니다.",
-  );
-  await expect(page.locator("main pre")).toHaveText("Existing prompt");
+  await expect(page.locator("main pre")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await expect(page.getByRole("main")).not.toContainText("Existing prompt");
   await expect(page.getByRole("main")).not.toContainText("sentinel");
-  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveAttribute(
-    "href",
-    "https://example.test/fraction-adventure",
-  );
-  await expect(page.getByText("미검사", { exact: true }).first()).toBeVisible();
   for (const viewport of viewports) {
     await page.setViewportSize(viewport);
     await page.evaluate(async () => {
@@ -204,10 +194,7 @@ try {
     });
   }
 
-  const galleryButton = page.getByRole("button", { name: "갤러리로" });
-  await expect(galleryButton).toBeVisible();
-  await tabTo(page, galleryButton);
-  await page.keyboard.press("Enter");
+  await page.goBack();
   await expect(page.locator("a.card-r")).toHaveCount(1);
   const apiRequests = requestPaths.filter(({ path }) =>
     path.startsWith("/api/v1/"),
@@ -232,7 +219,7 @@ try {
         public_count: list.pagination.total,
         public_id: publicId,
         rendered_name: "Existing app edit",
-        rendered_prompt: "Existing prompt",
+        anonymous_detail_blocked: true,
         private_status: privateResponse.status(),
         keyboard_open_and_return: true,
         viewports,

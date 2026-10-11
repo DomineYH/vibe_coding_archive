@@ -29,6 +29,7 @@ let client;
 let fetch;
 beforeEach(async () => {
   localStorage.clear();
+  item.is_public = false;
   resetMockState();
   const account = DEMO_ACCOUNTS[1];
   await authService.login({
@@ -241,41 +242,45 @@ it("offers an explicit recheck that restores a concealed screen after a failed p
   ).toBeInTheDocument();
 });
 
-it("discards a real-adapter response completing after blur without replay or private DOM", async () => {
-  const original = fetch.getMockImplementation();
-  let release;
-  let held = false;
-  const delayed = new Promise((resolve) => {
-    release = resolve;
-  });
-  fetch.mockImplementation(async (url, options) => {
-    const response = await original(url, options);
-    if (options?.headers.has("X-EduVibe-Flow-Id")) {
-      held = true;
+it.each([false, true])(
+  "discards a late detail after blur, public=%s",
+  async (isPublic) => {
+    item.is_public = isPublic;
+    const original = fetch.getMockImplementation();
+    let release;
+    let held = false;
+    const delayed = new Promise((resolve) => {
+      release = resolve;
+    });
+    fetch.mockImplementation(async (url, options) => {
+      const response = await original(url, options);
+      if (options?.headers.has("X-EduVibe-Flow-Id")) {
+        held = true;
+        await delayed;
+      }
+      return response;
+    });
+    visit();
+    await waitFor(() => expect(held).toBe(true));
+    await act(async () => window.dispatchEvent(new Event("blur")));
+    const calls = fetch.mock.calls.length;
+    await act(async () => {
+      release();
       await delayed;
-    }
-    return response;
-  });
-  visit();
-  await waitFor(() => expect(held).toBe(true));
-  await act(async () => window.dispatchEvent(new Event("blur")));
-  const calls = fetch.mock.calls.length;
-  await act(async () => {
-    release();
-    await delayed;
-  });
-  expect(screen.queryByText(item.name)).not.toBeInTheDocument();
-  expect(
-    screen.queryByRole("button", { name: "복사하기" }),
-  ).not.toBeInTheDocument();
-  expect(
-    client
-      .getQueryCache()
-      .getAll()
-      .every((query) => query.state.data?.isPublic !== false),
-  ).toBe(true);
-  expect(fetch).toHaveBeenCalledTimes(calls);
-});
+    });
+    expect(screen.queryByText(item.name)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "복사하기" }),
+    ).not.toBeInTheDocument();
+    expect(
+      client
+        .getQueryCache()
+        .getAll()
+        .every((query) => query.state.data?.isPublic !== false),
+    ).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(calls);
+  },
+);
 
 it("retires cached public detail after a private edit produces public 404 and fetches current owner detail", async () => {
   const { mapAppDetailResponse } = await import("../src/contracts/mappers");
@@ -298,10 +303,10 @@ it("retires cached public detail after a private edit produces public 404 and fe
   ).toBe(true);
 });
 
-it("falls back to current owner detail after public 404 without an identity change", async () => {
+it("refetches a public member detail after its owner makes it private", async () => {
   const original = fetch.getMockImplementation();
   const publicName = "공개 상태였던 이전 이름";
-  const publicKey = [__DATA_MODE__, "apps", "detail", id, "public"];
+  let memberKey;
   let madePrivate = false;
   fetch.mockImplementation(async (url, options) => {
     const response = await original(url, options);
@@ -318,16 +323,16 @@ it("falls back to current owner detail after public 404 without an identity chan
   visit();
   await screen.findByRole("heading", { name: publicName });
   await screen.findByRole("button", { name: "로그아웃", exact: true });
-  await waitFor(() =>
-    expect(client.getQueryData(publicKey)?.name).toBe(publicName),
-  );
+  memberKey = client
+    .getQueryCache()
+    .getAll()
+    .find((query) => query.queryKey[2] === "detail").queryKey;
+  expect(client.getQueryData(memberKey)?.name).toBe(publicName);
   madePrivate = true;
   fetch.mockClear();
   await act(async () =>
-    client.invalidateQueries({ queryKey: publicKey, exact: true }),
+    client.invalidateQueries({ queryKey: memberKey, exact: true }),
   );
-  expect(client.getQueryData(publicKey)?.name).toBe(publicName);
-  expect(client.getQueryState(publicKey)?.error?.code).toBe("NOT_FOUND");
   expect(
     await screen.findByRole("heading", { name: item.name }),
   ).toBeInTheDocument();
@@ -339,33 +344,37 @@ it("falls back to current owner detail after public 404 without an identity chan
   ).toBe(true);
 });
 
-it("does not reveal an obsolete public body after the owner logs out", async () => {
-  const { mapAppDetailResponse } = await import("../src/contracts/mappers");
-  client.setQueryData(
-    [__DATA_MODE__, "apps", "detail", id, "public"],
-    mapAppDetailResponse({
-      item: { ...item, is_public: true },
-      server_time: "2026-10-02T00:00:00Z",
-    }).item,
-  );
-  visit();
-  await screen.findByRole("heading", { name: item.name });
-  await authService.logout();
-  await act(async () =>
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: MOCK_STORAGE_KEY,
-        newValue: localStorage.getItem(MOCK_STORAGE_KEY),
-      }),
-    ),
-  );
-  await waitFor(() =>
-    expect(screen.queryByText(item.prompt)).not.toBeInTheDocument(),
-  );
-  expect(
-    await screen.findByText("아카이브 앱을 찾을 수 없어요"),
-  ).toBeInTheDocument();
-});
+it.each([false, true])(
+  "hides member detail immediately after logout, public=%s",
+  async (isPublic) => {
+    item.is_public = isPublic;
+    const { mapAppDetailResponse } = await import("../src/contracts/mappers");
+    client.setQueryData(
+      [__DATA_MODE__, "apps", "detail", id, "public"],
+      mapAppDetailResponse({
+        item: { ...item, is_public: true },
+        server_time: "2026-10-02T00:00:00Z",
+      }).item,
+    );
+    visit();
+    await screen.findByRole("heading", { name: item.name });
+    await authService.logout();
+    await act(async () =>
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: MOCK_STORAGE_KEY,
+          newValue: localStorage.getItem(MOCK_STORAGE_KEY),
+        }),
+      ),
+    );
+    await waitFor(() =>
+      expect(screen.queryByText(item.prompt)).not.toBeInTheDocument(),
+    );
+    expect(
+      await screen.findByLabelText("로그인 아이디", { exact: true }),
+    ).toBeInTheDocument();
+  },
+);
 
 it("retires even fresh public cache on a changed identity observation", async () => {
   visit();

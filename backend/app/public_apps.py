@@ -472,7 +472,12 @@ def list_public_apps(
 @router.get(
     "/apps/{id}",
     operation_id="getApp",
-    openapi_extra={"parameters": READ_CONTEXT_PARAMETERS},
+    openapi_extra={
+        "parameters": [
+            {**parameter, "required": True} for parameter in READ_CONTEXT_PARAMETERS
+        ],
+        "security": [{"SessionCookie": []}],
+    },
     summary="Read an archive app available to the current member",
     response_model=AppDetailResponse,
     responses={
@@ -493,7 +498,8 @@ def get_public_app(
             description=(
                 "Canonical 8-4-4-4-12 hexadecimal UUID with version 1-8 and variant "
                 "8/9/a/b. Hex is case-insensitive and normalized to lowercase. "
-                "Other formats return 404 NOT_FOUND; query errors take precedence."
+                "Query errors take precedence, then member authentication; "
+                "other formats return 404 NOT_FOUND for authenticated members."
             ),
             json_schema_extra={
                 "format": "uuid",
@@ -518,13 +524,13 @@ def get_public_app(
         if context is not None:
             session.execute(text("BEGIN IMMEDIATE"))
         item, credential_row, member = screen_read_context(session, request, context)
+        if member is None:
+            raise AuthError("AUTH_REQUIRED", 401)
         if not re.fullmatch(UUID_PATTERN, id):
             return _not_found()
-        scope = App.is_public.is_(True)
-        if member is not None:
-            scope = or_(scope, App.owner_id == member["id"])
-            if member["is_admin"]:
-                scope = True
+        scope = or_(App.is_public.is_(True), App.owner_id == member["id"])
+        if member["is_admin"]:
+            scope = True
         app = session.scalar(
             select(App)
             .options(
@@ -544,17 +550,15 @@ def get_public_app(
                 "server_time": datetime.now(UTC),
             }
         )
-        if member is not None:
-            if not screen_activity(session, item, credential_row):
-                return _not_found()
-            return response(
-                session,
-                request,
-                body.model_dump(mode="json"),
-                metadata=item,
-                private=True,
-            )
-        return body
+        if not screen_activity(session, item, credential_row):
+            return _not_found()
+        return response(
+            session,
+            request,
+            body.model_dump(mode="json"),
+            metadata=item,
+            private=True,
+        )
     except SQLAlchemyError as error:
         session.rollback()
         if context is not None and "locked" in str(error).lower():

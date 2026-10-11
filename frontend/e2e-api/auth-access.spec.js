@@ -1,6 +1,7 @@
 import { browserContextOptions } from "./helpers.js";
 import { publicOrigin } from "./helpers.js";
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./detail-login-helpers.js";
 import {
   blockExternalRequests,
   deferred,
@@ -119,13 +120,23 @@ test("public visitor makes zero auth calls and private/missing remain indistingu
   });
   await page.goto("/");
   await expect(page.locator("a.card-r").first()).toBeVisible();
-  await page.goto("/apps/00000000-0000-4000-8000-000000000002");
-  await expect(heading(page, "둘째 공개 앱")).toBeVisible();
-  await denied(page, A);
-  const safe = await page.getByRole("alert").innerText();
-  await denied(page, absent);
-  expect(await page.getByRole("alert").innerText()).toBe(safe);
   expect(authCalls).toEqual([]);
+  for (const id of ["00000000-0000-4000-8000-000000000002", A, absent]) {
+    const denied = await page.request.get(`/api/v1/apps/${id}`);
+    expect(denied.status()).toBe(401);
+    expect((await denied.json()).error.code).toBe("AUTH_REQUIRED");
+    await page.goto(`/apps/${id}`);
+    if (prepared) {
+      await expect(page).toHaveURL(
+        `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}`)}`,
+      );
+      await expect(page.getByLabel("로그인 아이디")).toBeVisible();
+    } else
+      await expect(
+        page.getByText("로그인 기능을 현재 사용할 수 없어요", { exact: true }),
+      ).toBeVisible();
+    await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  }
 });
 
 if (prepared) {
@@ -210,8 +221,8 @@ if (prepared) {
         private: true,
       });
     expect(await read(page, A, false)).toMatchObject({
-      status: 404,
-      code: "NOT_FOUND",
+      status: 401,
+      code: "AUTH_REQUIRED",
     });
     await denied(page, B);
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
@@ -265,10 +276,11 @@ if (prepared) {
       page.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
     ).toBeVisible();
     expect(await read(page, A)).toMatchObject({
-      status: 404,
-      code: "NOT_FOUND",
+      status: 401,
+      code: "AUTH_REQUIRED",
     });
-    await denied(page, A);
+    await page.goto(`/apps/${A}`);
+    await expect(page).toHaveURL(/mode=password-change/);
     query(
       "UPDATE members SET must_change_password=0,temporary_password_expires_at=NULL WHERE login_id_key='limit-user'",
     );
@@ -556,12 +568,12 @@ if (prepared) {
         // Both independently issued browser sessions are rejected immediately
         // after revoke and remain rejected after reapproval.
         expect(await read(page, A, true, oldContext)).toMatchObject({
-          status: 404,
-          code: "NOT_FOUND",
+          status: 401,
+          code: "AUTH_REQUIRED",
         });
         expect(await read(secondPage, A, true, secondProof)).toMatchObject({
-          status: 404,
-          code: "NOT_FOUND",
+          status: 401,
+          code: "AUTH_REQUIRED",
         });
         await expect
           .poll(
@@ -580,8 +592,8 @@ if (prepared) {
       await context.clearCookies();
       await context.addCookies(oldCookies);
       expect(await read(page, A, true, oldContext)).toMatchObject({
-        status: 404,
-        code: "NOT_FOUND",
+        status: 401,
+        code: "AUTH_REQUIRED",
       });
       expect(
         (await (await page.request.get("/api/v1/apps")).json()).items,

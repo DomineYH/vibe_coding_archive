@@ -1,8 +1,12 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import {
+  memberState,
+  memberReadContext,
+  memberHeaders,
+} from "./member-read-fixture";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import uuidCases from "../../contracts/fixtures/uuid-cases.json";
 import type { CurrentAuthState } from "../src/services/auth-service";
 import { authService } from "../src/services/api/auth";
-import * as apiAuth from "../src/services/api/auth";
 import { healthService } from "../src/services/api/health";
 
 const appId = "00000000-0000-4000-8000-000000000001";
@@ -27,27 +31,23 @@ function health(status = "running") {
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...memberHeaders },
   });
 }
 
-function anonymousSession(): CurrentAuthState {
-  return {
-    user: null,
-    flow: {
-      flowId: "00000000-0000-4000-8000-000000000200",
-      revision: "1",
-      sessionGeneration: "2",
-      lastIdentityChangeRevision: "0",
-    },
-    observationGeneration: 0,
-    sessionCookiePresent: true,
-    status: "ready",
-    unresolvedTransitionId: null,
-  };
+function memberSession(): CurrentAuthState {
+  return memberState;
 }
 
+beforeEach(() =>
+  localStorage.setItem(
+    "eduvibe-auth-flow-v1",
+    JSON.stringify({ flowId: memberState.flow.flowId }),
+  ),
+);
+
 afterEach(() => {
+  localStorage.clear();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -64,7 +64,9 @@ describe("health API service", () => {
     );
     vi.stubGlobal("fetch", fetch);
 
-    await expect(healthService.getAppHealth(appId)).resolves.toMatchObject({
+    await expect(
+      healthService.getAppHealth(appId, { readContext: memberReadContext }),
+    ).resolves.toMatchObject({
       appId,
       urlVersion: 3,
       health: { latestJob: { status: "running" } },
@@ -74,8 +76,10 @@ describe("health API service", () => {
     expect(fetch.mock.calls[0][1]).toMatchObject({ method: "GET" });
   });
 
-  it("sends an empty POST with the active anonymous session and maps 202", async () => {
-    vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
+  it("sends an empty POST with the approved member session and maps 202", async () => {
+    vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
+      memberSession(),
+    );
     vi.spyOn(authService, "getCsrf").mockResolvedValue({
       csrfToken: "csrf-test",
       expiresAt: "2026-09-22T01:12:00.000Z",
@@ -113,7 +117,9 @@ describe("health API service", () => {
   });
 
   it("rejects a 200 response that claims a newly created check", async () => {
-    vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
+    vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
+      memberSession(),
+    );
     vi.spyOn(authService, "getCsrf").mockResolvedValue({
       csrfToken: "csrf-test",
       expiresAt: "2026-09-22T01:12:00.000Z",
@@ -140,7 +146,9 @@ describe("health API service", () => {
   });
 
   it("preserves a rate limit and never retries the check automatically", async () => {
-    vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
+    vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
+      memberSession(),
+    );
     vi.spyOn(authService, "getCsrf").mockResolvedValue({
       csrfToken: "csrf-test",
       expiresAt: "2026-09-22T01:12:00.000Z",
@@ -199,7 +207,9 @@ describe("health API service", () => {
       ),
     );
 
-    await expect(healthService.getJob(jobId)).resolves.toMatchObject({
+    await expect(
+      healthService.getJob(jobId, { readContext: memberReadContext }),
+    ).resolves.toMatchObject({
       job: { status: "failed" },
       health: { result: { state: "healthy" }, latestJob: null },
     });
@@ -219,7 +229,9 @@ describe("health input UUID boundaries", () => {
         }),
       );
       vi.stubGlobal("fetch", fetch);
-      await expect(healthService.getAppHealth(id)).resolves.toMatchObject({
+      await expect(
+        healthService.getAppHealth(id, { readContext: memberReadContext }),
+      ).resolves.toMatchObject({
         appId: id,
       });
       expect(fetch.mock.calls[0][0]).toBe(`/api/v1/apps/${id}/health`);
@@ -248,7 +260,7 @@ describe("health input UUID boundaries", () => {
 
 it("binds health polling to the captured member observation and drops a retired response", async () => {
   let current = true;
-  const state = anonymousSession();
+  const state = memberSession();
   const readContext = { state, isCurrent: () => current };
   let resolveResponse!: (value: Response) => void;
   const fetch = vi.fn().mockImplementation(
@@ -294,14 +306,18 @@ it("preserves stale authentication errors from private health polling", async ()
       ),
     ),
   );
-  await expect(healthService.getAppHealth(appId)).rejects.toMatchObject({
+  await expect(
+    healthService.getAppHealth(appId, { readContext: memberReadContext }),
+  ).rejects.toMatchObject({
     code: "AUTH_STATE_CHANGED",
     httpStatus: 409,
   });
 });
 
 it("preserves uppercase administrator results through snapshot, admission and polling", async () => {
-  vi.spyOn(apiAuth, "prepareApiAuth").mockResolvedValue(anonymousSession());
+  vi.spyOn(authService, "getCurrentAuthState").mockResolvedValue(
+    memberSession(),
+  );
   vi.spyOn(authService, "getCsrf").mockResolvedValue({
     csrfToken: "csrf-test",
     expiresAt: "2026-09-22T01:12:00.000Z",
@@ -341,13 +357,20 @@ it("preserves uppercase administrator results through snapshot, admission and po
       }),
     );
   vi.stubGlobal("fetch", fetch);
-  expect((await healthService.getAppHealth(appId)).health.result).toEqual(
-    result,
-  );
+  expect(
+    (
+      await healthService.getAppHealth(appId, {
+        readContext: memberReadContext,
+      })
+    ).health.result,
+  ).toEqual(result);
   expect((await healthService.requestCheck(appId)).health.result).toEqual(
     result,
   );
-  expect((await healthService.getJob(jobId)).health.result).toEqual(result);
+  expect(
+    (await healthService.getJob(jobId, { readContext: memberReadContext }))
+      .health.result,
+  ).toEqual(result);
   const reused = await healthService.requestCheck(appId);
   expect(reused.disposition).toBe("result_reused");
   expect(reused.health.result).toEqual(result);

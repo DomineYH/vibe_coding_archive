@@ -25,6 +25,20 @@ async function openScenario(page, scenario, { mockTime } = {}) {
       "mock 시각을 저장했어요",
     );
   }
+  const principal = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("eduvibe-archive-mock-v1")).principal_id,
+  );
+  if (!principal) {
+    await page.goto("/auth?mode=login");
+    const form = page.locator('[data-screen-label="로그인"] form');
+    await form.getByLabel("로그인 아이디", { exact: true }).fill("교사김코딩");
+    await form.getByLabel("비밀번호", { exact: true }).fill("1234");
+    await form.getByRole("button", { name: "로그인", exact: true }).click();
+    await expect(
+      page.getByRole("button", { name: "로그아웃", exact: true }),
+    ).toBeVisible();
+  }
   await page.goto(`/apps/${appId}`);
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게", exact: true }),
@@ -48,6 +62,10 @@ async function resetMock(page) {
 }
 
 async function loginAdmin(page) {
+  const logout = page
+    .getByRole("banner")
+    .getByRole("button", { name: "로그아웃", exact: true });
+  if (await logout.count()) await logout.click();
   await page.goto("/auth?mode=login");
   const form = page.locator('[data-screen-label="로그인"] form');
   await expect(form).toBeVisible();
@@ -56,7 +74,9 @@ async function loginAdmin(page) {
     .fill("admin");
   await form.getByLabel("비밀번호", { exact: true }).fill("admin123");
   await form.getByRole("button", { name: "로그인", exact: true }).click();
-  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+  await expect(
+    page.getByRole("banner").getByText("아카이브 관리자", { exact: true }),
+  ).toBeVisible();
 }
 
 test("runs each synthetic result and labels its state", async ({ page }) => {

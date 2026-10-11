@@ -1,3 +1,4 @@
+import { captureAuthObservation } from "../src/services/auth-state";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -538,7 +539,9 @@ it.each(
 it("admin private saves cancel old member details and in-flight public lists", async () => {
   await visit(ownEdit, DEMO_ACCOUNTS[0]);
   const form = await screen.findByRole("form", { name: "앱 수정 양식" });
-  const stale = await appsService.get("00000000-0000-4000-8000-000000000001");
+  const stale = await appsService.get("00000000-0000-4000-8000-000000000001", {
+    readContext: await memberContext(),
+  });
   const keys = [
     [__DATA_MODE__, "apps", "detail", stale.id, "member", "old-owner-scope"],
     [__DATA_MODE__, "apps", "list", "held-public-page"],
@@ -585,6 +588,7 @@ it.each(["navigation", "rotation", "other", "hidden"])(
     const form = await screen.findByRole("form", { name: "앱 수정 양식" });
     const original = await appsService.get(
       "00000000-0000-4000-8000-000000000001",
+      { readContext: await memberContext() },
     );
     const page = await appsService.list({ limit: 24, offset: 0 });
     const saved = {
@@ -652,11 +656,12 @@ it.each(["navigation", "rotation", "other", "hidden"])(
   },
 );
 
-it("clears an active public detail after a private save without stale navigation", async () => {
+it("discards an active member read after a private save without stale navigation", async () => {
   await visit(ownEdit, DEMO_ACCOUNTS[0]);
   const form = await screen.findByRole("form", { name: "앱 수정 양식" });
   const original = await appsService.get(
     "00000000-0000-4000-8000-000000000001",
+    { readContext: await memberContext() },
   );
   const saved = {
     ...original,
@@ -672,21 +677,23 @@ it("clears an active public detail after a private save without stale navigation
     state: "unresolved",
   });
   vi.spyOn(appsService, "update").mockResolvedValue(saved);
-  const { ServiceError } = await import("../src/services/service-error");
-  let rejectPublicRead;
+  let finishMemberRead;
+  let holdRead = true;
   vi.spyOn(appsService, "get").mockImplementation(async (_id, options) => {
-    if (options?.readContext) return saved;
-    return new Promise((_resolve, reject) => {
-      rejectPublicRead = () =>
-        reject(
-          new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
-            httpStatus: 404,
-          }),
-        );
+    expect(options?.readContext).toBeTruthy();
+    if (!holdRead) return saved;
+    return new Promise((resolve) => {
+      finishMemberRead = () => resolve(original);
     });
   });
-  const publicKey = [__DATA_MODE__, "apps", "detail", original.id, "public"];
-  client.setQueryData(publicKey, original);
+  const memberKey = client
+    .getQueryCache()
+    .getAll()
+    .find(
+      (query) =>
+        query.queryKey[2] === "detail" && query.queryKey[4] === "member",
+    ).queryKey;
+  client.setQueryData(memberKey, original);
   let release;
   const cancel = client.cancelQueries.bind(client);
   vi.spyOn(client, "cancelQueries").mockImplementation(async (filters) => {
@@ -700,23 +707,24 @@ it("clears an active public detail after a private save without stale navigation
   fireEvent.click(within(form).getByRole("button", { name: "변경사항 저장" }));
   await waitFor(() => expect(release).toBeTypeOf("function"));
   await act(async () => router.navigate(`/apps/${original.id}`));
-  await waitFor(() => expect(rejectPublicRead).toBeTypeOf("function"));
+  await waitFor(() => expect(finishMemberRead).toBeTypeOf("function"));
   await screen.findByRole("button", { name: "로그아웃" });
   expect(
-    screen.getByRole("heading", { name: original.name, exact: true }),
-  ).toBeInTheDocument();
+    screen.queryByRole("heading", { name: original.name, exact: true }),
+  ).not.toBeInTheDocument();
   const locationKey = router.state.location.key;
+  holdRead = false;
   await act(async () => release());
-  // Retirement must hide the old public body before a pending read settles.
+  // Retirement must hide the old member body before a pending read settles.
   await waitFor(() =>
     expect(
       screen.queryByRole("heading", { name: original.name, exact: true }),
     ).not.toBeInTheDocument(),
   );
-  expect(client.getQueryData(publicKey)).toBeUndefined();
+  expect(client.getQueryData(memberKey)).toBeUndefined();
   expect(router.state.location.key).toBe(locationKey);
   expect(screen.queryByText("앱을 수정했어요.")).not.toBeInTheDocument();
-  await act(async () => rejectPublicRead());
+  await act(async () => finishMemberRead());
   await screen.findByRole("heading", { name: saved.name, exact: true });
 });
 
@@ -795,6 +803,7 @@ it("shows the updated private owner detail after saving an app with cached publi
   await screen.findByRole("heading", { name: "앱 정보 편집", exact: true });
   const original = await appsService.get(
     "00000000-0000-4000-8000-000000000001",
+    { readContext: await memberContext() },
   );
   client.setQueryData(
     [__DATA_MODE__, "apps", "detail", original.id, "public"],
@@ -872,8 +881,11 @@ it.each(
   "uses the captured actor observation when %s reads latest private detail for account %s",
   async (action, account) => {
     const { ServiceError } = await import("../src/services/service-error");
+    await authService.login(DEMO_ACCOUNTS[account]);
     const id = "00000000-0000-4000-8000-000000000001";
-    const original = await appsService.get(id);
+    const original = await appsService.get(id, {
+      readContext: await memberContext(),
+    });
     const latest = {
       ...original,
       isPublic: false,
@@ -902,7 +914,7 @@ it.each(
       state: "succeeded",
       resultVersion: 2,
     });
-    await visit(ownEdit, DEMO_ACCOUNTS[account]);
+    await visit(ownEdit, null);
     const actor = (await authService.getCurrentAuthState()).user;
     await screen.findByRole("heading", { name: "앱 정보 편집", exact: true });
     const form = screen.getByRole("form", {
@@ -1232,3 +1244,10 @@ it("refuses direct create for an unapproved ordinary member", async () => {
     screen.queryByRole("form", { name: "새 앱 등록 양식" }),
   ).not.toBeInTheDocument();
 });
+
+async function memberContext() {
+  return captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
+}

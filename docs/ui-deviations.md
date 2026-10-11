@@ -228,7 +228,7 @@ The detail screen now shows the stored per-app health result, last decision time
 
 | Difference                         | Product behavior                                                                                                  | Reason and evidence                                                                                                                                                 |
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Per-app health panel               | Adds result, KST time, freshness, cooldown, manual check, and job feedback to app detail. | #47 allows checks to current readers, including anonymous public visitors, as retained by #11. Captures are in the [#47 evidence](evidence/phase-1/issue47/2026-09-27/README.md#visual-evidence). |
+| Per-app health panel               | Adds result, KST time, freshness, cooldown, manual check, and job feedback to app detail. | #47 originally allowed anonymous public checks under #11; #222 supersedes that access policy with approved full member access. Captures are in the [#47 evidence](evidence/phase-1/issue47/2026-09-27/README.md#visual-evidence). |
 | Result and stale states            | Uses distinct badges and detail rows for unchecked, healthy, HTTP error, timeout, network error, blocked and redirect error. | Stale data remains visible with an “이전” badge and an old-result label; it is never presented as a current check.                                                  |
 | Card/admin result tones · #132 | Shared `StatusBadge` uses neutral unchecked and amber blocked (“검사 제한”); healthy/error tones and dimensions stay unchanged. | [#11](https://github.com/DomineYH/vibe_coding_archive/issues/11) / [#132](https://github.com/DomineYH/vibe_coding_archive/issues/132): wrapper palettes follow the detail badge; new neutral/amber dots follow the existing shade-600 convention. Detail output and visual baselines remain unchanged. |
 | Progress, polling and recovery     | Shows queued/running/terminal feedback; polls only while the detail is visible and gives explicit GET recovery after a read error. | Refresh does not create a new check; synthetic work stops at the Phase 1 mock boundary.                                                                            |
@@ -530,3 +530,8 @@ without masks, crops or tolerance. States without a baseline remain product-only
 observations. The delegated approval scope and automated verification results
 are recorded separately; no new human, screen-reader or physical-device
 acceptance is claimed.
+
+
+## Issue #222 detail authentication entry
+
+Anonymous gallery cards, search, facets and their health badges stay public. Following a card or a direct valid detail URL now enters the existing login screen with the exact detail return path; a change-only session enters password change first. Detail, copy, app links and the health panel appear only after an approved full observation. Detail captures therefore use the signed-in header. Existing visual baselines are not regenerated; intended header differences and local font differences are recorded in the implementation report. Human visual acceptance remains pending.

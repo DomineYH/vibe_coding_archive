@@ -162,3 +162,49 @@ for (const kind of ["member", "admin", "temporary", "temporary-existing"]) {
     expect(writes).toEqual([]);
   });
 }
+
+for (const kind of ["member", "temporary"]) {
+  test(`anonymous detail returns through ${kind} login to the exact detail`, async ({
+    page,
+    members,
+  }) => {
+    const path = "/apps/00000000-0000-4000-8000-000000000001";
+    const requests = [];
+    page.on("request", (request) => {
+      if (
+        /\/api\/v1\/(apps\/[^/]+|health-checks\/)/.test(
+          new URL(request.url()).pathname,
+        )
+      )
+        requests.push(request.url());
+    });
+    const denied = await page.request.get(`/api/v1${path}`);
+    expect(denied.status()).toBe(401);
+    expect((await denied.json()).error.code).toBe("AUTH_REQUIRED");
+    requests.length = 0;
+    await page.goto(path);
+    await expect(page).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+    );
+    expect(requests).toEqual([]);
+    await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+    const form = page.locator('[data-screen-label="로그인"] form');
+    await form
+      .getByLabel("로그인 아이디", { exact: true })
+      .fill(members[kind].login);
+    await form.getByLabel("비밀번호", { exact: true }).fill(ORIGINAL);
+    await form.getByRole("button", { name: "로그인", exact: true }).click();
+    if (kind === "temporary") {
+      await expect(page).toHaveURL(
+        `/auth?mode=password-change&return_to=${encodeURIComponent(path)}`,
+      );
+      await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+      await change(page);
+    }
+    await expect(page).toHaveURL(path);
+    await expect(page.getByRole("link", { name: "앱 열기" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("link", { name: "앱 열기" })).toBeVisible();
+  });
+}

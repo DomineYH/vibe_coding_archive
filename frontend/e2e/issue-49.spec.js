@@ -502,11 +502,15 @@ test("signup through approval, app health, account deletion, and reset works as 
   await secondTab.clock.install({ time: frozenAt });
   await secondTab.clock.pauseAt(frozenAt);
   await secondTab.reload();
-  await expect(secondTab).toHaveURL(`/apps/${appId}`);
-  const deletedApp = secondTab
+  await expect(secondTab).toHaveURL(
+    `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${appId}`)}`,
+  );
+  await expect(secondTab.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await healthTab.goto(`/apps/${appId}`);
+  const deletedApp = healthTab
     .getByRole("alert")
     .filter({ hasText: "아카이브 앱을 찾을 수 없어요" });
-  await waitForVisibleAfterClockTurn(secondTab, deletedApp);
+  await waitForVisibleAfterClockTurn(healthTab, deletedApp);
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await expect(
     healthTab

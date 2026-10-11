@@ -27,9 +27,10 @@ test("a lost login response stays public-only until its result is settled", asyn
 }) => {
   await startLoginWithScenario(page, "auth_response_lost");
   await page.goto(privateApp);
-  await expect(page.getByRole("alert")).toContainText(
-    "아카이브 앱을 찾을 수 없어요",
+  await expect(page.getByRole("main").getByRole("status")).toContainText(
+    "아카이브 앱을 불러오는 중이에요",
   );
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
 
   await page.goto("/auth?mode=login");
   await expect(page.getByRole("main").getByRole("status")).toContainText(

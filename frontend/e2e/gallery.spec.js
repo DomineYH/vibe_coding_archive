@@ -23,6 +23,8 @@ test("public gallery opens a detail route and supports refresh and browser histo
   await expect(page.locator("a.card-r")).toHaveCount(16);
   await tabTo(page, app);
   await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
+  await loginMember(page);
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
   ).toBeVisible();
@@ -80,6 +82,8 @@ test("opens public detail directly and rejects an unknown app", async ({
   page,
 }) => {
   await page.goto("/apps/00000000-0000-4000-8000-000000000001");
+  await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
+  await loginMember(page);
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
   ).toBeVisible();
@@ -133,6 +137,8 @@ test("opens public detail directly and rejects an unknown app", async ({
 test("preserves gallery filters through detail navigation, history, and reload", async ({
   page,
 }) => {
+  await page.goto("/auth?mode=login");
+  await loginMember(page);
   await page.goto(
     "/?q=%EB%B6%84%EC%88%98%20%ED%94%BC%EC%9E%90&subject=%EC%88%98%ED%95%99&grade=%EC%B4%883",
   );
@@ -359,6 +365,8 @@ test("gallery navigation is keyboard reachable and controls have accessible name
   });
   await tabTo(page, fractionApp);
   await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
+  await loginMember(page);
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
   ).toBeVisible();
@@ -450,6 +458,8 @@ test("selects long-list and long-copy mock states for deterministic layout revie
 
   await page.goto("/__dev/mock-reset");
   await page.getByLabel("갤러리 시나리오").selectOption("long_copy");
+  await page.goto("/auth?mode=login");
+  await loginMember(page);
   await page.goto("/apps/00000000-0000-4000-8000-000000000001");
   await expect(
     page.getByRole("heading", { name: "분수 피자 가게" }),
@@ -578,3 +588,25 @@ test("a mock reset in one tab refreshes the other tab", async ({
   await page.getByLabel("갤러리 시나리오").selectOption("original");
   await expect(otherTab.locator("a.card-r")).toHaveCount(16);
 });
+
+test("anonymous direct detail redirects to exact login return without rendering detail", async ({
+  page,
+}) => {
+  const path = "/apps/00000000-0000-4000-8000-000000000001";
+  await page.goto(path);
+  await expect(page).toHaveURL(
+    `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+  );
+  await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "분수 피자 가게" }),
+  ).toHaveCount(0);
+});
+
+async function loginMember(page) {
+  const form = page.locator('[data-screen-label="로그인"] form');
+  await form.getByLabel("로그인 아이디", { exact: true }).fill("교사김코딩");
+  await form.getByLabel("비밀번호", { exact: true }).fill("1234");
+  await form.getByRole("button", { name: "로그인", exact: true }).click();
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+}

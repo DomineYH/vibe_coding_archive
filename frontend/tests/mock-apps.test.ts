@@ -1,3 +1,5 @@
+import { authService } from "../src/services/mock/auth";
+import { captureAuthObservation } from "../src/services/auth-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
 import { MOCK_ACCOUNTS } from "../src/services/mock/accounts";
@@ -129,8 +131,10 @@ describe("deterministic gallery mock", () => {
   });
 
   it("selects deterministic long-list and long-copy scenarios without changing original data", async () => {
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
     const originalDetail = await appsService.get(
       "00000000-0000-4000-8000-000000000001",
+      { readContext: await memberContext() },
     );
 
     setMockScenario("long_list");
@@ -158,14 +162,20 @@ describe("deterministic gallery mock", () => {
     expect(lastPage.pagination.hasMore).toBe(false);
 
     setMockScenario("long_copy");
-    const longCopy = await appsService.get(originalDetail.id);
+    const longCopy = await appsService.get(originalDetail.id, {
+      readContext: await memberContext(),
+    });
     expect(longCopy.description.length).toBeGreaterThan(2000);
     expect(longCopy.prompt.length).toBeGreaterThan(2000);
 
     setMockScenario("original");
-    expect((await appsService.get(originalDetail.id)).prompt).toBe(
-      originalDetail.prompt,
-    );
+    expect(
+      (
+        await appsService.get(originalDetail.id, {
+          readContext: await memberContext(),
+        })
+      ).prompt,
+    ).toBe(originalDetail.prompt);
   });
 
   it("rejects damaged storage and only restores fixtures after explicit reset", async () => {
@@ -362,3 +372,24 @@ describe("deterministic gallery mock", () => {
     ).toHaveLength(16);
   });
 });
+
+it("requires captured member context for public, private and missing details", async () => {
+  localStorage.clear();
+  for (const id of [
+    "00000000-0000-4000-8000-000000000001",
+    "00000000-0000-4000-8000-000000000099",
+    "invalid",
+  ]) {
+    await expect(appsService.get(id)).rejects.toMatchObject({
+      code: "AUTH_REQUIRED",
+      httpStatus: 401,
+    });
+  }
+});
+
+async function memberContext() {
+  return captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
+}

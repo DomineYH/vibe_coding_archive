@@ -330,7 +330,13 @@ def test_public_private_visibility_and_restart(member_app):
         admin = signed_in(admin_client, "admin")
         public_key = issued_key(owner)
         saved = create(owner, public_key).json()["item"]
-        assert public.get(f"{API}/apps/{saved['id']}").json()["item"] == saved
+        assert (
+            stranger_client.get(
+                f"{API}/apps/{saved['id']}", headers=headers(stranger)
+            ).json()["item"]
+            == saved
+        )
+        assert public.get(f"{API}/apps/{saved['id']}").status_code == 401
         for query in (
             "",
             "?q=새",
@@ -358,15 +364,26 @@ def test_public_private_visibility_and_restart(member_app):
         for reader, selected in ((public, {}), (stranger_client, headers(stranger))):
             result = reader.get(f"{API}/apps/{private['id']}", headers=selected)
             absent = reader.get(f"{API}/apps/{uuid4()}", headers=selected)
-            assert result.status_code == absent.status_code == 404
-            assert result.json() == absent.json()
+            assert (
+                result.status_code
+                == absent.status_code
+                == (401 if reader is public else 404)
+            )
+            assert {
+                k: v for k, v in result.json()["error"].items() if k != "request_id"
+            } == {k: v for k, v in absent.json()["error"].items() if k != "request_id"}
         cookies = dict(client.cookies)
     with TestClient(app) as restarted:
         restarted.cookies.update(cookies)
         owner.client = restarted
         assert read(owner, key).json()["target_id"] == private["id"]
         assert create(owner, key, private_input).json()["item"] == private
-        assert restarted.get(f"{API}/apps/{saved['id']}").json()["item"] == saved
+        assert (
+            restarted.get(f"{API}/apps/{saved['id']}", headers=headers(owner)).json()[
+                "item"
+            ]
+            == saved
+        )
 
 
 def test_rejected_key_cannot_create_and_invalid_input_does_not_wait_for_write_lock(
@@ -416,4 +433,9 @@ def test_expiry_cleanup_and_restore_invalidation_do_not_erase_saved_apps(member_
         fresh = signed_in(TestClient(app))
         error(read(fresh, second), 404, "OPERATION_NOT_FOUND")
         error(create(fresh, second), 404, "OPERATION_NOT_FOUND")
-        assert fresh.client.get(f"{API}/apps/{saved['id']}").json()["item"] == saved
+        assert (
+            fresh.client.get(
+                f"{API}/apps/{saved['id']}", headers=headers(fresh)
+            ).json()["item"]
+            == saved
+        )

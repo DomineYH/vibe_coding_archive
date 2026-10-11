@@ -208,6 +208,7 @@ def _verify_seeded_ui(base_url: str) -> None:
 
 def _assert_seed_api_read(
     base_url: str,
+    database_path: Path,
     *,
     nickname="시연 교사",
     name="분수 탐험 교실",
@@ -229,8 +230,16 @@ def _assert_seed_api_read(
     assert "private" not in json.dumps(page, ensure_ascii=False).casefold()
 
     status, response = _read_api_json(base_url, f"/api/v1/apps/{PUBLIC_APP_ID}")
-    assert status == 200
-    detail = response["item"]
+    assert status == 401
+    assert response["error"]["code"] == "AUTH_REQUIRED"
+    # Seed persistence is checked from the same temporary database below.
+    with sqlite3.connect(database_path) as db:
+        db.row_factory = sqlite3.Row
+        detail = dict(
+            db.execute(
+                "SELECT url,description,prompt FROM apps WHERE id=?", (PUBLIC_APP_ID,)
+            ).fetchone()
+        )
     assert detail["url"] == "https://example.test/fraction-adventure"
     assert detail["description"] == "분수와 수직선을 함께 살펴보는 합성 자료입니다."
     assert detail["prompt"] == prompt
@@ -238,7 +247,7 @@ def _assert_seed_api_read(
     for sensitive_key in ("login_id", "email", "phone", "password_hash"):
         assert f'"{sensitive_key}"' not in public_json
     status, response = _read_api_json(base_url, f"/api/v1/apps/{PRIVATE_APP_ID}")
-    assert status == 404
+    assert status == 401
     assert "sentinel" not in json.dumps(response).casefold()
     return page, detail
 
@@ -301,13 +310,15 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
 
     first_server, first_base_url = _start_development_api(backend)
     try:
-        first_page, first_detail = _assert_seed_api_read(first_base_url)
+        first_page, first_detail = _assert_seed_api_read(first_base_url, database_path)
     finally:
         _stop_development_api(first_server)
 
     second_server, second_base_url = _start_development_api(backend)
     try:
-        second_page, second_detail = _assert_seed_api_read(second_base_url)
+        second_page, second_detail = _assert_seed_api_read(
+            second_base_url, database_path
+        )
     finally:
         _stop_development_api(second_server)
     assert first_page["items"] == second_page["items"]
@@ -370,6 +381,7 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     try:
         edited_page, edited_detail = _assert_seed_api_read(
             third_base_url,
+            database_path,
             nickname="Edited member nickname",
             name="Existing app edit",
             prompt="Existing prompt",
@@ -380,6 +392,7 @@ def test_seed_cli_seeds_only_missing_rows_and_preserves_existing_edits(
     try:
         restarted_page, restarted_detail = _assert_seed_api_read(
             fourth_base_url,
+            database_path,
             nickname="Edited member nickname",
             name="Existing app edit",
             prompt="Existing prompt",

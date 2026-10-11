@@ -1,3 +1,4 @@
+import { captureAuthObservation } from "../src/services/auth-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
 import { authService } from "../src/services/mock/auth";
@@ -68,9 +69,11 @@ describe("demo authentication and protected reads", () => {
     expect(await authService.getCurrentAuthState()).toMatchObject({
       user: result.user,
     });
-    await expect(appsService.get(privateMemberApp)).rejects.toMatchObject({
-      code: "NOT_FOUND",
-      httpStatus: 404,
+    await expect(
+      appsService.get(privateMemberApp, { readContext: await memberContext() }),
+    ).rejects.toMatchObject({
+      code: "AUTH_REQUIRED",
+      httpStatus: 401,
     });
   });
 
@@ -804,31 +807,47 @@ describe("demo authentication and protected reads", () => {
   });
 
   it("allows only the owner or an administrator to read private apps", async () => {
-    await expect(appsService.get(privateMemberApp)).rejects.toMatchObject({
-      code: "NOT_FOUND",
-      httpStatus: 404,
+    await expect(
+      appsService.get(privateMemberApp, { readContext: await memberContext() }),
+    ).rejects.toMatchObject({
+      code: "AUTH_REQUIRED",
+      httpStatus: 401,
     });
     await expect(
-      appsService.get("00000000-0000-4000-8000-000000000099"),
-    ).rejects.toMatchObject({ code: "NOT_FOUND", httpStatus: 404 });
+      appsService.get("00000000-0000-4000-8000-000000000099", {
+        readContext: await memberContext(),
+      }),
+    ).rejects.toMatchObject({ code: "AUTH_REQUIRED", httpStatus: 401 });
 
     const member = await authService.login({
       loginId: "교사김코딩",
       password: "1234",
     });
-    expect((await appsService.get(privateMemberApp)).ownerId).toBe(
-      member.user.id,
-    );
+    expect(
+      (
+        await appsService.get(privateMemberApp, {
+          readContext: await memberContext(),
+        })
+      ).ownerId,
+    ).toBe(member.user.id);
     await authService.logout();
     await authService.login({ loginId: "과학덕후박샘", password: "1234" });
-    await expect(appsService.get(privateMemberApp)).rejects.toMatchObject({
+    await expect(
+      appsService.get(privateMemberApp, { readContext: await memberContext() }),
+    ).rejects.toMatchObject({
       code: "NOT_FOUND",
       httpStatus: 404,
     });
 
     await authService.logout();
     await authService.login({ loginId: "admin", password: "admin123" });
-    expect((await appsService.get(privateMemberApp)).isPublic).toBe(false);
+    expect(
+      (
+        await appsService.get(privateMemberApp, {
+          readContext: await memberContext(),
+        })
+      ).isPublic,
+    ).toBe(false);
   });
 
   it("does not turn an authentication communication failure into success", async () => {
@@ -860,7 +879,9 @@ describe("demo authentication and protected reads", () => {
     try {
       await authService.login({ loginId: "교사김코딩", password: "1234" });
       setMockScenario("detail_delayed");
-      const pending = appsService.get(privateMemberApp);
+      const pending = appsService.get(privateMemberApp, {
+        readContext: await memberContext(),
+      });
       const rejected = expect(pending).rejects.toMatchObject({
         name: "AbortError",
       });
@@ -874,3 +895,10 @@ describe("demo authentication and protected reads", () => {
     }
   });
 });
+
+async function memberContext() {
+  return captureAuthObservation(
+    await authService.getCurrentAuthState(),
+    () => true,
+  );
+}

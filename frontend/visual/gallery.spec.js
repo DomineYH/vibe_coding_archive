@@ -102,6 +102,22 @@ test.beforeAll(async ({ browser }) => {
 
   const page = await browser.newPage();
   try {
+    await page.clock.install({ time: new Date("2026-09-22T00:12:00.000Z") });
+    await page.addInitScript(
+      ({ apps, privateApps }) =>
+        localStorage.setItem(
+          "eduvibe-archive-mock-v1",
+          JSON.stringify({
+            version: 2,
+            generation: 0,
+            scenario: "visual_fixture",
+            apps,
+            private_apps: privateApps,
+            principal_id: "00000000-0000-4000-8000-000000000103",
+          }),
+        ),
+      { apps: originalApps, privateApps },
+    );
     await page.goto(
       "http://localhost:5173/apps/00000000-0000-4000-8000-000000000001",
     );
@@ -317,7 +333,15 @@ async function captureAndCompare(
   await page.setViewportSize(viewport);
   const captureTime = new Date("2026-09-22T00:12:00.000Z");
   await page.clock.install({ time: captureTime });
+  const detailState =
+    state === "detail" ||
+    state === "detail-copy-done" ||
+    state === "detail-component" ||
+    state.startsWith("health-");
   const scenarios = {
+    detail: { scenario: "visual_fixture", apps: originalApps },
+    "detail-copy-done": { scenario: "visual_fixture", apps: originalApps },
+    "detail-component": { scenario: "visual_fixture", apps: originalApps },
     gallery: { scenario: "visual_fixture", apps: originalApps },
     "gallery-component": { scenario: "visual_fixture", apps: originalApps },
     "gallery-api-order": { scenario: "original", apps: originalApps },
@@ -362,17 +386,14 @@ async function captureAndCompare(
           version: 2,
           generation: 0,
           private_apps: privateApps,
-          principal_id: null,
+          principal_id: detailState
+            ? "00000000-0000-4000-8000-000000000103"
+            : null,
           ...savedState,
         },
       },
     );
   }
-  const detailState =
-    state === "detail" ||
-    state === "detail-copy-done" ||
-    state === "detail-component" ||
-    state.startsWith("health-");
   if (state === "detail-copy-done")
     await page.addInitScript(() => {
       Object.defineProperty(navigator, "clipboard", {

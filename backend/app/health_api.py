@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app import health_store
 from app.auth_boundary import (
+    READ_CONTEXT_PARAMETERS,
     AuthError,
     now,
     read_context,
@@ -69,10 +70,22 @@ def read_actor(db, request):
     # A consistent read transaction binds authorization to the returned snapshot.
     db.execute(text("BEGIN"))
     item, _, member = screen_read_context(db, request, context)
+    if member is None:
+        raise AuthError("AUTH_REQUIRED", 401)
     return item, member
 
 
-@router.get("/apps/{id}/health", operation_id="getAppHealth")
+MEMBER_READ_OPENAPI = {
+    "parameters": [
+        {**parameter, "required": True} for parameter in READ_CONTEXT_PARAMETERS
+    ],
+    "security": [{"SessionCookie": []}],
+}
+
+
+@router.get(
+    "/apps/{id}/health", operation_id="getAppHealth", openapi_extra=MEMBER_READ_OPENAPI
+)
 def get_app_health(id: str, request: Request, db=Db):
     no_query(request)
     item, member = read_actor(db, request)
@@ -94,7 +107,7 @@ async def empty_body(request: Request):
 
 
 def write_actor(db, request):
-    """Anonymous session proof is sufficient only for publicly readable targets."""
+    """Preserve write proof validation before requiring an approved full member."""
     from app.admin_approval import protected_member
     from app.auth_boundary import check_revision, credential, flow, origin, pending
 
@@ -104,31 +117,17 @@ def write_actor(db, request):
     db.execute(text("BEGIN IMMEDIATE"))
     if not auth_available(request.app.state):
         raise AuthError("FEATURE_UNAVAILABLE", 503)
-    item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
-    session = credential(db, request, item, "session", csrf=True)
     context = read_context(request)
     if context is None:
-        raise AuthError("VALIDATION_ERROR", 422)
+        raise AuthError("AUTH_REQUIRED", 401)
+    item = flow(db, request.headers.get("X-EduVibe-Flow-Id"))
+    session = credential(db, request, item, "session", csrf=True)
     check_revision(request, item, context[1], session["issued_seq"])
     if pending(db, item):
         raise AuthError("AUTH_TRANSITION_PENDING")
     if session["kind"] != "anonymous":
         return protected_member(db, request, write=True)
-    return item, None
-
-
-def actor_key(request, member):
-    import ipaddress
-
-    from app.auth_boundary import digest
-
-    if member is not None:
-        return "member:" + member["id"]
-    try:
-        peer = str(ipaddress.ip_address(request.client.host))
-    except (ValueError, AttributeError):
-        raise AuthError("SERVICE_UNAVAILABLE", 503) from None
-    return "ip:" + digest(peer)
+    raise AuthError("AUTH_REQUIRED", 401)
 
 
 @router.post(
@@ -145,8 +144,8 @@ def request_app_check(id: str, request: Request, db=Db):
         status, body = health_store.request_check(
             db,
             app_id,
-            actor_key(request, member),
-            member["id"] if member else None,
+            "member:" + member["id"],
+            member["id"],
             now(),
             available=checks_available(db, request),
             admin=bool(member and member["is_admin"]),
@@ -160,7 +159,11 @@ def request_app_check(id: str, request: Request, db=Db):
     return response(db, request, body, status=status, metadata=item, private=True)
 
 
-@router.get("/health-checks/{id}", operation_id="getHealthCheckJob")
+@router.get(
+    "/health-checks/{id}",
+    operation_id="getHealthCheckJob",
+    openapi_extra=MEMBER_READ_OPENAPI,
+)
 def get_health_job(id: str, request: Request, db=Db):
     no_query(request)
     item, member = read_actor(db, request)

@@ -217,13 +217,13 @@ def test_development_private_detail_allows_owner_only(development_settings):
                 },
             )
 
-        assert detail().status_code == 404
+        assert detail().status_code == 401
         assert browser.login(AUTH_MEMBERS["approved"][1]).status_code == 200
         result = detail()
         assert result.status_code == 200
         assert result.json()["item"]["is_public"] is False
         assert result.headers["Cache-Control"] == "private, no-store"
-        assert client.get(f"/api/v1/apps/{PRIVATE}").status_code == 404
+        assert client.get(f"/api/v1/apps/{PRIVATE}").status_code == 401
 
 
 @pytest.mark.parametrize(
@@ -422,7 +422,7 @@ def test_candidate_revocation_closes_existing_sessions_and_operations(
                 "X-EduVibe-Session-Generation": browser.generation,
             },
         ).status_code
-        == 404
+        == 401
     )
     assert client.get("/healthz").status_code == 200
     assert client.get("/readyz").status_code == 200

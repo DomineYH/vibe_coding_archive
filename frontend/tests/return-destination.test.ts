@@ -103,19 +103,9 @@ describe("return destination current availability and authority", () => {
     expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
   });
   it.each(["", "/edit"])(
-    "permits an independently public app destination %j even when the member observation becomes stale",
+    "rejects stale member observations even for public destination %j",
     async (suffix) => {
       const fetch = stubMeta();
-      fetch
-        .mockResolvedValueOnce(new Response(JSON.stringify(meta())))
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({
-              item: publicApps[0],
-              server_time: "2026-10-02T00:00:00Z",
-            }),
-          ),
-        );
       await expect(
         recheckReturnDestination(
           `/apps/${publicApps[0].id}${suffix}`,
@@ -123,11 +113,23 @@ describe("return destination current availability and authority", () => {
           appsService,
           () => false,
         ),
-      ).resolves.toBe(`/apps/${publicApps[0].id}${suffix}`);
-      expect(fetch.mock.calls[1][0]).toBe(`/api/v1/apps/${publicApps[0].id}`);
-      expect(fetch.mock.calls[1][1].headers.has("X-EduVibe-Flow-Id")).toBe(
-        false,
-      );
+      ).rejects.toMatchObject({ name: "AbortError" });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    },
+  );
+  it.each(["", "/edit"])(
+    "requires a full member for detail destination %j",
+    async (suffix) => {
+      const fetch = stubMeta();
+      await expect(
+        recheckReturnDestination(
+          `/apps/${publicApps[0].id}${suffix}`,
+          null,
+          appsService,
+          () => true,
+        ),
+      ).rejects.toMatchObject({ code: "AUTH_REQUIRED" });
+      expect(fetch).toHaveBeenCalledTimes(1);
     },
   );
   it.each([true, false])(
@@ -262,7 +264,7 @@ describe("return destination current availability and authority", () => {
           () => true,
         ),
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
-      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(fetch).toHaveBeenCalledTimes(2);
     },
   );
   it.each(["owner", "admin", "other member"])(
@@ -280,18 +282,6 @@ describe("return destination current availability and authority", () => {
       const fetch = stubMeta();
       fetch
         .mockResolvedValueOnce(new Response(JSON.stringify(meta())))
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({
-              error: {
-                code: "NOT_FOUND",
-                message: "자료 없음",
-                request_id: null,
-              },
-            }),
-            { status: 404 },
-          ),
-        )
         .mockResolvedValueOnce(
           new Response(
             JSON.stringify({
@@ -319,7 +309,6 @@ describe("return destination current availability and authority", () => {
         await expect(result).rejects.toMatchObject({ code: "NOT_FOUND" });
       else await expect(result).resolves.toBe(destination);
       expect(fetch.mock.calls.slice(1).map(([url]) => url)).toEqual([
-        `/api/v1/apps/${app.id}`,
         `/api/v1/apps/${app.id}`,
       ]);
     },

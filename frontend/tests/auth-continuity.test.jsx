@@ -424,7 +424,8 @@ it.each(["auth revision", "app ownership", "auth scenario", "damaged storage"])(
   },
 );
 
-it("restores public detail with one explicit retry after damaged mock storage is repaired", async () => {
+it("restores member detail with one explicit retry after damaged mock storage is repaired", async () => {
+  await authService.login({ loginId: "교사김코딩", password: "1234" });
   const saved = localStorage.getItem(MOCK_STORAGE_KEY);
   localStorage.setItem(
     MOCK_STORAGE_KEY,

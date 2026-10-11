@@ -62,23 +62,11 @@ export async function recheckReturnDestination(
         );
     } else if (destination.startsWith("/apps/")) {
       const id = destination.split("/")[2];
-      let app;
-      try {
-        app = await apps.get(id);
-      } catch (error) {
-        if (
-          !(error instanceof ServiceError) ||
-          error.code !== "NOT_FOUND" ||
-          !context
-        )
-          throw error;
-      }
-      if (app?.isPublic) return destination;
       if (!context)
-        throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.", {
-          httpStatus: 404,
+        throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+          httpStatus: 401,
         });
-      app = await apps.get(id, { readContext: context });
+      const app = await apps.get(id, { readContext: context });
       assertAuthObservation(context);
       if (!app.isPublic) {
         if (context) assertAuthObservation(context);
