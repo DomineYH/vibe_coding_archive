@@ -85,7 +85,7 @@ test("approved member creates a persisted public app and a private app", async (
     await guest.goto("/");
     await expect(
       guest.getByRole("link", {
-        name: `${name}, 승인 교사 24, 수학 상세 보기`,
+        name: `${name}, 승인 교사 24, 수학 상세 보기, 로그인 필요`,
         exact: true,
       }),
     ).toBeVisible();
