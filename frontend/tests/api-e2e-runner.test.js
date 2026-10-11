@@ -203,9 +203,13 @@ it("functional HTTPS uses production assets and the fault/health upstreams with 
   );
 }, 30000);
 
-it("prepares apps and detail while preserving isolated reset recovery", () => {
+it("prepares apps, detail and gallery refetch while preserving isolated reset recovery", () => {
   const runs = selectNormalRuns();
-  for (const spec of ["e2e-api/apps.spec.js", "e2e-api/detail.spec.js"])
+  for (const spec of [
+    "e2e-api/apps.spec.js",
+    "e2e-api/detail.spec.js",
+    "e2e-api/gallery-refetch.spec.js",
+  ])
     expect(runs.find((run) => run.arguments_.includes(spec))).toMatchObject({
       prepared: true,
     });

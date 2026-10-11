@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test, loginMember } from "./detail-login-helpers.js";
 import {
   blockExternalRequests,
   deferred,
@@ -11,6 +12,10 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   page,
   context,
 }) => {
+  test.skip(
+    process.env.API_E2E_AUTH_BOUNDARY !== "prepared",
+    "member detail requires prepared authentication",
+  );
   let listRequests = 0;
   const listRequestQueries = [];
   let failRefetchUntilRetry = false;
@@ -21,6 +26,7 @@ test("keeps old gallery cards hidden after a refetch failure and retries by keyb
   const retrySettled = deferred();
   await blockExternalRequests(context);
   await disableAutomaticPagination(page);
+  await loginMember(page);
   await page.route("**/api/v1/apps**", async (route) => {
     const url = new URL(route.request().url());
     if (url.pathname !== "/api/v1/apps") return route.continue();
