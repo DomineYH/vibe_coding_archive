@@ -1,5 +1,6 @@
 import { approvalHeaders } from "./approval-helpers.js";
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test, loginMember } from "./detail-login-helpers.js";
 import { blockExternalRequests, query } from "./helpers.js";
 import {
   adminDetail,
@@ -69,8 +70,12 @@ for (const [owner, publicApp] of [
     expect(edited.is_public).toBe(!publicApp);
     const guest = await browser.newContext();
     try {
-      const response = await guest.request.get(
+      await blockExternalRequests(guest);
+      const guestPage = await guest.newPage();
+      await loginMember(guestPage);
+      const response = await guestPage.request.get(
         `http://localhost:5174/api/v1/apps/${original.id}`,
+        { headers: await approvalHeaders(guestPage) },
       );
       expect(response.status()).toBe(publicApp ? 404 : 200);
     } finally {

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { blockExternalRequests, query } from "./helpers.js";
 import { login, openAdmin, userRow } from "./approval-helpers.js";
+import { adminDetail } from "./admin-apps-manage-helpers.js";
 
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
 const PASSWORD = "  회원 완주 비밀번호 AbC 1234  ";
@@ -34,7 +35,7 @@ if (prepared)
     context,
     request,
   }) => {
-    // Includes two logins, logout, revoke/reapprove, and anonymous app reads.
+    // Includes two logins, logout, revoke/reapprove, and anonymous gallery reads.
     test.setTimeout(60000);
     await blockExternalRequests(context);
     const publicAuthRequests = [];
@@ -85,15 +86,13 @@ if (prepared)
       `INSERT INTO health_results(app_id,state) VALUES ('${privateId}','unchecked')`,
     );
     query(`UPDATE apps SET owner_id='${memberId}' WHERE id='${PUBLIC_APP_ID}'`);
-    const publicApp = await (
-      await request.get(`/api/v1/apps/${PUBLIC_APP_ID}`)
-    ).json();
-    expect(publicApp.item.owner.id).toBe(memberId);
     const adminContext = await browser.newContext();
     await blockExternalRequests(adminContext);
     const adminPage = await adminContext.newPage();
     try {
       await openAdmin(adminPage);
+      const publicApp = await adminDetail(adminPage, PUBLIC_APP_ID);
+      expect(publicApp.owner.id).toBe(memberId);
       let row = userRow(adminPage, "lifecycle-member");
       await row.getByRole("button", { name: "승인하기", exact: true }).click();
       await row
@@ -201,10 +200,7 @@ if (prepared)
           }),
         ]),
       );
-      expect(
-        (await (await request.get(`/api/v1/apps/${PUBLIC_APP_ID}`)).json())
-          .item,
-      ).toEqual(publicApp.item);
+      expect(await adminDetail(adminPage, PUBLIC_APP_ID)).toEqual(publicApp);
       await page.bringToFront();
       await page.reload();
       await expect(
@@ -246,10 +242,7 @@ if (prepared)
           }),
         ]),
       );
-      expect(
-        (await (await request.get(`/api/v1/apps/${PUBLIC_APP_ID}`)).json())
-          .item,
-      ).toEqual(publicApp.item);
+      expect(await adminDetail(adminPage, PUBLIC_APP_ID)).toEqual(publicApp);
       await expect(
         page.getByRole("link", { name: /^둘째 공개 앱,/ }),
       ).toBeVisible();
