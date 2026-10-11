@@ -15,6 +15,7 @@ export function GalleryView({
   meta,
   page,
   canCreate = false,
+  canOpenDetail = false,
   onCreate,
   onQueryChange,
   initialFilters = {},
@@ -43,6 +44,10 @@ export function GalleryView({
   const lastRouteSearch = useRef(initialSearch);
   const routeSearchPending = useRef(false);
   const mainRef = useRef(null);
+  const [loginAppId, setLoginAppId] = useState(null);
+  const loginLinkRef = useRef(null);
+  const loginLinkFocused = useRef(false);
+  const noticeFilters = useRef({ initialSearch, subject, grade });
   const searchRef = useRef(null);
   const loadMoreRegionRef = useRef(null);
   const loadMoreLocked = useRef(false);
@@ -67,6 +72,44 @@ export function GalleryView({
     invalidQuery && !searchTooLong && !loading ? (error.fields ?? {}) : {};
   const queryError = fieldErrors.q;
   const gradeError = fieldErrors.grade;
+
+  useLayoutEffect(() => {
+    const previous = noticeFilters.current;
+    noticeFilters.current = { initialSearch, subject, grade };
+    if (!loginAppId) return;
+    if (
+      canOpenDetail ||
+      previous.initialSearch !== initialSearch ||
+      previous.subject !== subject ||
+      previous.grade !== grade ||
+      !page?.items.some((app) => app.id === loginAppId) ||
+      loading ||
+      error ||
+      searchTooLong
+    ) {
+      if (loginLinkFocused.current) {
+        const card = mainRef.current?.querySelector(
+          `a.card-r[href="/apps/${loginAppId}"]`,
+        );
+        (card ?? mainRef.current)?.focus({ preventScroll: true });
+      }
+      loginLinkFocused.current = false;
+      setLoginAppId(null);
+    }
+  }, [
+    canOpenDetail,
+    error,
+    grade,
+    initialSearch,
+    loading,
+    loginAppId,
+    page,
+    searchTooLong,
+    subject,
+  ]);
+  useLayoutEffect(() => {
+    if (loginAppId) loginLinkRef.current?.focus();
+  }, [loginAppId]);
 
   useLayoutEffect(() => {
     if (lastRouteSearch.current === initialSearch) return;
@@ -334,6 +377,39 @@ export function GalleryView({
         </div>
       ) : (page?.items.length ?? 0) > 0 ? (
         <>
+          <div
+            className={
+              loginAppId
+                ? "mb-5 flex items-center gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-[13px] text-neutral-600"
+                : ""
+            }
+          >
+            <span
+              id="gallery-login-message"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className="whitespace-nowrap"
+            >
+              {loginAppId ? "로그인을 해주세요" : ""}
+            </span>
+            {loginAppId ? (
+              <Link
+                ref={loginLinkRef}
+                to={`/auth?mode=login&return_to=${encodeURIComponent(`/apps/${loginAppId}`)}`}
+                aria-describedby="gallery-login-message"
+                onFocus={() => {
+                  loginLinkFocused.current = true;
+                }}
+                onBlur={() => {
+                  loginLinkFocused.current = false;
+                }}
+                className="acc-text shrink-0 whitespace-nowrap rounded-sm font-semibold underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4C7A96]"
+              >
+                로그인
+              </Link>
+            ) : null}
+          </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {page?.items.map((app) => {
               const theme = meta.themes.find((item) => item.id === app.themeId);
@@ -343,7 +419,16 @@ export function GalleryView({
                   app={app}
                   theme={theme}
                   detailLinkState={detailLinkState}
-                  onDetailClick={onDetailClick}
+                  canOpenDetail={canOpenDetail}
+                  onDetailClick={(event) => {
+                    if (canOpenDetail) {
+                      onDetailClick?.(event);
+                      return;
+                    }
+                    event.preventDefault();
+                    setLoginAppId(app.id);
+                    loginLinkRef.current?.focus();
+                  }}
                 />
               ) : null;
             })}

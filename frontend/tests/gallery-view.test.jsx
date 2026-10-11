@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { GalleryView } from "../src/features/gallery/view-gallery";
 import { StatusBadge } from "../src/components/ui";
@@ -22,6 +22,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           page={{ items: [], facets: { subjectsInUse: [] } }}
           onQueryChange={() => {}}
           resetQuery={() => {}}
@@ -48,6 +49,7 @@ describe("public gallery states", () => {
       render(
         <MemoryRouter>
           <GalleryView
+            canOpenDetail
             page={{ items: [], facets: { subjectsInUse: [] } }}
             initialFilters={initialFilters}
             onQueryChange={() => {}}
@@ -76,6 +78,7 @@ describe("public gallery states", () => {
         });
         return (
           <GalleryView
+            canOpenDetail
             page={{ items: [], facets: { subjectsInUse: [] } }}
             initialFilters={filters}
             onQueryChange={(patch) =>
@@ -115,6 +118,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           page={{ items: [], facets: { subjectsInUse: [] } }}
           initialFilters={{ q: "분수", subject: "수학", grade: "초3" }}
           onQueryChange={() => {}}
@@ -138,6 +142,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={undefined}
           page={undefined}
           onQueryChange={() => {}}
@@ -201,6 +206,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={meta}
           page={{
             ...page,
@@ -262,6 +268,7 @@ describe("public gallery states", () => {
       render(
         <MemoryRouter>
           <GalleryView
+            canOpenDetail
             meta={meta}
             page={page}
             onQueryChange={onQueryChange}
@@ -322,6 +329,7 @@ describe("public gallery states", () => {
       rerender(
         <MemoryRouter>
           <GalleryView
+            canOpenDetail
             {...props}
             initialFilters={{ q: "committed", subject: "과학" }}
           />
@@ -347,6 +355,7 @@ describe("public gallery states", () => {
       render(
         <MemoryRouter>
           <GalleryView
+            canOpenDetail
             meta={undefined}
             page={undefined}
             onQueryChange={onQueryChange}
@@ -385,6 +394,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={meta}
           page={page}
           onQueryChange={() => {}}
@@ -412,6 +422,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={meta}
           page={page}
           onQueryChange={() => {}}
@@ -446,6 +457,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={undefined}
           page={undefined}
           onQueryChange={() => {}}
@@ -475,6 +487,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={undefined}
           page={undefined}
           onQueryChange={() => {}}
@@ -526,6 +539,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={meta}
           page={page}
           onQueryChange={() => {}}
@@ -571,6 +585,7 @@ describe("public gallery states", () => {
     render(
       <MemoryRouter>
         <GalleryView
+          canOpenDetail
           meta={undefined}
           page={undefined}
           onQueryChange={() => {}}
@@ -594,5 +609,171 @@ describe("public gallery states", () => {
     expect(
       screen.queryByText("검색어를 확인해 주세요.", { exact: true }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("gallery login notice", () => {
+  async function setup(overrides = {}) {
+    const meta = await appsService.getMeta();
+    const page = await appsService.list({ limit: 24, offset: 0 });
+    page.items.sort((a, b) => a.id.localeCompare(b.id));
+    const onDetailClick = vi.fn();
+    const props = {
+      meta,
+      page,
+      onDetailClick,
+      onQueryChange: vi.fn(),
+      canOpenDetail: false,
+      ...overrides,
+    };
+    function Location() {
+      return <div data-testid="location">{useLocation().pathname}</div>;
+    }
+    const view = (next = {}) => (
+      <MemoryRouter>
+        <GalleryView {...props} {...next} />
+        <Location />
+      </MemoryRouter>
+    );
+    const result = render(view());
+    return {
+      ...result,
+      props,
+      view,
+      cards: () => document.querySelectorAll("a.card-r"),
+    };
+  }
+
+  it.each(["pointer", "Enter", "Space", "modified pointer"])(
+    "keeps the gallery and focuses one polite login notice on %s",
+    async (activation) => {
+      const { cards, props } = await setup();
+      const card = cards()[0];
+      expect(card).toHaveAccessibleName(
+        "분수 피자 가게, 교사김코딩, 수학 상세 보기, 로그인 필요",
+      );
+      if (activation.includes("pointer"))
+        fireEvent.click(card, { ctrlKey: activation === "modified pointer" });
+      else {
+        card.focus();
+        await userEvent
+          .setup()
+          .keyboard(activation === "Space" ? " " : "{Enter}");
+      }
+      expect(screen.getByTestId("location")).toHaveTextContent("/");
+      expect(cards()).toHaveLength(16);
+      const status = screen.getByRole("status");
+      expect(status).toHaveTextContent("로그인을 해주세요");
+      expect(status).toHaveAttribute("aria-live", "polite");
+      expect(status).toHaveAttribute("aria-atomic", "true");
+      const link = screen.getByRole("link", { name: "로그인", exact: true });
+      expect(link).toHaveAttribute(
+        "href",
+        "/auth?mode=login&return_to=%2Fapps%2F00000000-0000-4000-8000-000000000001",
+      );
+      expect(link).toHaveAccessibleDescription("로그인을 해주세요");
+      expect(link).toHaveFocus();
+      expect(props.onDetailClick).not.toHaveBeenCalled();
+    },
+  );
+
+  it("prevents Space scrolling, ignores repeats/composition and activates once on keyup", async () => {
+    const { cards } = await setup();
+    const card = cards()[0];
+    card.focus();
+    expect(fireEvent.keyDown(card, { key: " " })).toBe(false);
+    fireEvent.keyDown(card, { key: " ", repeat: true });
+    expect(
+      screen.queryByRole("link", { name: "로그인", exact: true }),
+    ).toBeNull();
+    fireEvent.keyUp(card, { key: " " });
+    const link = screen.getByRole("link", { name: "로그인", exact: true });
+    expect(link).toHaveFocus();
+    card.focus();
+    fireEvent.keyDown(card, { key: " ", isComposing: true });
+    fireEvent.keyUp(card, { key: " ", isComposing: true });
+    fireEvent.keyDown(card, { key: "ArrowDown" });
+    fireEvent.keyUp(card, { key: "ArrowDown" });
+    expect(card).toHaveFocus();
+    expect(
+      screen.getAllByRole("link", { name: "로그인", exact: true }),
+    ).toHaveLength(1);
+    fireEvent.keyDown(card, { key: " " });
+    link.focus();
+    fireEvent.keyUp(card, { key: " " });
+    expect(link).toHaveFocus();
+  });
+
+  it("replaces the destination, refocuses repeated activation and does not steal focus on refetch", async () => {
+    const { cards, view, rerender, props } = await setup();
+    fireEvent.click(cards()[0]);
+    const link = screen.getByRole("link", { name: "로그인", exact: true });
+    cards()[0].focus();
+    fireEvent.click(cards()[0]);
+    expect(link).toHaveFocus();
+    fireEvent.click(cards()[1]);
+    expect(link).toHaveAttribute(
+      "href",
+      "/auth?mode=login&return_to=%2Fapps%2F00000000-0000-4000-8000-000000000002",
+    );
+    expect(screen.getAllByText("로그인을 해주세요")).toHaveLength(1);
+    const search = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+    search.focus();
+    rerender(view({ page: { ...props.page, items: [...props.page.items] } }));
+    expect(search).toHaveFocus();
+    expect(link).toBeInTheDocument();
+  });
+
+  it.each(["q", "subject", "grade", "removed", "eligible"])(
+    "clears the notice with safe focus on %s and never revives it",
+    async (change) => {
+      const { cards, view, rerender, props } = await setup();
+      fireEvent.click(cards()[0]);
+      const next =
+        change === "removed"
+          ? { page: { ...props.page, items: props.page.items.slice(1) } }
+          : change === "eligible"
+            ? { canOpenDetail: true }
+            : { initialFilters: { [change]: "changed" } };
+      rerender(view(next));
+      expect(
+        screen.queryByRole("link", { name: "로그인", exact: true }),
+      ).toBeNull();
+      expect(document.activeElement).toBe(
+        change === "removed" ? screen.getByRole("main") : cards()[0],
+      );
+      rerender(view({ ...next, canOpenDetail: false }));
+      expect(screen.queryByText("로그인을 해주세요")).toBeNull();
+    },
+  );
+
+  it("does not move focus away from another control when clearing", async () => {
+    const { cards, view, rerender } = await setup();
+    fireEvent.click(cards()[0]);
+    const search = screen.getByRole("textbox", { name: "앱·작성자 검색" });
+    search.focus();
+    rerender(view({ canOpenDetail: true }));
+    expect(search).toHaveFocus();
+  });
+
+  it("preserves full-member name, native Space and navigation state", async () => {
+    const { cards, props } = await setup({
+      canOpenDetail: true,
+      detailLinkState: { fromGallery: true },
+    });
+    const card = cards()[0];
+    expect(card).toHaveAccessibleName(
+      "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+    );
+    card.focus();
+    expect(fireEvent.keyDown(card, { key: " " })).toBe(true);
+    fireEvent.keyUp(card, { key: " " });
+    expect(props.onDetailClick).not.toHaveBeenCalled();
+    fireEvent.click(card);
+    expect(props.onDetailClick).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/apps/00000000-0000-4000-8000-000000000001",
+    );
+    expect(screen.queryByText("로그인을 해주세요")).toBeNull();
   });
 });

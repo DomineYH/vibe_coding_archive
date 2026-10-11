@@ -451,6 +451,13 @@ function GalleryRoute({ auth, galleryReturnPosition }) {
       meta={access.meta}
       page={page}
       canCreate={canCreateApp(auth, access)}
+      canOpenDetail={Boolean(
+        auth.status === "ready" &&
+        !auth.concealed &&
+        auth.user?.approved &&
+        auth.user.sessionKind === "full" &&
+        !auth.user.mustChangePassword,
+      )}
       onCreate={() => navigate("/apps/new")}
       onQueryChange={onQueryChange}
       initialFilters={filters}

@@ -535,3 +535,11 @@ acceptance is claimed.
 ## Issue #222 detail authentication entry
 
 Anonymous gallery cards, search, facets and their health badges stay public. Following a card or a direct valid detail URL now enters the existing login screen with the exact detail return path; a change-only session enters password change first. Detail, copy, app links and the health panel appear only after an approved full observation. Detail captures therefore use the signed-in header. Existing visual baselines are not regenerated; intended header differences and local font differences are recorded in the implementation report. Human visual acceptance remains pending.
+
+## Issue #223 gallery login notice
+
+The coordinator-approved #223 work order adds one inline “로그인을 해주세요” polite status and an adjacent “로그인” link before the gallery grid. Card Link semantics remain; non-eligible primary clicks (including modifiers), Enter and Space focus the explicit login link without leaving the gallery. Its exact UUID detail return survives login and required password change. Anonymous accessible names append “로그인 필요”; full-member names and navigation remain unchanged. Selecting another card replaces the destination; applied filter changes, card removal and eligible auth clear the notice with a focus fallback only when needed. No timeout or close button is added.
+
+`gallery-login-required` is captured product-only at 1440×1000, 1024×900, 768×1024, 390×844 and 360×844, with text-range line/bounds/overflow assertions. No reference or baseline PNG is created or replaced. This supersedes #222's immediate gallery-card redirect only; direct URL and API protection are unchanged. Commands, geometry artifacts and actual outcomes are recorded in `/home/dominelinux/.cache/vibe_coding_archive/coord/b223/report-impl223.md`. Coordinator adoption and automated checks do not claim human visual or screen-reader acceptance.
+
+Local verification: the 360/390px keyboard focus/outline checks and all five new-state text/bounds/overflow assertions pass. The full gallery visual spec passes 94 tests, including existing comparisons; the historical b160 font prerequisite failure does not reproduce. The aggregate capture ledger includes five new product-only records, and all 1,473 tracked evidence PNG hashes remain unchanged. Human acceptance and CI remain separate pending gates.

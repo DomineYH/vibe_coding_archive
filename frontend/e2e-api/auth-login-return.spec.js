@@ -208,3 +208,93 @@ for (const kind of ["member", "temporary"]) {
     await expect(page.getByRole("link", { name: "앱 열기" })).toBeVisible();
   });
 }
+
+for (const [kind, activation] of [
+  ["member", "pointer"],
+  ["member", "Enter"],
+  ["member", "Space"],
+  ["temporary", "pointer"],
+  ["temporary-existing", "pointer"],
+]) {
+  test(`gallery login notice returns through ${kind} ${activation} to the exact detail`, async ({
+    page,
+    members,
+  }) => {
+    const path = "/apps/00000000-0000-4000-8000-000000000001";
+    const temporary = kind.startsWith("temporary");
+    const member = members[temporary ? "temporary" : "member"];
+    if (kind === "temporary-existing") {
+      await submitReturnLogin(page, member.login, "/auth?mode=login");
+      await expect(
+        page.locator('[data-screen-label="비밀번호 변경"] form'),
+      ).toBeVisible();
+    }
+    const requests = [];
+    page.on("request", (request) => {
+      if (
+        /\/api\/v1\/(apps\/[^/]+|health-checks\/)/.test(
+          new URL(request.url()).pathname,
+        )
+      )
+        requests.push(request.url());
+    });
+    await page.goto("/");
+    const card = page.locator(`a.card-r[href="${path}"]`);
+    await expect(card).toBeVisible();
+    const name = await card.locator(".truncate").first().innerText();
+    const fullName = (await card.getAttribute("aria-label")).replace(
+      /, 로그인 필요$/,
+      "",
+    );
+    if (activation === "pointer") await card.click();
+    else {
+      await card.focus();
+      await page.keyboard.press(activation);
+    }
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("status")).toHaveText("로그인을 해주세요");
+    await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+    expect(requests).toEqual([]);
+    const login = page.getByRole("link", { name: "로그인", exact: true });
+    await expect(login).toHaveAttribute(
+      "href",
+      `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+    );
+    await login.click();
+    if (kind !== "temporary-existing") {
+      await expect(page).toHaveURL(
+        `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+      );
+      const form = page.locator('[data-screen-label="로그인"] form');
+      await form
+        .getByLabel("로그인 아이디", { exact: true })
+        .fill(member.login);
+      await form.getByLabel("비밀번호", { exact: true }).fill(ORIGINAL);
+      await form.getByRole("button", { name: "로그인", exact: true }).click();
+    }
+    if (temporary) {
+      const mode = kind === "temporary-existing" ? "login" : "password-change";
+      await expect(page).toHaveURL(
+        `/auth?mode=${mode}&return_to=${encodeURIComponent(path)}`,
+      );
+      await expect(
+        page.locator('[data-screen-label="비밀번호 변경"] form'),
+      ).toBeVisible();
+      await expect(page.getByRole("link", { name: "앱 열기" })).toHaveCount(0);
+      expect(requests).toEqual([]);
+      await change(page);
+    }
+    await expect(page).toHaveURL(path);
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "앱 열기" })).toBeVisible();
+    await page.getByRole("button", { name: "갤러리로", exact: true }).click();
+    await expect(card).toHaveAccessibleName(fullName);
+    await card.click();
+    await expect(page).toHaveURL(path);
+    await expect(
+      page.getByText("로그인을 해주세요", { exact: true }),
+    ).toHaveCount(0);
+  });
+}

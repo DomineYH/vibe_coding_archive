@@ -56,6 +56,7 @@ const components = [
   },
 ];
 const addedStates = [
+  "gallery-login-required",
   "gallery-loading",
   "gallery-empty",
   "gallery-empty-archive",
@@ -342,6 +343,10 @@ async function captureAndCompare(
     detail: { scenario: "visual_fixture", apps: originalApps },
     "detail-copy-done": { scenario: "visual_fixture", apps: originalApps },
     "detail-component": { scenario: "visual_fixture", apps: originalApps },
+    "gallery-login-required": {
+      scenario: "visual_fixture",
+      apps: originalApps,
+    },
     gallery: { scenario: "visual_fixture", apps: originalApps },
     "gallery-component": { scenario: "visual_fixture", apps: originalApps },
     "gallery-api-order": { scenario: "original", apps: originalApps },
@@ -443,6 +448,57 @@ async function captureAndCompare(
     await expect(
       page.getByRole("heading", { name: "분수 피자 가게", exact: true }),
     ).toBeVisible();
+  }
+  if (state === "gallery-login-required") {
+    const card = page.locator(
+      'a.card-r[href="/apps/00000000-0000-4000-8000-000000000001"]',
+    );
+    await card.focus();
+    await page.keyboard.press("Space");
+    await expect(page).toHaveURL("/");
+    await expect(page.getByRole("status")).toHaveText("로그인을 해주세요");
+    const login = page.getByRole("link", { name: "로그인", exact: true });
+    await expect(login).toBeFocused();
+    await expect(login).toHaveAttribute(
+      "href",
+      "/auth?mode=login&return_to=%2Fapps%2F00000000-0000-4000-8000-000000000001",
+    );
+    await page.evaluate(() => document.fonts.ready);
+    const geometry = await login.evaluate((link) => {
+      const message = document.getElementById(
+        link.getAttribute("aria-describedby"),
+      );
+      const measure = (element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        const rect = element.getBoundingClientRect();
+        return {
+          lines: range.getClientRects().length,
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+        };
+      };
+      return {
+        message: measure(message),
+        link: measure(link),
+        width: window.innerWidth,
+        overflow: document.documentElement.scrollWidth > window.innerWidth,
+      };
+    });
+    expect(geometry.message.lines).toBe(1);
+    expect(geometry.link.lines).toBe(1);
+    expect(geometry.message.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.message.right).toBeLessThanOrEqual(geometry.link.left);
+    expect(geometry.message.bottom).toBeGreaterThan(geometry.link.top);
+    expect(geometry.link.bottom).toBeGreaterThan(geometry.message.top);
+    expect(geometry.link.right).toBeLessThanOrEqual(geometry.width);
+    expect(geometry.overflow).toBe(false);
+    await testInfo.attach("login-notice-geometry", {
+      body: JSON.stringify(geometry),
+      contentType: "application/json",
+    });
   }
   if (state === "gallery-query-overflow") {
     await page
@@ -820,6 +876,7 @@ for (const state of addedStates) {
   for (const viewport of viewports) {
     const tag = `${viewport.width}x${viewport.height}`;
     const baselinePath =
+      state === "gallery-login-required" ||
       state === "gallery-empty-archive" ||
       state === "corrupt-storage-recovery" ||
       state.startsWith("health-")

@@ -17,12 +17,17 @@ test("public gallery opens a detail route and supports refresh and browser histo
 }) => {
   await page.goto("/");
   const app = page.getByRole("link", {
-    name: "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+    name: "분수 피자 가게, 교사김코딩, 수학 상세 보기, 로그인 필요",
   });
   await expect(app).toBeVisible();
   await expect(page.locator("a.card-r")).toHaveCount(16);
   await tabTo(page, app);
   await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("status")).toHaveText("로그인을 해주세요");
+  const login = page.getByRole("link", { name: "로그인", exact: true });
+  await expect(login).toBeFocused();
+  await login.click();
   await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
   await loginMember(page);
   await expect(
@@ -352,19 +357,26 @@ test("gallery navigation is keyboard reachable and controls have accessible name
   await tabTo(page, search);
   await expect(search).toBeFocused();
 
-  const cards = page.getByRole("link", { name: /상세 보기$/ });
+  const cards = page.getByRole("link", { name: /상세 보기, 로그인 필요$/ });
   await expect(cards).toHaveCount(16);
   for (let index = 0; index < 16; index += 1) {
     const card = cards.nth(index);
-    await expect(card).toHaveAccessibleName(/.+,\s.+,\s.+ 상세 보기$/);
+    await expect(card).toHaveAccessibleName(
+      /.+,\s.+,\s.+ 상세 보기, 로그인 필요$/,
+    );
     await tabTo(page, card);
     await expect(card).toBeFocused();
   }
   const fractionApp = page.getByRole("link", {
-    name: "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+    name: "분수 피자 가게, 교사김코딩, 수학 상세 보기, 로그인 필요",
   });
   await tabTo(page, fractionApp);
   await page.keyboard.press("Enter");
+  await expect(page).toHaveURL("/");
+  await expect(page.getByRole("status")).toHaveText("로그인을 해주세요");
+  const login = page.getByRole("link", { name: "로그인", exact: true });
+  await expect(login).toBeFocused();
+  await login.click();
   await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
   await loginMember(page);
   await expect(
@@ -408,7 +420,7 @@ test("an unabortable stale search response cannot replace newer results", async 
   await page.waitForTimeout(400);
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toHaveAccessibleName(
-    "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+    "분수 피자 가게, 교사김코딩, 수학 상세 보기, 로그인 필요",
   );
 });
 
@@ -610,3 +622,126 @@ async function loginMember(page) {
   await form.getByRole("button", { name: "로그인", exact: true }).click();
   await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
 }
+
+for (const activation of ["pointer", "Enter", "Space", "modified pointer"]) {
+  test(`gallery login notice on ${activation} replaces the destination without navigation`, async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    const cards = page.locator("a.card-r");
+    await expect(cards).toHaveCount(16);
+    const popups = [];
+    context.on("page", (popup) => popups.push(popup));
+    const selected = cards.nth(12);
+    const path = await selected.getAttribute("href");
+    if (activation.includes("pointer"))
+      await selected.click({
+        modifiers: activation === "modified pointer" ? ["ControlOrMeta"] : [],
+      });
+    else {
+      await selected.focus();
+      await page.keyboard.press(activation);
+    }
+    await expect(page).toHaveURL("/");
+    await expect(cards).toHaveCount(16);
+    await expect(page.getByRole("status")).toHaveText("로그인을 해주세요");
+    const login = page.getByRole("link", { name: "로그인", exact: true });
+    await expect(login).toBeFocused();
+    await expect(login).toBeInViewport();
+    await expect(login).toHaveAttribute(
+      "href",
+      `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+    );
+    await page
+      .locator('a.card-r[href="/apps/00000000-0000-4000-8000-000000000002"]')
+      .click();
+    await expect(login).toHaveAttribute(
+      "href",
+      "/auth?mode=login&return_to=%2Fapps%2F00000000-0000-4000-8000-000000000002",
+    );
+    await expect(
+      page.getByText("로그인을 해주세요", { exact: true }),
+    ).toHaveCount(1);
+    expect(popups).toHaveLength(0);
+    await login.click();
+    await loginMember(page);
+    await expect(page).toHaveURL("/apps/00000000-0000-4000-8000-000000000002");
+  });
+}
+
+for (const width of [360, 390]) {
+  test(`gallery login notice stays on one line with visible keyboard focus at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await page.goto("/");
+    const card = page.locator("a.card-r").nth(12);
+    await card.focus();
+    await page.keyboard.press("Space");
+    const login = page.getByRole("link", { name: "로그인", exact: true });
+    await expect(login).toBeFocused();
+    await expect(login).toBeInViewport();
+    const geometry = await login.evaluate((link) => {
+      const message = document.getElementById(
+        link.getAttribute("aria-describedby"),
+      );
+      const lines = (element) => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return [...range.getClientRects()].map((rect) => rect.top);
+      };
+      const bounds = (element) => {
+        const rect = element.getBoundingClientRect();
+        return {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom,
+        };
+      };
+      return {
+        messageLines: lines(message),
+        linkLines: lines(link),
+        message: bounds(message),
+        link: bounds(link),
+        width: window.innerWidth,
+        overflow: document.documentElement.scrollWidth > window.innerWidth,
+        outline: getComputedStyle(link).outlineWidth,
+      };
+    });
+    expect(geometry.messageLines).toHaveLength(1);
+    expect(geometry.linkLines).toHaveLength(1);
+    expect(geometry.message.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.message.right).toBeLessThanOrEqual(geometry.link.left);
+    expect(geometry.message.bottom).toBeGreaterThan(geometry.link.top);
+    expect(geometry.link.bottom).toBeGreaterThan(geometry.message.top);
+    expect(geometry.link.right).toBeLessThanOrEqual(geometry.width);
+    expect(geometry.overflow).toBe(false);
+    expect(parseFloat(geometry.outline)).toBeGreaterThanOrEqual(2);
+  });
+}
+
+test("full-member modified card click keeps native new-tab navigation without notice", async ({
+  page,
+  context,
+}) => {
+  await page.goto("/auth?mode=login");
+  await loginMember(page);
+  await expect(page).toHaveURL("/");
+  const card = page.locator(
+    'a.card-r[href="/apps/00000000-0000-4000-8000-000000000001"]',
+  );
+  await expect(card).toHaveAccessibleName(
+    "분수 피자 가게, 교사김코딩, 수학 상세 보기",
+  );
+  const popupPromise = context.waitForEvent("page");
+  await card.click({ modifiers: ["ControlOrMeta"] });
+  const popup = await popupPromise;
+  await expect(popup).toHaveURL("/apps/00000000-0000-4000-8000-000000000001");
+  await expect(page).toHaveURL("/");
+  await expect(
+    page.getByText("로그인을 해주세요", { exact: true }),
+  ).toHaveCount(0);
+  await popup.close();
+});

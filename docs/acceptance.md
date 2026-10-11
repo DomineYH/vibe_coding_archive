@@ -559,3 +559,19 @@ Local execution used a commit-built Linux snapshot, the supplied offline environ
 | Auth unavailable | `npm run test:e2e:api -- --auth-unavailable e2e-api/auth-prepare.spec.js e2e-api/auth-access.spec.js e2e-api/apps.spec.js e2e-api/detail.spec.js --config=$C/linux-playwright.api.config.mjs` | 10 PASS including public gallery and explicit blocked detail, 8 prepared-only SKIP; `linux-api-unavailable.log`. |
 | Visual | `npm run test:visual -- --config=$C/linux-playwright.visual.config.mjs visual/gallery.spec.js visual/auth.spec.js visual/app-create.spec.js visual/app-delete.spec.js visual/admin.spec.js`; affected retry commands in report | Initial 49 PASS, 2 fixture/timeout FAIL and 88 NOT RUN; `linux-visual.log`. Final gallery 89 PASS, timed-out 1440px auth 1 PASS; `linux-visual-gallery-final.log`, `linux-visual-auth-final.log`. All 139 cases have passing evidence across runs. Historical b160 font mismatch did not reproduce; no baseline or comparison threshold changed. Human header/device/visual acceptance and CI remain pending. |
 | Static HTTPS | `npm run test:e2e:api -- --nginx e2e-api/static-serving.spec.js --config=$C/linux-playwright.api.config.mjs` | NOT RUN: Nginx executable unavailable; no Vite fallback; `linux-api-static.log`. |
+
+## Issue #223 gallery card login notice
+
+The coordinator-approved work order adopts one inline polite notice before the grid, the exact text “로그인을 해주세요” and one focused “로그인” link. Cards retain Link semantics. Primary clicks (including modifiers), Enter and gated Space stay on the gallery for every non-eligible observation; approved ready full sessions without concealment or a password-change requirement keep existing navigation. The login return is built only from the mapped card UUID. Direct detail URLs and server guards remain governed by #222; only its former immediate gallery-card redirect is superseded.
+
+| Criterion | Evidence |
+| --- | --- |
+| AC1 gallery stays visible on pointer/Enter/Space | `gallery-view.test.jsx`, `gallery-login.test.jsx`, `e2e/gallery.spec.js`; behavioral Red logs show absent notice/Space and immediate redirect before implementation |
+| AC2 polite status, mobile single line and focus | View live-region/focus lifecycle assertions; browser text-range, bounds, overflow and focus-outline checks at 360/390px; `gallery-login-required` visual geometry at all five viewports |
+| AC3 explicit login and exact detail return | Safe href/parser and tampered-DOM-href route checks; mock login return; API ordinary, temporary and existing change-only login/password-change returns using the cleanup fixture |
+| AC4 existing full-member navigation | Member/admin route destination, fromGallery and scroll checks; existing browser filter/history test plus modified primary new-tab behavior |
+| AC5 unit, mock/API and visual verification | Approved serial matrix and final full mock Vitest; exact commands, counts and limitations in the local report below |
+
+Execution evidence and Red/Green results: `/home/dominelinux/.cache/vibe_coding_archive/coord/b223/report-impl223.md`, with logs in its sibling `logs/`. The five new visual states are product-only (`baselinePath = null`); all historical references remain unchanged. Independent review, CI and human screen-reader/device acceptance remain pending.
+
+Local #223 results: targeted view/route **47 PASS**, auth/detail/return regressions **325 PASS**, configured static checks **PASS**, mock browser **66 PASS**, prepared API **23 PASS / 1 unavailable-only SKIP**, unavailable API **2 PASS / 8 prepared-only SKIP**, visual **94 PASS**, production build/distribution **PASS**, and final full mock Vitest **1,795 PASS in 54 files**. All five new visual geometry states pass; all 1,473 tracked evidence PNGs remain byte-identical. Initial assertion failures and corrections are retained in the report; no skipped prepared case is counted as passing evidence.
