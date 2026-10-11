@@ -153,9 +153,12 @@ if (prepared)
           .getByRole("button", { name: "로그인", exact: true }),
       ).toBeVisible();
       await page.goto(`/apps/${privateId}`);
-      await expect(page.getByRole("alert")).toContainText(
-        "아카이브 앱을 찾을 수 없어요",
+      await expect(page).toHaveURL(
+        `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${privateId}`)}`,
       );
+      await expect(
+        page.getByLabel("로그인 아이디", { exact: true }),
+      ).toBeVisible();
       await login(page, "lifecycle-member", PASSWORD);
       await expect(
         page.getByRole("banner").getByText("완주 교사", { exact: true }),
