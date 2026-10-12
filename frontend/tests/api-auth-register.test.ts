@@ -202,7 +202,7 @@ it.each(["교\u200b사", "\ufeff교사\ufeff"])(
     ).rejects.toMatchObject({
       code: "VALIDATION_ERROR",
       httpStatus: 422,
-      outcome: "rejected",
+      outcome: "not_applicable",
       fields: { nickname: message },
     });
   },
