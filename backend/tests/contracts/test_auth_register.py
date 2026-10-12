@@ -30,13 +30,16 @@ def test_ordinary_runtime_rejects_registration_without_creating_a_member(
 def register(browser, **values):
     return browser.client.post(
         f"{API}/register",
-        json={
-            "login_id": " Teacher ",
-            "password": PASSWORD,
-            "nickname": " 같은 별명 ",
-            **values,
-        },
+        content=json.dumps(
+            {
+                "login_id": " Teacher ",
+                "password": PASSWORD,
+                "nickname": " 같은 별명 ",
+                **values,
+            }
+        ),
         headers={
+            "Content-Type": "application/json",
             **browser.session_headers(),
             "X-EduVibe-Auth-Revision": browser.revision,
         },
