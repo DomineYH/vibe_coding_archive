@@ -1,0 +1,92 @@
+[
+  {
+    "viewport": {
+      "width": 360,
+      "height": 844
+    },
+    "before": {
+      "width": 360,
+      "browser": "151.0.7922.34",
+      "scrollWidth": 36000,
+      "clientWidth": 270,
+      "height": 1435.6875,
+      "pageScrollWidth": 360,
+      "pageClientWidth": 360,
+      "wordBreak": "keep-all",
+      "whiteSpace": "pre-wrap",
+      "textWithinParagraph": false
+    },
+    "after": {
+      "width": 360,
+      "browser": "151.0.7922.34",
+      "scrollWidth": 270,
+      "clientWidth": 270,
+      "height": 4936.75,
+      "pageScrollWidth": 360,
+      "pageClientWidth": 360,
+      "wordBreak": "keep-all",
+      "whiteSpace": "pre-wrap",
+      "textWithinParagraph": true
+    }
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "before": {
+      "width": 390,
+      "browser": "151.0.7922.34",
+      "scrollWidth": 36000,
+      "clientWidth": 300,
+      "height": 1435.6875,
+      "pageScrollWidth": 390,
+      "pageClientWidth": 390,
+      "wordBreak": "keep-all",
+      "whiteSpace": "pre-wrap",
+      "textWithinParagraph": false
+    },
+    "after": {
+      "width": 390,
+      "browser": "151.0.7922.34",
+      "scrollWidth": 300,
+      "clientWidth": 300,
+      "height": 4634.5,
+      "pageScrollWidth": 390,
+      "pageClientWidth": 390,
+      "wordBreak": "keep-all",
+      "whiteSpace": "pre-wrap",
+      "textWithinParagraph": true
+    }
+  },
+  {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "before": {
+      "width": 1440,
+      "browser": "151.0.7922.34",
+      "scrollWidth": 36000,
+      "clientWidth": 602,
+      "height": 730.4375,
+      "pageScrollWidth": 1440,
+      "pageClientWidth": 1440,
+      "wordBreak": "keep-all",
+      "whiteSpace": "pre-wrap",
+      "textWithinParagraph": false
+    },
+    "after": {
+      "width": 1440,
+      "browser": "151.0.7922.34",
+      "scrollWidth": 602,
+      "clientWidth": 602,
+      "height": 2317.25,
+      "pageScrollWidth": 1440,
+      "pageClientWidth": 1440,
+      "wordBreak": "keep-all",
+      "whiteSpace": "pre-wrap",
+      "textWithinParagraph": true
+    }
+  }
+]

@@ -1,0 +1,250 @@
+[
+  {
+    "name": "detail-1024x900.png",
+    "width": 1024,
+    "height": 1514,
+    "differentPixels": 0,
+    "beforeSha256": "426b1817cf150b599593bc5c78f1750d8a83f0e6a3db8700cad469e42af25d10",
+    "afterSha256": "426b1817cf150b599593bc5c78f1750d8a83f0e6a3db8700cad469e42af25d10"
+  },
+  {
+    "name": "detail-1440x1000.png",
+    "width": 1440,
+    "height": 1533,
+    "differentPixels": 0,
+    "beforeSha256": "fb2a10bdeb130c1a233d4a2d1d2c1ae4ccf03ef7b724b3a1c053f44d6a71fd16",
+    "afterSha256": "fb2a10bdeb130c1a233d4a2d1d2c1ae4ccf03ef7b724b3a1c053f44d6a71fd16"
+  },
+  {
+    "name": "detail-360x844.png",
+    "width": 360,
+    "height": 2147,
+    "differentPixels": 0,
+    "beforeSha256": "c081a3ca5fff003c69e80f2b9a438eaca7d182bc812b63f941cea9b62f0076b2",
+    "afterSha256": "c081a3ca5fff003c69e80f2b9a438eaca7d182bc812b63f941cea9b62f0076b2"
+  },
+  {
+    "name": "detail-390x844.png",
+    "width": 390,
+    "height": 2141,
+    "differentPixels": 0,
+    "beforeSha256": "a2d7ccc18ed8f5ceb4e2ebc183df60d812113bf8d91f69bc202c64155e24f810",
+    "afterSha256": "a2d7ccc18ed8f5ceb4e2ebc183df60d812113bf8d91f69bc202c64155e24f810"
+  },
+  {
+    "name": "detail-768x1024.png",
+    "width": 768,
+    "height": 1930,
+    "differentPixels": 0,
+    "beforeSha256": "1e0fc3ba90e4fcd49a280c37f609899eb304e9a1ebe87e3956165ab95fd9edf4",
+    "afterSha256": "1e0fc3ba90e4fcd49a280c37f609899eb304e9a1ebe87e3956165ab95fd9edf4"
+  },
+  {
+    "name": "detail-component-1440x1000.png",
+    "width": 340,
+    "height": 729,
+    "differentPixels": 0,
+    "beforeSha256": "52a3c08ed1b9de15c6f8162eefadb51bafe05071d14a15745c13b6a00f12e629",
+    "afterSha256": "52a3c08ed1b9de15c6f8162eefadb51bafe05071d14a15745c13b6a00f12e629"
+  },
+  {
+    "name": "detail-copy-done-1024x900.png",
+    "width": 1024,
+    "height": 1514,
+    "differentPixels": 0,
+    "beforeSha256": "e55ce740b16f8a9bb316627eaba37ca573716f92e320238d5a3c24841890e7dc",
+    "afterSha256": "e55ce740b16f8a9bb316627eaba37ca573716f92e320238d5a3c24841890e7dc"
+  },
+  {
+    "name": "detail-copy-done-1440x1000.png",
+    "width": 1440,
+    "height": 1533,
+    "differentPixels": 0,
+    "beforeSha256": "4260173935f94de428ed758f45551c1a2010f9cd9105d23aa7b90752ea55e614",
+    "afterSha256": "4260173935f94de428ed758f45551c1a2010f9cd9105d23aa7b90752ea55e614"
+  },
+  {
+    "name": "detail-copy-done-360x844.png",
+    "width": 360,
+    "height": 2147,
+    "differentPixels": 0,
+    "beforeSha256": "106b1881143fca9565c08fed0f9f8d293c21b98903893da7a4be1b8d72965d69",
+    "afterSha256": "106b1881143fca9565c08fed0f9f8d293c21b98903893da7a4be1b8d72965d69"
+  },
+  {
+    "name": "detail-copy-done-390x844.png",
+    "width": 390,
+    "height": 2141,
+    "differentPixels": 0,
+    "beforeSha256": "ece97c9505d3ea75589b1346d88a972488e732ca1b84b3ea24a806b361fdb795",
+    "afterSha256": "ece97c9505d3ea75589b1346d88a972488e732ca1b84b3ea24a806b361fdb795"
+  },
+  {
+    "name": "detail-copy-done-768x1024.png",
+    "width": 768,
+    "height": 1930,
+    "differentPixels": 0,
+    "beforeSha256": "faf815f7c1ffdd429d8b2fe8b3930cac496c365f08ee64f17b7876a15df28cef",
+    "afterSha256": "faf815f7c1ffdd429d8b2fe8b3930cac496c365f08ee64f17b7876a15df28cef"
+  },
+  {
+    "name": "health-job-failed-1024x900.png",
+    "width": 1024,
+    "height": 1615,
+    "differentPixels": 0,
+    "beforeSha256": "7d7d2a67570f755a6764e77777ef8e38f90fe0df60f38bdbe5fe7cd896115560",
+    "afterSha256": "7d7d2a67570f755a6764e77777ef8e38f90fe0df60f38bdbe5fe7cd896115560"
+  },
+  {
+    "name": "health-job-failed-1440x1000.png",
+    "width": 1440,
+    "height": 1634,
+    "differentPixels": 0,
+    "beforeSha256": "7c073d580f4fe9bc37203cd71dd2e2983cf287712dc845efefbdaf28db0b1a4a",
+    "afterSha256": "7c073d580f4fe9bc37203cd71dd2e2983cf287712dc845efefbdaf28db0b1a4a"
+  },
+  {
+    "name": "health-job-failed-360x844.png",
+    "width": 360,
+    "height": 2248,
+    "differentPixels": 0,
+    "beforeSha256": "5d8e7bf1e1105d1f7f33846144db926f993820083fe70c5b257632b695a64acf",
+    "afterSha256": "5d8e7bf1e1105d1f7f33846144db926f993820083fe70c5b257632b695a64acf"
+  },
+  {
+    "name": "health-job-failed-390x844.png",
+    "width": 390,
+    "height": 2223,
+    "differentPixels": 0,
+    "beforeSha256": "50bda2eff30e26efd5ffda9aaa3db2ade27cc9ecce2d200b486023c8a84e1c2f",
+    "afterSha256": "50bda2eff30e26efd5ffda9aaa3db2ade27cc9ecce2d200b486023c8a84e1c2f"
+  },
+  {
+    "name": "health-job-failed-768x1024.png",
+    "width": 768,
+    "height": 2011,
+    "differentPixels": 0,
+    "beforeSha256": "eba1bbaf4687d99c9a12c593a3984de945a84c655f55d3f4264d4074338a17a1",
+    "afterSha256": "eba1bbaf4687d99c9a12c593a3984de945a84c655f55d3f4264d4074338a17a1"
+  },
+  {
+    "name": "health-query-error-1024x900.png",
+    "width": 1024,
+    "height": 1684,
+    "differentPixels": 0,
+    "beforeSha256": "9402e70719cffbd9ebfdd1c311ebcf368f8690f22c4521cd372c170ccbcc59be",
+    "afterSha256": "9402e70719cffbd9ebfdd1c311ebcf368f8690f22c4521cd372c170ccbcc59be"
+  },
+  {
+    "name": "health-query-error-1440x1000.png",
+    "width": 1440,
+    "height": 1703,
+    "differentPixels": 0,
+    "beforeSha256": "d9d9044b99e110b639fc317f2faff44ba0946c2faa4701d877abd47b897cb699",
+    "afterSha256": "d9d9044b99e110b639fc317f2faff44ba0946c2faa4701d877abd47b897cb699"
+  },
+  {
+    "name": "health-query-error-360x844.png",
+    "width": 360,
+    "height": 2335,
+    "differentPixels": 0,
+    "beforeSha256": "174bfcad298435405ec359dd7e37f321b3ace2da142927f0ea9ab9d835e6b9e1",
+    "afterSha256": "174bfcad298435405ec359dd7e37f321b3ace2da142927f0ea9ab9d835e6b9e1"
+  },
+  {
+    "name": "health-query-error-390x844.png",
+    "width": 390,
+    "height": 2311,
+    "differentPixels": 0,
+    "beforeSha256": "588addef5cef45a2bb705abbc4e262296c8c0b172340c986d21af88ed5269293",
+    "afterSha256": "588addef5cef45a2bb705abbc4e262296c8c0b172340c986d21af88ed5269293"
+  },
+  {
+    "name": "health-query-error-768x1024.png",
+    "width": 768,
+    "height": 2100,
+    "differentPixels": 0,
+    "beforeSha256": "044da2390340c627533b89a7f1451ef09b0cb95fb3d7ec4b4255f61d599816fb",
+    "afterSha256": "044da2390340c627533b89a7f1451ef09b0cb95fb3d7ec4b4255f61d599816fb"
+  },
+  {
+    "name": "health-result-error-1024x900.png",
+    "width": 1024,
+    "height": 1592,
+    "differentPixels": 0,
+    "beforeSha256": "3688e1411d0fff7901f63b346bdaab433e28bb2da67dcbdece9de0e40c1f4d49",
+    "afterSha256": "3688e1411d0fff7901f63b346bdaab433e28bb2da67dcbdece9de0e40c1f4d49"
+  },
+  {
+    "name": "health-result-error-1440x1000.png",
+    "width": 1440,
+    "height": 1611,
+    "differentPixels": 0,
+    "beforeSha256": "1b0fac23ba0b8bb7a8a3b66c69b00826c1338d34027dfa7dd7e4d5e0c34fd32c",
+    "afterSha256": "1b0fac23ba0b8bb7a8a3b66c69b00826c1338d34027dfa7dd7e4d5e0c34fd32c"
+  },
+  {
+    "name": "health-result-error-360x844.png",
+    "width": 360,
+    "height": 2225,
+    "differentPixels": 0,
+    "beforeSha256": "66c1fe6d89aed8e813653afac5244249ccd375f8529bb97e68af3d988211a3b3",
+    "afterSha256": "66c1fe6d89aed8e813653afac5244249ccd375f8529bb97e68af3d988211a3b3"
+  },
+  {
+    "name": "health-result-error-390x844.png",
+    "width": 390,
+    "height": 2201,
+    "differentPixels": 0,
+    "beforeSha256": "d92b2c9e1b500dcef10c0bf4e711bb163a545fe6dfa1f02e26aba1ca4be122dd",
+    "afterSha256": "d92b2c9e1b500dcef10c0bf4e711bb163a545fe6dfa1f02e26aba1ca4be122dd"
+  },
+  {
+    "name": "health-result-error-768x1024.png",
+    "width": 768,
+    "height": 1990,
+    "differentPixels": 0,
+    "beforeSha256": "dd4bf9146b01d94714865e85ee5a463f708d53108611e22ca0e834c17c089627",
+    "afterSha256": "dd4bf9146b01d94714865e85ee5a463f708d53108611e22ca0e834c17c089627"
+  },
+  {
+    "name": "health-stale-1024x900.png",
+    "width": 1024,
+    "height": 1514,
+    "differentPixels": 0,
+    "beforeSha256": "c1d47af2a9747fe4543acd13d75a871a637160537d846973a1a895f4b884612d",
+    "afterSha256": "c1d47af2a9747fe4543acd13d75a871a637160537d846973a1a895f4b884612d"
+  },
+  {
+    "name": "health-stale-1440x1000.png",
+    "width": 1440,
+    "height": 1533,
+    "differentPixels": 0,
+    "beforeSha256": "6f563473822488ce24b004bee2ad05fd64da0a9a05a8e0e968a7c6ec5cbdf85a",
+    "afterSha256": "6f563473822488ce24b004bee2ad05fd64da0a9a05a8e0e968a7c6ec5cbdf85a"
+  },
+  {
+    "name": "health-stale-360x844.png",
+    "width": 360,
+    "height": 2147,
+    "differentPixels": 0,
+    "beforeSha256": "baf6c0353bb1f8d5258e20500d416788807af08c040e1ea072a072894b6fd2bc",
+    "afterSha256": "baf6c0353bb1f8d5258e20500d416788807af08c040e1ea072a072894b6fd2bc"
+  },
+  {
+    "name": "health-stale-390x844.png",
+    "width": 390,
+    "height": 2141,
+    "differentPixels": 0,
+    "beforeSha256": "689f3b2c5092e064eb82849ed4dd3f06a67792af2c9a0a80e2e22b5f1e8d060f",
+    "afterSha256": "689f3b2c5092e064eb82849ed4dd3f06a67792af2c9a0a80e2e22b5f1e8d060f"
+  },
+  {
+    "name": "health-stale-768x1024.png",
+    "width": 768,
+    "height": 1930,
+    "differentPixels": 0,
+    "beforeSha256": "90df523b601cb69d1d46789c471007ce7c85b88fb88107c1edaea2d381f882a7",
+    "afterSha256": "90df523b601cb69d1d46789c471007ce7c85b88fb88107c1edaea2d381f882a7"
+  }
+]

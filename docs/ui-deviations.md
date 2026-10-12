@@ -543,3 +543,24 @@ The coordinator-approved #223 work order adds one inline “로그인을 해주�
 `gallery-login-required` is captured product-only at 1440×1000, 1024×900, 768×1024, 390×844 and 360×844, with text-range line/bounds/overflow assertions. No reference or baseline PNG is created or replaced. This supersedes #222's immediate gallery-card redirect only; direct URL and API protection are unchanged. Commands, geometry artifacts and actual outcomes are recorded in `/home/dominelinux/.cache/vibe_coding_archive/coord/b223/report-impl223.md`. Coordinator adoption and automated checks do not claim human visual or screen-reader acceptance.
 
 Local verification: the 360/390px keyboard focus/outline checks and all five new-state text/bounds/overflow assertions pass. The full gallery visual spec passes 94 tests, including existing comparisons; the historical b160 font prerequisite failure does not reproduce. The aggregate capture ledger includes five new product-only records, and all 1,473 tracked evidence PNG hashes remain unchanged. Human acceptance and CI remain separate pending gates.
+
+## Issue #229 long detail description · I229-W
+
+The detail description wraps otherwise unbroken text inside its existing card.
+Korean word boundaries and preserved spaces/newlines retain `break-keep` and
+`whitespace-pre-wrap`; the added `overflow-wrap: anywhere` applies only to this
+paragraph. Change ID **I229-W** approves long-string wrapping and the necessary
+description/card height change.
+
+Approval source: [the #229 adopted triage brief](https://github.com/DomineYH/vibe_coding_archive/issues/229#issuecomment-6116286240),
+adopted under DomineYH's prior delegation and the coordinator's #229 work order.
+Recorder: **Codex gpt-6.1-sol**, **2026-10-12**. Earlier UI-D approvals do not
+authorize this change.
+
+The [#229 evidence ledger](evidence/phase-7/issue229/2026-10-12/README.md)
+records full before/after product-only captures at 360×844, 390×844 and
+1440×1000, dimensions, hashes and paragraph geometry for 4,000 consecutive
+Latin characters, a long URL and mixed Korean/spaces/newlines. Ordinary detail
+and copy-success visual states are checked at all five existing viewports;
+historical references and baselines are preserved. Automated checks do not
+claim new human visual, screen-reader or physical-device acceptance.
