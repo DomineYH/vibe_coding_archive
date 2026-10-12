@@ -575,3 +575,9 @@ The coordinator-approved work order adopts one inline polite notice before the g
 Execution evidence and Red/Green results: `/home/dominelinux/.cache/vibe_coding_archive/coord/b223/report-impl223.md`, with logs in its sibling `logs/`. The five new visual states are product-only (`baselinePath = null`); all historical references remain unchanged. Independent review, CI and human screen-reader/device acceptance remain pending.
 
 Local #223 results: targeted view/route **47 PASS**, auth/detail/return regressions **325 PASS**, configured static checks **PASS**, mock browser **66 PASS**, prepared API **23 PASS / 1 unavailable-only SKIP**, unavailable API **2 PASS / 8 prepared-only SKIP**, visual **94 PASS**, production build/distribution **PASS**, and final full mock Vitest **1,795 PASS in 54 files**. All five new visual geometry states pass; all 1,473 tracked evidence PNGs remain byte-identical. Initial assertion failures and corrections are retained in the report; no skipped prepared case is counted as passing evidence.
+
+## Issue #226 — 갤러리 공개 전용 계약 문서 정합성
+
+문서만 변경한다. PRD GAL과 [ADR 0002](adr/0002-gallery-public-only.md)는 갤러리 목록·검색·`total`·`facets`가 로그인 상태와 관계없이 공개 집합을 인증 헤더 없이 읽는다고 명시하며, 기존 OpenAPI의 공개 목록 summary·`security: []`와 집계 설명을 같은 범위로 확인한다. 공개/비공개 × 익명/소유자/다른 회원/관리자를 대조해 기존 소유자·관리자 비공개 상세와 관리자 전체 앱 관리 목록 권한이 유지됨을 확인한다. #8의 집합 문구는 현재 갤러리의 공개 집합으로 범위를 명시하고 #12의 과거 단계 기록은 유지한다.
+
+문서·계약 검사 명령과 결과, 권한 대조표는 `/home/dominelinux/.cache/vibe_coding_archive/coord/b226/report-impl226.md`에 기록한다. 실행 코드·DTO·생성 타입·fixture·테스트는 변경하지 않으며 기능 수정이나 런타임 테스트 통과를 주장하지 않는다.
