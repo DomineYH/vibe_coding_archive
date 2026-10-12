@@ -1936,7 +1936,10 @@ export default function App() {
     authMetadata.meta.capabilities.auth_logout.enabled === true &&
     authMetadata.meta.capabilities.auth_password_change.enabled === true &&
     !authMetadata.error;
-  const editMemory = useRef({ slot: null, notice: null });
+  const editMemory = useRef({ slot: null, notice: null, lossNotice: null });
+  const editNoticeEntry = useRef(null);
+  const confirmedEditIdentity = useRef(null);
+  const recoveryNoticeEntry = useRef(null);
   const authRequest = useRef(0);
   const authObservation = useRef(0);
   const pendingReauth = useRef(null);
@@ -2953,6 +2956,37 @@ export default function App() {
     return () => document.removeEventListener("click", warnOnLink, true);
   }, [deletionNeedsConfirmation, location.pathname]);
 
+  const confirmedIdentity =
+    auth.status === "ready" && !auth.concealed
+      ? JSON.stringify([
+          draftContinuityScope(auth),
+          auth.flow?.flowId ?? null,
+          auth.flow?.lastIdentityChangeRevision ?? null,
+        ])
+      : null;
+  const identityChanged =
+    confirmedIdentity !== null &&
+    confirmedEditIdentity.current !== null &&
+    confirmedIdentity !== confirmedEditIdentity.current;
+  if (
+    identityChanged ||
+    (editNoticeEntry.current && editNoticeEntry.current !== location.key)
+  ) {
+    editMemory.current.lossNotice = null;
+    editNoticeEntry.current = null;
+  }
+  const recoveryEntry = recoveryNoticeEntry.current;
+  if (
+    recoveryEntry &&
+    recoveryEntry.notice === editMemory.current.notice &&
+    (identityChanged || recoveryEntry.key !== location.key)
+  ) {
+    editMemory.current.notice = null;
+    recoveryNoticeEntry.current = null;
+  }
+  if (confirmedIdentity !== null)
+    confirmedEditIdentity.current = confirmedIdentity;
+
   const editSlot = editMemory.current.slot;
   if (
     editSlot &&
@@ -2964,8 +2998,28 @@ export default function App() {
     auth.status === "ready" &&
     !auth.concealed &&
     draftContinuityScope(auth) !== editSlot.ownerScope
-  )
-    discardEditDraft(editMemory.current, "identity");
+  ) {
+    const recovering = editSlot.recovering;
+    const result = discardEditDraft(editMemory.current, "identity");
+    if (
+      !recovering &&
+      result &&
+      (result.dirty || result.outcome === "unknown")
+    ) {
+      editMemory.current.notice = null;
+      editMemory.current.lossNotice = result;
+      editNoticeEntry.current = null;
+    }
+  }
+  const lossNotice = editMemory.current.lossNotice;
+  // Announce only after the anonymous edit redirect reaches its destination.
+  const showLossNotice =
+    lossNotice &&
+    (editNoticeEntry.current ||
+      (confirmedIdentity !== null &&
+        (auth.user || !/^\/apps\/[^/]+\/edit$/.test(location.pathname))));
+  if (showLossNotice && !editNoticeEntry.current)
+    editNoticeEntry.current = location.key;
   const authRoute = readAuthRoute(location.search);
   const editRecovery =
     location.pathname === "/auth" &&
@@ -2975,6 +3029,14 @@ export default function App() {
     (editMemory.current.slot || editMemory.current.notice)
       ? { notice: editMemory.current.notice }
       : null;
+  if (
+    editRecovery?.notice &&
+    recoveryNoticeEntry.current?.notice !== editRecovery.notice
+  )
+    recoveryNoticeEntry.current = {
+      notice: editRecovery.notice,
+      key: location.key,
+    };
   const returnToEdit = async (path) => {
     const observation = auth.observationId;
     const entry = location.key;
@@ -3046,6 +3108,17 @@ export default function App() {
         onRetryAuth={recheckAuth}
         logoutPending={logoutPending}
       />
+      {showLossNotice ? (
+        <p
+          role="status"
+          aria-live="polite"
+          className="mx-auto max-w-[760px] px-5 pt-6 text-[13px] text-neutral-600"
+        >
+          {lossNotice.outcome === "unknown"
+            ? "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다."
+            : "로그인 상태가 바뀌어 작성 중인 내용이 저장되지 않았어요. 다시 로그인한 뒤 내용을 확인해 주세요."}
+        </p>
+      ) : null}
       <Routes>
         <Route
           path="/"

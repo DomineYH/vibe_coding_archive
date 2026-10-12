@@ -1,0 +1,82 @@
+[
+  {
+    "file": "231-dirty-logout-1024x900.png",
+    "dimensions": [
+      1024,
+      900
+    ],
+    "sha256": "7fd2598dda8c82d6f1c3709b76ea99dd157dc61b865bd21956459fbcc0c2d05c"
+  },
+  {
+    "file": "231-dirty-logout-1440x1000.png",
+    "dimensions": [
+      1440,
+      1000
+    ],
+    "sha256": "32d2025201189d4468f3f3ba1d9fdcd1a00e9d8c5e8fde9464f2bdd17f167bae"
+  },
+  {
+    "file": "231-dirty-logout-360x844.png",
+    "dimensions": [
+      360,
+      844
+    ],
+    "sha256": "dbe0d8b70473f170b0d4a71a1790d6cea881ebec01cfe911d1c3123aacc472ba"
+  },
+  {
+    "file": "231-dirty-logout-390x844.png",
+    "dimensions": [
+      390,
+      844
+    ],
+    "sha256": "72a3e6f9a6c2d511c1036141a325d1066e3b747c70945cc45fd08f41c8da09e6"
+  },
+  {
+    "file": "231-dirty-logout-768x1024.png",
+    "dimensions": [
+      768,
+      1024
+    ],
+    "sha256": "83344d1739187764a585bf02bbe7d6ec980707fbde4814fa722e846ea5cce8e0"
+  },
+  {
+    "file": "231-unknown-logout-1024x900.png",
+    "dimensions": [
+      1024,
+      900
+    ],
+    "sha256": "e58394a7e9362875688c46efbeb350116130aa142fe5ff8bff41f9399ebee421"
+  },
+  {
+    "file": "231-unknown-logout-1440x1000.png",
+    "dimensions": [
+      1440,
+      1000
+    ],
+    "sha256": "15086cdf310b34f28b25aed91672b635c2c47d598c90950dc8198badf1fb6d42"
+  },
+  {
+    "file": "231-unknown-logout-360x844.png",
+    "dimensions": [
+      360,
+      844
+    ],
+    "sha256": "4e9d6b01ba8acc2f6704722834be8577dd108ae85dc3813c15159d546e975599"
+  },
+  {
+    "file": "231-unknown-logout-390x844.png",
+    "dimensions": [
+      390,
+      844
+    ],
+    "sha256": "09dce386e05c20220818ac5467bfb82fe557f894572bd4c4bb650e33fecec998"
+  },
+  {
+    "file": "231-unknown-logout-768x1024.png",
+    "dimensions": [
+      768,
+      1024
+    ],
+    "sha256": "4a2cc0212ff46eb3f9fa557dd3973c9f5b50069e18e8a6d0dfeebeb5d065d6a5"
+  }
+]

@@ -1558,3 +1558,122 @@ it("231 ready without identity proof discards dirty input with one notice", asyn
     expect(screen.getByLabelText("어플리케이션 이름")).toHaveValue(original),
   );
 }, 30000);
+
+it("231 repeated rechecks keep the live node, the next flow clears it, and a new dirty incident can announce", async () => {
+  const router = await visit(edit231, 1, true);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 first incident" },
+  });
+  await storageLogout231();
+  const notice = await screen.findByText(loss231);
+  const mutations = [];
+  const observer = new MutationObserver((records) =>
+    mutations.push(...records),
+  );
+  observer.observe(notice.parentElement, { childList: true });
+  await recheck();
+  await act(async () => {
+    window.dispatchEvent(new Event("pageshow"));
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: MOCK_STORAGE_KEY,
+        oldValue: localStorage.getItem(MOCK_STORAGE_KEY),
+        newValue: localStorage.getItem(MOCK_STORAGE_KEY),
+      }),
+    );
+  });
+  expect(screen.getByText(loss231)).toBe(notice);
+  expect(
+    mutations.flatMap((record) => [
+      ...record.addedNodes,
+      ...record.removedNodes,
+    ]),
+  ).not.toContain(notice);
+  observer.disconnect();
+  await act(async () =>
+    authService.login({
+      loginId: DEMO_ACCOUNTS[1].loginId,
+      password: DEMO_ACCOUNTS[1].password,
+    }),
+  );
+  await recheck();
+  await waitFor(() =>
+    expect(screen.queryByText(loss231)).not.toBeInTheDocument(),
+  );
+  await act(async () => router.navigate(edit231));
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 second incident" },
+  });
+  await storageLogout231();
+  expect(await screen.findByText(loss231)).not.toBe(notice);
+  expect(screen.getAllByText(loss231)).toHaveLength(1);
+}, 30000);
+it("231 App remount consumes the tab-memory notice", async () => {
+  await visit(edit231, 1);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 remount incident" },
+  });
+  await storageLogout231();
+  await screen.findByText(loss231);
+  cleanup();
+  const router = createMemoryRouter([{ path: "*", element: <App /> }], {
+    initialEntries: [
+      `/auth?mode=login&return_to=${encodeURIComponent(edit231)}`,
+    ],
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+  await screen.findByLabelText("로그인 아이디", { exact: true });
+  expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+});
+it("231 a discarded pending key issuance is unsaved, never an uncertain transmitted write", async () => {
+  await visit(edit231, 1);
+  const issueOriginal = appsService.issueUpdateOperation.bind(appsService);
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  const issue = vi
+    .spyOn(appsService, "issueUpdateOperation")
+    .mockImplementation(async (...args) => {
+      const operation = await issueOriginal(...args);
+      await held;
+      return operation;
+    });
+  const update = vi.spyOn(appsService, "update");
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 pending key" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  await waitFor(() => expect(issue).toHaveBeenCalledTimes(1));
+  await storageLogout231();
+  const notice = await screen.findByText(loss231);
+  await act(async () => release());
+  expect(screen.getByText(loss231)).toBe(notice);
+  expect(screen.queryByText(unknown231)).not.toBeInTheDocument();
+  expect(update).not.toHaveBeenCalled();
+}, 30000);
+it("231 a recovering draft uses only the existing recovery notice and consumes it before another incident", async () => {
+  const router = await visit(edit231, 1);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 recovery incident" },
+  });
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.auth_flow.session_cookie_present = false;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  fireEvent.click(
+    await screen.findByRole("link", { name: "로그인 및 인증 복구" }),
+  );
+  await storageLogout231();
+  const recovery =
+    "인증 상태가 바뀌어 이전 입력을 복원할 수 없어요. 내용을 다시 확인해 주세요.";
+  expect(await screen.findByText(recovery)).toHaveAttribute("role", "status");
+  expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+  await act(async () => router.navigate("/"));
+  await act(async () => router.navigate(-1));
+  expect(screen.queryByText(recovery)).not.toBeInTheDocument();
+}, 30000);

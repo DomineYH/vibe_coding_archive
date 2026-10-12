@@ -340,3 +340,12 @@ A protected request captures App's current authentication observation before its
 An edit snapshot belongs to a single App-owned tab-memory slot, including inputs, their base/version and any operation key, pending input, unknown, expired or conflict state. It stays concealed during unresolved/error/checking observations and the validated `/apps/<UUID>/edit` → login/recovery with that exact `return_to` → same edit corridor. It never enters URL/history state, persistent storage or query caches. Restoration requires the same `draftContinuityScope`, a fresh target read and current metadata/ownership permission. Confirmed identity loss/change, logout/reset/discard, missing target/permission or departure from that corridor destroys the slot; returning to the same account later cannot revive it. Recovery does not submit, replay or confirm an app write automatically.
 
 The discard helper returns only `{reason, dirty, outcome}` for #231's later notice integration. The concealed edit container and visible recovery `main` are separate so #227 can select the displayed main without changing authentication or draft rules.
+
+
+### #231 — notice after confirmed edit-draft loss
+
+Confirmed logout, account switching or missing identity continuity still destroys the old edit snapshot before a new form mounts. Logging back into the same member never restores it. Ordinary rechecks and temporary network failures retain the concealed in-memory draft when continuity can be proven again.
+
+A discarded dirty edit produces one non-sensitive, polite status in the current tab after the exact auth redirect, or on the safe edit destination for a confirmed member. Clean edits produce no loss notice. Unknown or already in-flight keyed writes use “이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다.” rather than asserting that nothing was saved. The notice never contains inputs, app/member identifiers or an operation key, and does not query or replay the old write.
+
+The status stays mounted during rechecks and expires when its first displayed history entry is left, the next confirmed identity boundary changes, or App unmounts/reloads. The pre-redirect reservation is not consumed early. Existing recovering drafts retain #232's notice rather than adding a second one. #227 owns route focus; this change supplies a shell status outside concealed forms and preserves the destination's visible main.

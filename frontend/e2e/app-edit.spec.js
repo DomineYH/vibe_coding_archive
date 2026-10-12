@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { copyFileSync, mkdirSync } from "node:fs";
 import { expectSingleLineCancel } from "./cancel-layout.js";
 
 const key = "eduvibe-archive-mock-v1";
@@ -716,56 +717,161 @@ const loss231 =
   "로그인 상태가 바뀌어 작성 중인 내용이 저장되지 않았어요. 다시 로그인한 뒤 내용을 확인해 주세요.";
 const unknown231 =
   "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다.";
-test("231 other-tab logout announces unsaved loss once without writing or restoring the same member draft", async ({
+for (const nextLogin of ["교사김코딩", "과학덕후박샘"]) {
+  test(`231 other-tab logout announces unsaved loss once before ${nextLogin} login`, async ({
+    page,
+    context,
+  }, testInfo) => {
+    const id = await createOwnedApp(page, "231 canonical app");
+    const form = await openEdit(page, id);
+    const canonical = () => storedApp231(page, id);
+    const before = await canonical();
+    expect(before.version).toBe(1);
+    await form
+      .getByLabel("어플리케이션 이름", { exact: true })
+      .fill("231 private unsaved sentinel");
+    const other = await context.newPage();
+    await other.goto("/");
+    await other.getByRole("button", { name: "로그아웃", exact: true }).click();
+    await page.bringToFront();
+    await expect(page).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`,
+    );
+    const notice = page.getByRole("status").filter({ hasText: loss231 });
+    await expect(notice).toHaveCount(1);
+    await expect(notice).toHaveAttribute("aria-live", "polite");
+    await expect(form).toHaveCount(0);
+    await expect(other.getByText(loss231, { exact: true })).toHaveCount(0);
+    expect(await canonical()).toEqual(before);
+    expect(
+      await page.evaluate(() =>
+        JSON.stringify({
+          local: { ...localStorage },
+          session: { ...sessionStorage },
+          history: history.state,
+          url: location.href,
+        }),
+      ),
+    ).not.toContain("231 private unsaved sentinel");
+    if (nextLogin === "교사김코딩")
+      await capture231(page, notice, "dirty-logout", testInfo);
+    await loginAs(other, nextLogin);
+    await page.bringToFront();
+    await expect(notice).toHaveCount(0);
+    await page.goto(`/apps/${id}/edit`);
+    if (nextLogin === "교사김코딩")
+      await expect(
+        page.getByLabel("어플리케이션 이름", { exact: true }),
+      ).toHaveValue("231 canonical app");
+    else
+      await expect(
+        page.getByRole("form", { name: "앱 수정 양식" }),
+      ).toHaveCount(0);
+    await other.close();
+  });
+}
+async function storedApp231(page, id) {
+  return page.evaluate(
+    ({ key, id }) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      return [...state.apps, ...state.private_apps].find(
+        (app) => app.id === id,
+      );
+    },
+    { key, id },
+  );
+}
+async function capture231(page, notice, state, testInfo) {
+  await expect(page.getByText("앱을 등록했어요.", { exact: true })).toHaveCount(
+    0,
+  );
+  for (const [width, height] of [
+    [1440, 1000],
+    [1024, 900],
+    [768, 1024],
+    [390, 844],
+    [360, 844],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    await expect(notice).toBeVisible();
+    await expect(notice).toHaveCount(1);
+    await expect(page.getByRole("status")).toHaveCount(1);
+    await expect(page.locator("main:visible")).toHaveCount(1);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page
+      .getByRole("link", { name: "EduVibe 아카이브 홈", exact: true })
+      .focus();
+    await page.keyboard.press("Tab");
+    expect(
+      await page.evaluate(() =>
+        ["A", "BUTTON", "INPUT"].includes(document.activeElement.tagName),
+      ),
+    ).toBe(true);
+    const filename = `231-${state}-${width}x${height}.png`;
+    const screenshot = testInfo.outputPath(filename);
+    await page.screenshot({ path: screenshot, animations: "disabled" });
+    mkdirSync("test-results/issue231", { recursive: true });
+    copyFileSync(screenshot, `test-results/issue231/${filename}`);
+  }
+}
+test("231 clean edit other-tab logout has no loss notice", async ({
   page,
   context,
 }) => {
-  const id = await createOwnedApp(page, "231 canonical app");
-  const form = await openEdit(page, id);
-  const canonical = () =>
-    page.evaluate(
-      ({ key, id }) => {
-        const state = JSON.parse(localStorage.getItem(key));
-        return {
-          app: state.private_apps.find((app) => app.id === id),
-          operations: state.write_operations,
-        };
-      },
-      { key, id },
-    );
-  const before = await canonical();
-  await form
-    .getByLabel("어플리케이션 이름", { exact: true })
-    .fill("231 private unsaved sentinel");
+  await loginAs(page, "교사김코딩");
+  await page.goto("/apps/00000000-0000-4000-8000-000000000091/edit");
+  await expect(page.getByRole("form", { name: "앱 수정 양식" })).toBeVisible();
   const other = await context.newPage();
   await other.goto("/");
   await other.getByRole("button", { name: "로그아웃", exact: true }).click();
   await page.bringToFront();
-  await expect(page).toHaveURL(
-    `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`,
-  );
-  const notice = page.getByRole("status").filter({ hasText: loss231 });
+  await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
+  await expect(page.getByText(loss231, { exact: true })).toHaveCount(0);
+  await other.close();
+});
+test("231 unknown edit other-tab logout keeps uncertain wording without automatic replay", async ({
+  page,
+  context,
+}, testInfo) => {
+  const id = await createOwnedApp(page, "231 unknown canonical app");
+  const form = await openEdit(page, id);
+  await form
+    .getByLabel("어플리케이션 이름", { exact: true })
+    .fill("231 committed unknown app");
+  await setScenario(page, "app_update_unknown");
+  await form
+    .getByRole("button", { name: "변경사항 저장", exact: true })
+    .click();
+  await expect(
+    form.getByRole("button", { name: "저장 결과 확인", exact: true }),
+  ).toBeVisible();
+  const before = await storedApp231(page, id);
+  expect(before.version).toBe(2);
+  const other = await context.newPage();
+  await other.goto("/");
+  await other.getByRole("button", { name: "로그아웃", exact: true }).click();
+  await page.bringToFront();
+  await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
+  const notice = page.getByRole("status").filter({ hasText: unknown231 });
   await expect(notice).toHaveCount(1);
-  await expect(notice).toHaveAttribute("aria-live", "polite");
-  await expect(form).toHaveCount(0);
-  await expect(other.getByText(loss231, { exact: true })).toHaveCount(0);
-  expect(await canonical()).toEqual(before);
-  expect(
-    await page.evaluate(() =>
-      JSON.stringify({
-        local: { ...localStorage },
-        session: { ...sessionStorage },
-        history: history.state,
-        url: location.href,
-      }),
-    ),
-  ).not.toContain("231 private unsaved sentinel");
-  await loginAs(other, "교사김코딩");
+  await expect(page.getByText(loss231, { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "저장 결과 확인", exact: true }),
+  ).toHaveCount(0);
+  await capture231(page, notice, "unknown-logout", testInfo);
+  expect(await storedApp231(page, id)).toEqual(before);
+  await loginAs(other, "과학덕후박샘");
   await page.bringToFront();
   await expect(notice).toHaveCount(0);
-  await page.goto(`/apps/${id}/edit`);
-  await expect(
-    page.getByLabel("어플리케이션 이름", { exact: true }),
-  ).toHaveValue("231 canonical app");
+  await expect(page.getByText("앱을 수정했어요.", { exact: true })).toHaveCount(
+    0,
+  );
   await other.close();
 });

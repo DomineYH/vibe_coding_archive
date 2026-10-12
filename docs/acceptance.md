@@ -601,3 +601,23 @@ Local final product source: `eaa3e51`. Five affected UI/return/corridor files pa
 Existing visual comparisons have **44 distinct PASS / 1 unresolved FAIL** across separate runs: admin 5, create/edit 25, support 10 and four auth viewport sequences pass. The initial 60-second auth budgets were insufficient; isolated retries use a larger local budget. Auth390's reset/form failure passes on its one retry. Auth360 initially reports browser `ERR_INSUFFICIENT_RESOURCES`; its one retry fails a different login-form lookup after reset, without reaching an image-difference assertion. Cause remains unproven; full auth360 visual acceptance is not claimed. New #232 recovery keyboard/conceal/return checks pass at all five sizes, including 360px. Approved new captures and their precise comparison limits are recorded in the [I232-R ledger](evidence/phase-7/issue232/2026-10-12/README.md); all 2,253 historical evidence blobs remain unchanged.
 
 Earlier functional Reds, fixture corrections, infrastructure failures and interrupted rows are retained separately in the implementation report. No failed aggregate is relabeled PASS. Full Vitest/backend suites and unselected browser/visual/build/deployment checks go to CI under common-rules Addendum 4; independent review, CI and human/device/screen-reader acceptance remain pending. No push or PR was performed.
+
+
+## Issue #231 — notice after another tab discards an edit
+
+The [accepted #231 Agent Brief](https://github.com/DomineYH/vibe_coding_archive/issues/231#issuecomment-6116288597) preserves permanent discard after logout, including same-member re-login.
+
+| Criterion | Verification boundary |
+| --- | --- |
+| Dirty two-tab logout hides/discards inputs and announces once without writes | Storage-only App test, shared-context mock and API browser cases; exact edit return; API app fields/version and target operation count remain unchanged, no POST/PATCH |
+| Same-member and different-member re-login never restore old input | StrictMode/lifecycle App cases and shared-context browser variants; sentinel absent from DOM, URL/history and browser storage; status is tab-local |
+| Clean edits and ordinary failures do not announce loss | Clean/reverted input, revision-only rechecks, health-only storage, network/meta concealment regressions; current identity draft restoration remains intact |
+| Unknown writes are never labeled unsaved or replayed | In-flight late resolve/reject and pending-key distinction; real API committed response loss increments version once, issues one key/PATCH, offers no old result action to the next member |
+| Recovery/return/lifetime and UI difference | #232 recovery cases, #175 allowlist/return tests, repeated storage/focus/pageshow, history departure/remount and new-incident checks; I231-L records the two new states |
+
+Local Red is an assertion failure for the missing loss/unknown status at App and the real two-tab mock seam. Initial Windows-filesystem worker/load timeouts are infrastructure failures, not Red. The report at `/home/dominelinux/.cache/vibe_coding_archive/coord/b231/report-impl231.md` records exact commands, snapshot source, passing/failing aggregates and remaining checks. Full suites, build/deployment and unselected browser sets belong to CI; local targeted results do not override #232's recorded 360px visual limitation or claim human, device or screen-reader acceptance.
+
+
+Local functional evidence: **340 distinct targeted Vitest cases**, **87 distinct mock browser cases**, and **30 API browser cases** have passing evidence across scoped runs. Configured OpenAPI/generated-contract/type/lint/format checks pass. First App/two-tab Red was a missing-status assertion; the initial cold-load failures and corrected public-app fixture lookup remain separately recorded. Both new notice states pass their single-status/visible-main/Tab/overflow checks at all five sizes, with coordinator-approved **I231-L** PNGs and [SHA ledger](evidence/phase-7/issue231/2026-10-12/README.md).
+
+Existing visual create/edit **25/25** and admin **5/5** pass. The initial auth visual run is **11 PASS / 4 FAIL**, followed by a failed isolated retry; the 768/390/360 reset/login-form failures reproduce identically on unchanged #232 base `2de9784`. The 1440px retry reports Chromium `ERR_INSUFFICIENT_RESOURCES`; the same error reproduces after restoring the exact #232 source in the controlled base snapshot/cache, identifying an environment failure. Control commands and limits are recorded in the implementation report. No complete auth visual PASS or human acceptance is claimed, and the pinned CI environment remains authoritative. Historical baselines are untouched.
