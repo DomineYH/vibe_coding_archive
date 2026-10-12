@@ -711,3 +711,61 @@ test("232 foreground proof loss hides edit and preserves the recovery round trip
     page.getByLabel("어플리케이션 이름", { exact: true }),
   ).toHaveValue("232 숨겨 보존할 초안");
 });
+
+const loss231 =
+  "로그인 상태가 바뀌어 작성 중인 내용이 저장되지 않았어요. 다시 로그인한 뒤 내용을 확인해 주세요.";
+const unknown231 =
+  "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다.";
+test("231 other-tab logout announces unsaved loss once without writing or restoring the same member draft", async ({
+  page,
+  context,
+}) => {
+  const id = await createOwnedApp(page, "231 canonical app");
+  const form = await openEdit(page, id);
+  const canonical = () =>
+    page.evaluate(
+      ({ key, id }) => {
+        const state = JSON.parse(localStorage.getItem(key));
+        return {
+          app: state.private_apps.find((app) => app.id === id),
+          operations: state.write_operations,
+        };
+      },
+      { key, id },
+    );
+  const before = await canonical();
+  await form
+    .getByLabel("어플리케이션 이름", { exact: true })
+    .fill("231 private unsaved sentinel");
+  const other = await context.newPage();
+  await other.goto("/");
+  await other.getByRole("button", { name: "로그아웃", exact: true }).click();
+  await page.bringToFront();
+  await expect(page).toHaveURL(
+    `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`,
+  );
+  const notice = page.getByRole("status").filter({ hasText: loss231 });
+  await expect(notice).toHaveCount(1);
+  await expect(notice).toHaveAttribute("aria-live", "polite");
+  await expect(form).toHaveCount(0);
+  await expect(other.getByText(loss231, { exact: true })).toHaveCount(0);
+  expect(await canonical()).toEqual(before);
+  expect(
+    await page.evaluate(() =>
+      JSON.stringify({
+        local: { ...localStorage },
+        session: { ...sessionStorage },
+        history: history.state,
+        url: location.href,
+      }),
+    ),
+  ).not.toContain("231 private unsaved sentinel");
+  await loginAs(other, "교사김코딩");
+  await page.bringToFront();
+  await expect(notice).toHaveCount(0);
+  await page.goto(`/apps/${id}/edit`);
+  await expect(
+    page.getByLabel("어플리케이션 이름", { exact: true }),
+  ).toHaveValue("231 canonical app");
+  await other.close();
+});

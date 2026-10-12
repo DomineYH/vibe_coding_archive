@@ -58,3 +58,25 @@ it("discards once and exposes only a non-sensitive result for later notices", ()
   });
   expect(discardEditDraft(memory, "identity")).toBeNull();
 });
+
+it("231 clean unknown discard returns only the classification and cannot repeat", () => {
+  const memory = {
+    slot: {
+      snapshot: {
+        dirty: false,
+        unknown: true,
+        draft: { name: "private" },
+        operationKey: "private key",
+      },
+      recovering: false,
+    },
+  };
+  expect(discardEditDraft(memory, "identity")).toEqual({
+    reason: "identity",
+    dirty: false,
+    outcome: "unknown",
+  });
+  expect(memory.notice).toBeUndefined();
+  expect(memory.slot).toBeNull();
+  expect(discardEditDraft(memory, "identity")).toBeNull();
+});

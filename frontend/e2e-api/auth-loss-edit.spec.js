@@ -9,7 +9,7 @@ import { blockExternalRequests, query } from "./helpers.js";
 
 const test = memberTest.extend({
   appCleanup: [
-    async ({ members, page }, use) => {
+    async ({ members, context }, use) => {
       const flows = new Set();
       const responses = [];
       const rememberFlow = (response) => {
@@ -22,11 +22,11 @@ const test = memberTest.extend({
             response.json().then((body) => flows.add(body.flow_id)),
           );
       };
-      page.on("response", rememberFlow);
+      context.on("response", rememberFlow);
       try {
         await use();
       } finally {
-        page.off("response", rememberFlow);
+        context.off("response", rememberFlow);
         await Promise.all(responses);
         const cleanup = spawnSync(
           "uv",
@@ -296,4 +296,154 @@ test("232 lost committed response keeps unknown across session-proof recovery wi
   ).toBeVisible();
   expect(patches).toHaveLength(1);
   expect(query(`SELECT version FROM apps WHERE id='${id}'`)).toEqual([[2]]);
+});
+
+const loss231 =
+  "로그인 상태가 바뀌어 작성 중인 내용이 저장되지 않았어요. 다시 로그인한 뒤 내용을 확인해 주세요.";
+const unknown231 =
+  "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다.";
+for (const nextMember of ["member", "admin"]) {
+  test(`231 other-tab logout discards dirty edit without writes before ${nextMember} login`, async ({
+    page,
+    context,
+    members,
+  }) => {
+    await blockExternalRequests(context);
+    const id = await openEdit(page, members.member);
+    const before = query(
+      `SELECT name,description,version FROM apps WHERE id='${id}'`,
+    );
+    const operations = query(
+      `SELECT count(*) FROM write_operations WHERE target_id='${id}'`,
+    );
+    const writes = [];
+    context.on("request", (request) => {
+      if (
+        ["POST", "PATCH"].includes(request.method()) &&
+        (/\/write-operations$/.test(request.url()) ||
+          request.url().endsWith(`/apps/${id}`))
+      )
+        writes.push(request.method());
+    });
+    const other = await context.newPage();
+    await other.goto("/");
+    await other.getByRole("button", { name: "로그아웃", exact: true }).click();
+    await page.bringToFront();
+    await expect(page).toHaveURL(
+      `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`,
+    );
+    const notice = page.getByRole("status").filter({ hasText: loss231 });
+    await expect(notice).toHaveCount(1);
+    await expect(notice).toHaveAttribute("aria-live", "polite");
+    await expect(page.getByRole("form", { name: "앱 수정 양식" })).toHaveCount(
+      0,
+    );
+    await expect(other.getByText(loss231, { exact: true })).toHaveCount(0);
+    expect(
+      query(`SELECT name,description,version FROM apps WHERE id='${id}'`),
+    ).toEqual(before);
+    expect(
+      query(`SELECT count(*) FROM write_operations WHERE target_id='${id}'`),
+    ).toEqual(operations);
+    expect(writes).toEqual([]);
+    expect(
+      await page.evaluate(() =>
+        JSON.stringify({
+          local: { ...localStorage },
+          session: { ...sessionStorage },
+          history: history.state,
+          url: location.href,
+          dom: document.body.innerHTML,
+        }),
+      ),
+    ).not.toContain("232 숨길 초안");
+    await login(other, members[nextMember].login, ORIGINAL);
+    await page.bringToFront();
+    await expect(notice).toHaveCount(0);
+    await page.goto(`/apps/${id}/edit`);
+    await expect(
+      page.getByLabel("어플리케이션 이름", { exact: true }),
+    ).toHaveValue("232 원래 앱");
+    await expect(page.getByText(loss231, { exact: true })).toHaveCount(0);
+    expect(writes).toEqual([]);
+    expect(
+      query(`SELECT name,description,version FROM apps WHERE id='${id}'`),
+    ).toEqual(before);
+    expect(
+      query(`SELECT count(*) FROM write_operations WHERE target_id='${id}'`),
+    ).toEqual(operations);
+    await other.close();
+  });
+}
+test("231 other-tab logout after committed lost response keeps unknown without replay or late success", async ({
+  page,
+  context,
+  members,
+}) => {
+  await blockExternalRequests(context);
+  const id = await openEdit(page, members.member);
+  const before = query(`SELECT version FROM apps WHERE id='${id}'`)[0][0];
+  const writes = [];
+  context.on("request", (request) => {
+    if (
+      ["POST", "PATCH"].includes(request.method()) &&
+      (/\/write-operations$/.test(request.url()) ||
+        request.url().endsWith(`/apps/${id}`))
+    )
+      writes.push(request.method());
+  });
+  let release;
+  const held = new Promise((resolve) => {
+    release = resolve;
+  });
+  let committed;
+  const saved = new Promise((resolve) => {
+    committed = resolve;
+  });
+  await page.route(`**/api/v1/apps/${id}`, async (route) => {
+    if (route.request().method() !== "PATCH") return route.continue();
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    committed();
+    await held;
+    await route.abort("failed");
+  });
+  try {
+    await page
+      .getByRole("button", { name: "변경사항 저장", exact: true })
+      .click();
+    await saved;
+    const other = await context.newPage();
+    await other.goto("/");
+    await other.getByRole("button", { name: "로그아웃", exact: true }).click();
+    await page.bringToFront();
+    await expect(page).toHaveURL(/\/auth\?mode=login&return_to=/);
+    const notice = page.getByRole("status").filter({ hasText: unknown231 });
+    await expect(notice).toHaveCount(1);
+    await expect(page.getByText(loss231, { exact: true })).toHaveCount(0);
+    release();
+    await expect(notice).toBeVisible();
+    await expect(
+      page.getByText("앱을 수정했어요.", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "저장 결과 확인" }),
+    ).toHaveCount(0);
+    expect(writes).toEqual(["POST", "PATCH"]);
+    expect(
+      query(`SELECT name,description,version FROM apps WHERE id='${id}'`),
+    ).toEqual([["232 숨길 초안", "232 보존할 설명", before + 1]]);
+    expect(
+      query(
+        `SELECT count(*) FROM write_operations WHERE target_id='${id}' AND kind='app_update'`,
+      ),
+    ).toEqual([[1]]);
+    await login(other, members.admin.login, ORIGINAL);
+    await page.bringToFront();
+    await expect(notice).toHaveCount(0);
+    expect(writes).toEqual(["POST", "PATCH"]);
+    await other.close();
+  } finally {
+    release();
+  }
 });

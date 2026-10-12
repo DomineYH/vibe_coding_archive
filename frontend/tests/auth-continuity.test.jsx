@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
@@ -36,7 +37,7 @@ afterEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();
 });
-async function visit(path, index) {
+async function visit(path, index, strict = false) {
   const account = DEMO_ACCOUNTS[index];
   await authService.login({
     loginId: account.loginId,
@@ -45,11 +46,12 @@ async function visit(path, index) {
   const router = createMemoryRouter([{ path: "*", element: <App /> }], {
     initialEntries: [path],
   });
-  render(
+  const tree = (
     <QueryClientProvider client={client}>
       <RouterProvider router={router} />
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  render(strict ? <StrictMode>{tree}</StrictMode> : tree);
   return router;
 }
 async function recheck(identityChanged = false) {
@@ -1348,3 +1350,211 @@ it.each(["?unexpected=1", "#other-entry"])(
   },
   30000,
 );
+
+const loss231 =
+  "로그인 상태가 바뀌어 작성 중인 내용이 저장되지 않았어요. 다시 로그인한 뒤 내용을 확인해 주세요.";
+const unknown231 =
+  "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다.";
+const edit231 = "/apps/00000000-0000-4000-8000-000000000091/edit";
+async function storageLogout231() {
+  const oldValue = localStorage.getItem(MOCK_STORAGE_KEY);
+  const state = JSON.parse(oldValue);
+  state.principal_id = null;
+  state.principal_session = null;
+  state.auth_flow.session_generation = null;
+  state.auth_flow.session_cookie_present = false;
+  state.auth_flow.revision = String(Number(state.auth_flow.revision) + 1);
+  state.auth_flow.last_identity_change_revision = state.auth_flow.revision;
+  const newValue = JSON.stringify(state);
+  await act(async () => {
+    localStorage.setItem(MOCK_STORAGE_KEY, newValue);
+    window.dispatchEvent(
+      new StorageEvent("storage", {
+        key: MOCK_STORAGE_KEY,
+        oldValue,
+        newValue,
+      }),
+    );
+  });
+}
+it("231 announces a discarded dirty edit once at the exact auth destination after storage-only logout", async () => {
+  const router = await visit(edit231, 1);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 private unsaved sentinel" },
+  });
+  await storageLogout231();
+  await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+  expect(router.state.location.search).toBe(
+    `?mode=login&return_to=${encodeURIComponent(edit231)}`,
+  );
+  const notice = await screen.findByText(loss231);
+  expect(notice).toHaveAttribute("role", "status");
+  expect(notice).toHaveAttribute("aria-live", "polite");
+  expect(screen.getAllByText(loss231)).toHaveLength(1);
+  expect(screen.queryByLabelText("어플리케이션 이름")).not.toBeInTheDocument();
+  expect(JSON.stringify({ ...localStorage })).not.toContain(
+    "231 private unsaved sentinel",
+  );
+  await recheck();
+  await act(async () => window.dispatchEvent(new Event("pageshow")));
+  expect(screen.getByText(loss231)).toBe(notice);
+  await act(async () => router.navigate("/"));
+  await act(async () => router.navigate(-1));
+  expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+}, 30000);
+
+it.each([false, true])(
+  "231 clean edit logout has no loss notice (reverted=%s)",
+  async (reverted) => {
+    await visit(edit231, 1);
+    const field = await screen.findByLabelText("어플리케이션 이름");
+    if (reverted) {
+      const original = field.value;
+      fireEvent.change(field, { target: { value: "temporary" } });
+      fireEvent.change(field, { target: { value: original } });
+    }
+    await storageLogout231();
+    await screen.findByLabelText("로그인 아이디", { exact: true });
+    expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+  },
+);
+it.each([0, 1])(
+  "231 clears notice on next confirmed identity and never restores account %s draft",
+  async (index) => {
+    const router = await visit(edit231, 1, true);
+    const original = (await screen.findByLabelText("어플리케이션 이름")).value;
+    fireEvent.change(screen.getByLabelText("어플리케이션 이름"), {
+      target: { value: "231 old draft" },
+    });
+    await storageLogout231();
+    await screen.findByText(loss231);
+    await act(async () =>
+      authService.login({
+        loginId: DEMO_ACCOUNTS[index].loginId,
+        password: DEMO_ACCOUNTS[index].password,
+      }),
+    );
+    await recheck();
+    await waitFor(() =>
+      expect(screen.queryByText(loss231)).not.toBeInTheDocument(),
+    );
+    await act(async () => router.navigate(edit231));
+    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
+      original,
+    );
+    expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+  },
+  30000,
+);
+it.each([false, true])(
+  "231 notices a missed identity round trip on the safe edit destination (other=%s)",
+  async (other) => {
+    await visit(edit231, 1);
+    const original = (await screen.findByLabelText("어플리케이션 이름")).value;
+    fireEvent.change(screen.getByLabelText("어플리케이션 이름"), {
+      target: { value: "231 missed history draft" },
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event("blur"));
+      await authService.logout();
+      if (other)
+        await authService.login({
+          loginId: DEMO_ACCOUNTS[0].loginId,
+          password: DEMO_ACCOUNTS[0].password,
+        });
+      else
+        await authService.login({
+          loginId: DEMO_ACCOUNTS[1].loginId,
+          password: DEMO_ACCOUNTS[1].password,
+        });
+      window.dispatchEvent(new Event("focus"));
+    });
+    expect(await screen.findByText(loss231)).toHaveAttribute("role", "status");
+    await waitFor(() =>
+      expect(screen.getByLabelText("어플리케이션 이름")).toHaveValue(original),
+    );
+  },
+  30000,
+);
+it("231 temporary auth and metadata failures retain the draft without a false loss notice", async () => {
+  await visit(edit231, 1);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "231 retained draft" },
+  });
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValue(
+      new ServiceError("NETWORK_ERROR", "231 temporary network failure"),
+    );
+  await recheck();
+  expect(
+    screen.queryByRole("textbox", { name: "어플리케이션 이름" }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+  observe.mockRestore();
+  await recheck();
+  expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
+    "231 retained draft",
+  );
+  expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+}, 30000);
+it.each(["resolve", "reject"])(
+  "231 in-flight unknown takes precedence and ignores late %s",
+  async (outcome) => {
+    const router = await visit(edit231, 1);
+    let resolve, reject;
+    const update = vi.spyOn(appsService, "update").mockImplementation(
+      () =>
+        new Promise((yes, no) => {
+          resolve = yes;
+          reject = no;
+        }),
+    );
+    const issue = vi.spyOn(appsService, "issueUpdateOperation");
+    fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+      target: { value: "231 unknown sentinel" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+    await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+    await storageLogout231();
+    const notice = await screen.findByText(unknown231);
+    expect(screen.queryByText(loss231)).not.toBeInTheDocument();
+    await act(async () => {
+      if (outcome === "resolve")
+        resolve({ id: edit231.split("/")[2], version: 2 });
+      else
+        reject(
+          new ServiceError("NETWORK_ERROR", "late", { outcome: "unknown" }),
+        );
+    });
+    expect(screen.getByText(unknown231)).toBe(notice);
+    expect(router.state.location.pathname).toBe("/auth");
+    expect(screen.queryByText("앱을 수정했어요.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "저장 결과 확인" }),
+    ).not.toBeInTheDocument();
+    expect(issue).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(1);
+  },
+  30000,
+);
+it("231 ready without identity proof discards dirty input with one notice", async () => {
+  await visit(edit231, 1);
+  const original = (await screen.findByLabelText("어플리케이션 이름")).value;
+  fireEvent.change(screen.getByLabelText("어플리케이션 이름"), {
+    target: { value: "231 no proof draft" },
+  });
+  const observe = authService.getCurrentAuthState.bind(authService);
+  vi.spyOn(authService, "getCurrentAuthState").mockImplementation(async () => {
+    const state = await observe();
+    return {
+      ...state,
+      flow: { ...state.flow, lastIdentityChangeRevision: null },
+    };
+  });
+  await recheck();
+  expect(await screen.findByText(loss231)).toBeInTheDocument();
+  await waitFor(() =>
+    expect(screen.getByLabelText("어플리케이션 이름")).toHaveValue(original),
+  );
+}, 30000);
