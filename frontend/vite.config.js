@@ -78,7 +78,30 @@ export default defineConfig(({ command, mode: viteMode }) => {
       strictPort: true,
       fs: { allow: [root, path.resolve(root, "../contracts")] },
       proxy:
-        dataMode === "api" ? { "/api": "http://127.0.0.1:8000" } : undefined,
+        dataMode === "api"
+          ? {
+              "/api": {
+                target: "http://127.0.0.1:8000",
+                configure(proxy) {
+                  // start runs before headers are copied, including Expect requests.
+                  proxy.on("start", (req) => {
+                    const peer = req.socket.remoteAddress;
+                    if (peer) {
+                      req.headers["x-forwarded-for"] = peer;
+                      req.headers["x-real-ip"] = peer;
+                    } else {
+                      delete req.headers["x-forwarded-for"];
+                      delete req.headers["x-real-ip"];
+                    }
+                    req.headers["x-forwarded-proto"] = req.socket.encrypted
+                      ? "https"
+                      : "http";
+                    delete req.headers.forwarded;
+                  });
+                },
+              },
+            }
+          : undefined,
     },
     build: { sourcemap: false, copyPublicDir: dataMode !== "api" },
     test: {
