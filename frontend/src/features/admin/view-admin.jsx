@@ -1,3 +1,4 @@
+import { readAdminTab } from "./admin-route";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useInfiniteQuery,
@@ -22,18 +23,6 @@ const APPS_DENIED_CODES = new Set([
   "AUTH_STATE_CHANGED",
   "AUTH_TRANSITION_PENDING",
 ]);
-
-function readAdminTab(search) {
-  if (!search || search === "?") return { tab: "users", invalid: false };
-  const params = new URLSearchParams(search);
-  const keys = [...params.keys()];
-  const value = params.get("tab");
-  return keys.length === 1 &&
-    keys[0] === "tab" &&
-    ["users", "health"].includes(value)
-    ? { tab: value, invalid: false }
-    : { tab: "users", invalid: true };
-}
 
 function dateOnly(value) {
   return value.slice(0, 10);
@@ -2417,7 +2406,12 @@ export function AdminView({
 
   if (route.invalid)
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="관리자 탭 주소를 확인해 주세요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="alert" aria-live="assertive">
           <p className="font-bold text-neutral-900">
             관리자 탭 주소를 확인해 주세요.
@@ -2433,7 +2427,12 @@ export function AdminView({
     );
 
   return (
-    <main className="mx-auto w-full max-w-[1016px] px-5 pb-24 pt-12 sm:px-8">
+    <main
+      data-route-main
+      tabIndex={-1}
+      aria-label={`관리자 대시보드 — ${tab === "health" ? "Health Monitor" : "사용자 관리"}`}
+      className="focus:outline-none mx-auto w-full max-w-[1016px] px-5 pb-24 pt-12 sm:px-8"
+    >
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
           <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">

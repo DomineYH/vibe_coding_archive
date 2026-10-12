@@ -188,9 +188,11 @@ export function GalleryView({
 
   return (
     <main
+      data-route-main
+      aria-labelledby="gallery-heading"
       ref={mainRef}
       tabIndex={-1}
-      className="mx-auto w-full max-w-[1280px] px-5 pb-24 sm:px-8"
+      className="focus:outline-none mx-auto w-full max-w-[1280px] px-5 pb-24 sm:px-8"
       data-screen-label="갤러리"
     >
       <section className="flex flex-col items-start gap-5 pb-8 pt-12 sm:pt-16">
@@ -200,6 +202,7 @@ export function GalleryView({
               Teachers&rsquo; Vibe Coding Archive
             </span>
             <h1
+              id="gallery-heading"
               className="max-w-2xl break-keep text-[34px] font-extrabold leading-[1.15] tracking-tight text-neutral-900 sm:text-[44px]"
               style={{ textWrap: "balance" }}
             >

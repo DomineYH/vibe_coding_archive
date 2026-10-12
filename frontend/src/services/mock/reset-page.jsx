@@ -77,7 +77,12 @@ export default function MockResetPage() {
   };
 
   return (
-    <main className="mx-auto w-full max-w-[760px] px-5 pb-24 pt-12 sm:px-8">
+    <main
+      data-route-main
+      tabIndex={-1}
+      aria-label="mock 저장 초기화"
+      className="focus:outline-none mx-auto w-full max-w-[760px] px-5 pb-24 pt-12 sm:px-8"
+    >
       <section className="rounded-3xl border border-neutral-200/80 bg-white p-6 sm:p-8">
         <span className="acc-text text-[11.5px] font-bold uppercase tracking-[0.22em]">
           Development only

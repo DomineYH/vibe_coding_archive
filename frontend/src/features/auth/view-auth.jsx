@@ -82,13 +82,19 @@ function PasswordChangeCard({
 }) {
   return (
     <main
-      className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
+      data-route-main
+      tabIndex={-1}
+      aria-labelledby="password-change-heading"
+      className="focus:outline-none mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
       data-screen-label="비밀번호 변경"
     >
       <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
         <span className="text-[17px] font-extrabold tracking-tight">EV</span>
       </span>
-      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+      <h1
+        id="password-change-heading"
+        className="text-[26px] font-extrabold tracking-tight text-neutral-900"
+      >
         비밀번호를 변경해 주세요
       </h1>
       <p className="mt-1.5 text-center text-[13.5px] leading-relaxed text-neutral-500">
@@ -251,7 +257,13 @@ function ReauthenticationCard({
 
   if (authStatus === "checking")
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="관리자 인증 상태를 확인하고 있어요"
+        data-route-pending="true"
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState
             title="관리자 인증 상태를 확인하고 있어요"
@@ -263,7 +275,16 @@ function ReauthenticationCard({
 
   if (authStatus === "error" || authStatus === "unresolved")
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label={
+          authStatus === "error"
+            ? "관리자 인증 상태를 확인할 수 없어요"
+            : "관리자 인증 결과를 확인할 수 없어요"
+        }
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div
           role={authStatus === "error" ? "alert" : "status"}
           aria-live="polite"
@@ -298,7 +319,12 @@ function ReauthenticationCard({
 
   if (!canReauthenticate)
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="현재 로그인한 관리자가 필요해요"
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div role="alert" aria-live="assertive">
           <EmptyState
             title="현재 로그인한 관리자가 필요해요"
@@ -317,13 +343,19 @@ function ReauthenticationCard({
 
   return (
     <main
-      className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
+      data-route-main
+      tabIndex={-1}
+      aria-labelledby="reauth-heading"
+      className="focus:outline-none mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14 sm:px-8"
       data-screen-label="관리자 재인증"
     >
       <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
         <span className="text-[17px] font-extrabold tracking-tight">EV</span>
       </span>
-      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+      <h1
+        id="reauth-heading"
+        className="text-[26px] font-extrabold tracking-tight text-neutral-900"
+      >
         관리자 본인 확인
       </h1>
       <p className="mt-1.5 text-center text-[13.5px] leading-relaxed text-neutral-500">
@@ -519,7 +551,12 @@ export function AuthView({
 
   if (routeError) {
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="로그인 주소를 확인해 주세요"
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div role="alert" aria-live="assertive">
           <EmptyState
             title="로그인 주소를 확인해 주세요"
@@ -539,7 +576,12 @@ export function AuthView({
 
   if (authStatus === "unavailable")
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="인증 기능은 아직 준비 중이에요"
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState
             title="인증 기능은 아직 준비 중이에요"
@@ -568,7 +610,17 @@ export function AuthView({
 
   if (authStatus === "checking" || authStatus === "error") {
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label={
+          authStatus === "checking"
+            ? "로그인 상태를 확인하고 있어요"
+            : "로그인 상태를 확인할 수 없어요"
+        }
+        data-route-pending={authStatus === "checking" ? "true" : undefined}
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div
           role={authStatus === "checking" ? "status" : "alert"}
           aria-live="polite"
@@ -608,7 +660,12 @@ export function AuthView({
 
   if (authStatus === "unresolved") {
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="인증 결과를 확인할 수 없어요"
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState
             title="인증 결과를 확인할 수 없어요"
@@ -634,7 +691,12 @@ export function AuthView({
   if (mode === "password-change") {
     if (authUser?.sessionKind !== "change_only" || !authUser.mustChangePassword)
       return (
-        <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+        <main
+          data-route-main
+          tabIndex={-1}
+          aria-label="비밀번호 변경 전용 로그인이 필요해요"
+          className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+        >
           <div role="status" aria-live="polite">
             <EmptyState
               title="비밀번호 변경 전용 로그인이 필요해요"
@@ -668,7 +730,12 @@ export function AuthView({
 
   if (mode !== "login" && mode !== "signup") {
     return (
-      <main className="mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="이 인증 기능은 아직 제공하지 않아요"
+        className="focus:outline-none mx-auto w-full max-w-[420px] px-5 pb-24 pt-14 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState
             title="이 인증 기능은 아직 제공하지 않아요"
@@ -689,13 +756,19 @@ export function AuthView({
   if (registered && mode === "signup") {
     return (
       <main
-        className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14"
+        data-route-main
+        tabIndex={-1}
+        aria-labelledby="signup-result-heading"
+        className="focus:outline-none mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14"
         data-screen-label="가입 승인 대기"
       >
         <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
           <span className="text-[17px] font-extrabold tracking-tight">EV</span>
         </span>
-        <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+        <h1
+          id="signup-result-heading"
+          className="text-[26px] font-extrabold tracking-tight text-neutral-900"
+        >
           가입 신청이 접수되었어요
         </h1>
         <section
@@ -812,13 +885,19 @@ export function AuthView({
 
   return (
     <main
-      className="mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14"
+      data-route-main
+      tabIndex={-1}
+      aria-labelledby="auth-heading"
+      className="focus:outline-none mx-auto flex w-full max-w-[420px] flex-col items-center px-5 pb-24 pt-14"
       data-screen-label={mode === "login" ? "로그인" : "회원가입"}
     >
       <span className="acc-bg mb-5 inline-flex h-14 w-14 items-center justify-center rounded-[18px] text-white shadow-lg shadow-[#4C7A96]/25">
         <span className="text-[17px] font-extrabold tracking-tight">EV</span>
       </span>
-      <h1 className="text-[26px] font-extrabold tracking-tight text-neutral-900">
+      <h1
+        id="auth-heading"
+        className="text-[26px] font-extrabold tracking-tight text-neutral-900"
+      >
         {mode === "login" ? "다시 만나서 반가워요" : "아카이브에 합류하기"}
       </h1>
       <p className="mt-1.5 text-center text-[13.5px] leading-relaxed text-neutral-500">

@@ -54,6 +54,7 @@ import {
 } from "../services/auth-state";
 import { AdminView } from "../features/admin/view-admin";
 import { SubmitView } from "../features/submit/view-submit";
+import { useRouteFocus } from "./use-route-focus";
 
 const galleryQueryKeys = new Set(["q", "subject", "grade"]);
 
@@ -1071,7 +1072,12 @@ function DetailRoute({
   }
   if (!routeError && auth.status === "unavailable")
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="로그인 기능을 현재 사용할 수 없어요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="status">
           <EmptyState
             title="로그인 기능을 현재 사용할 수 없어요"
@@ -1332,8 +1338,15 @@ function EditRoute({
     description,
     action,
     role = action ? "alert" : "status",
+    pending = false,
   ) => (
-    <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+    <main
+      data-route-main
+      tabIndex={-1}
+      aria-label={title}
+      data-route-pending={pending ? "true" : undefined}
+      className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+    >
       <div role={role} aria-live={role === "alert" ? "assertive" : "polite"}>
         <EmptyState title={title} desc={description}>
           {action}
@@ -1351,7 +1364,13 @@ function EditRoute({
     return (
       <>
         {form}
-        {message("로그인 상태를 확인하고 있어요")}
+        {message(
+          "로그인 상태를 확인하고 있어요",
+          undefined,
+          undefined,
+          "status",
+          true,
+        )}
       </>
     );
   if (!proofLoss && auth.status === "error")
@@ -1419,7 +1438,13 @@ function EditRoute({
     return (
       <>
         {form}
-        {message("앱 정보를 확인하고 있어요")}
+        {message(
+          "앱 정보를 확인하고 있어요",
+          undefined,
+          undefined,
+          "status",
+          true,
+        )}
       </>
     );
   if (access.error)
@@ -1512,7 +1537,12 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
   ) : null;
   if (auth.status === "unavailable")
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="앱 등록 기능은 아직 준비 중이에요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState
             title="앱 등록 기능은 아직 준비 중이에요"
@@ -1525,7 +1555,13 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     return (
       <>
         {form}
-        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <main
+          data-route-main
+          tabIndex={-1}
+          aria-label="로그인 상태를 확인하고 있어요"
+          data-route-pending="true"
+          className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+        >
           <div role="status" aria-live="polite">
             <EmptyState title="로그인 상태를 확인하고 있어요" />
           </div>
@@ -1536,7 +1572,12 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     return (
       <>
         {form}
-        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <main
+          data-route-main
+          tabIndex={-1}
+          aria-label="로그인 상태를 확인할 수 없어요"
+          className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+        >
           <div role="alert" aria-live="assertive">
             <EmptyState
               title="로그인 상태를 확인할 수 없어요"
@@ -1552,7 +1593,12 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     return (
       <>
         {form}
-        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <main
+          data-route-main
+          tabIndex={-1}
+          aria-label="인증 상태를 복구해 주세요"
+          className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+        >
           <div role="status" aria-live="polite">
             <EmptyState title="인증 상태를 복구해 주세요">
               <Link
@@ -1582,7 +1628,12 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     );
   if (!member)
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="승인된 회원만 앱을 등록할 수 있어요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="alert" aria-live="assertive">
           <EmptyState
             title="승인된 회원만 앱을 등록할 수 있어요"
@@ -1602,7 +1653,13 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     return (
       <>
         {form}
-        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <main
+          data-route-main
+          tabIndex={-1}
+          aria-label="등록 기능을 확인하고 있어요"
+          data-route-pending="true"
+          className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+        >
           <div role="status" aria-live="polite">
             <EmptyState title="등록 기능을 확인하고 있어요" />
           </div>
@@ -1615,7 +1672,16 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
     return (
       <>
         {form}
-        <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <main
+          data-route-main
+          tabIndex={-1}
+          aria-label={
+            preparing
+              ? "앱 등록 기능은 아직 준비 중이에요"
+              : "앱 등록 기능을 사용할 수 없어요"
+          }
+          className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+        >
           <div
             role={preparing ? "status" : "alert"}
             aria-live={preparing ? "polite" : "assertive"}
@@ -1653,7 +1719,12 @@ function SubmitRoute({ auth, onRetryAuth, onCreated }) {
 
 function NotFoundRoute() {
   return (
-    <main className="mx-auto w-full max-w-[1280px] px-5 py-16 sm:px-8">
+    <main
+      data-route-main
+      tabIndex={-1}
+      aria-label="페이지를 찾을 수 없어요"
+      className="focus:outline-none mx-auto w-full max-w-[1280px] px-5 py-16 sm:px-8"
+    >
       <EmptyState
         title="페이지를 찾을 수 없어요"
         desc="주소를 확인하거나 갤러리로 돌아가 주세요."
@@ -1690,7 +1761,12 @@ function AuthRoute({
   const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
   if (editRecovery && authUser && draftContinuityScope(auth))
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="로그인 상태를 확인했어요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <EmptyState
           title="로그인 상태를 확인했어요"
           desc={
@@ -1833,7 +1909,12 @@ function AdminRoute({
 function AdminAccessState({ auth, onRetry }) {
   if (auth.status === "unavailable")
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="관리자 기능은 아직 준비 중이에요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState
             title="관리자 기능은 아직 준비 중이에요"
@@ -1844,7 +1925,13 @@ function AdminAccessState({ auth, onRetry }) {
     );
   if (auth.concealed)
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="화면이 잠시 가려졌습니다"
+        data-route-pending="true"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState title="화면이 잠시 가려졌습니다" />
         </div>
@@ -1852,7 +1939,13 @@ function AdminAccessState({ auth, onRetry }) {
     );
   if (auth.status === "checking")
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="로그인 상태를 확인하고 있어요"
+        data-route-pending="true"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="status" aria-live="polite">
           <EmptyState title="로그인 상태를 확인하고 있어요" />
         </div>
@@ -1860,7 +1953,12 @@ function AdminAccessState({ auth, onRetry }) {
     );
   if (auth.status === "error")
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="로그인 상태를 확인할 수 없어요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="alert" aria-live="assertive">
           <EmptyState
             title="로그인 상태를 확인할 수 없어요"
@@ -1897,7 +1995,12 @@ function AdminAccessState({ auth, onRetry }) {
     );
   if (auth.user.role !== "admin")
     return (
-      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+      <main
+        data-route-main
+        tabIndex={-1}
+        aria-label="관리자 권한이 필요해요"
+        className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      >
         <div role="alert" aria-live="assertive">
           <EmptyState title="관리자 권한이 필요해요" />
         </div>
@@ -1905,8 +2008,11 @@ function AdminAccessState({ auth, onRetry }) {
     );
   return (
     <main
+      data-route-main
+      tabIndex={-1}
+      aria-label="관리자 기능을 현재 사용할 수 없어요"
       role="status"
-      className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
+      className="focus:outline-none mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8"
     >
       <EmptyState title="관리자 기능을 현재 사용할 수 없어요" />
     </main>
@@ -1915,6 +2021,8 @@ function AdminAccessState({ auth, onRetry }) {
 
 export default function App() {
   const location = useLocation();
+  const rootRef = useRef(null);
+  useRouteFocus(rootRef, location);
   const currentLocation = useRef(location);
   currentLocation.current = location;
   const navigate = useNavigate();
@@ -3091,7 +3199,7 @@ export default function App() {
           ? "admin"
           : "gallery";
   return (
-    <div className="min-h-screen">
+    <div ref={rootRef} className="min-h-screen">
       <Header
         active={active}
         auth={auth}

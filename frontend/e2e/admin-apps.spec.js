@@ -494,6 +494,11 @@ test("admin tabs are operable with the keyboard", async ({ page }) => {
     name: "Health Monitor",
     exact: true,
   });
+  await expect(page.getByRole("main")).toBeFocused();
+  await expect(page.getByRole("main")).toHaveAccessibleName(
+    "관리자 대시보드 — Health Monitor",
+  );
+  await page.keyboard.press("Tab");
   await expect(healthTab).toBeFocused();
   await expect(healthTab).toHaveAttribute("aria-selected", "true");
   await expect(page).toHaveURL("/admin?tab=health");

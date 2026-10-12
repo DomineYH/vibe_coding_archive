@@ -376,15 +376,22 @@ export function AppDetailView({
     if (deleteState?.phase && deleteState.phase !== "idle")
       setConfirmDelete(true);
   }, [app?.id, deleteState?.id, deleteState?.phase]);
+  const focusedControl = useRef(null);
+  const rememberFocus = (event) => {
+    focusedControl.current = event.target;
+  };
   useEffect(() => {
+    const control = focusedControl.current;
     if (
-      loading ||
-      concealed ||
-      authStatus === "checking" ||
-      authStatus === "error"
+      (document.activeElement === document.body ||
+        document.activeElement === mainRef.current) &&
+      control &&
+      control !== mainRef.current &&
+      (!control.isConnected ||
+        control.closest('[hidden], [inert], [aria-hidden="true"]'))
     )
       mainRef.current?.focus({ preventScroll: true });
-  }, [authStatus, concealed, loading]);
+  }, [authStatus, concealed, loading, error]);
   const deletionControls =
     (canDelete || deleteState) && confirmDelete ? (
       <section
@@ -524,6 +531,9 @@ export function AppDetailView({
     return (
       <main
         ref={mainRef}
+        data-route-main
+        aria-label="앱 삭제 확인"
+        onFocusCapture={rememberFocus}
         tabIndex={-1}
         className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-8 focus:outline-none"
       >
@@ -538,6 +548,34 @@ export function AppDetailView({
     return (
       <main
         ref={mainRef}
+        data-route-main
+        data-route-pending={
+          concealed || authStatus === "checking" || loading ? "true" : undefined
+        }
+        aria-label={
+          concealed
+            ? "화면이 잠시 가려졌습니다"
+            : authStatus === "checking"
+              ? "로그인 상태를 확인하고 있습니다"
+              : authStatus === "error"
+                ? "로그인 상태를 확인할 수 없습니다"
+                : loading
+                  ? "아카이브 앱을 불러오는 중이에요"
+                  : error?.code === "VALIDATION_ERROR"
+                    ? "검색 조건을 확인할 수 없어요"
+                    : error?.code === "NOT_FOUND"
+                      ? "아카이브 앱을 찾을 수 없어요"
+                      : [
+                            "FORBIDDEN",
+                            "PASSWORD_CHANGE_REQUIRED",
+                            "SESSION_KIND_NOT_ALLOWED",
+                          ].includes(error?.code)
+                        ? "이 화면을 볼 권한이 없어요"
+                        : error?.code === "AUTH_REQUIRED"
+                          ? "로그인이 필요해요"
+                          : "상세 정보를 불러오지 못했어요"
+        }
+        onFocusCapture={rememberFocus}
         tabIndex={-1}
         className="mx-auto w-full max-w-[1280px] px-5 pb-24 pt-12 focus:outline-none sm:px-8"
       >
@@ -568,6 +606,9 @@ export function AppDetailView({
   return (
     <main
       ref={mainRef}
+      data-route-main
+      aria-labelledby="detail-heading"
+      onFocusCapture={rememberFocus}
       tabIndex={-1}
       className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-8 focus:outline-none sm:px-8"
       data-screen-label={app.isPublic ? "공개 앱 상세" : "비공개 앱 상세"}
@@ -622,7 +663,10 @@ export function AppDetailView({
 
       <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-[28px] font-extrabold tracking-tight text-neutral-900">
+          <h1
+            id="detail-heading"
+            className="text-[28px] font-extrabold tracking-tight text-neutral-900"
+          >
             {app.name}
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">

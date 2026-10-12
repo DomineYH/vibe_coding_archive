@@ -623,12 +623,18 @@ export function SubmitView({
 
   return (
     <main
-      className="mx-auto w-full max-w-[1080px] px-5 pb-24 pt-10 sm:px-8"
+      data-route-main
+      tabIndex={-1}
+      aria-labelledby="submit-heading"
+      className="focus:outline-none mx-auto w-full max-w-[1080px] px-5 pb-24 pt-10 sm:px-8"
       data-screen-label={editing ? "편집" : "등록"}
     >
       <div className="mb-8 flex items-end justify-between gap-4">
         <div className="min-w-0">
-          <h1 className="text-[28px] font-extrabold tracking-tight text-neutral-900">
+          <h1
+            id="submit-heading"
+            className="text-[28px] font-extrabold tracking-tight text-neutral-900"
+          >
             {editing ? "앱 정보 편집" : "새 앱 등록"}
           </h1>
           <p className="mt-1 text-[13.5px] text-neutral-500">

@@ -93,10 +93,10 @@ describe("detail edit link label", () => {
 });
 
 describe("public detail pending state", () => {
-  it("moves detail-route focus to the stable main region while loading", () => {
+  it("preserves document focus on initial detail loading", () => {
     render(<AppDetailView loading retry={() => {}} />);
 
-    expect(screen.getByRole("main")).toHaveFocus();
+    expect(document.body).toHaveFocus();
     expect(screen.getByRole("status")).toHaveTextContent(
       "아카이브 앱을 불러오는 중이에요",
     );
