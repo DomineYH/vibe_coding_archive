@@ -11,6 +11,7 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
+import { appsService } from "../src/services/mock/apps";
 import { DEMO_ACCOUNTS } from "../src/services/mock/accounts";
 import { resetMockState } from "../src/services/mock/state";
 
@@ -34,11 +35,12 @@ afterEach(() => {
 it.each([
   ["00000000-0000-4000-8000-000000000001", 1, "앱 정보 편집"],
   ["00000000-0000-4000-8000-000000000091", 1, "앱 정보 편집"],
-  ["00000000-0000-4000-8000-000000000001", 3, "앱을 수정할 수 없어요"],
+  ["00000000-0000-4000-8000-000000000001", 3, "앱을 수정할 권한이 필요해요."],
 ])(
-  "returns an anonymous edit visit for %s to the existing permission screen for account %s",
+  "checks current edit permission after an anonymous visit for %s and account %s",
   async (id, accountIndex, title) => {
     resetMockState();
+    const get = vi.spyOn(appsService, "get");
     const destination = `/apps/${id}/edit`;
     const router = createMemoryRouter([{ path: "*", element: <App /> }], {
       initialEntries: [destination],
@@ -50,6 +52,7 @@ it.each([
     );
     try {
       const loginId = await screen.findByLabelText("로그인 아이디");
+      expect(get).not.toHaveBeenCalled();
       expect(router.state.location.pathname).toBe("/auth");
       expect(
         new URLSearchParams(router.state.location.search).get("return_to"),
@@ -66,7 +69,10 @@ it.each([
         }),
       );
       await waitFor(
-        () => expect(router.state.location.pathname).toBe(destination),
+        () =>
+          expect(router.state.location.pathname).toBe(
+            accountIndex === 3 ? "/auth" : destination,
+          ),
         {
           timeout: 5000,
         },

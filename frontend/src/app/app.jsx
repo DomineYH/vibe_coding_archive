@@ -542,7 +542,7 @@ function DetailRoute({
   const eligible =
     auth.status === "ready" &&
     !auth.concealed &&
-    auth.user?.approved &&
+    auth.user?.approved === true &&
     auth.user.sessionKind === "full" &&
     !auth.user.mustChangePassword;
   const memberDetail = useQuery({
@@ -1181,7 +1181,7 @@ function EditRoute({
   const readyMember =
     auth.status === "ready" &&
     !auth.concealed &&
-    member?.approved &&
+    member?.approved === true &&
     member.sessionKind === "full" &&
     !member.mustChangePassword &&
     (member.role === "user" || member.role === "admin");
