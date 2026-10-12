@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
@@ -38,7 +39,14 @@ afterEach(() => {
 it("renders fixed deployment tokens while preserving Nginx variables", () => {
   const rendered = renderNginx(template, values);
   expect(rendered).toContain("root /srv/eduvibe/releases/api;");
-  expect(rendered).toContain("$remote_addr");
+  for (const directive of [
+    "proxy_set_header X-Real-IP $remote_addr;",
+    "proxy_set_header X-Forwarded-For $remote_addr;",
+    "proxy_set_header X-Forwarded-Proto $scheme;",
+    'proxy_set_header Forwarded "";',
+  ])
+    expect(rendered).toContain(directive);
+  expect(rendered).not.toContain("$proxy_add_x_forwarded_for");
   expect(rendered).toContain("$request_uri");
   expect(rendered).not.toContain("{{");
 });

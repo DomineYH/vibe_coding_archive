@@ -105,6 +105,18 @@ Unknown HTTP/TLS hosts receive 421. A recognized HTTP host redirects to the fixe
 configured HTTPS authority, including its port, rather than reflecting Host.
 The proxy fixes upstream Host, overwrites X-Forwarded-For/X-Real-IP with the direct
 peer and X-Forwarded-Proto with the actual scheme, and removes incoming Forwarded.
+The development Vite `/api` proxy follows the same overwrite principle: it uses
+its direct socket peer for X-Forwarded-For/X-Real-IP and its connection scheme for
+X-Forwarded-Proto, removing incoming Forwarded before creating the upstream
+request, including requests with Expect. A proxy in front of Vite becomes that
+peer; development multi-proxy client resolution is outside this contract.
+Authentication rate limiting hashes the ASGI server's client identity and relies
+on trusted proxies sanitizing these headers; the application does not parse raw
+forwarded headers. The app-only missing-client regression checks its fallback,
+while the isolated Vite→Uvicorn regression checks the actual development chain.
+Local tests and the Nginx template checks do not replace #144 G11 actual production
+host acceptance, which remains **NOT RUN**.
+
 The template uses a 2 s connect / 5 s read timeout; actual-host timing still needs
 operating review.
 

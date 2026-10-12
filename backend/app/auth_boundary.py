@@ -548,7 +548,7 @@ def response(
 
 
 def client_subject(request):
-    # Direct peer only. Proxy headers are untrusted until the operating gate configures them.
+    # Hash the ASGI client identity; trusted proxies must sanitize forwarded headers.
     return digest(request.client.host if request.client else "unknown-peer")
 
 

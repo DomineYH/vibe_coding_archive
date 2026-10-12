@@ -24,12 +24,18 @@ uv run --frozen alembic upgrade head
 # PASSWORD_BLOCKLIST_PATH=/absolute/private/path/ncsc.txt
 uv run --frozen python -m app.cli prepare-password-blocklist
 uv run --frozen python -m app.cli seed
-uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1 --reload
 uv run --frozen ruff check .
 uv run --frozen ruff format --check .
 # Tests below reuse that verified source offline:
 APP_ENV=test uv run --frozen pytest
 ```
+
+개발 브라우저의 `/api` 요청은 Vite를 거치며 forwarded identity는 Vite의 직접
+socket peer와 연결 scheme으로 교체된다. API의 8000 포트는 loopback 전용이다.
+비신뢰 로컬 프로세스를 신뢰 경계에 넣거나 `--forwarded-allow-ips='*'`를 사용하지 않는다.
+[개발 실행 안내](../README.md#2-실제-api와-함께-실행)와
+[프록시 신뢰 경계](../docs/operations/static-serving.md#trusted-proxy-and-host-boundary)를 따른다.
 
 개발 `DATABASE_PATH`의 상대 경로는 저장소 루트 기준이다.
 `PASSWORD_BLOCKLIST_PATH`의 상대 경로는 현재 작업 디렉터리 기준을 유지하므로

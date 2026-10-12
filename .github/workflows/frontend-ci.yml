@@ -53,6 +53,9 @@ jobs:
       - name: Install locked frontend dependencies for API E2E
         working-directory: frontend
         run: npm ci
+      - name: Vite to Uvicorn forwarded-header security regression
+        working-directory: backend
+        run: APP_ENV=test uv run --frozen pytest tests/integration/dev_proxy_chain.py -q
       - name: Install Playwright Chromium for API E2E
         working-directory: frontend
         run: npx playwright install --with-deps chromium

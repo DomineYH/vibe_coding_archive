@@ -1272,3 +1272,27 @@ def test_rejected_cookie_issuance_does_not_consume_success_limit(auth_client):
         ).status_code
         == 429
     )
+
+
+def test_client_subject_uses_asgi_client_not_raw_headers():
+    from starlette.requests import Request
+
+    from app.auth_boundary import client_subject
+
+    def subject(peer, supplied):
+        return client_subject(
+            Request(
+                {
+                    "type": "http",
+                    "client": (peer, 12345),
+                    "headers": [
+                        (b"x-forwarded-for", supplied.encode()),
+                        (b"x-real-ip", supplied.encode()),
+                        (b"forwarded", f"for={supplied}".encode()),
+                    ],
+                }
+            )
+        )
+
+    assert subject("127.0.0.1", "203.0.113.7") == subject("127.0.0.1", "198.51.100.8")
+    assert subject("127.0.0.1", "203.0.113.7") != subject("127.0.0.2", "203.0.113.7")

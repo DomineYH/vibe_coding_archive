@@ -51,8 +51,14 @@ HMAC process setting:
 
 ```sh
 PASSWORD_RESET_HMAC_PATH="$HOME/.local/state/eduvibe/password-reset-hmac.json" \
-  uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+  uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1 --reload
 ```
+
+Browser `/api` requests use the Vite proxy, which replaces forwarded identity
+with its socket peer and connection scheme. Keep port 8000 on loopback, exclude
+untrusted local processes from this boundary, and never use
+`--forwarded-allow-ips='*'`. See the
+[proxy trust boundary](../operations/static-serving.md#trusted-proxy-and-host-boundary).
 
 In another terminal, confirm DB/authentication readiness and the `/meta`
 capability (served at `/api/v1/meta`):

@@ -74,7 +74,7 @@ uv run --frozen alembic upgrade head
 uv run --frozen python -m app.cli prepare-password-blocklist   # 최초 1회, 네트워크 필요
 uv run --frozen python -m app.cli seed
 uv run --frozen python -m app.cli bootstrap-admin              # 선택. 관리자가 필요할 때
-uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1 --reload
 ```
 
 - **실행 환경 전환:** 개발은 `backend/.env`의 `APP_ENV=development`를 사용할 수 있고, 셸의 `APP_ENV`가 우선합니다. `production`/`test`는 프로세스 환경에 직접 지정해야 하며 `.env`를 읽지 않습니다. 파일만으로 `production`/`test`를 선택하면 거절합니다. 바꾼 뒤에는 서버를 다시 시작합니다.
@@ -97,6 +97,11 @@ npm run dev:api
 ```
 
 http://localhost:5174 를 엽니다. 이 주소는 백엔드의 `PUBLIC_ORIGIN`과 같아야 합니다.
+`/api` 요청은 Vite를 거칩니다. Vite는 X-Forwarded-For/X-Real-IP를 직접 socket peer로,
+X-Forwarded-Proto를 실제 연결 scheme으로 덮어쓰고 입력 Forwarded를 제거합니다.
+백엔드의 8000 포트는 loopback 전용이며 비신뢰 로컬 프로세스를 이 신뢰 경계에 넣지 않습니다.
+`--forwarded-allow-ips='*'`는 사용하지 않습니다. 자세한 전제는
+[프록시 신뢰 경계](docs/operations/static-serving.md#trusted-proxy-and-host-boundary)를 봅니다.
 
 ### 3. 빌드
 
