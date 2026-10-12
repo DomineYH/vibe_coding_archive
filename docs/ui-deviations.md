@@ -564,3 +564,9 @@ Latin characters, a long URL and mixed Korean/spaces/newlines. Ordinary detail
 and copy-success visual states are checked at all five existing viewports;
 historical references and baselines are preserved. Automated checks do not
 claim new human visual, screen-reader or physical-device acceptance.
+
+## I232-R — proof-loss edit recovery
+
+Issue #232 connects protected-request proof loss to the existing header recheck state. The previous nickname/logout and protected edit form become concealed; a visible main offers “다시 확인” and the allowlisted “로그인 및 인증 복구” link with the exact edit return. The link has an explicit keyboard focus outline and bypasses the dirty-form blocker only for that recovery destination. Re-proven identity and current edit permission enable an explicit “편집으로 돌아가기”; inputs and unresolved operation state remain in this tab's memory, with no automatic write. Explicit abandonment or confirmed identity/permission changes discard memory and produce a non-sensitive recovery notice, including a distinct unknown-outcome message.
+
+Approval scope **I232-R** covers only ten new proof-loss and recovery-ready product baselines at 1440/1024/768/390/360px. Delegated approval source: [accepted #232 triage brief](https://github.com/DomineYH/vibe_coding_archive/issues/232#issuecomment-6116289844) and coordinator approval **2026-10-12**. Recorder: **Codex gpt-6.1-sol**, **2026-10-12**. The [evidence README and SHA ledger](evidence/phase-7/issue232/2026-10-12/README.md) record captures and verification. Historical baselines remain untouched; no human visual, screen-reader or physical-device acceptance is claimed. #231's other-tab logout notice and #227's route focus effect are outside this change.

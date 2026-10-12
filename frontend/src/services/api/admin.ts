@@ -1,3 +1,4 @@
+import { captureAuthInvalidation } from "../auth-invalidation";
 import {
   isDateTime,
   mapAdminAppPage,
@@ -171,8 +172,14 @@ function capturedHeaders({ state }: ProtectedReadContext) {
   });
 }
 
-async function requestHeaders(write: boolean, signal?: AbortSignal) {
+async function requestHeaders(
+  write: boolean,
+  invalidate: (error: unknown) => void,
+  signal?: AbortSignal,
+) {
   const auth = await authService.getCurrentAuthState({ signal });
+  if (auth.status !== "ready" || !auth.user)
+    invalidate(new ServiceError("AUTH_REQUIRED", "로그인이 필요해요."));
   if (!auth.user || auth.user.role !== "admin" || !auth.user.approved)
     throw new ServiceError("FORBIDDEN", "관리자 권한이 필요해요.", {
       httpStatus: 403,
@@ -279,19 +286,18 @@ async function request(
   path: string,
   options: RequestOptions = {},
 ): Promise<unknown> {
+  const invalidate = captureAuthInvalidation();
   const { readContext, signal } = options;
-  if (!readContext) return perform(endpoint, path, options);
-  assertAuthObservation(readContext);
-  // Ownership is asserted after every await: a retired observation is dropped
-  // silently, never reported as data or as an error for the new scope.
+  if (readContext) assertAuthObservation(readContext);
   try {
-    const value = await perform(endpoint, path, options);
-    assertAuthObservation(readContext);
+    const value = await perform(endpoint, path, options, invalidate);
+    if (readContext) assertAuthObservation(readContext);
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
     return value;
   } catch (error) {
-    assertAuthObservation(readContext);
+    if (readContext) assertAuthObservation(readContext);
     if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    invalidate(error);
     throw error;
   }
 }
@@ -319,11 +325,12 @@ async function perform(
     uncertain = false,
     noContent = false,
     readContext,
-  }: RequestOptions = {},
+  }: RequestOptions,
+  invalidate: (error: unknown) => void,
 ): Promise<unknown> {
   const headers = readContext
     ? capturedHeaders(readContext)
-    : await requestHeaders(write, signal);
+    : await requestHeaders(write, invalidate, signal);
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
   let response: Response;

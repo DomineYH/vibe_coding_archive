@@ -946,3 +946,60 @@ it.each([{ key: appId }, { kind: "app_update" }])(
     });
   },
 );
+
+it("notifies proof loss before wrapping an unknown lookup and never transmits a preflight-rejected write", async () => {
+  const { subscribeAuthInvalidation } =
+    await import("../src/services/auth-invalidation");
+  const notify = vi.fn();
+  const unsubscribe = subscribeAuthInvalidation(() => notify);
+  const lost = new ServiceError("AUTH_STATE_CHANGED", "proof lost");
+  authMock.getCurrentAuthState.mockRejectedValue(lost);
+  const fetch = vi.fn();
+  vi.stubGlobal("fetch", fetch);
+  try {
+    await expect(
+      appsService.issueUpdateOperation(appId, input, 1),
+    ).rejects.toBe(lost);
+    expect(notify).toHaveBeenLastCalledWith(lost);
+    await expect(appsService.getUpdateOperation(key)).rejects.toMatchObject({
+      outcome: "unknown",
+      code: "SERVICE_UNAVAILABLE",
+    });
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(fetch).not.toHaveBeenCalled();
+  } finally {
+    unsubscribe();
+  }
+});
+
+it("retains the issued update key separately when proof disappears before PATCH", async () => {
+  const { subscribeAuthInvalidation } =
+    await import("../src/services/auth-invalidation");
+  const notify = vi.fn();
+  const unsubscribe = subscribeAuthInvalidation(() => notify);
+  const fetch = vi
+    .fn()
+    .mockResolvedValue(
+      new Response(JSON.stringify(updateIssued), { status: 201 }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  try {
+    const operation = await appsService.issueUpdateOperation(appId, input, 1);
+    authMock.getCurrentAuthState.mockRejectedValue(
+      new ServiceError("AUTH_REQUIRED", "proof lost", { outcome: "rejected" }),
+    );
+    await expect(
+      appsService.update(appId, input, 1, operation.key),
+    ).rejects.toMatchObject({
+      code: "SERVICE_UNAVAILABLE",
+      outcome: "unknown",
+    });
+    expect(operation.key).toBe(key);
+    expect(fetch.mock.calls.map(([url, init]) => [url, init?.method])).toEqual([
+      ["/api/v1/write-operations", "POST"],
+    ]);
+    expect(notify).toHaveBeenCalledTimes(1);
+  } finally {
+    unsubscribe();
+  }
+});

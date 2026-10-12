@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { Link, useBlocker } from "react-router-dom";
 import { DeviceScreen, Btn } from "../../components/ui";
 import {
@@ -8,6 +15,7 @@ import {
 import { ServiceError } from "../../services/service-error";
 import { appsService } from "@services/apps";
 import { authService } from "@services/auth";
+import { captureAuthInvalidation } from "../../services/auth-invalidation";
 
 const emptyDraft = {
   name: "",
@@ -113,27 +121,61 @@ export function SubmitView({
   onLatest,
   onCancel,
   readLatest,
+  draftSlot,
+  editMemory,
+  observationId,
+  isCurrentObservation,
+  canEdit = true,
+  recoveryTo,
 }) {
   const editing = Boolean(app);
+  const restored = draftSlot?.snapshot;
   const initialDraft = app ? draftFromApp(app) : emptyDraft;
-  const [baseDraft, setBaseDraft] = useState(initialDraft);
-  const [draft, setDraft] = useState(initialDraft);
-  const [expectedVersion, setExpectedVersion] = useState(app?.version ?? null);
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [baseDraft, setBaseDraft] = useState(
+    restored?.baseDraft ?? initialDraft,
+  );
+  const [draft, setDraft] = useState(restored?.draft ?? initialDraft);
+  const [expectedVersion, setExpectedVersion] = useState(
+    restored?.expectedVersion ?? app?.version ?? null,
+  );
+  const [fieldErrors, setFieldErrors] = useState(restored?.fieldErrors ?? {});
   const extraFieldErrors = Object.entries(fieldErrors).filter(
     ([field]) => !inlineErrorFields.has(field),
   );
-  const [formError, setFormError] = useState("");
+  const [formError, setFormError] = useState(restored?.formError ?? "");
   const [saving, setSaving] = useState(false);
-  const [unknown, setUnknown] = useState(false);
-  const [operationExpired, setOperationExpired] = useState(false);
-  const [operationKey, setOperationKey] = useState(null);
-  const [pendingInput, setPendingInput] = useState(null);
+  const [unknown, setUnknown] = useState(restored?.unknown ?? false);
+  const [operationExpired, setOperationExpired] = useState(
+    restored?.operationExpired ?? false,
+  );
+  const [operationKey, setOperationKey] = useState(
+    restored?.operationKey ?? null,
+  );
+  const [pendingInput, setPendingInput] = useState(
+    restored?.pendingInput ?? null,
+  );
   const [confirmedAppId, setConfirmedAppId] = useState(null);
   const [confirmedUpdate, setConfirmedUpdate] = useState(null);
-  const [conflictPending, setConflictPending] = useState(false);
+  const [conflictPending, setConflictPending] = useState(
+    restored?.conflictPending ?? false,
+  );
   const [loadingLatest, setLoadingLatest] = useState(false);
   const allowNavigation = useRef(false);
+  const mounted = useRef(true);
+  const attempt = useRef(0);
+  const beginAttempt = () => {
+    const request = ++attempt.current;
+    return () =>
+      mounted.current &&
+      attempt.current === request &&
+      (!isCurrentObservation || isCurrentObservation(observationId));
+  };
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const savingLocked = saving || unknown;
   const expiredOperationMessage =
     "저장 결과 확인 기간이 지나 확인할 수 없어요. 새 작업 키로 다시 저장하지 마세요.";
@@ -141,8 +183,12 @@ export function SubmitView({
   const shouldWarn = dirty || savingLocked;
   const blocker = useBlocker(
     useCallback(
-      () => !allowNavigation.current && (dirty || saving || unknown),
-      [dirty, saving, unknown],
+      ({ nextLocation }) => {
+        const destination = `${nextLocation.pathname}${nextLocation.search}${nextLocation.hash}`;
+        if (recoveryTo && destination === recoveryTo) return false;
+        return !allowNavigation.current && (dirty || saving || unknown);
+      },
+      [dirty, saving, unknown, recoveryTo],
     ),
   );
   const theme =
@@ -154,8 +200,53 @@ export function SubmitView({
     isPublic: draft.isPublic,
   };
 
+  useLayoutEffect(() => {
+    if (draftSlot && editMemory.current.slot === draftSlot)
+      draftSlot.snapshot = {
+        draft,
+        baseDraft,
+        expectedVersion,
+        dirty,
+        fieldErrors,
+        formError,
+        operationKey,
+        pendingInput,
+        unknown: unknown || (saving && Boolean(operationKey)),
+        operationExpired,
+        conflictPending,
+      };
+  }, [
+    draftSlot,
+    editMemory,
+    draft,
+    baseDraft,
+    expectedVersion,
+    dirty,
+    fieldErrors,
+    formError,
+    operationKey,
+    pendingInput,
+    unknown,
+    saving,
+    operationExpired,
+    conflictPending,
+  ]);
+  useLayoutEffect(() => {
+    if (canEdit) return;
+    ++attempt.current;
+    if (saving && operationKey) setUnknown(true);
+    setSaving(false);
+    setLoadingLatest(false);
+    setConfirmedUpdate(null);
+  }, [canEdit, saving, operationKey]);
+
   useEffect(() => {
     if (!confirmedAppId && !confirmedUpdate) return;
+    if (
+      !canEdit ||
+      (isCurrentObservation && !isCurrentObservation(observationId))
+    )
+      return;
     if (blocker.state === "blocked") {
       blocker.reset();
       return;
@@ -165,7 +256,17 @@ export function SubmitView({
     else onCreated(confirmedAppId);
     setConfirmedAppId(null);
     setConfirmedUpdate(null);
-  }, [blocker, confirmedAppId, confirmedUpdate, editing, onCreated, onSaved]);
+  }, [
+    blocker,
+    confirmedAppId,
+    confirmedUpdate,
+    editing,
+    onCreated,
+    onSaved,
+    canEdit,
+    isCurrentObservation,
+    observationId,
+  ]);
 
   useEffect(() => {
     if (!shouldWarn) return undefined;
@@ -248,7 +349,7 @@ export function SubmitView({
     }
   };
 
-  const sendWithKey = async (input, key) => {
+  const sendWithKey = async (input, key, isCurrent = beginAttempt()) => {
     setSaving(true);
     setUnknown(false);
     setFormError("");
@@ -256,12 +357,13 @@ export function SubmitView({
       const saved = editing
         ? await appsService.update(app.id, input, expectedVersion, key)
         : await appsService.create(input, key);
+      if (!isCurrent()) return;
       if (editing) setConfirmedUpdate(saved);
       else openCreatedApp(saved.id);
     } catch (error) {
-      handleFailure(error);
+      if (isCurrent()) handleFailure(error);
     } finally {
-      setSaving(false);
+      if (isCurrent()) setSaving(false);
     }
   };
 
@@ -282,11 +384,13 @@ export function SubmitView({
       }
       return;
     }
+    const isCurrent = beginAttempt();
     setSaving(true);
     try {
       const operation = editing
         ? await appsService.issueUpdateOperation(app.id, input, expectedVersion)
         : await appsService.issueCreateOperation(input);
+      if (!isCurrent()) return;
       const expectedKind = editing ? "app_update" : "app_create";
       const expectedTarget = editing ? app.id : null;
       if (
@@ -300,22 +404,24 @@ export function SubmitView({
         );
       setOperationKey(operation.key);
       setPendingInput(input);
-      await sendWithKey(input, operation.key);
+      await sendWithKey(input, operation.key, isCurrent);
     } catch (error) {
-      handleFailure(error);
+      if (isCurrent()) handleFailure(error);
     } finally {
-      setSaving(false);
+      if (isCurrent()) setSaving(false);
     }
   };
 
   const checkResult = async () => {
     if (!operationKey || !pendingInput || operationExpired) return;
+    const isCurrent = beginAttempt();
     setSaving(true);
     setFormError("");
     try {
       const operation = editing
         ? await appsService.getUpdateOperation(operationKey)
         : await appsService.getCreateOperation(operationKey);
+      if (!isCurrent()) return;
       if (
         operation.kind !== (editing ? "app_update" : "app_create") ||
         (editing && operation.targetId !== app.id)
@@ -327,6 +433,7 @@ export function SubmitView({
       if (operation.state === "succeeded" && operation.targetId) {
         if (editing) {
           const latest = await readLatest(operation.targetId);
+          if (!isCurrent()) return;
           if (latest.version < operation.resultVersion)
             throw new ServiceError(
               "CONTRACT_ERROR",
@@ -354,6 +461,7 @@ export function SubmitView({
         );
       }
     } catch (error) {
+      if (!isCurrent()) return;
       setFormError(
         error instanceof ServiceError && error.code === "OPERATION_EXPIRED"
           ? expiredOperationMessage
@@ -364,7 +472,7 @@ export function SubmitView({
       if (error instanceof ServiceError && error.code === "OPERATION_EXPIRED")
         setOperationExpired(true);
     } finally {
-      setSaving(false);
+      if (isCurrent()) setSaving(false);
     }
   };
 
@@ -375,14 +483,19 @@ export function SubmitView({
 
   const loadLatest = async () => {
     if (!app || loadingLatest) return;
+    const isCurrent = beginAttempt();
+    const invalidate = captureAuthInvalidation();
     setLoadingLatest(true);
     setFormError("");
     try {
       const auth = await authService.getCurrentAuthState();
+      if (!isCurrent()) return;
       const user = auth.user;
       const adminCanManage =
         user?.role === "admin" &&
         meta.capabilities.admin_apps_manage.enabled === true;
+      if (auth.status !== "ready" || !user)
+        invalidate(new ServiceError("AUTH_REQUIRED", "로그인이 필요해요."));
       if (
         auth.status !== "ready" ||
         !user ||
@@ -397,6 +510,7 @@ export function SubmitView({
           { outcome: "rejected" },
         );
       const latest = await readLatest(app.id);
+      if (!isCurrent()) return;
       if (latest.ownerId !== user.id && !adminCanManage)
         throw new ServiceError("NOT_FOUND", "아카이브 앱을 찾을 수 없어요.");
       const latestDraft = draftFromApp(latest);
@@ -407,11 +521,13 @@ export function SubmitView({
       setConflictPending(false);
       onLatest(latest);
     } catch (error) {
+      invalidate(error);
+      if (!isCurrent()) return;
       setFormError(
         `최신 내용을 불러오지 못했어요. 작성 중인 초안은 유지됩니다. ${error instanceof Error ? error.message : "다시 확인해 주세요."}`,
       );
     } finally {
-      setLoadingLatest(false);
+      if (isCurrent()) setLoadingLatest(false);
     }
   };
 
@@ -426,6 +542,84 @@ export function SubmitView({
           ),
     );
   };
+
+  const leaveDialog =
+    blocker.state === "blocked" ? (
+      <div
+        className="fixed inset-0 z-50 grid place-items-center bg-neutral-900/35 p-5"
+        role="presentation"
+      >
+        <section
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="leave-submit-title"
+          aria-describedby="leave-submit-description"
+          className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
+        >
+          <h2
+            id="leave-submit-title"
+            className="text-[18px] font-bold text-neutral-900"
+          >
+            {saving
+              ? "앱을 등록하고 있어요"
+              : operationExpired
+                ? "저장 결과 확인 기간이 지났어요"
+                : unknown
+                  ? "저장 결과를 확인해 주세요"
+                  : "작성 중인 내용이 있어요"}
+          </h2>
+          <p
+            id="leave-submit-description"
+            className="mt-2 text-[13px] leading-relaxed text-neutral-600"
+          >
+            {saving
+              ? "저장이 끝날 때까지 이동할 수 없어요."
+              : operationExpired
+                ? expiredOperationMessage
+                : unknown
+                  ? "결과가 확인될 때까지 이 화면을 유지해 주세요. 같은 요청을 다시 보내거나 결과를 확인할 수 있어요."
+                  : "이 화면을 나가면 작성한 내용이 사라져요. 계속 작성할까요?"}
+          </p>
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            {saving ? null : operationExpired ? (
+              <Btn variant="line" onClick={() => blocker.reset()}>
+                이 화면 유지
+              </Btn>
+            ) : unknown && !canEdit ? (
+              <Btn variant="line" autoFocus onClick={() => blocker.reset()}>
+                이 화면 유지
+              </Btn>
+            ) : unknown ? (
+              <>
+                <Btn
+                  variant="line"
+                  onClick={() => void checkResult()}
+                  disabled={saving}
+                >
+                  결과 확인
+                </Btn>
+                <Btn onClick={retrySameRequest} disabled={saving}>
+                  같은 요청 다시 보내기
+                </Btn>
+              </>
+            ) : (
+              <>
+                <Btn
+                  variant="line"
+                  autoFocus={!canEdit}
+                  onClick={() => blocker.reset()}
+                >
+                  계속 작성
+                </Btn>
+                <Btn variant="danger" onClick={() => blocker.proceed()}>
+                  작성 취소하고 이동
+                </Btn>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+    ) : null;
 
   return (
     <main
@@ -868,74 +1062,11 @@ export function SubmitView({
         </aside>
       </form>
 
-      {blocker.state === "blocked" ? (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-neutral-900/35 p-5"
-          role="presentation"
-        >
-          <section
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="leave-submit-title"
-            aria-describedby="leave-submit-description"
-            className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl"
-          >
-            <h2
-              id="leave-submit-title"
-              className="text-[18px] font-bold text-neutral-900"
-            >
-              {saving
-                ? "앱을 등록하고 있어요"
-                : operationExpired
-                  ? "저장 결과 확인 기간이 지났어요"
-                  : unknown
-                    ? "저장 결과를 확인해 주세요"
-                    : "작성 중인 내용이 있어요"}
-            </h2>
-            <p
-              id="leave-submit-description"
-              className="mt-2 text-[13px] leading-relaxed text-neutral-600"
-            >
-              {saving
-                ? "저장이 끝날 때까지 이동할 수 없어요."
-                : operationExpired
-                  ? expiredOperationMessage
-                  : unknown
-                    ? "결과가 확인될 때까지 이 화면을 유지해 주세요. 같은 요청을 다시 보내거나 결과를 확인할 수 있어요."
-                    : "이 화면을 나가면 작성한 내용이 사라져요. 계속 작성할까요?"}
-            </p>
-            <div className="mt-5 flex flex-wrap justify-end gap-2">
-              {saving ? null : operationExpired ? (
-                <Btn variant="line" onClick={() => blocker.reset()}>
-                  이 화면 유지
-                </Btn>
-              ) : unknown ? (
-                <>
-                  <Btn
-                    variant="line"
-                    onClick={() => void checkResult()}
-                    disabled={saving}
-                  >
-                    결과 확인
-                  </Btn>
-                  <Btn onClick={retrySameRequest} disabled={saving}>
-                    같은 요청 다시 보내기
-                  </Btn>
-                </>
-              ) : (
-                <>
-                  <Btn variant="line" onClick={() => blocker.reset()}>
-                    계속 작성
-                  </Btn>
-                  <Btn variant="danger" onClick={() => blocker.proceed()}>
-                    작성 취소하고 이동
-                  </Btn>
-                </>
-              )}
-            </div>
-          </section>
-        </div>
-      ) : null}
+      {leaveDialog
+        ? canEdit
+          ? leaveDialog
+          : createPortal(leaveDialog, document.body)
+        : null}
     </main>
   );
 }

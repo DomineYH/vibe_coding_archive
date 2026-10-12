@@ -581,3 +581,23 @@ Local #223 results: targeted view/route **47 PASS**, auth/detail/return regressi
 문서만 변경한다. PRD GAL과 [ADR 0002](adr/0002-gallery-public-only.md)는 갤러리 목록·검색·`total`·`facets`가 로그인 상태와 관계없이 공개 집합을 인증 헤더 없이 읽는다고 명시하며, 기존 OpenAPI의 공개 목록 summary·`security: []`와 집계 설명을 같은 범위로 확인한다. 공개/비공개 × 익명/소유자/다른 회원/관리자를 대조해 기존 소유자·관리자 비공개 상세와 관리자 전체 앱 관리 목록 권한이 유지됨을 확인한다. #8의 집합 문구는 현재 갤러리의 공개 집합으로 범위를 명시하고 #12의 과거 단계 기록은 유지한다.
 
 문서·계약 검사 명령과 결과, 권한 대조표는 `/home/dominelinux/.cache/vibe_coding_archive/coord/b226/report-impl226.md`에 기록한다. 실행 코드·DTO·생성 타입·fixture·테스트는 변경하지 않으며 기능 수정이나 런타임 테스트 통과를 주장하지 않는다.
+
+## Issue #232 — proof-loss edit recovery
+
+The [accepted #232 Agent Brief](https://github.com/DomineYH/vibe_coding_archive/issues/232#issuecomment-6116289844) governs these boundaries.
+
+| Criterion | Verification boundary |
+| --- | --- |
+| Foreground proof loss corrects header and conceals protected inputs | `auth-continuity.test.jsx`, real-cookie `e2e-api/auth-loss-edit.spec.js`; no blur/focus/storage event is used to trigger the save failure |
+| Exact edit return and existing recovery policy | `auth-route.test.ts`, `return-destination.test.ts`, actual session-only/all-active/all-expired cookie-loss scenarios; active ID-only flow cannot create/login, expired flow requires explicit reset |
+| Single-tab draft continuity and discard | Same scope/identity/current permission restoration, edit A→logout→A/A→B→A, fresh authority loss; snapshot never enters persistent storage or query cache |
+| No automatic replay or stale success | Unknown original-key recovery and retired-observation completion checks; server version/write count checks distinguish preflight rejection from committed response loss |
+| Selective proof-loss propagation and service outcomes | `auth-invalidation.test.ts`, API/mock apps/admin regressions, auth preparation and isolation regressions |
+
+Exact local commands, results, Red/Green evidence and remaining CI/human gates are recorded in `/home/dominelinux/.cache/vibe_coding_archive/coord/b232/report-impl232.md`. Backend, schema and ADR-0001 protocols are unchanged; recovery never promises immediate login or ordinary same-account draft restoration after identity history changes.
+
+Local final product source: `eaa3e51`. Five affected UI/return/corridor files pass **180 tests**, including same-member cached different-appId and same-path query/hash departures; final mock edit passes **18/18** and all four real-cookie proof-loss cases pass together **4/4**. Configured contract/generated/type/lint/format checks pass. Earlier selective API/admin and mock/health groups pass **129** and **149** tests; unchanged auth/prepare/isolation/mock-health regressions pass **159**. The broader mock set has passing evidence for all **83 distinct cases** across the initial run and corrected edit reruns; the initial five failures remain recorded. API regressions pass **67 functional + 5 separately clocked capture cases** on the earlier source; the final cookie-loss rerun verifies the late corridor change.
+
+Existing visual comparisons have **44 distinct PASS / 1 unresolved FAIL** across separate runs: admin 5, create/edit 25, support 10 and four auth viewport sequences pass. The initial 60-second auth budgets were insufficient; isolated retries use a larger local budget. Auth390's reset/form failure passes on its one retry. Auth360 initially reports browser `ERR_INSUFFICIENT_RESOURCES`; its one retry fails a different login-form lookup after reset, without reaching an image-difference assertion. Cause remains unproven; full auth360 visual acceptance is not claimed. New #232 recovery keyboard/conceal/return checks pass at all five sizes, including 360px. Approved new captures and their precise comparison limits are recorded in the [I232-R ledger](evidence/phase-7/issue232/2026-10-12/README.md); all 2,253 historical evidence blobs remain unchanged.
+
+Earlier functional Reds, fixture corrections, infrastructure failures and interrupted rows are retained separately in the implementation report. No failed aggregate is relabeled PASS. Full Vitest/backend suites and unselected browser/visual/build/deployment checks go to CI under common-rules Addendum 4; independent review, CI and human/device/screen-reader acceptance remain pending. No push or PR was performed.

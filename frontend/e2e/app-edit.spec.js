@@ -623,3 +623,91 @@ test("unresolved deletion warns before refresh and keeps its key when the author
     }),
   ).toBeVisible();
 });
+
+test("232 foreground proof loss hides edit and preserves the recovery round trip", async ({
+  page,
+}) => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  await loginAs(page, "교사김코딩");
+  await page.goto(`/apps/${id}/edit`);
+  await page
+    .getByLabel("어플리케이션 이름", { exact: true })
+    .fill("232 숨겨 보존할 초안");
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key));
+    state.auth_flow.session_cookie_present = false;
+    localStorage.setItem(key, JSON.stringify(state));
+  }, key);
+  await page
+    .getByRole("button", { name: "변경사항 저장", exact: true })
+    .click();
+  await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
+  await expect(page.getByRole("form", { name: "앱 수정 양식" })).toHaveCount(0);
+  const link = page.getByRole("link", { name: "로그인 및 인증 복구" });
+  await expect(link).toHaveAttribute(
+    "href",
+    `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`,
+  );
+  for (
+    let tab = 0;
+    tab < 8 &&
+    !(await link.evaluate((element) => element === document.activeElement));
+    tab++
+  )
+    await page.keyboard.press("Tab");
+  await expect(link).toBeFocused();
+  for (const [width, height] of [
+    [1440, 1000],
+    [1024, 900],
+    [768, 1024],
+    [390, 844],
+    [360, 844],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await link.focus();
+    await expect(link).toBeFocused();
+    expect(
+      await link.evaluate((element) => getComputedStyle(element).outlineStyle),
+    ).not.toBe("none");
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: test.info().outputPath(`proof-loss-${width}.png`),
+      fullPage: true,
+    });
+  }
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByText("인증 결과를 확인할 수 없어요", { exact: true }),
+  ).toBeVisible();
+  await page.evaluate((key) => {
+    const state = JSON.parse(localStorage.getItem(key));
+    state.auth_flow.session_cookie_present = true;
+    localStorage.setItem(key, JSON.stringify(state));
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  }, key);
+  for (const [width, height] of [
+    [1440, 1000],
+    [1024, 900],
+    [768, 1024],
+    [390, 844],
+    [360, 844],
+  ]) {
+    await page.setViewportSize({ width, height });
+    await expect(
+      page.getByRole("button", { name: "편집으로 돌아가기" }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: test.info().outputPath(`recovery-ready-${width}.png`),
+      fullPage: true,
+    });
+  }
+  await page.getByRole("button", { name: "편집으로 돌아가기" }).click();
+  await expect(
+    page.getByLabel("어플리케이션 이름", { exact: true }),
+  ).toHaveValue("232 숨겨 보존할 초안");
+});

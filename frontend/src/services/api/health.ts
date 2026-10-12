@@ -1,3 +1,4 @@
+import { captureAuthInvalidation } from "../auth-invalidation";
 import {
   mapBatchAccepted,
   mapCheckAccepted,
@@ -27,6 +28,7 @@ async function readHealth(
   { signal, readContext }: HealthReadOptions,
   authenticated = false,
 ) {
+  const invalidate = captureAuthInvalidation();
   if (!readContext) {
     if (authenticated)
       return getJson(endpoint, path, { signal, authenticated });
@@ -74,6 +76,7 @@ async function readHealth(
     return result.body;
   } catch (error) {
     assertAuthObservation(readContext);
+    invalidate(error);
     throw error;
   }
 }

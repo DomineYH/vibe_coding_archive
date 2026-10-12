@@ -332,3 +332,11 @@ API E2E runner의 현재 인증 unavailable fixture와 테스트를 true/false �
 [R9]: https://github.com/DomineYH/vibe_coding_archive/issues/9#issuecomment-5778334008
 [R15]: https://github.com/DomineYH/vibe_coding_archive/issues/15#issuecomment-5808935379
 [R24]: https://github.com/DomineYH/vibe_coding_archive/issues/24#issuecomment-5806786959
+
+### #232 — proof loss during editing
+
+A protected request captures App's current authentication observation before its first await. AUTH_REQUIRED, RECOVERY_REQUIRED, AUTH_STATE_CHANGED and AUTH_TRANSITION_PENDING invalidate that observation and trigger the existing asynchronous recheck; ordinary permission, credentials, CSRF and network errors do not imply logout. Request outcome remains independent: uncertain writes and result lookups retain their existing unknown outcome.
+
+An edit snapshot belongs to a single App-owned tab-memory slot, including inputs, their base/version and any operation key, pending input, unknown, expired or conflict state. It stays concealed during unresolved/error/checking observations and the validated `/apps/<UUID>/edit` → login/recovery with that exact `return_to` → same edit corridor. It never enters URL/history state, persistent storage or query caches. Restoration requires the same `draftContinuityScope`, a fresh target read and current metadata/ownership permission. Confirmed identity loss/change, logout/reset/discard, missing target/permission or departure from that corridor destroys the slot; returning to the same account later cannot revive it. Recovery does not submit, replay or confirm an app write automatically.
+
+The discard helper returns only `{reason, dirty, outcome}` for #231's later notice integration. The concealed edit container and visible recovery `main` are separate so #227 can select the displayed main without changing authentication or draft rules.

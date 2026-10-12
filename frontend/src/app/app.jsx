@@ -38,6 +38,12 @@ import { AppDetailView } from "../features/detail/view-detail";
 import { GalleryView } from "../features/gallery/view-gallery";
 import { Avatar, Btn, EmptyState } from "../components/ui";
 import { AuthView } from "../features/auth/view-auth";
+import { subscribeAuthInvalidation } from "../services/auth-invalidation";
+import {
+  discardEditDraft,
+  editRecoveryHref,
+  isEditRecoveryLocation,
+} from "../features/submit/edit-draft";
 import { readAuthRoute } from "../features/auth/auth-route";
 import { recheckReturnDestination } from "../features/auth/return-destination";
 import {
@@ -1161,6 +1167,7 @@ function EditRoute({
   isAppRetired,
   onRetryAuth,
   onSaved,
+  editMemory,
 }) {
   const { id = "" } = useParams();
   const location = useLocation();
@@ -1206,44 +1213,60 @@ function EditRoute({
   const ownsApp = detail.data?.ownerId === member?.id;
   const canEdit =
     readyMember &&
+    !access.loading &&
+    !access.error &&
     !isAppRetired(id) &&
     Boolean(detail.data) &&
     (ownsApp
       ? access.meta?.capabilities.apps_update_own.enabled === true
       : adminCanManage);
-  const [wasEditable, setWasEditable] = useState(false);
   const continuity = draftContinuityScope(auth);
   const ownerScope = useRef(null);
   const lastApp = useRef(null);
-  if (detail.data) lastApp.current = detail.data;
-  if (canEdit) ownerScope.current = continuity;
-  if (
+  const slot = editMemory.current.slot;
+  const confirmed = auth.status === "ready" && !auth.concealed;
+  const denied =
     isAppRetired(id) ||
-    (readyMember &&
-      ([
-        "NOT_FOUND",
-        "FORBIDDEN",
-        "AUTH_REQUIRED",
-        "PASSWORD_CHANGE_REQUIRED",
-      ].includes(detail.error?.code) ||
-        (detail.data && !ownsApp && !adminCanManage)))
-  ) {
+    (confirmed &&
+      (!readyMember ||
+        (access.meta && !access.meta.capabilities.apps_read.enabled) ||
+        !continuity ||
+        (slot && slot.ownerScope !== continuity) ||
+        (ownerScope.current && ownerScope.current !== continuity) ||
+        ["NOT_FOUND", "FORBIDDEN", "PASSWORD_CHANGE_REQUIRED"].includes(
+          detail.error?.code,
+        ) ||
+        (detail.data && !access.loading && !access.error && !canEdit)));
+  if (denied) {
+    discardEditDraft(editMemory.current, "authority");
     ownerScope.current = null;
     lastApp.current = null;
   }
+  if (canEdit) {
+    lastApp.current = detail.data;
+    ownerScope.current = continuity;
+    if (continuity && !editMemory.current.slot)
+      editMemory.current.slot = {
+        appId: id,
+        ownerScope: continuity,
+        snapshot: null,
+        recovering: false,
+      };
+  }
   const formApp =
     detail.data ?? (lastApp.current?.id === id ? lastApp.current : null);
-  useEffect(() => {
-    if (canEdit) setWasEditable(true);
-  }, [canEdit]);
   const keepDraft =
-    !isAppRetired(id) &&
-    (canEdit ||
-      (wasEditable &&
-        continuity &&
-        continuity === ownerScope.current &&
-        (access.meta?.capabilities.apps_update_own.enabled === true ||
-          adminCanManage)));
+    canEdit || Boolean(formApp && ownerScope.current && !denied);
+  const proofLoss =
+    editMemory.current.slot?.recovering ||
+    auth.status === "unresolved" ||
+    [
+      "AUTH_REQUIRED",
+      "RECOVERY_REQUIRED",
+      "AUTH_STATE_CHANGED",
+      "AUTH_TRANSITION_PENDING",
+    ].includes(auth.error?.code);
+  const recoveryTo = proofLoss ? editRecoveryHref(location.pathname) : null;
   const form = keepDraft ? (
     <div
       hidden={!canEdit}
@@ -1251,7 +1274,13 @@ function EditRoute({
       aria-hidden={!canEdit}
     >
       <SubmitView
-        key={`${continuity}:${id}`}
+        key={`${ownerScope.current}:${id}:${location.search}:${location.hash}`}
+        draftSlot={editMemory.current.slot}
+        editMemory={editMemory}
+        observationId={auth.observationId}
+        isCurrentObservation={isCurrentObservation}
+        canEdit={canEdit}
+        recoveryTo={!canEdit ? recoveryTo : null}
         app={formApp}
         meta={access.meta}
         onSaved={onSaved}
@@ -1318,14 +1347,14 @@ function EditRoute({
       "앱 수정 기능은 아직 준비 중이에요",
       "API 모드에서는 인증과 앱 쓰기를 사용할 수 없어요.",
     );
-  if (auth.concealed || auth.status === "checking")
+  if (!proofLoss && (auth.concealed || auth.status === "checking"))
     return (
       <>
         {form}
         {message("로그인 상태를 확인하고 있어요")}
       </>
     );
-  if (auth.status === "error")
+  if (!proofLoss && auth.status === "error")
     return (
       <>
         {form}
@@ -1333,6 +1362,39 @@ function EditRoute({
           "로그인 상태를 확인할 수 없어요",
           auth.error?.message,
           <Btn onClick={onRetryAuth}>다시 확인</Btn>,
+        )}
+      </>
+    );
+  if (
+    auth.concealed ||
+    ["checking", "error", "unresolved"].includes(auth.status)
+  )
+    return (
+      <>
+        {form}
+        {message(
+          auth.status === "error"
+            ? "로그인 상태를 확인할 수 없어요"
+            : auth.status === "unresolved"
+              ? "인증 결과를 확인할 수 없어요"
+              : "로그인 상태를 확인하고 있어요",
+          auth.error?.message ??
+            "입력은 이 탭에 숨겨 보관됩니다. 인증과 수정 권한을 확인한 뒤에만 복원합니다.",
+          <div className="flex flex-wrap justify-center gap-2">
+            <Btn onClick={onRetryAuth}>다시 확인</Btn>
+            {recoveryTo ? (
+              <Link
+                to={recoveryTo}
+                onClick={() => {
+                  if (editMemory.current.slot)
+                    editMemory.current.slot.recovering = true;
+                }}
+                className="inline-flex h-10 items-center rounded-full px-4 text-[13px] font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4C7A96]"
+              >
+                로그인 및 인증 복구
+              </Link>
+            ) : null}
+          </div>,
         )}
       </>
     );
@@ -1619,56 +1681,89 @@ function AuthRoute({
   onResetAuth,
   onDiscardMissingSession,
   meta,
+  editRecovery,
+  onReturnToEdit,
 }) {
   const route = readAuthRoute(location.search);
   const authUser =
     auth.status === "ready" && !auth.concealed ? auth.user : null;
   const mode = authUser?.mustChangePassword ? "password-change" : route.mode;
+  if (editRecovery && authUser && draftContinuityScope(auth))
+    return (
+      <main className="mx-auto w-full max-w-[760px] px-5 py-16 sm:px-8">
+        <EmptyState
+          title="로그인 상태를 확인했어요"
+          desc={
+            editRecovery.notice
+              ? editRecovery.notice.outcome === "unknown"
+                ? "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다."
+                : "인증 상태가 바뀌어 이전 입력을 복원할 수 없어요. 내용을 다시 확인해 주세요."
+              : "수정 권한을 다시 확인한 뒤 편집으로 돌아갑니다."
+          }
+        >
+          <Btn onClick={() => onReturnToEdit(route.returnTo)}>
+            편집으로 돌아가기
+          </Btn>
+        </EmptyState>
+      </main>
+    );
   return (
-    <AuthView
-      key={
-        ["password-change", "reauth"].includes(mode)
-          ? `${mode}:${JSON.stringify([
-              auth.user?.id,
-              auth.user?.role,
-              auth.user?.sessionKind,
-              auth.flow?.flowId,
-              auth.flow?.lastIdentityChangeRevision,
-            ])}`
-          : mode
-      }
-      mode={mode}
-      support={meta?.support}
-      authUser={authUser}
-      routeError={route.invalid}
-      authStatus={
-        auth.status === "unavailable" ||
-        (__DATA_MODE__ === "api" &&
-          mode === "reauth" &&
-          meta?.capabilities.admin_reauth.enabled !== true)
-          ? "unavailable"
-          : auth.concealed
-            ? "checking"
-            : auth.status
-      }
-      authError={auth.error}
-      onRetry={onRetry}
-      onLogin={(input) => onLogin(input, route.returnTo)}
-      onRegister={onRegister}
-      onChangePassword={(input) => onChangePassword(input, route.returnTo)}
-      onReauthenticate={onReauthenticate}
-      returnTo={route.returnTo}
-      onResolveAuth={onResolveAuth}
-      onResetAuth={onResetAuth}
-      onDiscardMissingSession={onDiscardMissingSession}
-      canDiscardMissingSession={
-        auth.unresolvedTransitionId !== null &&
-        auth.unresolvedTransitionId !== undefined &&
-        auth.flow?.sessionGeneration !== null &&
-        auth.flow?.sessionGeneration !== undefined &&
-        auth.sessionCookiePresent === false
-      }
-    />
+    <>
+      {editRecovery?.notice ? (
+        <p
+          role="status"
+          className="mx-auto max-w-[760px] px-5 pt-6 text-[13px] text-neutral-600"
+        >
+          {editRecovery.notice.outcome === "unknown"
+            ? "이전 저장 결과를 확인할 수 없어요. 자동으로 다시 저장하지 않습니다."
+            : "인증 상태가 바뀌어 이전 입력을 복원할 수 없어요. 내용을 다시 확인해 주세요."}
+        </p>
+      ) : null}
+      <AuthView
+        key={
+          ["password-change", "reauth"].includes(mode)
+            ? `${mode}:${JSON.stringify([
+                auth.user?.id,
+                auth.user?.role,
+                auth.user?.sessionKind,
+                auth.flow?.flowId,
+                auth.flow?.lastIdentityChangeRevision,
+              ])}`
+            : mode
+        }
+        mode={mode}
+        support={meta?.support}
+        authUser={authUser}
+        routeError={route.invalid}
+        authStatus={
+          auth.status === "unavailable" ||
+          (__DATA_MODE__ === "api" &&
+            mode === "reauth" &&
+            meta?.capabilities.admin_reauth.enabled !== true)
+            ? "unavailable"
+            : auth.concealed
+              ? "checking"
+              : auth.status
+        }
+        authError={auth.error}
+        onRetry={onRetry}
+        onLogin={(input) => onLogin(input, route.returnTo)}
+        onRegister={onRegister}
+        onChangePassword={(input) => onChangePassword(input, route.returnTo)}
+        onReauthenticate={onReauthenticate}
+        returnTo={route.returnTo}
+        onResolveAuth={onResolveAuth}
+        onResetAuth={onResetAuth}
+        onDiscardMissingSession={onDiscardMissingSession}
+        canDiscardMissingSession={
+          auth.unresolvedTransitionId !== null &&
+          auth.unresolvedTransitionId !== undefined &&
+          auth.flow?.sessionGeneration !== null &&
+          auth.flow?.sessionGeneration !== undefined &&
+          auth.sessionCookiePresent === false
+        }
+      />
+    </>
   );
 }
 
@@ -1841,6 +1936,7 @@ export default function App() {
     authMetadata.meta.capabilities.auth_logout.enabled === true &&
     authMetadata.meta.capabilities.auth_password_change.enabled === true &&
     !authMetadata.error;
+  const editMemory = useRef({ slot: null, notice: null });
   const authRequest = useRef(0);
   const authObservation = useRef(0);
   const pendingReauth = useRef(null);
@@ -2026,6 +2122,13 @@ export default function App() {
           document.visibilityState === "hidden",
       });
       await cancelProtectedQueries();
+      if (
+        editMemory.current.slot ||
+        editRecoveryHref(currentLocation.current.pathname)
+      )
+        await queryClient.invalidateQueries({
+          queryKey: [__DATA_MODE__, "meta"],
+        });
       if (request !== authRequest.current) return null;
       try {
         let knownFlow = false;
@@ -2089,7 +2192,23 @@ export default function App() {
       apiAuthPath,
       cancelProtectedQueries,
       clearChangedScopeQueries,
+      queryClient,
     ],
+  );
+
+  useLayoutEffect(
+    () =>
+      subscribeAuthInvalidation(() => {
+        const observation = authObservation.current;
+        return () => {
+          if (observation !== authObservation.current || authController.current)
+            return;
+          if (editMemory.current.slot)
+            editMemory.current.slot.recovering = true;
+          void restoreAuth();
+        };
+      }),
+    [restoreAuth],
   );
 
   const refreshMockState = useCallback(async () => {
@@ -2424,6 +2543,7 @@ export default function App() {
   );
 
   const logout = useCallback(async () => {
+    discardEditDraft(editMemory.current, "logout");
     if (logoutPending) return;
     setLogoutPending(true);
     pendingReauth.current = null;
@@ -2507,6 +2627,7 @@ export default function App() {
   }, [restoreAuth, isCurrentObservation, navigate]);
 
   const discardMissingSession = useCallback(async () => {
+    discardEditDraft(editMemory.current, "discard");
     if (__DATA_MODE__ === "api") {
       try {
         await recoverApiAuth("discard");
@@ -2537,6 +2658,7 @@ export default function App() {
   }, [restoreAuth]);
 
   const resetAuth = useCallback(async () => {
+    discardEditDraft(editMemory.current, "reset");
     pendingReauth.current = null;
     setAdminResume(null);
     if (__DATA_MODE__ === "api") {
@@ -2637,13 +2759,7 @@ export default function App() {
       activeDeletion.current?.navigationObservations.add(
         authObservation.current,
       );
-  }, [
-    apiAuthEnabled,
-    location.key,
-    location.pathname,
-    navigationType,
-    restoreAuth,
-  ]);
+  }, [apiAuthEnabled, location, navigationType, restoreAuth]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
@@ -2837,6 +2953,68 @@ export default function App() {
     return () => document.removeEventListener("click", warnOnLink, true);
   }, [deletionNeedsConfirmation, location.pathname]);
 
+  const editSlot = editMemory.current.slot;
+  if (
+    editSlot &&
+    !isEditRecoveryLocation(location, `/apps/${editSlot.appId}/edit`)
+  )
+    discardEditDraft(editMemory.current, "navigation");
+  else if (
+    editSlot &&
+    auth.status === "ready" &&
+    !auth.concealed &&
+    draftContinuityScope(auth) !== editSlot.ownerScope
+  )
+    discardEditDraft(editMemory.current, "identity");
+  const authRoute = readAuthRoute(location.search);
+  const editRecovery =
+    location.pathname === "/auth" &&
+    !authRoute.invalid &&
+    authRoute.mode === "login" &&
+    authRoute.returnTo.endsWith("/edit") &&
+    (editMemory.current.slot || editMemory.current.notice)
+      ? { notice: editMemory.current.notice }
+      : null;
+  const returnToEdit = async (path) => {
+    const observation = auth.observationId;
+    const entry = location.key;
+    const owns = () =>
+      isCurrentObservation(observation) &&
+      currentLocation.current.key === entry;
+    try {
+      const destination = await recheckReturnDestination(
+        path,
+        auth,
+        appsService,
+        owns,
+      );
+      if (owns()) navigate(destination);
+    } catch (error) {
+      if (!owns()) return;
+      if (
+        ["FORBIDDEN", "NOT_FOUND", "FEATURE_UNAVAILABLE"].includes(error.code)
+      )
+        discardEditDraft(editMemory.current, "authority");
+      setToast(error.message);
+    }
+  };
+
+  const warnRecoveryUnload =
+    location.pathname === "/auth" &&
+    Boolean(
+      editMemory.current.slot?.snapshot?.dirty ||
+      editMemory.current.slot?.snapshot?.unknown,
+    );
+  useEffect(() => {
+    if (!warnRecoveryUnload) return;
+    const warn = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [warnRecoveryUnload]);
+
   const active =
     location.pathname === "/apps/new" ||
     /^\/apps\/[^/]+\/edit$/.test(location.pathname)
@@ -2856,7 +3034,14 @@ export default function App() {
         active={active}
         auth={auth}
         access={authMetadata}
-        onLogin={() => navigate("/auth?mode=login")}
+        onLogin={() => {
+          const slot = editMemory.current.slot;
+          navigate(
+            slot?.recovering
+              ? editRecoveryHref(`/apps/${slot.appId}/edit`)
+              : "/auth?mode=login",
+          );
+        }}
         onLogout={logout}
         onRetryAuth={recheckAuth}
         logoutPending={logoutPending}
@@ -2890,6 +3075,7 @@ export default function App() {
               isAppRetired={isAppRetired}
               onRetryAuth={recheckAuth}
               onSaved={onAppUpdated}
+              editMemory={editMemory}
             />
           }
         />
@@ -2915,6 +3101,8 @@ export default function App() {
           path="/auth"
           element={
             <AuthRoute
+              editRecovery={editRecovery}
+              onReturnToEdit={returnToEdit}
               location={location}
               auth={auth}
               onRetry={recheckAuth}

@@ -1,3 +1,4 @@
+import { captureAuthInvalidation } from "../auth-invalidation";
 import catalog from "../../../../contracts/catalog.json";
 import {
   mapAppWriteOperation,
@@ -227,6 +228,13 @@ export function requireMemberRead(context?: ProtectedReadContext) {
   );
   const session = state.principal_session;
   if (
+    !state.auth_flow.session_cookie_present ||
+    !state.auth_flow.recovery_ready
+  )
+    captureAuthInvalidation()(
+      new ServiceError("AUTH_REQUIRED", "로그인이 필요해요."),
+    );
+  if (
     context.state.status !== "ready" ||
     !user?.approved ||
     user.sessionKind !== "full" ||
@@ -248,7 +256,7 @@ export function requireMemberRead(context?: ProtectedReadContext) {
   return { state, account };
 }
 
-function currentMember() {
+function currentMember(invalidate = captureAuthInvalidation()) {
   const state = getMockSnapshot();
   const session = state.principal_session;
   if (
@@ -259,11 +267,14 @@ function currentMember() {
     state.auth_flow.unresolved_transition_id ||
     !session ||
     Date.parse(state.mock_now) >= Date.parse(session.expires_at)
-  )
-    throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+  ) {
+    const error = new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
       httpStatus: 401,
       outcome: "rejected",
     });
+    invalidate(error);
+    throw error;
+  }
   if (session.session_kind !== "full")
     throw new ServiceError(
       "PASSWORD_CHANGE_REQUIRED",
@@ -549,8 +560,9 @@ export const appsService: AppsService = {
   },
 
   async create(value, key) {
+    const invalidate = captureAuthInvalidation();
     const input = normalizeAppInput(value);
-    const { state, account } = currentMember();
+    const { state, account } = currentMember(invalidate);
     let operation = ownedOperation(key, account.id);
     if (
       operation.kind !== "app_create" ||
@@ -587,7 +599,7 @@ export const appsService: AppsService = {
       const flow = state.auth_flow;
       await new Promise((resolve) => setTimeout(resolve, createDelayMs));
       assertCurrentGeneration(state.generation);
-      const current = currentMember();
+      const current = currentMember(invalidate);
       if (
         current.account.id !== account.id ||
         current.state.auth_flow.flow_id !== flow.flow_id ||
@@ -660,8 +672,9 @@ export const appsService: AppsService = {
   },
 
   async update(id, value, expectedVersion, key) {
+    const invalidate = captureAuthInvalidation();
     const input = normalizeAppPatch(value);
-    const { state, account } = currentMember();
+    const { state, account } = currentMember(invalidate);
     let operation = ownedOperation(key, account.id);
     if (
       operation.kind !== "app_update" ||
@@ -699,7 +712,7 @@ export const appsService: AppsService = {
     if (state.scenario === "app_update_delayed") {
       const flow = state.auth_flow;
       await new Promise((resolve) => setTimeout(resolve, createDelayMs));
-      const current = currentMember();
+      const current = currentMember(invalidate);
       if (
         current.account.id !== account.id ||
         current.state.auth_flow.flow_id !== flow.flow_id ||
@@ -752,7 +765,8 @@ export const appsService: AppsService = {
         : app.health,
       updated_at: now,
     } as WireAppDetail;
-    updateMockApp(updatedApp);
+    // The caller retires affected queries after this save; no auth reset is needed.
+    updateMockApp(updatedApp, undefined, false);
     operation = {
       ...operation,
       state: "succeeded",
@@ -834,7 +848,8 @@ export const appsService: AppsService = {
   },
 
   async delete(id, expectedVersion, key) {
-    const { state, account } = currentMember();
+    const invalidate = captureAuthInvalidation();
+    const { state, account } = currentMember(invalidate);
     let operation = ownedOperation(key, account.id);
     if (
       operation.kind !== "app_delete" ||
@@ -871,7 +886,7 @@ export const appsService: AppsService = {
       const flow = state.auth_flow;
       await new Promise((resolve) => setTimeout(resolve, createDelayMs));
       assertCurrentGeneration(state.generation);
-      const current = currentMember();
+      const current = currentMember(invalidate);
       if (
         current.account.id !== account.id ||
         current.state.auth_flow.flow_id !== flow.flow_id ||

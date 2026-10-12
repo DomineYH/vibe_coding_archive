@@ -275,7 +275,14 @@ it.each([
         name: path === "/apps/new" ? "새 앱 등록 양식" : "앱 수정 양식",
       });
       if (path === "/apps/new") expect(form).not.toBeInTheDocument();
-      else expect(form).toBeInTheDocument();
+      else {
+        expect(form).not.toBeInTheDocument();
+        const retained = screen.getByRole("form", {
+          name: "앱 수정 양식",
+          hidden: true,
+        });
+        expect(retained.closest("[hidden]")).toHaveAttribute("inert");
+      }
     }
     await act(async () => {
       reject(new Error("메타 조회 실패"));

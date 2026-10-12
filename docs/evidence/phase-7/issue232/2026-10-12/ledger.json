@@ -1,0 +1,102 @@
+[
+  {
+    "state": "proof-loss",
+    "viewport_width": 1440,
+    "dimensions": [
+      1440,
+      1000
+    ],
+    "sha256": "8ef31fcd93d5855ea9f603302d933b34927725bc135fdb4dc750212a0be85a97",
+    "file": "proof-loss-1440.png"
+  },
+  {
+    "state": "proof-loss",
+    "viewport_width": 1024,
+    "dimensions": [
+      1024,
+      900
+    ],
+    "sha256": "84db4a525aebfbb2e22201ac1b7dc1e689d6b7a908c99e355615c44b5af8e0e3",
+    "file": "proof-loss-1024.png"
+  },
+  {
+    "state": "proof-loss",
+    "viewport_width": 768,
+    "dimensions": [
+      768,
+      1024
+    ],
+    "sha256": "c2e9044f98d89b959e73d5419959b2adb6b42511864f2be760d488db1e589566",
+    "file": "proof-loss-768.png"
+  },
+  {
+    "state": "proof-loss",
+    "viewport_width": 390,
+    "dimensions": [
+      390,
+      844
+    ],
+    "sha256": "e267c1187e6c8448db959a27e8b1fb321592754755625c26286858946f401dd1",
+    "file": "proof-loss-390.png"
+  },
+  {
+    "state": "proof-loss",
+    "viewport_width": 360,
+    "dimensions": [
+      360,
+      844
+    ],
+    "sha256": "5ede798dde1c75d067fcfa59ffa48effc2298eaa2bd2d32782fa69e41c9246ef",
+    "file": "proof-loss-360.png"
+  },
+  {
+    "state": "recovery-ready",
+    "viewport_width": 1440,
+    "dimensions": [
+      1440,
+      1000
+    ],
+    "sha256": "2f8cc21fab615cf535bd25b457776f96327350877f4485dd3df0699e1cd9b878",
+    "file": "recovery-ready-1440.png"
+  },
+  {
+    "state": "recovery-ready",
+    "viewport_width": 1024,
+    "dimensions": [
+      1024,
+      900
+    ],
+    "sha256": "848c9afc58d780b2129a7c133645535394cfffc93e7bac1c115509071f086827",
+    "file": "recovery-ready-1024.png"
+  },
+  {
+    "state": "recovery-ready",
+    "viewport_width": 768,
+    "dimensions": [
+      768,
+      1024
+    ],
+    "sha256": "f383147c709d305b13ee571ee25aba0236df884bcbfed883dda5f3a2405fab7c",
+    "file": "recovery-ready-768.png"
+  },
+  {
+    "state": "recovery-ready",
+    "viewport_width": 390,
+    "dimensions": [
+      390,
+      844
+    ],
+    "sha256": "d9249630d79c0c78d6addb308ee842cada7cfb90e715da39748a21169da2ec84",
+    "file": "recovery-ready-390.png"
+  },
+  {
+    "state": "recovery-ready",
+    "viewport_width": 360,
+    "dimensions": [
+      360,
+      844
+    ],
+    "sha256": "02cb1a37901b758cab477799ffa189bc81f7930e65d8969acc4918d38440e712",
+    "file": "recovery-ready-360.png"
+  }
+]

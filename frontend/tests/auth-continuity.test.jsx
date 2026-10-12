@@ -16,6 +16,7 @@ import {
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
+import { appsService } from "../src/services/mock/apps";
 import { adminService } from "../src/services/mock/admin";
 import { healthService } from "../src/services/mock/health";
 import { DEMO_ACCOUNTS } from "../src/services/mock/accounts";
@@ -121,8 +122,10 @@ it.each([
       "T06 같은 탭 초안",
     );
     await recheck(true);
-    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue(
-      initial,
+    await waitFor(() =>
+      expect(
+        screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+      ).toHaveValue(initial),
     );
   },
 );
@@ -149,10 +152,16 @@ it("preserves pending approval confirmation across ordinary verification without
   ).not.toBeInTheDocument();
 });
 
-it.each([false, true])(
-  "discards draft across A logout A and A B A round trips (other=%s)",
-  async (other) => {
-    await visit("/apps/new", 1);
+it.each([
+  ["/apps/new", false],
+  ["/apps/new", true],
+  ["/apps/00000000-0000-4000-8000-000000000091/edit", false],
+  ["/apps/00000000-0000-4000-8000-000000000091/edit", true],
+])(
+  "discards draft across A logout A and A B A round trips at %s (other=%s)",
+  async (path, other) => {
+    await visit(path, 1);
+    const initial = (await screen.findByLabelText("어플리케이션 이름")).value;
     fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
       target: { value: "T06 폐기할 초안" },
     });
@@ -172,7 +181,11 @@ it.each([false, true])(
       });
       window.dispatchEvent(new Event("focus"));
     });
-    expect(await screen.findByLabelText("어플리케이션 이름")).toHaveValue("");
+    await waitFor(() =>
+      expect(
+        screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+      ).toHaveValue(initial),
+    );
   },
 );
 
@@ -958,4 +971,380 @@ it.each(["same", "other", "explicit"])(
     expect(issue).toHaveBeenCalledTimes(1);
     expect(execute).toHaveBeenCalledTimes(1);
   },
+);
+
+it("corrects the foreground header after proof loss and restores the concealed edit through recovery", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  const path = `/apps/${id}/edit`;
+  const router = await visit(path, 1);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "232 복구할 초안" },
+  });
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.auth_flow.session_cookie_present = false;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("button", { name: "로그아웃" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(
+    screen.queryByRole("textbox", { name: "어플리케이션 이름" }),
+  ).not.toBeInTheDocument();
+  const link = await screen.findByRole("link", { name: "로그인 및 인증 복구" });
+  expect(link).toHaveAttribute(
+    "href",
+    `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+  );
+  fireEvent.click(link);
+  await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+  expect(
+    await screen.findByText("인증 결과를 확인할 수 없어요"),
+  ).toBeInTheDocument();
+  const missing = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  missing.auth_flow.session_cookie_present = true;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(missing));
+  await act(async () => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "편집으로 돌아가기" }),
+  );
+  expect(
+    await screen.findByRole("textbox", { name: "어플리케이션 이름" }),
+  ).toHaveValue("232 복구할 초안");
+}, 30000);
+
+it("keeps the original unknown key and input across proof-loss recovery without replay", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  const router = await visit(`/apps/${id}/edit`, 1);
+  const original = await appsService.getMeta();
+  expect(original.capabilities.apps_update_own.enabled).toBe(true);
+  const issue = vi.spyOn(appsService, "issueUpdateOperation");
+  const update = vi
+    .spyOn(appsService, "update")
+    .mockRejectedValue(
+      new ServiceError("NETWORK_ERROR", "응답 유실", { outcome: "unknown" }),
+    );
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "232 미확정 초안" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  expect(
+    await screen.findByRole("button", { name: "저장 결과 확인" }),
+  ).toBeInTheDocument();
+  const operation = await issue.mock.results[0].value;
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.auth_flow.session_cookie_present = false;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  fireEvent.click(screen.getByRole("button", { name: "저장 결과 확인" }));
+  fireEvent.click(
+    await screen.findByRole("link", { name: "로그인 및 인증 복구" }),
+  );
+  await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+  const missing = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  missing.auth_flow.session_cookie_present = true;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(missing));
+  await act(async () => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "편집으로 돌아가기" }),
+  );
+  expect(
+    await screen.findByRole("textbox", { name: "어플리케이션 이름" }),
+  ).toHaveValue("232 미확정 초안");
+  expect(screen.getByRole("button", { name: "결과 확인 중" })).toBeDisabled();
+  expect(update).toHaveBeenCalledTimes(1);
+  expect(issue).toHaveBeenCalledTimes(1);
+  fireEvent.click(
+    screen.getByRole("button", { name: "같은 요청 다시 보내기" }),
+  );
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(2));
+  expect(update.mock.calls[1]).toEqual(update.mock.calls[0]);
+  expect(update.mock.calls[1][3]).toBe(operation.key);
+}, 30000);
+
+it("ignores a late successful edit after its observation retires and keeps result confirmation explicit", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  const router = await visit(`/apps/${id}/edit`, 1);
+  let complete;
+  const update = vi.spyOn(appsService, "update").mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        complete = resolve;
+      }),
+  );
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "232 늦은 완료" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  await waitFor(() => expect(update).toHaveBeenCalledTimes(1));
+  await recheck();
+  await act(async () => complete({ id, version: 2 }));
+  expect(router.state.location.pathname).toBe(`/apps/${id}/edit`);
+  expect(
+    await screen.findByRole("textbox", { name: "어플리케이션 이름" }),
+  ).toHaveValue("232 늦은 완료");
+  expect(
+    await screen.findByRole("button", { name: "저장 결과 확인" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("앱을 수정했어요.")).not.toBeInTheDocument();
+}, 30000);
+
+it("discards an edit snapshot when identity history cannot be proven, even if it later returns", async () => {
+  const path = "/apps/00000000-0000-4000-8000-000000000091/edit";
+  await visit(path, 1);
+  const original = (
+    await screen.findByRole("textbox", { name: "어플리케이션 이름" })
+  ).value;
+  fireEvent.change(screen.getByLabelText("어플리케이션 이름"), {
+    target: { value: "232 이력 없는 초안" },
+  });
+  const observe = authService.getCurrentAuthState.bind(authService);
+  const missing = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockImplementation(async () => {
+      const auth = await observe();
+      return {
+        ...auth,
+        flow: { ...auth.flow, lastIdentityChangeRevision: null },
+      };
+    });
+  await recheck();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+    ).toHaveValue(original),
+  );
+  missing.mockRestore();
+  await recheck();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+    ).toHaveValue(original),
+  );
+}, 30000);
+
+it("conceals on metadata network failure but discards confirmed write capability loss permanently", async () => {
+  await visit("/apps/00000000-0000-4000-8000-000000000091/edit", 1);
+  const field = await screen.findByRole("textbox", {
+    name: "어플리케이션 이름",
+  });
+  const original = field.value;
+  fireEvent.change(field, { target: { value: "232 권한 검증 초안" } });
+  const meta = await appsService.getMeta();
+  const metadata = vi
+    .spyOn(appsService, "getMeta")
+    .mockRejectedValue(
+      new ServiceError("NETWORK_ERROR", "232 메타 네트워크 오류"),
+    );
+  await recheck();
+  expect(await screen.findByText("232 메타 네트워크 오류")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("textbox", { name: "어플리케이션 이름" }),
+  ).not.toBeInTheDocument();
+  metadata.mockResolvedValue(meta);
+  await recheck();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+    ).toHaveValue("232 권한 검증 초안"),
+  );
+  metadata.mockResolvedValue({
+    ...meta,
+    capabilities: {
+      ...meta.capabilities,
+      apps_update_own: { enabled: false, reasons: ["maintenance"] },
+    },
+  });
+  await recheck();
+  expect(
+    await screen.findByText("앱 수정 기능을 사용할 수 없어요"),
+  ).toBeInTheDocument();
+  metadata.mockResolvedValue(meta);
+  await recheck();
+  await waitFor(() =>
+    expect(
+      screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+    ).toHaveValue(original),
+  );
+}, 30000);
+
+it("keeps an unrelated navigation warning visible while a proof-loss edit is concealed", async () => {
+  const path = "/apps/00000000-0000-4000-8000-000000000091/edit";
+  const router = await visit(path, 1);
+  fireEvent.change(
+    await screen.findByRole("textbox", { name: "어플리케이션 이름" }),
+    { target: { value: "232 이동 경고 초안" } },
+  );
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.auth_flow.session_cookie_present = false;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  const recovery = await screen.findByRole("link", {
+    name: "로그인 및 인증 복구",
+  });
+  fireEvent.click(screen.getByRole("link", { name: "갤러리", exact: true }));
+  const dialog = await screen.findByRole("alertdialog");
+  expect(dialog).toBeVisible();
+  expect(router.state.location.pathname).toBe(path);
+  expect(
+    screen.queryByRole("textbox", { name: "어플리케이션 이름" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(within(dialog).getByRole("button", { name: "계속 작성" }));
+  fireEvent.click(recovery);
+  await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+}, 30000);
+
+it("ignores an edit-return completion after the recovery entry has changed", async () => {
+  const path = "/apps/00000000-0000-4000-8000-000000000091/edit";
+  const router = await visit(path, 1);
+  fireEvent.change(
+    await screen.findByRole(
+      "textbox",
+      { name: "어플리케이션 이름" },
+      { timeout: 10000 },
+    ),
+    { target: { value: "232 이전 복구 이동" } },
+  );
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.auth_flow.session_cookie_present = false;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  fireEvent.click(
+    await screen.findByRole(
+      "link",
+      { name: "로그인 및 인증 복구" },
+      { timeout: 10000 },
+    ),
+  );
+  const missing = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  missing.auth_flow.session_cookie_present = true;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(missing));
+  await recheck();
+  const back = await screen.findByRole(
+    "button",
+    { name: "편집으로 돌아가기" },
+    { timeout: 10000 },
+  );
+  const meta = await appsService.getMeta();
+  let release;
+  vi.spyOn(appsService, "getMeta").mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+  );
+  fireEvent.click(back);
+  await act(async () => router.navigate("/auth?mode=login"));
+  await act(async () => {
+    release(meta);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(router.state.location.pathname).toBe("/auth");
+  expect(router.state.location.search).toBe("?mode=login");
+}, 30000);
+
+it("discards edit memory before a cached different target can mount its form", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  const otherId = "00000000-0000-4000-8000-000000000001";
+  const router = await visit(`/apps/${id}/edit`, 1);
+  const name = await screen.findByRole(
+    "textbox",
+    { name: "어플리케이션 이름" },
+    { timeout: 10000 },
+  );
+  const original = name.value;
+  fireEvent.change(name, {
+    target: { value: "232 다른 대상에 넘기면 안 되는 초안" },
+  });
+  const query = client
+    .getQueryCache()
+    .getAll()
+    .find(
+      (item) =>
+        item.queryKey[2] === "detail" &&
+        item.queryKey[3] === id &&
+        item.state.data,
+    );
+  const other = {
+    ...query.state.data,
+    id: otherId,
+    name: "232 다른 대상 앱",
+    version: 7,
+  };
+  const get = appsService.get.bind(appsService);
+  vi.spyOn(appsService, "get").mockImplementation((target, options) =>
+    target === otherId ? Promise.resolve(other) : get(target, options),
+  );
+  await act(async () =>
+    client.setQueryData(
+      query.queryKey.map((part, index) => (index === 3 ? otherId : part)),
+      other,
+    ),
+  );
+  await act(async () => router.navigate(`/apps/${otherId}/edit`));
+  const dialog = await screen.findByRole("alertdialog");
+  fireEvent.click(
+    within(dialog).getByRole("button", { name: "작성 취소하고 이동" }),
+  );
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe(`/apps/${otherId}/edit`),
+  );
+  await waitFor(
+    () =>
+      expect(
+        screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+      ).toHaveValue(other.name),
+    { timeout: 10000 },
+  );
+  await act(async () => router.navigate(`/apps/${id}/edit`));
+  await waitFor(
+    () =>
+      expect(
+        screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+      ).toHaveValue(original),
+    { timeout: 10000 },
+  );
+}, 30000);
+
+it.each(["?unexpected=1", "#other-entry"])(
+  "discards edit input after leaving the exact recovery corridor through %s",
+  async (suffix) => {
+    const path = "/apps/00000000-0000-4000-8000-000000000091/edit";
+    const router = await visit(path, 1);
+    const field = await screen.findByRole(
+      "textbox",
+      { name: "어플리케이션 이름" },
+      { timeout: 10000 },
+    );
+    const original = field.value;
+    fireEvent.change(field, {
+      target: { value: "232 허용된 편집 주소 밖의 초안" },
+    });
+    await act(async () => router.navigate(path + suffix));
+    const dialog = await screen.findByRole("alertdialog");
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "작성 취소하고 이동" }),
+    );
+    await waitFor(() =>
+      expect(
+        router.state.location.pathname +
+          router.state.location.search +
+          router.state.location.hash,
+      ).toBe(path + suffix),
+    );
+    await waitFor(
+      () =>
+        expect(
+          screen.getByRole("textbox", { name: "어플리케이션 이름" }),
+        ).toHaveValue(original),
+      { timeout: 10000 },
+    );
+  },
+  30000,
 );

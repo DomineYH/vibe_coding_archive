@@ -78,6 +78,19 @@ export async function recheckReturnDestination(
             httpStatus: 404,
           });
       }
+      if (destination.endsWith("/edit")) {
+        const own = app.ownerId === current?.user?.id;
+        const admin =
+          current?.user?.role === "admin" &&
+          meta.capabilities.admin_apps_manage.enabled;
+        if (!own && !admin)
+          throw new ServiceError("FORBIDDEN", "앱을 수정할 권한이 필요해요.");
+        if (own && !meta.capabilities.apps_update_own.enabled)
+          throw new ServiceError(
+            "FEATURE_UNAVAILABLE",
+            "앱 수정 기능을 사용할 수 없어요.",
+          );
+      }
     }
   }
   return destination;

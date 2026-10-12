@@ -279,9 +279,13 @@ describe("return destination current availability and authority", () => {
           role: reader === "admin" ? ("admin" as const) : ("user" as const),
         },
       };
+      const authority = meta();
+      for (const key of ["apps_update_own", "admin_apps_manage"]) {
+        authority.capabilities[key] = { enabled: true, reasons: [] };
+      }
       const fetch = stubMeta();
       fetch
-        .mockResolvedValueOnce(new Response(JSON.stringify(meta())))
+        .mockResolvedValueOnce(new Response(JSON.stringify(authority)))
         .mockResolvedValueOnce(
           new Response(
             JSON.stringify({
@@ -468,4 +472,33 @@ describe("exact create return destination", () => {
     await rejection;
     expect(fetch.mock.calls.map(([url]) => url)).toEqual(["/api/v1/meta"]);
   });
+});
+
+it("requires current write capability and ownership before returning to public edit", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  const destination = `/apps/${id}/edit`;
+  const read = vi
+    .fn()
+    .mockResolvedValue({ id, isPublic: true, ownerId: "someone-else" });
+  const capabilities = {
+    apps_read: { enabled: true },
+    apps_update_own: { enabled: true },
+    admin_apps_manage: { enabled: false },
+  };
+  const service = {
+    getMeta: vi.fn().mockResolvedValue({ capabilities }),
+    get: read,
+  } as unknown as typeof appsService;
+  await expect(
+    recheckReturnDestination(destination, current, service, () => true),
+  ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  read.mockResolvedValue({ id, isPublic: true, ownerId: current.user!.id });
+  capabilities.apps_update_own.enabled = false;
+  await expect(
+    recheckReturnDestination(destination, current, service, () => true),
+  ).rejects.toMatchObject({ code: "FEATURE_UNAVAILABLE" });
+  capabilities.apps_update_own.enabled = true;
+  await expect(
+    recheckReturnDestination(destination, current, service, () => true),
+  ).resolves.toBe(destination);
 });

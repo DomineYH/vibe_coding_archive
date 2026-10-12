@@ -14,6 +14,7 @@ import {
   type AppsService,
 } from "../apps-service";
 import { authService } from "./auth";
+import { captureAuthInvalidation } from "../auth-invalidation";
 import { assertAuthObservation } from "../auth-state";
 import { isUuid } from "../../contracts/uuid";
 
@@ -43,12 +44,14 @@ export async function getJson(
     includeStatus?: boolean;
   } = {},
 ): Promise<unknown> {
+  const invalidate = captureAuthInvalidation();
   const headers = new Headers({ Accept: "application/json" });
   if (authenticated || write) {
     let auth;
     try {
       auth = await authService.getCurrentAuthState({ signal });
     } catch (error) {
+      invalidate(error);
       if (!uncertain) throw error;
       throw new ServiceError(
         "SERVICE_UNAVAILABLE",
@@ -60,22 +63,28 @@ export async function getJson(
       );
     }
     const user = auth.user;
-    if (auth.status !== "ready" || !user?.approved)
-      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+    if (auth.status !== "ready" || !user?.approved) {
+      const error = new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
         outcome: uncertain ? "unknown" : "rejected",
         httpStatus: 401,
       });
+      if (auth.status !== "ready" || !user) invalidate(error);
+      throw error;
+    }
     if (user?.mustChangePassword || user?.sessionKind === "change_only")
       throw new ServiceError(
         "PASSWORD_CHANGE_REQUIRED",
         "회원 기능을 사용하기 전에 비밀번호를 변경해 주세요.",
         { outcome: uncertain ? "unknown" : "rejected", httpStatus: 403 },
       );
-    if (!auth.flow.sessionGeneration)
-      throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
+    if (!auth.flow.sessionGeneration) {
+      const error = new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
         outcome: uncertain ? "unknown" : "rejected",
         httpStatus: 401,
       });
+      invalidate(error);
+      throw error;
+    }
     headers.set("X-EduVibe-Flow-Id", auth.flow.flowId);
     headers.set("X-EduVibe-Auth-Revision", auth.flow.revision);
     headers.set("X-EduVibe-Session-Generation", auth.flow.sessionGeneration);
@@ -84,6 +93,7 @@ export async function getJson(
       try {
         csrf = await authService.getCsrf({ signal });
       } catch (error) {
+        invalidate(error);
         if (!uncertain) throw error;
         throw new ServiceError(
           "SERVICE_UNAVAILABLE",
@@ -106,6 +116,9 @@ export async function getJson(
     uncertain,
     noContent,
     includeStatus,
+  }).catch((error) => {
+    if (authenticated || write) invalidate(error);
+    throw error;
   });
 }
 
@@ -203,6 +216,7 @@ export const appsService: AppsService = {
   },
 
   async get(id, { signal, readContext } = {}) {
+    const invalidate = captureAuthInvalidation();
     const path = `/apps/${encodeURIComponent(id)}`;
     if (!readContext)
       throw new ServiceError("AUTH_REQUIRED", "로그인이 필요해요.", {
@@ -258,6 +272,7 @@ export const appsService: AppsService = {
       return app;
     } catch (error) {
       assertAuthObservation(readContext);
+      invalidate(error);
       throw error;
     }
   },

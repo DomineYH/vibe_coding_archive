@@ -132,6 +132,7 @@ export function selectNormalRuns(
     "e2e-api/gallery-refetch.spec.js",
     "e2e-api/auth-prepare.spec.js",
     "e2e-api/auth-login.spec.js",
+    "e2e-api/auth-loss-edit.spec.js",
     "e2e-api/auth-reauth.spec.js",
     "e2e-api/auth-password.spec.js",
     "e2e-api/auth-register.spec.js",
@@ -212,7 +213,7 @@ async function run() {
     nginx ||
     (!process.argv.includes("--auth-unavailable") &&
       arguments_.some((arg) =>
-        /(?:apps|detail|gallery-refetch)\.spec|health-real|auth-(candidate|support|prepare|login|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+        /(?:apps|detail|gallery-refetch)\.spec|health-real|auth-(candidate|support|prepare|login|loss|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
           arg,
         ),
       ));

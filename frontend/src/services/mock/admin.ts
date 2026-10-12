@@ -1,3 +1,4 @@
+import { captureAuthInvalidation } from "../auth-invalidation";
 import {
   mapAdminAppPage,
   mapAdminUser,
@@ -94,7 +95,10 @@ function fail(
   });
 }
 
-function currentAdmin(requireRecentAuth = false) {
+function currentAdmin(
+  requireRecentAuth = false,
+  invalidate = captureAuthInvalidation(),
+) {
   const state = getMockSnapshot();
   const session = state.principal_session;
   if (
@@ -105,8 +109,11 @@ function currentAdmin(requireRecentAuth = false) {
     state.auth_flow.unresolved_transition_id ||
     !session ||
     Date.parse(state.mock_now) >= Date.parse(session.expires_at)
-  )
-    throw fail("AUTH_REQUIRED", "로그인이 필요해요.", 401);
+  ) {
+    const error = fail("AUTH_REQUIRED", "로그인이 필요해요.", 401);
+    invalidate(error);
+    throw error;
+  }
   if (session.session_kind !== "full")
     throw fail(
       "PASSWORD_CHANGE_REQUIRED",
@@ -116,7 +123,11 @@ function currentAdmin(requireRecentAuth = false) {
   const account = getMockAccounts(state).find(
     (item) => item.id === state.principal_id,
   );
-  if (!account) throw fail("AUTH_REQUIRED", "로그인이 필요해요.", 401);
+  if (!account) {
+    const error = fail("AUTH_REQUIRED", "로그인이 필요해요.", 401);
+    invalidate(error);
+    throw error;
+  }
   if (account.role !== "admin" || !account.approved)
     throw fail("FORBIDDEN", "관리자 권한이 필요해요.", 403);
   if (
@@ -691,7 +702,8 @@ export const adminService: AdminService = {
     expectedAccountVersion,
     operationKey,
   ) {
-    const { state, account: actor } = currentAdmin(true);
+    const invalidate = captureAuthInvalidation();
+    const { state, account: actor } = currentAdmin(true, invalidate);
     let operation = getOwnedPasswordResetOperation(operationKey, actor.id);
     const normalizedPassword = normalizeResetPassword(newPassword);
     if (
@@ -718,7 +730,7 @@ export const adminService: AdminService = {
       const flow = state.auth_flow;
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const current = getMockSnapshot();
-      currentAdmin(true);
+      currentAdmin(true, invalidate);
       if (
         current.principal_id !== actor.id ||
         current.auth_flow.flow_id !== flow.flow_id ||
@@ -782,7 +794,8 @@ export const adminService: AdminService = {
   },
 
   async deleteUser(id, expectedAppCount, operationKey) {
-    const { state, account: actor } = currentAdmin(true);
+    const invalidate = captureAuthInvalidation();
+    const { state, account: actor } = currentAdmin(true, invalidate);
     let operation = getOwnedUserDeleteOperation(operationKey, actor.id);
     if (
       operation.target_id !== id ||
@@ -828,7 +841,7 @@ export const adminService: AdminService = {
           "인증 상태가 바뀌어 삭제 요청을 적용하지 않았어요.",
           409,
         );
-      currentAdmin(true);
+      currentAdmin(true, invalidate);
       operation = getOwnedUserDeleteOperation(operationKey, actor.id);
       if (operation.state !== "unresolved")
         throw fail(
