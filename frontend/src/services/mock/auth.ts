@@ -305,12 +305,11 @@ function normalizeRegistration(input: AuthRegisterInput) {
   if (
     codePointLength(nickname) < 2 ||
     codePointLength(nickname) > 20 ||
-    /[\p{Cc}\p{Zl}\p{Zp}\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/u.test(
-      nickname,
-    ) ||
-    !nickname.replace(/[\p{White_Space}\p{Cf}\p{Cc}\p{M}]/gu, "")
+    /[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u.test(input.nickname) ||
+    !/[^\p{C}\p{Z}\p{M}]/u.test(nickname)
   )
-    fields.nickname = "별명을 확인해 주세요.";
+    fields.nickname =
+      "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.";
 
   const email = normalizeEmail(input?.email, fields);
   const phone = normalizePhone(input?.phone, fields);
