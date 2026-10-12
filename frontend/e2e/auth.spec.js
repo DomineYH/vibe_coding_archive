@@ -876,3 +876,57 @@ test("temporary member returns from admin login to the gallery only after passwo
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
 });
+
+test("signup rejects raw format characters, preserves fields and accepts a corrected nickname", async ({
+  page,
+}) => {
+  await page.goto("/auth?mode=signup");
+  const password = "correct horse battery staple";
+  await fillRegistration(page, { loginId: "nickname-teacher", password });
+  for (const nickname of ["교\u200b사", "\ufeff교사", "교사\ufeff"]) {
+    await page.locator("#nickname").fill(nickname);
+    await page
+      .getByRole("button", { name: "가입 신청하기", exact: true })
+      .click();
+    await expect(page.locator("#nickname-error")).toHaveText(
+      "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.",
+    );
+    await expect(page.locator("#nickname")).toBeFocused();
+    await expect(page.locator("#nickname")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+    await expect(page.locator("#nickname")).toHaveAttribute(
+      "aria-describedby",
+      "nickname-error",
+    );
+    for (const [selector, value] of [
+      ["#nickname", nickname],
+      ["#login-id", "nickname-teacher"],
+      ["#login-password", password],
+      ["#password-confirm", password],
+    ])
+      await expect(page.locator(selector)).toHaveValue(value);
+    expect(
+      await page.evaluate(
+        () =>
+          JSON.parse(localStorage.getItem("eduvibe-archive-mock-v1"))
+            .registered_accounts.length,
+      ),
+    ).toBe(0);
+  }
+  await page.locator("#nickname").fill(" e\u0301😀 ");
+  await page
+    .getByRole("button", { name: "가입 신청하기", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+  ).toBeVisible();
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("eduvibe-archive-mock-v1"))
+          .registered_accounts[0].nickname,
+    ),
+  ).toBe("é😀");
+});

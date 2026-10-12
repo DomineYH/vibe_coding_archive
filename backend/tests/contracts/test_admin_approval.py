@@ -667,3 +667,20 @@ def test_restart_preserves_keys_and_target_deletion_does_not_erase_success(membe
             read(fresh, key).status_code,
             read(fresh, key).json()["error"]["code"],
         ) == (404, "OPERATION_NOT_FOUND")
+
+
+def test_admin_list_preserves_existing_format_character_nickname(member_app):
+    app, path = member_app()
+    nickname = "기존\u200b별명"
+    with sqlite3.connect(path) as db:
+        db.execute("UPDATE members SET nickname=? WHERE id=?", (nickname, PENDING_ID))
+    with TestClient(app) as client:
+        admin = signed_in(client, "admin")
+        result = client.get(f"{API}/admin/users", headers=headers(admin))
+        assert result.status_code == 200, result.text
+        assert (
+            next(user for user in result.json()["items"] if user["id"] == PENDING_ID)[
+                "nickname"
+            ]
+            == nickname
+        )

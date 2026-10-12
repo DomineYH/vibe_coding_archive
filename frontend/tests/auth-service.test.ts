@@ -1,3 +1,4 @@
+import nicknameCases from "../../contracts/fixtures/nickname-cases.json";
 import { captureAuthObservation } from "../src/services/auth-state";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appsService } from "../src/services/mock/apps";
@@ -682,6 +683,37 @@ describe("demo authentication and protected reads", () => {
       httpStatus: 401,
     });
   });
+
+  it.each(nicknameCases)(
+    "applies the nickname contract: $id",
+    async ({ raw, normalized }) => {
+      const before = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY)!);
+      const request = authService.register({
+        loginId: "nickname-case",
+        password: "correct horse battery staple",
+        nickname: raw,
+      });
+      if (normalized === null) {
+        await expect(request).rejects.toMatchObject({
+          code: "VALIDATION_ERROR",
+          httpStatus: 422,
+          outcome: "rejected",
+          fields: {
+            nickname:
+              "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.",
+          },
+        });
+        const after = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY)!);
+        expect(after.registered_accounts).toEqual(before.registered_accounts);
+        expect(after.principal_session).toEqual(before.principal_session);
+      } else {
+        await expect(request).resolves.toMatchObject({
+          nickname: normalized,
+          approved: false,
+        });
+      }
+    },
+  );
 
   it("creates a normalized member who stays anonymous and pending after refresh", async () => {
     const password = "Cafe\u0301 secure training phrase";

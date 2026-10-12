@@ -3,7 +3,7 @@
 import re
 import sys
 from getpass import getpass
-from unicodedata import bidirectional, category, normalize
+from unicodedata import normalize
 from uuid import uuid4
 
 from sqlalchemy import text
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.auth_boundary import AuthError, after, normalized_login_id, now
 from app.auth_login import HASHER
 from app.database import current_head, current_revision, make_engine
+from app.nickname_policy import normalize_nickname
 from app.password_policy import load_blocklist, new_password
 from app.settings import Settings
 
@@ -32,19 +33,7 @@ def admin_credentials(command):
             raise ValueError("Invalid login ID.")
         nickname = None
         if command == "bootstrap-admin":
-            raw_nickname = input("Nickname: ")
-            nickname = normalize("NFC", raw_nickname.strip())
-            if (
-                not 2 <= len(nickname) <= 20
-                or any(
-                    category(c) in {"Cc", "Cs"}
-                    or bidirectional(c)
-                    in {"LRE", "RLE", "LRO", "RLO", "PDF", "LRI", "RLI", "FSI", "PDI"}
-                    for c in raw_nickname
-                )
-                or not any(not c.isspace() and category(c) != "Cf" for c in nickname)
-            ):
-                raise ValueError("Nickname must contain 2 to 20 characters.")
+            nickname = normalize_nickname(input("Nickname: "))
         try:
             password = new_password(getpass("Temporary password: "), blocklist)
         except AuthError:

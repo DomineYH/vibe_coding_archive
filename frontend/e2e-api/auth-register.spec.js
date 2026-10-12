@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
 import {
   blockExternalRequests,
@@ -50,6 +51,108 @@ test.describe("real pending registration", () => {
   test.skip(!prepared, "ordinary runtime intentionally disables T04 until T05");
   test.beforeEach(async ({ page }) => {
     await blockExternalRequests(page);
+  });
+
+  let ownedBefore;
+  test.beforeEach(() => {
+    ownedBefore = Object.fromEntries(
+      ["members", "auth_flows", "rate_limit_events"].map((table) => [
+        table,
+        query(`SELECT id FROM ${table}`).map(([id]) => id),
+      ]),
+    );
+  });
+  test.afterEach(async ({ context }) => {
+    await context.close();
+    const cleanup = spawnSync(
+      "uv",
+      [
+        "run",
+        "--frozen",
+        "python",
+        "-c",
+        `import json, os, sqlite3, sys
+previous = json.load(sys.stdin)
+with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
+    db.execute('PRAGMA foreign_keys=ON')
+    for flow, in db.execute('SELECT id FROM auth_flows').fetchall():
+        if flow not in previous['auth_flows']:
+            for table in ('auth_transitions', 'recovery_credentials', 'auth_retired_credentials', 'sessions'):
+                db.execute(f'DELETE FROM {table} WHERE flow_id=?', (flow,))
+            db.execute('DELETE FROM auth_flows WHERE id=?', (flow,))
+    for member, in db.execute('SELECT id FROM members').fetchall():
+        if member not in previous['members']:
+            db.execute('DELETE FROM members WHERE id=?', (member,))
+    for event, in db.execute('SELECT id FROM rate_limit_events').fetchall():
+        if event not in previous['rate_limit_events']:
+            db.execute('DELETE FROM rate_limit_events WHERE id=?', (event,))
+    assert not db.execute('PRAGMA foreign_key_check').fetchall()
+`,
+      ],
+      {
+        cwd: "../backend",
+        env: process.env,
+        input: JSON.stringify(ownedBefore),
+        encoding: "utf8",
+      },
+    );
+    expect(cleanup.status, "registration-owned rows and limiter cleanup").toBe(
+      0,
+    );
+  });
+
+  test("signup rejects raw format characters, preserves fields and accepts a corrected nickname", async ({
+    page,
+  }) => {
+    await signup(page, "nickname-teacher");
+    for (const nickname of ["교\u200b사", "\ufeff교사", "교사\ufeff"]) {
+      await page.locator("#nickname").fill(nickname);
+      const response = page.waitForResponse("**/api/v1/auth/register");
+      await submit(page);
+      const rejected = await response;
+      expect(rejected.status()).toBe(422);
+      expect(rejected.request().postDataJSON().nickname).toBe(nickname);
+      expect((await rejected.json()).error).toMatchObject({
+        code: "VALIDATION_ERROR",
+        fields: {
+          nickname: "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.",
+        },
+      });
+      await expect(page.locator("#nickname-error")).toHaveText(
+        "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.",
+      );
+      await expect(page.locator("#nickname")).toBeFocused();
+      await expect(page.locator("#nickname")).toHaveAttribute(
+        "aria-invalid",
+        "true",
+      );
+      await expect(page.locator("#nickname")).toHaveAttribute(
+        "aria-describedby",
+        "nickname-error",
+      );
+      for (const [selector, value] of [
+        ["#nickname", nickname],
+        ["#login-id", "nickname-teacher"],
+        ["#login-password", PASSWORD],
+        ["#password-confirm", PASSWORD],
+      ])
+        await expect(page.locator(selector)).toHaveValue(value);
+      expect(
+        query(
+          "SELECT count(*) FROM members WHERE login_id_key='nickname-teacher'",
+        ),
+      ).toEqual([[0]]);
+    }
+    await page.locator("#nickname").fill(" e\u0301😀 ");
+    await submit(page);
+    await expect(
+      page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+    ).toBeVisible();
+    expect(
+      query(
+        "SELECT nickname FROM members WHERE login_id_key='nickname-teacher'",
+      ),
+    ).toEqual([["é😀"]]);
   });
 
   test("confirmation is browser-only, anonymous cookie unchanged, pending DB and exact credentials", async ({

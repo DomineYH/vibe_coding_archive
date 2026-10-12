@@ -623,3 +623,31 @@ for (const viewport of viewports) {
     });
   }
 }
+
+for (const viewport of viewports) {
+  test(`nickname format error at ${viewport.width}x${viewport.height}`, async ({
+    page,
+  }, testInfo) => {
+    await reset(page, viewport);
+    await page.goto("/auth?mode=signup");
+    await register(page, { nickname: "교\u200b사" });
+    const field = page.locator("#nickname");
+    const error = page.locator("#nickname-error");
+    await expect(error).toHaveText(
+      "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.",
+    );
+    await expect(field).toBeFocused();
+    await expect(field).toHaveAttribute("aria-describedby", "nickname-error");
+    await expect(field).toHaveAttribute("aria-invalid", "true");
+    const bounds = await error.boundingBox();
+    expect(bounds.width).toBeGreaterThan(0);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await capture(page, "auth-nickname-format-error", viewport, testInfo);
+  });
+}

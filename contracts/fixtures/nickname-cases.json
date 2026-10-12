@@ -1,0 +1,457 @@
+[
+  {
+    "id": "u200b-prefix",
+    "raw": "\u200b\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200b-infix",
+    "raw": "\uad50\u200b\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200b-suffix",
+    "raw": "\uad50\uc0ac\u200b",
+    "normalized": null
+  },
+  {
+    "id": "u200c-prefix",
+    "raw": "\u200c\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200c-infix",
+    "raw": "\uad50\u200c\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200c-suffix",
+    "raw": "\uad50\uc0ac\u200c",
+    "normalized": null
+  },
+  {
+    "id": "u200d-prefix",
+    "raw": "\u200d\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200d-infix",
+    "raw": "\uad50\u200d\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200d-suffix",
+    "raw": "\uad50\uc0ac\u200d",
+    "normalized": null
+  },
+  {
+    "id": "u2060-prefix",
+    "raw": "\u2060\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2060-infix",
+    "raw": "\uad50\u2060\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2060-suffix",
+    "raw": "\uad50\uc0ac\u2060",
+    "normalized": null
+  },
+  {
+    "id": "ufeff-prefix",
+    "raw": "\ufeff\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "ufeff-infix",
+    "raw": "\uad50\ufeff\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "ufeff-suffix",
+    "raw": "\uad50\uc0ac\ufeff",
+    "normalized": null
+  },
+  {
+    "id": "u061c-prefix",
+    "raw": "\u061c\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u061c-infix",
+    "raw": "\uad50\u061c\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u061c-suffix",
+    "raw": "\uad50\uc0ac\u061c",
+    "normalized": null
+  },
+  {
+    "id": "u200e-prefix",
+    "raw": "\u200e\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200e-infix",
+    "raw": "\uad50\u200e\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200e-suffix",
+    "raw": "\uad50\uc0ac\u200e",
+    "normalized": null
+  },
+  {
+    "id": "u200f-prefix",
+    "raw": "\u200f\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200f-infix",
+    "raw": "\uad50\u200f\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u200f-suffix",
+    "raw": "\uad50\uc0ac\u200f",
+    "normalized": null
+  },
+  {
+    "id": "u202a-prefix",
+    "raw": "\u202a\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202a-infix",
+    "raw": "\uad50\u202a\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202a-suffix",
+    "raw": "\uad50\uc0ac\u202a",
+    "normalized": null
+  },
+  {
+    "id": "u202b-prefix",
+    "raw": "\u202b\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202b-infix",
+    "raw": "\uad50\u202b\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202b-suffix",
+    "raw": "\uad50\uc0ac\u202b",
+    "normalized": null
+  },
+  {
+    "id": "u202c-prefix",
+    "raw": "\u202c\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202c-infix",
+    "raw": "\uad50\u202c\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202c-suffix",
+    "raw": "\uad50\uc0ac\u202c",
+    "normalized": null
+  },
+  {
+    "id": "u202d-prefix",
+    "raw": "\u202d\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202d-infix",
+    "raw": "\uad50\u202d\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202d-suffix",
+    "raw": "\uad50\uc0ac\u202d",
+    "normalized": null
+  },
+  {
+    "id": "u202e-prefix",
+    "raw": "\u202e\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202e-infix",
+    "raw": "\uad50\u202e\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u202e-suffix",
+    "raw": "\uad50\uc0ac\u202e",
+    "normalized": null
+  },
+  {
+    "id": "u2066-prefix",
+    "raw": "\u2066\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2066-infix",
+    "raw": "\uad50\u2066\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2066-suffix",
+    "raw": "\uad50\uc0ac\u2066",
+    "normalized": null
+  },
+  {
+    "id": "u2067-prefix",
+    "raw": "\u2067\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2067-infix",
+    "raw": "\uad50\u2067\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2067-suffix",
+    "raw": "\uad50\uc0ac\u2067",
+    "normalized": null
+  },
+  {
+    "id": "u2068-prefix",
+    "raw": "\u2068\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2068-infix",
+    "raw": "\uad50\u2068\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2068-suffix",
+    "raw": "\uad50\uc0ac\u2068",
+    "normalized": null
+  },
+  {
+    "id": "u2069-prefix",
+    "raw": "\u2069\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2069-infix",
+    "raw": "\uad50\u2069\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u2069-suffix",
+    "raw": "\uad50\uc0ac\u2069",
+    "normalized": null
+  },
+  {
+    "id": "u00ad-prefix",
+    "raw": "\u00ad\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u00ad-infix",
+    "raw": "\uad50\u00ad\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u00ad-suffix",
+    "raw": "\uad50\uc0ac\u00ad",
+    "normalized": null
+  },
+  {
+    "id": "u0600-prefix",
+    "raw": "\u0600\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u0600-infix",
+    "raw": "\uad50\u0600\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "u0600-suffix",
+    "raw": "\uad50\uc0ac\u0600",
+    "normalized": null
+  },
+  {
+    "id": "ue0067-prefix",
+    "raw": "\udb40\udc67\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "ue0067-infix",
+    "raw": "\uad50\udb40\udc67\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "ue0067-suffix",
+    "raw": "\uad50\uc0ac\udb40\udc67",
+    "normalized": null
+  },
+  {
+    "id": "trailing-newline",
+    "raw": "\uad50\uc0ac\n",
+    "normalized": null
+  },
+  {
+    "id": "trailing-tab",
+    "raw": "\uad50\uc0ac\t",
+    "normalized": null
+  },
+  {
+    "id": "line-separator",
+    "raw": "\uad50\uc0ac\u2028",
+    "normalized": null
+  },
+  {
+    "id": "paragraph-separator",
+    "raw": "\u2029\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "next-line",
+    "raw": "\uad50\uc0ac\u0085",
+    "normalized": null
+  },
+  {
+    "id": "file-separator",
+    "raw": "\u001c\uad50\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "surrogate",
+    "raw": "\uad50\ud800\uc0ac",
+    "normalized": null
+  },
+  {
+    "id": "marks-only",
+    "raw": "\u0301\u0300",
+    "normalized": null
+  },
+  {
+    "id": "space-only",
+    "raw": "  ",
+    "normalized": null
+  },
+  {
+    "id": "length-1",
+    "raw": "\uac00",
+    "normalized": null
+  },
+  {
+    "id": "length-21",
+    "raw": "\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00",
+    "normalized": null
+  },
+  {
+    "id": "zwj-emoji",
+    "raw": "\ud83d\udc69\u200d\ud83c\udfeb",
+    "normalized": null
+  },
+  {
+    "id": "zwnj-language",
+    "raw": "\u0645\u06cc\u200c\u0646\u0627",
+    "normalized": null
+  },
+  {
+    "id": "hangul",
+    "raw": "\uad50\uc0ac",
+    "normalized": "\uad50\uc0ac"
+  },
+  {
+    "id": "hangul-nfc",
+    "raw": "\u1100\u1161\ub098",
+    "normalized": "\uac00\ub098"
+  },
+  {
+    "id": "latin",
+    "raw": "Teacher",
+    "normalized": "Teacher"
+  },
+  {
+    "id": "cyrillic",
+    "raw": "\u0423\u0447\u0438\u0442\u0435\u043b\u044c",
+    "normalized": "\u0423\u0447\u0438\u0442\u0435\u043b\u044c"
+  },
+  {
+    "id": "nfc-emoji",
+    "raw": " e\u0301\ud83d\ude00 ",
+    "normalized": "\u00e9\ud83d\ude00"
+  },
+  {
+    "id": "reserved-latin",
+    "raw": "admin",
+    "normalized": "admin"
+  },
+  {
+    "id": "reserved-hangul",
+    "raw": "\uad00\ub9ac\uc790",
+    "normalized": "\uad00\ub9ac\uc790"
+  },
+  {
+    "id": "homoglyph",
+    "raw": "\u0430dmin",
+    "normalized": "\u0430dmin"
+  },
+  {
+    "id": "fullwidth",
+    "raw": "\uff41\uff44\uff4d\uff49\uff4e",
+    "normalized": "\uff41\uff44\uff4d\uff49\uff4e"
+  },
+  {
+    "id": "variation-selector",
+    "raw": "\u2708\ufe0f",
+    "normalized": "\u2708\ufe0f"
+  },
+  {
+    "id": "skin-tone",
+    "raw": "\ud83d\udc4d\ud83c\udffd",
+    "normalized": "\ud83d\udc4d\ud83c\udffd"
+  },
+  {
+    "id": "space-trim",
+    "raw": "\u3000 \uad50\uc0ac\u00a0",
+    "normalized": "\uad50\uc0ac"
+  },
+  {
+    "id": "length-2",
+    "raw": "\ud83d\ude00\ud83d\ude00",
+    "normalized": "\ud83d\ude00\ud83d\ude00"
+  },
+  {
+    "id": "length-20",
+    "raw": "\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00",
+    "normalized": "\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00\ud83d\ude00"
+  },
+  {
+    "id": "nfc-length-boundary",
+    "raw": "e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301e\u0301",
+    "normalized": "\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9\u00e9"
+  },
+  {
+    "id": "visible-with-mark",
+    "raw": "x\u0301",
+    "normalized": "x\u0301"
+  },
+  {
+    "id": "private-use-with-visible",
+    "raw": "a\ue000",
+    "normalized": "a\ue000"
+  },
+  {
+    "id": "unassigned-with-visible",
+    "raw": "a\u0378",
+    "normalized": "a\u0378"
+  }
+]

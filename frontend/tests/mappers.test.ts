@@ -279,6 +279,39 @@ describe("response mappers", () => {
     }
   });
 
+  it("maps existing Cf nicknames in member, registration and public-owner responses", () => {
+    const nickname = "기존\u200b별명";
+    const id = "00000000-0000-4000-8000-000000000101";
+    expect(
+      mapRegisteredUser({
+        id,
+        login_id: "teacher",
+        nickname,
+        approved: false,
+        pending_expires_at: "2026-12-21T00:12:00.000Z",
+      }).nickname,
+    ).toBe(nickname);
+    expect(
+      mapSelf({
+        id,
+        login_id: "teacher",
+        nickname,
+        role: "user",
+        approved: true,
+        must_change_password: false,
+        session_kind: "full",
+        expires_at: "2026-09-22T08:12:00.000Z",
+        email: null,
+        phone: null,
+        recent_auth_until: null,
+      }).nickname,
+    ).toBe(nickname);
+    expect(
+      mapAppPage({ ...page, items: [{ ...card, owner: { id, nickname } }] })
+        .items[0].owner,
+    ).toBe(nickname);
+  });
+
   it("keeps member ID, login ID, and nickname as separate auth fields", () => {
     const member = {
       id: "00000000-0000-4000-8000-000000000101",

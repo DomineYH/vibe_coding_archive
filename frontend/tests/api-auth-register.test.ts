@@ -152,3 +152,58 @@ it("keeps duplicate login ID errors distinct from an uncertain transport outcome
     fields: { login_id: "이미 사용 중인 로그인 아이디입니다." },
   });
 });
+
+it.each(["교\u200b사", "\ufeff교사\ufeff"])(
+  "sends raw nickname %j and preserves the server 422 field contract",
+  async (nickname) => {
+    localStorage.setItem(
+      "eduvibe-auth-flow-v1",
+      JSON.stringify({ flowId, revision: "4" }),
+    );
+    const message = "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string, init: RequestInit) => {
+        if (url.endsWith("/csrf"))
+          return new Response(
+            JSON.stringify({
+              csrf_token: "fixture-csrf",
+              expires_at: "2026-10-01T00:15:00Z",
+            }),
+            {
+              headers: {
+                "X-EduVibe-Flow-Id": flowId,
+                "X-EduVibe-Auth-Revision": "4",
+                "X-EduVibe-Session-Generation": "2",
+              },
+            },
+          );
+        expect(url).toBe("/api/v1/auth/register");
+        expect(JSON.parse(String(init.body)).nickname).toBe(nickname);
+        return new Response(
+          JSON.stringify({
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "입력값을 확인해 주세요.",
+              fields: { nickname: message },
+              request_id: null,
+            },
+          }),
+          { status: 422 },
+        );
+      }),
+    );
+    await expect(
+      authService.register({
+        loginId: "teacher",
+        password: "synthetic password 1234",
+        nickname,
+      }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 422,
+      outcome: "rejected",
+      fields: { nickname: message },
+    });
+  },
+);

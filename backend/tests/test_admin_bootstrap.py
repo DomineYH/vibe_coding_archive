@@ -1,6 +1,8 @@
 import sqlite3
 from datetime import datetime
 
+import pytest
+
 from tests.admin_cli import run_admin_cli
 from tests.support import AUTH_PASSWORD
 
@@ -16,7 +18,7 @@ def test_bootstrap_uses_hidden_confirmed_tty_input_and_atomic_audit(
         password_blocklist,
         [
             ("Login ID: ", "first-admin"),
-            ("Nickname: ", "관리 담당"),
+            ("Nickname: ", " 관리 담당 "),
             ("Temporary password: ", AUTH_PASSWORD),
             ("Confirm temporary password: ", AUTH_PASSWORD),
             ("Type YES to confirm: ", "YES"),
@@ -26,8 +28,8 @@ def test_bootstrap_uses_hidden_confirmed_tty_input_and_atomic_audit(
     assert AUTH_PASSWORD not in output
     with sqlite3.connect(path) as db:
         assert db.execute(
-            "SELECT login_id, is_admin, approval_status, must_change_password, account_version FROM members"
-        ).fetchone() == ("first-admin", 1, "approved", 1, 1)
+            "SELECT login_id, is_admin, approval_status, must_change_password, account_version, nickname FROM members"
+        ).fetchone() == ("first-admin", 1, "approved", 1, 1, "관리 담당")
         assert db.execute("SELECT action, outcome FROM audit_logs").fetchall() == [
             ("bootstrap_admin", "succeeded")
         ]
@@ -96,6 +98,11 @@ def test_recover_invalidates_sessions_increments_version_and_requires_first_chan
     from tests.auth_client import Browser, signed_in
 
     app, path = member_app()
+    nickname = "기존\u200b관리자"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET nickname=? WHERE login_id='admin-user'", (nickname,)
+        )
     with TestClient(app) as client:
         browser = signed_in(client, "admin")
         status, output = run_admin_cli(
@@ -108,11 +115,14 @@ def test_recover_invalidates_sessions_increments_version_and_requires_first_chan
         assert browser.me().status_code == 401
         client.cookies.clear()
         fresh = Browser(client).prepare().anonymous()
-        assert fresh.login("admin-user").json()["user"]["session_kind"] == "change_only"
+        recovered = fresh.login("admin-user").json()["user"]
+        assert recovered["session_kind"] == "change_only"
+        assert recovered["nickname"] == nickname
+        assert fresh.me().json()["nickname"] == nickname
     with sqlite3.connect(path) as db:
         assert db.execute(
-            "SELECT account_version, must_change_password FROM members WHERE login_id='admin-user'"
-        ).fetchone() == (2, 1)
+            "SELECT account_version, must_change_password, nickname FROM members WHERE login_id='admin-user'"
+        ).fetchone() == (2, 1, nickname)
         assert db.execute("SELECT action FROM audit_logs").fetchall() == [
             ("recover_admin",)
         ]
@@ -200,3 +210,20 @@ def test_noninteractive_and_mismatched_confirmation_leave_no_credentials(
     )
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT COUNT(*) FROM members").fetchone() == (0,)
+
+
+@pytest.mark.parametrize("char", ["\u200b", "\u200c", "\u200d", "\u2060", "\ufeff"])
+@pytest.mark.parametrize("position", [0, 1, 2])
+def test_bootstrap_rejects_format_characters_without_member_or_audit(
+    tmp_path, migrate_test_database, password_blocklist, char, position
+):
+    path = tmp_path / "admin.sqlite3"
+    migrate_test_database(path)
+    inputs = answers()
+    inputs[1] = ("Nickname: ", "교사"[:position] + char + "교사"[position:])
+    status, output = run_admin_cli("bootstrap-admin", path, password_blocklist, inputs)
+    assert status == 1
+    assert "Temporary password: " not in output
+    with sqlite3.connect(path) as db:
+        assert db.execute("SELECT count(*) FROM members").fetchone() == (0,)
+        assert db.execute("SELECT count(*) FROM audit_logs").fetchone() == (0,)

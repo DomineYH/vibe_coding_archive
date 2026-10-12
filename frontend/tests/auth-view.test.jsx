@@ -359,3 +359,52 @@ it("rejects a support email with a trailing newline", () => {
   );
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
 });
+
+it("preserves signup input and connects the nickname field error to focus and ARIA", async () => {
+  const user = userEvent.setup();
+  const nickname = "교\u200b사";
+  const password = "synthetic password phrase";
+  const message = "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.";
+  const onRegister = vi.fn().mockRejectedValue(
+    new ServiceError("VALIDATION_ERROR", "입력값을 확인해 주세요.", {
+      httpStatus: 422,
+      outcome: "rejected",
+      fields: { nickname: message },
+    }),
+  );
+  const { container } = render(
+    <MemoryRouter>
+      <AuthView
+        mode="signup"
+        authStatus="ready"
+        authUser={null}
+        onRegister={onRegister}
+      />
+    </MemoryRouter>,
+  );
+  await user.type(screen.getByLabelText("로그인 아이디 (필수)"), "teacher");
+  await user.type(screen.getByLabelText("비밀번호 (필수)"), password);
+  await user.type(screen.getByLabelText("비밀번호 확인 (필수)"), password);
+  await user.type(screen.getByLabelText("별명 (필수)"), nickname);
+  await user.click(screen.getByRole("button", { name: "가입 신청하기" }));
+  expect(await screen.findByText(message)).toHaveAttribute(
+    "id",
+    "nickname-error",
+  );
+  expect(container.querySelector("#nickname")).toHaveFocus();
+  expect(container.querySelector("#nickname")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  expect(container.querySelector("#nickname")).toHaveAttribute(
+    "aria-describedby",
+    "nickname-error",
+  );
+  expect(container.querySelector("#nickname")).toHaveValue(nickname);
+  expect(container.querySelector("#login-id")).toHaveValue("teacher");
+  expect(container.querySelector("#login-password")).toHaveValue(password);
+  expect(container.querySelector("#password-confirm")).toHaveValue(password);
+  expect(onRegister).toHaveBeenCalledWith(
+    expect.objectContaining({ nickname }),
+  );
+});

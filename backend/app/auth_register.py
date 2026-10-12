@@ -24,6 +24,7 @@ from app.auth_boundary import (
 )
 from app.auth_login import HASHER, nfc
 from app.auth_runtime import auth_available
+from app.nickname_policy import normalize_nickname
 from app.password_policy import new_password
 
 router = APIRouter(prefix="/auth")
@@ -62,22 +63,18 @@ def registration_values(body, blocklist):
         if not isinstance(body.get(key), str):
             errors[key] = "문자열을 입력해 주세요."
     login = nfc(body.get("login_id"))
-    nickname = nfc(body.get("nickname"))
+    nickname = None
     if "login_id" not in errors and (
         not 2 <= len(login) <= 32 or not re.fullmatch(r"[가-힣A-Za-z0-9_.-]+", login)
     ):
         errors["login_id"] = "로그인 아이디는 허용된 문자로 2~32자 입력해 주세요."
-    if "nickname" not in errors and (
-        not 2 <= len(nickname) <= 20
-        or any(
-            unicodedata.category(char) in ("Cc", "Cs", "Zl", "Zp")
-            or char
-            in "\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069"
-            for char in body["nickname"]
-        )
-        or not any(unicodedata.category(char)[0] not in "CZM" for char in nickname)
-    ):
-        errors["nickname"] = "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요."
+    if "nickname" not in errors:
+        try:
+            nickname = normalize_nickname(body["nickname"])
+        except ValueError:
+            errors["nickname"] = (
+                "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요."
+            )
     password = body.get("password")
     if "password" not in errors:
         if any(unicodedata.category(char) == "Cs" for char in password):

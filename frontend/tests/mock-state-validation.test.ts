@@ -227,6 +227,38 @@ describe("persisted mock state validation", () => {
   beforeEach(() => localStorage.clear());
   afterEach(() => localStorage.clear());
 
+  it("restores, reads and logs in an existing registered Cf nickname without resetting storage", async () => {
+    resetMockState();
+    const input = {
+      loginId: "legacy-teacher",
+      password: "correct horse battery staple",
+      nickname: "기존 별명",
+    };
+    const registered = await authService.register(input);
+    const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY)!);
+    const nickname = "기존\u200b별명";
+    state.registered_accounts[0].nickname = nickname;
+    const member = state.admin_users.find(
+      (user: StoredObject) => user.id === registered.id,
+    );
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+    expect(getMockSnapshot().registered_accounts[0].nickname).toBe(nickname);
+    await expect(authService.login(input)).rejects.toMatchObject({
+      code: "ACCOUNT_NOT_APPROVED",
+    });
+    member.approved = true;
+    member.first_approved_at = state.mock_now;
+    localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+    await expect(authService.login(input)).resolves.toMatchObject({
+      user: { nickname },
+    });
+    await expect(authService.getMe()).resolves.toMatchObject({ nickname });
+    await expect(authService.getCurrentAuthState()).resolves.toMatchObject({
+      user: { nickname },
+    });
+    expect(getMockSnapshot().registered_accounts[0].nickname).toBe(nickname);
+  });
+
   it("rejects internally consistent owner nickname that differs from account", async () => {
     resetMockState();
     const state = JSON.parse(

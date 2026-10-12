@@ -667,3 +667,20 @@ def test_a_member_session_whose_cookie_was_never_received_is_discarded_exactly(
         # A fresh anonymous session and login work again.
         browser.anonymous()
         assert browser.login(APPROVED).status_code == 200
+
+
+@pytest.mark.parametrize("kind", ["approved", "admin"])
+def test_existing_format_character_nickname_can_login_and_restore(member_app, kind):
+    app, path = member_app()
+    nickname = "기존\u200b별명"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET nickname=? WHERE id=?",
+            (nickname, AUTH_MEMBERS[kind][0]),
+        )
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        result = browser.login(AUTH_MEMBERS[kind][1])
+        assert result.status_code == 200, result.text
+        assert result.json()["user"]["nickname"] == nickname
+        assert browser.me().json()["nickname"] == nickname

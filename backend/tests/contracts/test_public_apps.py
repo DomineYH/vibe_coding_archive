@@ -796,3 +796,28 @@ def test_public_detail_uuid_format_and_query_precedence(
             query_response = client.get(f"{path}?tracking=1")
             assert query_response.status_code == 400, repr(app_id)
             assert query_response.json()["error"]["code"] == "VALIDATION_ERROR"
+
+
+def test_public_owner_preserves_existing_format_character_nickname(
+    tmp_path, make_test_app, seed_public_and_private_apps
+):
+    path = tmp_path / "legacy-nickname.sqlite3"
+    app = make_test_app(path)
+    seed_public_and_private_apps(path)
+    nickname = "기존\u200b별명"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET nickname=? WHERE id='00000000-0000-4000-8000-000000000010'",
+            (nickname,),
+        )
+    with TestClient(app) as client:
+        result = client.get("/api/v1/apps")
+        assert result.status_code == 200
+        assert (
+            next(
+                item
+                for item in result.json()["items"]
+                if item["owner"]["id"] == "00000000-0000-4000-8000-000000000010"
+            )["owner"]["nickname"]
+            == nickname
+        )

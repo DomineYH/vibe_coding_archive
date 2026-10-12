@@ -1,5 +1,7 @@
+import json
 import sqlite3
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -88,6 +90,7 @@ import pytest
         ({"login_id": "ab" * 17}, "login_id"),
         ({"login_id": "bad name"}, "login_id"),
         ({"nickname": "교사\n"}, "nickname"),
+        ({"nickname": 42}, "nickname"),
         ({"nickname": "교\u202e사"}, "nickname"),
         ({"nickname": "\u200b\u200d"}, "nickname"),
         ({"nickname": "😀" * 21}, "nickname"),
@@ -130,15 +133,15 @@ def test_normalized_ids_are_unique_but_unicode_nicknames_are_not(member_app):
     app, path = member_app()
     with TestClient(app) as client:
         browser = Browser(client).prepare().anonymous()
-        first = register(browser, login_id="  가Teacher ", nickname=" e\u0301👩‍🏫 ")
+        first = register(browser, login_id="  가Teacher ", nickname=" e\u0301😀 ")
         assert first.status_code == 201, first.text
         assert first.json()["login_id"] == "가Teacher"
-        assert first.json()["nickname"] == "é👩‍🏫"
+        assert first.json()["nickname"] == "é😀"
         duplicate = register(browser, login_id="가TEACHER")
         assert duplicate.status_code == 409
         assert duplicate.json()["error"]["code"] == "LOGIN_ID_TAKEN"
         second = register(
-            browser, login_id="other", nickname="é👩‍🏫", email="  ", phone=None
+            browser, login_id="other", nickname="é😀", email="  ", phone=None
         )
         assert second.status_code == 201
         with sqlite3.connect(path) as db:
@@ -375,3 +378,36 @@ def test_login_distinguishes_initial_deadline_revocation_and_expired_deleted_mem
                 "SELECT state,failure_code FROM auth_transitions WHERE flow_id=? ORDER BY rowid DESC LIMIT 1",
                 (browser.flow,),
             ).fetchone() == ("failed", "INVALID_CREDENTIALS")
+
+
+NICKNAME_CASES = json.loads(
+    (
+        Path(__file__).resolve().parents[3] / "contracts/fixtures/nickname-cases.json"
+    ).read_text()
+)
+
+
+@pytest.mark.parametrize("case", NICKNAME_CASES, ids=lambda case: case["id"])
+def test_registration_nickname_policy(member_app, case):
+    app, path = member_app()
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        result = register(browser, nickname=case["raw"])
+        if case["normalized"] is None:
+            assert result.status_code == 422, result.text
+            assert result.json()["error"]["code"] == "VALIDATION_ERROR"
+            assert result.json()["error"]["fields"]["nickname"] == (
+                "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요."
+            )
+        else:
+            assert result.status_code == 201, result.text
+            assert result.json()["nickname"] == case["normalized"]
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT nickname FROM members WHERE login_id_key='teacher'"
+            ).fetchall() == (
+                [] if case["normalized"] is None else [(case["normalized"],)]
+            )
+            assert db.execute(
+                "SELECT count(*) FROM rate_limit_events WHERE purpose='register'"
+            ).fetchone() == (1,)
