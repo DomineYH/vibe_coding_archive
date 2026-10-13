@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { healthService } from "@services/health";
 import { Btn } from "../../components/ui";
+import { refreshAdminApps } from "./refresh-admin-apps";
 
 export function HealthCheckControl({
   app,
@@ -43,9 +44,7 @@ export function HealthCheckControl({
   const finished = job && !["queued", "running"].includes(job.status);
   useEffect(() => {
     if (!finished && accepted?.disposition !== "result_reused") return;
-    void queryClient.invalidateQueries({
-      queryKey: [__DATA_MODE__, "admin", "apps", scopeKey],
-    });
+    void refreshAdminApps(queryClient, scopeKey);
     void queryClient.invalidateQueries({
       queryKey: [__DATA_MODE__, "admin", "users", scopeKey],
     });

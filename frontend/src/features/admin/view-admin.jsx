@@ -13,6 +13,7 @@ import { adminService } from "@services/admin";
 import { healthService } from "@services/health";
 import { ServiceError } from "../../services/service-error";
 import { HealthCheckControl } from "./health-check-control";
+import { refreshAdminApps } from "./refresh-admin-apps";
 
 const PAGE_SIZE = 24;
 const APPS_DENIED_CODES = new Set([
@@ -367,9 +368,7 @@ function HealthBatchControls({
       queryClient.invalidateQueries({
         queryKey: [__DATA_MODE__, "admin", "users", scopeKey],
       }),
-      queryClient.invalidateQueries({
-        queryKey: [__DATA_MODE__, "admin", "apps", scopeKey],
-      }),
+      refreshAdminApps(queryClient, scopeKey),
     ]);
   }, [queryClient, scopeKey]);
 
@@ -1279,9 +1278,7 @@ export function AdminView({
         queryClient.invalidateQueries({
           queryKey: [__DATA_MODE__, "admin", "users", scopeKey],
         }),
-        queryClient.invalidateQueries({
-          queryKey: [__DATA_MODE__, "admin", "apps", scopeKey],
-        }),
+        refreshAdminApps(queryClient, scopeKey),
       ]);
     };
     const timer = window.setTimeout(

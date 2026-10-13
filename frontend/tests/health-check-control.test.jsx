@@ -118,9 +118,10 @@ it.each([
     expect(
       (await healthService.getAppHealth(app.id, { readContext })).health.result,
     ).toMatchObject({ state, error_kind: kind, error_stage: "dns" });
-    expect(invalidate).toHaveBeenCalledWith({
-      queryKey: [__DATA_MODE__, "admin", "apps", "admin"],
-    });
+    expect(invalidate).toHaveBeenCalledWith(
+      { queryKey: [__DATA_MODE__, "admin", "apps", "admin"], exact: true },
+      { cancelRefetch: false },
+    );
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "진행 다시 조회" }),
@@ -131,9 +132,10 @@ it.each([
     mount(true);
     await userEvent.click(screen.getByRole("button", { name: "즉시 재검사" }));
     await waitFor(() =>
-      expect(invalidate).toHaveBeenCalledWith({
-        queryKey: [__DATA_MODE__, "admin", "apps", "admin"],
-      }),
+      expect(invalidate).toHaveBeenCalledWith(
+        { queryKey: [__DATA_MODE__, "admin", "apps", "admin"], exact: true },
+        { cancelRefetch: false },
+      ),
     );
     expect(screen.getByRole("status")).toHaveTextContent("검사 완료");
     expect((await request.mock.results[0].value).disposition).toBe(

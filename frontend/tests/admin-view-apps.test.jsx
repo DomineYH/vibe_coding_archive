@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   cleanup,
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -275,6 +276,298 @@ it("keeps loaded rows and retries the same offset after a transient load-more fa
   });
   await screen.findByText("모니터 앱 25");
   expect(screen.getByText("모니터 앱 1")).toBeVisible();
+});
+
+it.each(["row result", "batch progress", "health expiry"])(
+  "preserves an in-flight additional page and refreshes existing health after %s",
+  async (producer) => {
+    vi.stubGlobal("__DATA_MODE__", "api");
+    const more = deferred();
+    const refresh = deferred();
+    const accepted = deferred();
+    const users = await adminService.listUsers();
+    vi.spyOn(adminService, "listUsers").mockResolvedValue({
+      ...users,
+      stats: {
+        ...users.stats,
+        nextHealthExpiryAt:
+          producer === "health expiry"
+            ? new Date(Date.parse(users.serverTime) + 60_000).toISOString()
+            : null,
+      },
+    });
+    const reads = vi
+      .spyOn(adminService, "listApps")
+      .mockResolvedValueOnce(firstPage())
+      .mockReturnValueOnce(more.promise)
+      .mockImplementation(({ offset }) =>
+        offset === 0
+          ? refresh.promise
+          : Promise.resolve(page([app(25)], 24, 25)),
+      );
+    vi.spyOn(healthService, "requestCheck").mockReturnValue(accepted.promise);
+    vi.spyOn(healthService, "requestBatch").mockReturnValue(accepted.promise);
+    vi.spyOn(healthService, "getBatch").mockResolvedValue({
+      id: "batch",
+      processedCount: 1,
+      targetCount: 1,
+      isFinished: true,
+      counts: { resultObtained: 1, failed: 0, cancelled: 0, reused: 0 },
+    });
+    await mount();
+    const row = await screen.findByText("모니터 앱 1");
+    if (producer === "row result")
+      fireEvent.click(
+        within(row.closest('[role="listitem"]')).getByRole("button", {
+          name: "즉시 재검사",
+        }),
+      );
+    if (producer === "batch progress")
+      fireEvent.click(screen.getByRole("button", { name: "전체 재검사" }));
+    fireEvent.click(screen.getByText(/추가 앱 불러오기/).closest("button"));
+    await waitFor(() => expect(reads).toHaveBeenCalledTimes(2));
+    const pagingSignal = reads.mock.calls[1][1].signal;
+    if (producer === "health expiry") {
+      vi.spyOn(Date, "now").mockReturnValue(Date.now() + 60_001);
+      await act(async () => fireEvent(document, new Event("visibilitychange")));
+    } else {
+      await act(async () =>
+        accepted.resolve(
+          producer === "row result"
+            ? { disposition: "result_reused", health: { latestJob: null } }
+            : { batch: { id: "batch" } },
+        ),
+      );
+    }
+    await act(async () => more.resolve(page([app(25)], 24, 25)));
+    expect(await screen.findByText("모니터 앱 25")).toBeVisible();
+    expect(pagingSignal.aborted).toBe(false);
+    await waitFor(() =>
+      expect(reads.mock.calls.length).toBeGreaterThanOrEqual(3),
+    );
+    expect(reads.mock.calls[2][0].offset).toBe(0);
+    await act(async () =>
+      refresh.resolve(
+        page(
+          [
+            app(1, {
+              health: {
+                state: "blocked",
+                checked_at: checked,
+                fresh_until: fresh,
+              },
+            }),
+          ],
+          0,
+          25,
+        ),
+      ),
+    );
+    expect(
+      await within(row.closest('[role="listitem"]')).findByLabelText(
+        "연결 결과: 검사 제한",
+      ),
+    ).toBeVisible();
+    expect(screen.getByText("모니터 앱 25")).toBeVisible();
+  },
+);
+
+it.each(["identity", "inactive", "capability"])(
+  "retires a page and its pending health refresh after %s changes",
+  async (change) => {
+    vi.stubGlobal("__DATA_MODE__", "api");
+    const more = deferred();
+    const accepted = deferred();
+    const users = await adminService.listUsers();
+    vi.spyOn(adminService, "listUsers").mockResolvedValue({
+      ...users,
+      stats: { ...users.stats, nextHealthExpiryAt: null },
+    });
+    const reads = vi
+      .spyOn(adminService, "listApps")
+      .mockResolvedValueOnce(firstPage())
+      .mockReturnValueOnce(more.promise)
+      .mockResolvedValue(page([app(90)], 0, 1));
+    vi.spyOn(healthService, "requestCheck").mockReturnValue(accepted.promise);
+    const view = await mount();
+    const row = await screen.findByText("모니터 앱 1");
+    fireEvent.click(
+      within(row.closest('[role="listitem"]')).getByRole("button", {
+        name: "즉시 재검사",
+      }),
+    );
+    fireEvent.click(screen.getByText(/추가 앱 불러오기/).closest("button"));
+    await waitFor(() => expect(reads).toHaveBeenCalledTimes(2));
+    await act(async () =>
+      accepted.resolve({
+        disposition: "result_reused",
+        health: { latestJob: null },
+      }),
+    );
+    const meta = await appsService.getMeta();
+    meta.capabilities.admin_apps_read = capability(false);
+    view.rerender(
+      view.tree(
+        change === "identity" ? "scope-b" : "scope-a",
+        change === "inactive"
+          ? { active: false }
+          : change === "capability"
+            ? { meta }
+            : {},
+      ),
+    );
+    await waitFor(() =>
+      expect(reads.mock.calls[1][1].signal.aborted).toBe(true),
+    );
+    await act(async () => more.resolve(page([app(25)], 24, 25)));
+    await waitFor(() =>
+      expect(
+        cachedAppData().filter((query) => query.queryKey[3] === "scope-a"),
+      ).toHaveLength(0),
+    );
+    expect(screen.queryByText("모니터 앱 25")).not.toBeInTheDocument();
+    expect(screen.queryByText("모니터 앱 1")).not.toBeInTheDocument();
+    expect(reads).toHaveBeenCalledTimes(change === "identity" ? 3 : 2);
+    if (change === "identity")
+      expect(await screen.findByText("모니터 앱 90")).toBeVisible();
+  },
+);
+
+it("keeps appended rows when the queued health refresh fails and offers recovery", async () => {
+  vi.stubGlobal("__DATA_MODE__", "api");
+  const more = deferred();
+  const accepted = deferred();
+  const users = await adminService.listUsers();
+  vi.spyOn(adminService, "listUsers").mockResolvedValue({
+    ...users,
+    stats: { ...users.stats, nextHealthExpiryAt: null },
+  });
+  vi.spyOn(adminService, "listApps")
+    .mockResolvedValueOnce(firstPage())
+    .mockReturnValueOnce(more.promise)
+    .mockRejectedValueOnce(new ServiceError("NETWORK_ERROR", "연결 실패", {}))
+    .mockResolvedValueOnce(firstPage())
+    .mockResolvedValue(page([app(25)], 24, 25));
+  vi.spyOn(healthService, "requestCheck").mockReturnValue(accepted.promise);
+  await mount();
+  const row = await screen.findByText("모니터 앱 1");
+  fireEvent.click(
+    within(row.closest('[role="listitem"]')).getByRole("button", {
+      name: "즉시 재검사",
+    }),
+  );
+  fireEvent.click(screen.getByText(/추가 앱 불러오기/).closest("button"));
+  await act(async () =>
+    accepted.resolve({
+      disposition: "result_reused",
+      health: { latestJob: null },
+    }),
+  );
+  await act(async () => more.resolve(page([app(25)], 24, 25)));
+  expect(await screen.findByText(/목록을 새로 고치지 못했어요/)).toBeVisible();
+  expect(screen.getByText("모니터 앱 25")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "다시 시도" }));
+  await waitFor(() =>
+    expect(
+      screen.queryByText(/목록을 새로 고치지 못했어요/),
+    ).not.toBeInTheDocument(),
+  );
+  expect(screen.getByText("모니터 앱 25")).toBeVisible();
+});
+
+it.each(["idle", "refresh before click"])(
+  "appends the additional page with %s",
+  async (ordering) => {
+    vi.stubGlobal("__DATA_MODE__", "api");
+    const more = deferred();
+    const refresh = deferred();
+    const users = await adminService.listUsers();
+    vi.spyOn(adminService, "listUsers").mockResolvedValue({
+      ...users,
+      stats: { ...users.stats, nextHealthExpiryAt: null },
+    });
+    const reads = vi
+      .spyOn(adminService, "listApps")
+      .mockResolvedValueOnce(firstPage());
+    if (ordering === "refresh before click")
+      reads.mockReturnValueOnce(refresh.promise);
+    reads.mockReturnValueOnce(more.promise);
+    vi.spyOn(healthService, "requestCheck").mockResolvedValue({
+      disposition: "result_reused",
+      health: { latestJob: null },
+    });
+    await mount();
+    const row = await screen.findByText("모니터 앱 1");
+    if (ordering === "refresh before click") {
+      fireEvent.click(
+        within(row.closest('[role="listitem"]')).getByRole("button", {
+          name: "즉시 재검사",
+        }),
+      );
+      await waitFor(() => expect(reads).toHaveBeenCalledTimes(2));
+    }
+    fireEvent.click(screen.getByText(/추가 앱 불러오기/).closest("button"));
+    await waitFor(() => expect(reads.mock.lastCall[0].offset).toBe(24));
+    await act(async () => {
+      more.resolve(page([app(25)], 24, 25));
+      refresh.resolve(firstPage());
+    });
+    expect(await screen.findByText("모니터 앱 25")).toBeVisible();
+    expect(screen.getByText("모니터 앱 1")).toBeVisible();
+  },
+);
+
+it("refreshes existing health after a rejected pending page and permits another page read", async () => {
+  vi.stubGlobal("__DATA_MODE__", "api");
+  const more = deferred();
+  const accepted = deferred();
+  const users = await adminService.listUsers();
+  vi.spyOn(adminService, "listUsers").mockResolvedValue({
+    ...users,
+    stats: { ...users.stats, nextHealthExpiryAt: null },
+  });
+  const reads = vi
+    .spyOn(adminService, "listApps")
+    .mockResolvedValueOnce(firstPage())
+    .mockReturnValueOnce(more.promise)
+    .mockResolvedValueOnce(
+      page(
+        [
+          app(1, {
+            health: {
+              state: "blocked",
+              checked_at: checked,
+              fresh_until: fresh,
+            },
+          }),
+        ],
+        0,
+        25,
+      ),
+    )
+    .mockResolvedValue(page([app(25)], 24, 25));
+  vi.spyOn(healthService, "requestCheck").mockReturnValue(accepted.promise);
+  await mount();
+  const row = await screen.findByText("모니터 앱 1");
+  fireEvent.click(
+    within(row.closest('[role="listitem"]')).getByRole("button", {
+      name: "즉시 재검사",
+    }),
+  );
+  fireEvent.click(screen.getByText(/추가 앱 불러오기/).closest("button"));
+  await act(async () =>
+    accepted.resolve({
+      disposition: "result_reused",
+      health: { latestJob: null },
+    }),
+  );
+  await act(async () =>
+    more.reject(new ServiceError("NETWORK_ERROR", "연결 실패", {})),
+  );
+  expect(await screen.findByLabelText("연결 결과: 검사 제한")).toBeVisible();
+  fireEvent.click(screen.getByText(/추가 앱 불러오기/).closest("button"));
+  expect(await screen.findByText("모니터 앱 25")).toBeVisible();
+  expect(reads.mock.lastCall[0].offset).toBe(24);
 });
 
 it.each(["AUTH_REQUIRED", "FORBIDDEN", "AUTH_STATE_CHANGED"])(

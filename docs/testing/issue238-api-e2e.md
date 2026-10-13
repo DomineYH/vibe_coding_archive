@@ -97,3 +97,74 @@ Excluded procedural artifacts: the first mirror setup attempt was interrupted af
 Remaining uncertainty: historical health/deletion CI causes, unpreheated initialization and traced gallery budgets, and the adjacent worker-restart failure. No product fix or whole-issue stability claim follows from these conditional passes.
 
 Independent review R1 (2026-10-13, GLM-5.3/max) passed the bounded test changes after checking connected code, source integrity and actual logs. The coordinator verified the unchanged four-spec hashes and scoped diff check. Full #238 acceptance remains open because the historical health/deletion causes and documented cold/adjacent failures are unresolved. The review report is retained locally at `/tmp/issue238-current/review-report.txt`; no issue closure, publication or deployment was performed.
+
+## PR242 repair I2 / verification VP2 candidate
+
+2026-10-13. Base HEAD `5954daa2c8ff94bf1e1141804f2d43c11261631b`. This feature-local repair addresses the proven invalidation-during-pagination defect. It does not establish which event initiated the historical CI failure, accept #238/PR242, or replace mandatory GitHub CI. Product and test files were frozen for independent review after the final 90-test/static/build candidate. No delegation, commit, push, GitHub mutation, deployment, shared auth/query configuration, schema or dependency-pin changes occurred. Existing user files and committed PR fixes were preserved.
+
+### Repair and regression evidence
+
+A private `refreshAdminApps` helper is used by batch dashboard refresh, health-expiry refresh, and row-check completion/result reuse. It waits for an active apps read before invalidating with `cancelRefetch:false`; cancellation stops the deferred refresh, and query identity prevents refreshing a replaced scope. Idle refresh still starts immediately. Existing scope keys, read ownership and `retireApps` cancellation/removal are unchanged. CRUD invalidation is unchanged.
+
+The real AdminView/service-boundary regression was written before the repair. `regression-red.log` records an aborted offset24 read; `regression-dom-red.log` records the missing target row after releasing its target-bearing response. The final regression was also run against exact `git show HEAD` copies of both original components: `final-test-baseline-red.log`, exit1, missing `모니터 앱 25`. D1 records the corresponding cache loss: `request24 → abort24 → request0 → late response24-target`, page parameters `[0]`, target absent. This is a controlled local reproduction, not historical HTTPS causation proof.
+
+The single row-result regression first went green in `regression-green.log`, exit0. Final affected verification is `affected-final.log`, exit0: **5 files, 90 passed, 0 failed, 0 skipped**. It covers the real three background producers, target-row append plus eventual existing-row health freshness, idle paging, refresh-before-click, rejected paging/refetch and recovery, and pending-refresh retirement after identity/activity/capability changes. Existing admin view, apps isolation, delete and health-control contracts also pass; pre-existing assertions were retained, with the row-control invalidation expectation updated for the helper's explicit options.
+
+A disposable control using only non-cancelling invalidation fails (`noncancel-only-final-red.log`, exit1): offset24 survives and its row appears, but no subsequent offset0 read starts (`2` reads instead of at least `3`). The final component probe passes (`final-dom-order-complete.log`, exit0): `request0 → request24 → background refresh (not aborted) → response24-target → request0 → request24`, cache page parameters `[0,24]`, target present and existing row updated to the blocked result. Neither the controlled probe nor the query-only D1 loop substitutes for native HTTPS.
+
+### Candidate checks and provenance
+
+Changed-file ESLint, Prettier, frontend typecheck and scoped diff check exit0 (`eslint`, `prettier`, `typecheck`, `diff-check` logs/exit files). The final-helper API production build and `check:dist` pass in the native attempt logs; output contains96 files and excludes mock fixtures/references/source maps. The existing >500kB chunk warning remains. The full unrelated frontend/backend suites were not run.
+
+SHA256 values (paths relative to `frontend/`):
+
+| File                                        | SHA256                                                             |
+| ------------------------------------------- | ------------------------------------------------------------------ |
+| src/features/admin/refresh-admin-apps.js    | `c695c28213025df1743afbd3173ac3198033bbd8151d172f54886cef684cece8` |
+| src/features/admin/view-admin.jsx           | `b38cf732d65b1b371887cfeda26e7f2e41202a712d9c678484d5081680da14cc` |
+| src/features/admin/health-check-control.jsx | `cfbe3a2e0240c429b3ccbad0c1ebc0a9eeff3ad01039f9a9b75bcf921e78ac92` |
+| tests/admin-view-apps.test.jsx              | `0223ca0072bacb4bd6f456aa39ea08188763b6cd0665430d5a48f6860c2f5776` |
+| tests/health-check-control.test.jsx         | `b14ea87706c4b296d0756e73371340ec61629d11d79f0a16edd7e24d07ab6360` |
+
+Node22.23.2/npm12.0.2, Python3.12.3 and the existing Chrome151 executable were used. No warmup was added. The disposable Linux mirror uses the original runner/config/source and isolated databases, workers1/retries0/trace-off. Source/dependency storage and existing caches differ from the Windows-mounted checkout and historical CI; these are unpreheated runner checks, not a pristine cold-cache claim.
+
+`source-manifest.json` verifies all199 selected frontend/source/test/runner/config/contract/deploy files against the repository. `dependency-provenance.json` verifies all350 installed package versions/resolved URLs/integrities and selected React/Query/Vitest/Vite/jsdom bytes. Frontend dependencies were reconstructed offline from the unchanged lockfile after the Windows-filesystem copy was stopped. `backend-source-manifest.json` verifies the unchanged backend copy; `python-dependency-provenance.json` verifies all installed distribution names/versions. The unchanged Python frozen lock was installed under `/tmp` (offline cache miss retained, then frozen downloads succeeded). A preliminary frozen sync checked the original41 packages because the shell retained the old symlink working directory; it reported no package changes. Application `.env` files were not sourced.
+
+### Environment failures and focused matrix
+
+The native checkout Vitest attempt reached startup but timed out90s without executing tests (`native-red.log`, exit124). The Linux regression's initial five-second timeout and incorrect `li` lookup were test-harness failures, retained separately. Intermediate affected/regression runs retain timeout, batch-fixture and overly strict empty-query-object failures in `affected-unit.log`, `producers-green.log`, `regressions-cycle2.log` and `regressions-final.log`. The final fixture serves responses by actual offset and uses focused row lookups; no timeout/retry/sleep masking was added. Retirement asserts that protected cached data and DOM rows disappear; disabled observers can recreate an empty query object.
+
+Official Ubuntu nginx1.28.3/age1.2.1 packages were extracted under `/tmp`, without system installation/services. The package hashes, wrapper and smoke configuration are under `native-tools/`. The unchanged nginx template requires `/etc/nginx/mime.types`; a private bubblewrap mount supplies the extracted distro file and permits owned `/tmp` runtime writes. The binary version and smoke syntax check pass. The real unchanged native harness still fails at nginx startup (diagnostics suppressed), after backend readiness and before test execution. There is no Vite fallback and no native functional pass claim.
+
+The unchanged bootstrap additionally failed in the incomplete Linux mirror before any credential prompt: the verifier requires `docs/research/password-blocklist-provenance/metadata/candidate_sources.json`, which had not been copied. `bootstrap-diagnostic/result.log` records migration0, CLI1, zero prompts and no password echo; `blocker.json` identifies the missing metadata. Copying that existing file unchanged lets bootstrap complete. Initial incomplete-environment matrix failures are retained in `environment-incomplete/` and `matrix.log`. The first incomplete `native-health-target-linux.log` was overwritten on rerun; its exit1 and bootstrap-failure summary remain in the archived exit/matrix log. No executed-test failure or pass was inferred from those setup failures.
+
+Final focused results (the complete-environment attempts use the frozen candidate):
+
+| Check                                                      | Runner exit | Executed pass/fail/skip               | Evidence                         |
+| ---------------------------------------------------------- | ----------- | ------------------------------------- | -------------------------------- |
+| HTTP blocked-result target,8 repeats                       | 0           | 8/0/0                                 | `api-health-target.log`          |
+| HTTP full controlled-health group                          | 0           | 6/0/0                                 | `api-health-group.log`           |
+| HTTP admin default/additional and insert/delete pagination | 0           | 2/0/0                                 | `api-admin-pagination.log`       |
+| Native HTTPS blocked-result target,8 requested repeats     | 1           | 0 tests executed; environment blocked | `native-health-target-linux.log` |
+| Native HTTPS full controlled-health group                  | 1           | 0 tests executed; environment blocked | `native-health-group.log`        |
+
+The HTTP health group includes the unchanged disable/re-enable worker-readiness case that failed in the earlier environment; it now passes under these Linux conditions. This is not a repair or causal claim for that prior failure. Every completed HTTP case reports zero owned fixture leftovers. The native attempts build/check the final API release, reach backend readiness, and then fail nginx startup; they do not satisfy native target repetition or native group verification. Real GitHub CI must supply that VP2 evidence.
+
+### Reproduction commands and artifacts
+
+All artifacts are under `/tmp/issue242-ci`. The test and runner commands use the unchanged mirrored files and the pinned PATH described above:
+
+```bash
+cd /tmp/issue242-ci/repair/frontend
+VITE_DATA_MODE=mock node node_modules/vitest/vitest.mjs run --maxWorkers=1 tests/admin-view-apps.test.jsx tests/admin-view.test.jsx tests/admin-apps-isolation.test.jsx tests/admin-apps-delete.test.jsx tests/health-check-control.test.jsx
+/tmp/issue242-ci/check-static.sh
+/tmp/issue242-ci/run-e2e.sh native-health-target-linux --nginx-functional e2e-api/health-real.spec.js --grep 'administrator blocked result' --repeat-each=8
+/tmp/issue242-ci/run-e2e.sh native-health-group --nginx-functional e2e-api/health-real.spec.js
+/tmp/issue242-ci/run-e2e.sh api-health-target e2e-api/health-real.spec.js --grep 'administrator blocked result' --repeat-each=8
+/tmp/issue242-ci/run-e2e.sh api-health-group e2e-api/health-real.spec.js
+/tmp/issue242-ci/run-e2e.sh api-admin-pagination e2e-api/admin-apps.spec.js --grep 'default and additional pages|offset paging across inserts'
+```
+
+The original failure log and D1 artifacts remain in `failed.log` and `diagnosis/`. Candidate hashes are in `candidate-hashes.txt`; controlled final component ordering is in `final-dom-order-complete.log`; exact original-component red and inadequate-fix red are in `final-test-baseline-red.log` and `noncancel-only-final-red.log`. `matrix-complete-environment.log` collects the completed environment attempts. Auth-bearing browser/runtime artifacts remain local. Wider API/auth regression and the native functional release contracts remain mandatory in real GitHub CI after coordinator review/push.
+
+Independent delta review R2 (GLM-5.3/max) passed the unchanged five source/test hashes. Its real-query supplemental probe confirms that a same-scope refetch superseded by pagination can skip that health-refresh cycle while preserving both pages and last-good rows; this behavior also occurred before the repair. A later refresh producer updates those rows. This report does not guarantee a recovery deadline or that an expiry timer always exists. The review and probe remain local at `/tmp/issue242-ci/review-report.txt` and `review/supersede-freshness.mjs`.
