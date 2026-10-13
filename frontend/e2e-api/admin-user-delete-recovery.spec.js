@@ -174,17 +174,55 @@ test.describe("account deletion recovery over real HTTP", () => {
         ? route.abort("failed")
         : route.continue(),
     );
+    const issued = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === "/api/v1/write-operations" &&
+        response.request().method() === "POST",
+    );
+    const submitted = page.waitForRequest(
+      (request) =>
+        new URL(request.url()).pathname ===
+          `/api/v1/admin/users/${owned.member.id}` &&
+        request.method() === "DELETE",
+    );
     await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+    const originalKey = (await (await issued).json()).key;
+    expect(originalKey).toMatch(/^[0-9a-f-]{36}$/);
+    expect(await (await submitted).headerValue("idempotency-key")).toBe(
+      originalKey,
+    );
     await expect(
       panel.getByRole("button", { name: "결과 확인", exact: true }),
     ).toBeEnabled();
     query(
       `UPDATE write_operations SET expires_at='2000-01-01T00:00:00Z' WHERE kind='user_delete' AND target_id='${owned.member.id}'`,
     );
+    const expired = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname ===
+          `/api/v1/write-operations/${originalKey}` &&
+        response.request().method() === "GET",
+    );
     await panel.getByRole("button", { name: "결과 확인", exact: true }).click();
+    const expiredResponse = await expired;
+    expect(expiredResponse.status()).toBe(410);
+    expect((await expiredResponse.json()).error.code).toBe("OPERATION_EXPIRED");
+    await expect(panel).toContainText(
+      "작업 키가 만료되어 과거 결과를 확인할 수 없어요",
+    );
+    await expect(panel).toHaveAttribute("aria-busy", "false");
+    const targetResponse = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname ===
+          `/api/v1/admin/users/${owned.member.id}` &&
+        response.request().method() === "GET",
+    );
     await panel
       .getByRole("button", { name: "현재 회원 정보 다시 확인", exact: true })
       .click();
+    expect((await targetResponse).status()).toBe(200);
+    await expect(panel).toHaveAttribute("aria-busy", "false");
+    await expect(panel).toContainText("삭제 결과가 아직 확정되지 않았어요");
     await expect(panel).toContainText(
       "작업 키가 만료되어 과거 결과를 확인할 수 없어요",
     );

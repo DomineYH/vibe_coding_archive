@@ -201,17 +201,43 @@ test.describe("connection checks over real API, queue and worker", () => {
     const [[urlVersion]] = query(
       `SELECT url_version FROM apps WHERE id='${app.id}'`,
     );
+    const pendingInitial = new Set();
+    page.on("request", (request) => {
+      const url = new URL(request.url());
+      if (
+        request.method() === "GET" &&
+        url.pathname === "/api/v1/admin/apps" &&
+        url.searchParams.get("offset") === "0"
+      )
+        pendingInitial.add(request);
+    });
+    for (const event of ["requestfinished", "requestfailed"])
+      page.on(event, (request) => pendingInitial.delete(request));
     await page.goto("/admin?tab=health");
-    const row = page
-      .getByRole("list", { name: "전체 앱 목록" })
-      .getByRole("listitem")
-      .filter({
-        has: page.getByRole("button", {
-          name: `앱 관리: ${app.name}`,
-          exact: true,
-        }),
-      });
+    const list = page.getByRole("list", { name: "전체 앱 목록" });
+    await expect(list.getByRole("listitem")).toHaveCount(24);
+    await expect.poll(() => pendingInitial.size).toBe(0);
+    const row = list.getByRole("listitem").filter({
+      has: page.getByRole("button", {
+        name: `앱 관리: ${app.name}`,
+        exact: true,
+      }),
+    });
+    const additionalPage = page.waitForResponse((response) => {
+      const url = new URL(response.url());
+      return (
+        response.request().method() === "GET" &&
+        url.pathname === "/api/v1/admin/apps" &&
+        url.searchParams.get("offset") === "24"
+      );
+    });
     await page.getByRole("button", { name: /추가 앱 불러오기/ }).click();
+    const pageResponse = await additionalPage;
+    expect(pageResponse.status()).toBe(200);
+    expect(await pageResponse.json()).toMatchObject({
+      pagination: { offset: 24 },
+      items: expect.arrayContaining([expect.objectContaining({ id: app.id })]),
+    });
     await expect(row).toBeVisible();
     const accepted = page.waitForResponse(
       (response) =>

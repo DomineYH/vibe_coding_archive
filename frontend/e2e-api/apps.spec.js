@@ -110,7 +110,15 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
   await page.goto(galleryUrl);
   requests.length = 0;
   writeRequests.length = 0;
+  await expect(app).toHaveAccessibleName(/상세 보기$/);
+  const detailResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname ===
+        "/api/v1/apps/00000000-0000-4000-8000-000000000027" &&
+      response.request().method() === "GET",
+  );
   await app.click();
+  expect((await detailResponse).status()).toBe(200);
   await expect(
     page.getByRole("heading", { name: "추가 공개 앱 27" }),
   ).toBeVisible();
@@ -134,6 +142,7 @@ test("public API gallery filters, paginates, opens, refreshes, and restores real
     page.getByRole("textbox", { name: "앱·작성자 검색" }),
   ).toHaveValue("추가 공개 앱");
   await expect(grade).toHaveValue("초1");
+  await expect(page.locator("a.card-r")).toHaveCount(24);
   expect(requests).toContain("/api/v1/meta");
   expect(requests).toContain("/api/v1/apps");
   expect(requests.some((path) => path.startsWith("/api/v1/auth/"))).toBe(true);

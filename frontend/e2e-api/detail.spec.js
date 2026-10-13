@@ -514,6 +514,7 @@ test.describe("member detail", () => {
     await blockExternalRequests(context);
     await page.route(`**/api/v1/apps/${detailId}`, async (route) => {
       const response = await route.fetch();
+      expect(response.status()).toBe(200);
       heldResponse.resolve();
       try {
         await releaseResponse.promise;
@@ -527,13 +528,17 @@ test.describe("member detail", () => {
 
     await page.goto("/");
     await expect(page.locator("a.card-r")).toHaveCount(24);
-    await page.locator(`a.card-r[href="/apps/${detailId}"]`).click();
+    const firstCard = page.locator(`a.card-r[href="/apps/${detailId}"]`);
+    await expect(firstCard).toHaveAccessibleName(/상세 보기$/);
+    await firstCard.click();
     await heldResponse.promise;
     await page.goBack();
     await expect(page.locator("a.card-r")).toHaveCount(24);
-    await page
-      .locator('a.card-r[href="/apps/00000000-0000-4000-8000-000000000002"]')
-      .click();
+    const secondCard = page.locator(
+      'a.card-r[href="/apps/00000000-0000-4000-8000-000000000002"]',
+    );
+    await expect(secondCard).toHaveAccessibleName(/상세 보기$/);
+    await secondCard.click();
     await expect(
       page.getByRole("heading", { name: "둘째 공개 앱" }),
     ).toBeVisible();
