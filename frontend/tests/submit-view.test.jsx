@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   cleanup,
+  fireEvent,
+  getRoles,
   render,
   screen,
   waitFor,
@@ -71,7 +73,31 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function fillDraft() {
+function getTextbox(form, label) {
+  const fieldLabel = form.getByText(label, { selector: "label", exact: true });
+  const control = fieldLabel.control;
+  expect(fieldLabel.closest("form")).toContainElement(control);
+  return within(control.parentElement).getByRole("textbox", {
+    name: label,
+    exact: true,
+  });
+}
+
+function getButton(queries, name) {
+  const button = queries.getByText(name, { selector: "button", exact: true });
+  expect(getRoles(button).button).toContain(button);
+  expect(button).toHaveAccessibleName(name);
+  expect(button).toBeInTheDocument();
+  return button;
+}
+
+function getThemeButton(form, name) {
+  return within(
+    form.getByRole("group", { name: "Pantone 테마 컬러" }),
+  ).getByRole("button", { name: `테마 ${name} 선택`, exact: true });
+}
+
+async function fillDraft(useUserInput = false) {
   await authService.login(DEMO_ACCOUNTS[1]);
   router = createMemoryRouter([{ path: "*", element: <App /> }], {
     initialEntries: ["/apps/new"],
@@ -85,50 +111,39 @@ async function fillDraft() {
     await screen.findByRole("form", { name: "새 앱 등록 양식" }),
   );
   for (const [, label, value] of textFields) {
-    await user.click(form.getByRole("textbox", { name: label, exact: true }));
-    await user.paste(value);
+    if (useUserInput) {
+      await user.click(getTextbox(form, label));
+      await user.paste(value);
+    } else fireEvent.change(getTextbox(form, label), { target: { value } });
   }
   await user.click(
-    within(form.getByRole("group", { name: "교과 과목" })).getByRole("button", {
-      name: "수학",
-      exact: true,
-    }),
+    getButton(within(form.getByRole("group", { name: "교과 과목" })), "수학"),
   );
   await user.click(
-    within(form.getByRole("group", { name: "적용 가능 학년" })).getByRole(
-      "button",
-      { name: "초3", exact: true },
+    getButton(
+      within(form.getByRole("group", { name: "적용 가능 학년" })),
+      "초3",
     ),
   );
-  await user.click(
-    form.getByRole("button", { name: "테마 Sage 선택", exact: true }),
-  );
+  await user.click(getThemeButton(form, "Sage"));
   await user.click(form.getByRole("switch", { name: "전체 공개" }));
   return form;
 }
 
 function expectDraft(form) {
   for (const [, label, value] of textFields) {
-    expect(form.getByRole("textbox", { name: label, exact: true })).toHaveValue(
-      value,
-    );
+    expect(getTextbox(form, label)).toHaveValue(value);
   }
   expect(
-    within(form.getByRole("group", { name: "교과 과목" })).getByRole("button", {
-      name: "수학",
-      exact: true,
-    }),
+    getButton(within(form.getByRole("group", { name: "교과 과목" })), "수학"),
   ).toHaveAttribute("aria-pressed", "true");
   expect(
-    within(form.getByRole("group", { name: "적용 가능 학년" })).getByRole(
-      "button",
-      { name: "초3", exact: true },
+    getButton(
+      within(form.getByRole("group", { name: "적용 가능 학년" })),
+      "초3",
     ),
   ).toHaveAttribute("aria-pressed", "true");
-  expect(form.getByRole("button", { name: "테마 Sage 선택" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  expect(getThemeButton(form, "Sage")).toHaveAttribute("aria-pressed", "true");
   expect(form.getByRole("switch", { name: "전체 공개" })).toHaveAttribute(
     "aria-checked",
     "false",
@@ -151,10 +166,8 @@ async function fillEditDraft() {
     await screen.findByRole("form", { name: "앱 수정 양식" }),
   );
   for (const [, label, value] of textFields) {
-    const control = form.getByRole("textbox", { name: label, exact: true });
-    await user.clear(control);
-    await user.click(control);
-    await user.paste(value);
+    const control = getTextbox(form, label);
+    fireEvent.change(control, { target: { value } });
   }
   await user.click(form.getByRole("switch", { name: "전체 공개" }));
   return form;
@@ -188,17 +201,14 @@ describe.each(["issuance", "create"])("registration %s failure", (stage) => {
         fields,
       }),
     );
-    const form = await fillDraft();
-    await user.click(form.getByRole("button", { name: "아카이브에 등록" }));
+    const form = await fillDraft(stage === "create");
+    await user.click(getButton(form, "아카이브에 등록"));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("표시된 항목을 확인해 주세요.");
     expect(alert).toHaveTextContent(fields.form);
     expect(alert).toHaveTextContent(fields.future_field);
     for (const [field, label] of textFields) {
-      expectFieldError(
-        form.getByRole("textbox", { name: label, exact: true }),
-        fields[field],
-      );
+      expectFieldError(getTextbox(form, label), fields[field]);
     }
     expectFieldError(
       form.getByRole("group", { name: "교과 과목" }),
@@ -215,20 +225,15 @@ describe.each(["issuance", "create"])("registration %s failure", (stage) => {
     expectDraft(form);
     expect(issue).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledTimes(stage === "issuance" ? 0 : 1);
-    await user.click(form.getByRole("button", { name: "테마 Niagara 선택" }));
+    await user.click(getThemeButton(form, "Niagara"));
     expect(themes).toHaveAttribute("aria-invalid", "false");
     expect(themes).not.toHaveAttribute("aria-describedby");
     await user.click(visibility);
     expect(visibility).toHaveAttribute("aria-invalid", "false");
     expect(visibility).not.toHaveAttribute("aria-describedby");
-    await user.type(
-      form.getByRole("textbox", { name: "DB", exact: true }),
-      " updated",
-    );
-    expect(
-      form.getByRole("textbox", { name: "DB", exact: true }),
-    ).toHaveAttribute("aria-invalid", "false");
-    expect(form.getByRole("textbox", { name: "백엔드 엔진" })).toHaveAttribute(
+    await user.type(getTextbox(form, "DB"), " updated");
+    expect(getTextbox(form, "DB")).toHaveAttribute("aria-invalid", "false");
+    expect(getTextbox(form, "백엔드 엔진")).toHaveAttribute(
       "aria-invalid",
       "true",
     );
@@ -267,7 +272,7 @@ describe.each(["issuance", "create"])("registration %s failure", (stage) => {
         .spyOn(appsService, "getCreateOperation")
         .mockResolvedValue(operation);
       const form = await fillDraft();
-      await user.click(form.getByRole("button", { name: "아카이브에 등록" }));
+      await user.click(getButton(form, "아카이브에 등록"));
       const alert = await screen.findByRole("alert");
       expect(alert).toHaveTextContent(copy);
       expect(alert).toHaveTextContent("추가 서버 안내");
@@ -277,33 +282,27 @@ describe.each(["issuance", "create"])("registration %s failure", (stage) => {
       expect(lookup).not.toHaveBeenCalled();
       if (uncertain) {
         expect(alert).toHaveTextContent("저장 결과를 먼저 확인해 주세요.");
-        expect(
-          form.getByRole("button", { name: "결과 확인 중" }),
-        ).toBeDisabled();
-        expect(
-          form.getByRole("textbox", { name: "어플리케이션 이름" }),
-        ).toHaveAttribute("readonly");
-        await user.click(form.getByRole("button", { name: "저장 결과 확인" }));
+        expect(getButton(form, "결과 확인 중")).toBeDisabled();
+        expect(getTextbox(form, "어플리케이션 이름")).toHaveAttribute(
+          "readonly",
+        );
+        await user.click(getButton(form, "저장 결과 확인"));
         await waitFor(() =>
           expect(alert).toHaveTextContent("아직 저장 결과가 정해지지 않았어요"),
         );
         expect(lookup).toHaveBeenCalledWith(key);
         const [pendingInput, pendingKey] = create.mock.calls[0];
-        await user.click(
-          form.getByRole("button", { name: "같은 요청 다시 보내기" }),
-        );
+        await user.click(getButton(form, "같은 요청 다시 보내기"));
         await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
         expect(create.mock.calls[1]).toEqual([pendingInput, pendingKey]);
         expect(pendingKey).toBe(key);
         expect(issue).toHaveBeenCalledTimes(1);
         expectDraft(form);
       } else {
-        expect(
-          form.getByRole("button", { name: "아카이브에 등록" }),
-        ).toBeEnabled();
-        expect(
-          form.getByRole("textbox", { name: "어플리케이션 이름" }),
-        ).not.toHaveAttribute("readonly");
+        expect(getButton(form, "아카이브에 등록")).toBeEnabled();
+        expect(getTextbox(form, "어플리케이션 이름")).not.toHaveAttribute(
+          "readonly",
+        );
         expect(
           form.queryByRole("button", { name: "저장 결과 확인" }),
         ).not.toBeInTheDocument();
@@ -331,16 +330,13 @@ describe.each(["issuance", "update"])("edit %s failure", (stage) => {
       update.mockRejectedValue(error);
     }
     const form = await fillEditDraft();
-    await user.click(form.getByRole("button", { name: "변경사항 저장" }));
+    await user.click(getButton(form, "변경사항 저장"));
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("표시된 항목을 확인해 주세요.");
     expect(alert).toHaveTextContent(fields.form);
     expect(alert).toHaveTextContent(fields.future_field);
     const controls = [
-      ...textFields.map(([field, label]) => [
-        field,
-        form.getByRole("textbox", { name: label, exact: true }),
-      ]),
+      ...textFields.map(([field, label]) => [field, getTextbox(form, label)]),
       ["subject", form.getByRole("group", { name: "교과 과목" })],
       ["grades", form.getByRole("group", { name: "적용 가능 학년" })],
       ["themeId", form.getByRole("group", { name: "Pantone 테마 컬러" })],
@@ -354,7 +350,7 @@ describe.each(["issuance", "update"])("edit %s failure", (stage) => {
     expect(update).toHaveBeenCalledTimes(stage === "issuance" ? 0 : 1);
     expect(lookup).not.toHaveBeenCalled();
 
-    await user.click(form.getByRole("button", { name: "테마 Niagara 선택" }));
+    await user.click(getThemeButton(form, "Niagara"));
     for (const [field, control] of controls) {
       if (field === "themeId") {
         expect(control).toHaveAttribute("aria-invalid", "false");
@@ -364,10 +360,7 @@ describe.each(["issuance", "update"])("edit %s failure", (stage) => {
     expect(screen.getByRole("alert")).toHaveTextContent(fields.form);
     expect(screen.getByRole("alert")).toHaveTextContent(fields.future_field);
 
-    await user.type(
-      form.getByRole("textbox", { name: "DB", exact: true }),
-      " updated",
-    );
+    await user.type(getTextbox(form, "DB"), " updated");
     for (const [field, control] of controls) {
       if (field === "themeId" || field === "stack.db") {
         expect(control).toHaveAttribute("aria-invalid", "false");
@@ -396,7 +389,7 @@ it("opens the confirmed app after explicitly looking up an uncertain feature-una
     .spyOn(appsService, "getCreateOperation")
     .mockResolvedValue({ ...operation, state: "succeeded", targetId });
   const form = await fillDraft();
-  await user.click(form.getByRole("button", { name: "아카이브에 등록" }));
+  await user.click(getButton(form, "아카이브에 등록"));
   await user.click(
     await screen.findByRole("button", { name: "저장 결과 확인" }),
   );
