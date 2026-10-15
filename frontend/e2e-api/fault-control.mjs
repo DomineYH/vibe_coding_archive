@@ -1,3 +1,4 @@
+import { ProcessDrillFailure } from "./process-failure.mjs";
 import net from "node:net";
 
 export function control(socketPath, message) {
@@ -12,7 +13,12 @@ export function control(socketPath, message) {
     });
     socket.on("end", () => {
       const result = JSON.parse(input);
-      if (result.error) reject(new Error(result.error));
+      if (result.error)
+        reject(
+          result.failure
+            ? new ProcessDrillFailure(result.failure.stage, result.failure)
+            : new Error(result.error),
+        );
       else resolve(result);
     });
   });

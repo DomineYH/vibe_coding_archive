@@ -1,3 +1,8 @@
+import {
+  ProcessDrillFailure,
+  checkProcessResult,
+  processOutcome,
+} from "./process-failure.mjs";
 import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import {
@@ -81,20 +86,25 @@ function probe() {
     request.on("error", () => resolve(false));
   });
 }
-function python(code, ...args) {
+function python(stage, code, ...args) {
   const result = spawnSync(
     "uv",
     ["run", "--frozen", "python", ...code, ...args],
     { cwd: backend, env: process.env, stdio: "pipe" },
   );
-  if (result.status !== 0) throw new Error("Private process drill failed");
+  checkProcessResult(stage, result, 0);
 }
-function restoreCli(command, env, ...args) {
-  return spawnSync(pythonExecutable, ["-m", "app.cli", command, ...args], {
-    cwd: backend,
-    env,
-    stdio: "pipe",
-  });
+function restoreCli(command, expected, env, ...args) {
+  const result = spawnSync(
+    pythonExecutable,
+    ["-m", "app.cli", command, ...args],
+    {
+      cwd: backend,
+      env,
+      stdio: "pipe",
+    },
+  );
+  return checkProcessResult(command, result, expected);
 }
 async function encryptedBackup() {
   if (activeEnv !== process.env) throw new Error("Original server required");
@@ -115,20 +125,20 @@ async function encryptedBackup() {
     const generated = spawnSync("age-keygen", [], {
       stdio: ["ignore", keyFile.fd, "ignore"],
     });
-    if (generated.status !== 0)
-      throw new Error("Test age identity unavailable");
+    checkProcessResult("age-keygen-identity", generated, 0);
   } finally {
     await keyFile.close();
   }
   const recipient = spawnSync("age-keygen", ["-y", identity], {
     stdio: "pipe",
   });
-  if (recipient.status !== 0) throw new Error("Test age recipient unavailable");
+  checkProcessResult("age-keygen-recipient", recipient, 0);
   const recipientFile = path.join(root, "keys", "recipients.txt");
   await writeFile(recipientFile, recipient.stdout, { mode: 0o600, flag: "wx" });
   const runId = randomUUID();
-  const result = restoreCli(
+  restoreCli(
     "backup-db",
+    3,
     process.env,
     "--output-dir",
     path.join(root, "backups"),
@@ -139,7 +149,6 @@ async function encryptedBackup() {
     "--run-id",
     runId,
   );
-  if (result.status !== 3) throw new Error("Encrypted backup drill failed");
   encryptedRun = {
     root,
     identity,
@@ -157,11 +166,11 @@ async function encryptedRestore(fault) {
     identity = path.join(encryptedRun.root, "keys", "wrong.txt");
     const file = await open(identity, "wx", 0o600);
     try {
-      if (
-        spawnSync("age-keygen", [], { stdio: ["ignore", file.fd, "ignore"] })
-          .status !== 0
-      )
-        throw new Error("Wrong-key provisioning failed");
+      checkProcessResult(
+        "age-keygen-identity",
+        spawnSync("age-keygen", [], { stdio: ["ignore", file.fd, "ignore"] }),
+        0,
+      );
     } finally {
       await file.close();
     }
@@ -181,8 +190,9 @@ async function encryptedRestore(fault) {
     DATABASE_PATH: encryptedRun.target,
     HEALTH_CHECKS_ENABLED: "false",
   };
-  const result = restoreCli(
+  restoreCli(
     "restore-db",
+    fault ? 1 : 3,
     env,
     "--backup-dir",
     encryptedRun.backup,
@@ -191,8 +201,6 @@ async function encryptedRestore(fault) {
     "--ledger-file",
     ledger,
   );
-  if (result.status !== (fault ? 1 : 3))
-    throw new Error("Unexpected restore result");
   activeEnv = env;
 }
 const lifecycle = net.createServer((socket) => {
@@ -200,8 +208,10 @@ const lifecycle = net.createServer((socket) => {
   socket.on("data", async (data) => {
     input += data;
     if (!input.includes("\n")) return;
+    let stage = "control";
     try {
       const message = JSON.parse(input);
+      stage = message.action;
       let details = {};
       if (message.action === "migration-status") {
         const result = spawnSync(
@@ -227,13 +237,12 @@ print(json.dumps({'businessDigest': digest(database, ('members','apps','app_grad
             stdio: "pipe",
           },
         );
-        if (result.status !== 0) throw new Error("Migration state unavailable");
+        checkProcessResult("migration-status", result, 0);
         details = JSON.parse(result.stdout);
       } else if (message.action === "migration-block") {
         if (activeEnv !== process.env)
           throw new Error("Original target required");
-        if (restoreCli("maintenance-block", activeEnv).status !== 0)
-          throw new Error("Migration latch failed");
+        restoreCli("maintenance-block", 0, activeEnv);
         if (!migrationRoot) {
           migrationRoot = path.join(
             path.dirname(activeEnv.DATABASE_PATH),
@@ -254,8 +263,9 @@ print(json.dumps({'businessDigest': digest(database, ('members','apps','app_grad
       } else if (message.action === "encrypted-restore") {
         await encryptedRestore(message.fault);
       } else if (message.action === "verify-restore") {
-        const result = restoreCli(
+        restoreCli(
           "verify-restore",
+          3,
           activeEnv,
           "--backup-dir",
           encryptedRun.backup,
@@ -264,7 +274,6 @@ print(json.dumps({'businessDigest': digest(database, ('members','apps','app_grad
           "--ledger-file",
           encryptedRun.ledger,
         );
-        if (result.status !== 3) throw new Error("Verification failed");
       } else if (message.action === "restore-status") {
         const ids = message.ids;
         if (
@@ -288,8 +297,7 @@ print(json.dumps(counts))`,
           ],
           { cwd: backend, env: activeEnv, stdio: "pipe" },
         );
-        if (result.status !== 0)
-          throw new Error("Restored state inspection failed");
+        checkProcessResult("restore-status", result, 0);
         details = JSON.parse(result.stdout);
       } else if (message.action === "normal-target") {
         restarting = true;
@@ -299,12 +307,18 @@ print(json.dumps(counts))`,
         const deadline = Date.now() + 4000;
         while (!(await probe())) {
           if (Date.now() > deadline)
-            throw new Error("Normal target restart failed");
+            throw new ProcessDrillFailure("normal-target", {
+              ...processOutcome({
+                status: child.exitCode,
+                signal: child.signalCode,
+              }),
+              reason: "readiness-timeout",
+            });
           await new Promise((resolve) => setTimeout(resolve, 20));
         }
         restarting = false;
       } else if (message.action === "snapshot") {
-        python([
+        python("snapshot", [
           "-c",
           "import os, sqlite3; db=sqlite3.connect(os.environ['DATABASE_PATH']); out=sqlite3.connect(os.environ['DATABASE_PATH']+'.snapshot'); db.backup(out); out.close(); db.close()",
         ]);
@@ -312,18 +326,22 @@ print(json.dumps(counts))`,
         message.action === "cli" &&
         message.command === "sweep-pending"
       ) {
-        python(["-m", "app.cli", "sweep-pending"]);
+        python("sweep-pending", ["-m", "app.cli", "sweep-pending"]);
       } else if (message.action === "stop") {
         restarting = true;
         await kill();
       } else if (message.action === "restore") {
         if (child.exitCode === null && child.signalCode === null)
           throw new Error("Restore requires stopped server");
-        python([
+        python("restore-snapshot", [
           "-c",
           "import os, sqlite3; source=sqlite3.connect(os.environ['DATABASE_PATH']+'.snapshot'); db=sqlite3.connect(os.environ['DATABASE_PATH']); source.backup(db); db.close(); source.close()",
         ]);
-        python(["-m", "app.cli", "invalidate-restored-auth"]);
+        python("invalidate-restored-auth", [
+          "-m",
+          "app.cli",
+          "invalidate-restored-auth",
+        ]);
       } else if (
         ["restart", "start", "migration-resume"].includes(message.action)
       ) {
@@ -365,7 +383,13 @@ print(json.dumps(counts))`,
         const deadline = Date.now() + 4000;
         while (!(await probe())) {
           if (Date.now() > deadline)
-            throw new Error("Private restart not available");
+            throw new ProcessDrillFailure(stage, {
+              ...processOutcome({
+                status: child.exitCode,
+                signal: child.signalCode,
+              }),
+              reason: "readiness-timeout",
+            });
           await new Promise((resolve) => setTimeout(resolve, 20));
         }
         restarting = false;
@@ -378,9 +402,17 @@ print(json.dumps(counts))`,
           ...details,
         }) + "\n",
       );
-    } catch {
+    } catch (error) {
+      const failure =
+        error instanceof ProcessDrillFailure
+          ? error
+          : new ProcessDrillFailure(stage);
+      console.error(failure.message);
       socket.end(
-        '{"error":"private process drill failed; keep auth stopped"}\n',
+        JSON.stringify({
+          error: "private process drill failed; keep auth stopped",
+          failure: failure.failure,
+        }) + "\n",
       );
     }
   });
