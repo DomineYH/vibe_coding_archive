@@ -71,14 +71,14 @@ async function save(page, form, name) {
   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
 }
 
-test("owner persists edits and toggles public private public with current owner and other member reads", async ({
+test("owner persists edits with guest login redirect and other member public reads", async ({
   page,
   browser,
 }) => {
   await login(page, "approval-24");
   const id = await register(page, "API 편집 원본 165");
   const name = "API 편집 결과 165";
-  let form = await edit(page, id);
+  const form = await edit(page, id);
   await form
     .getByRole("textbox", { name: "어플리케이션 이름", exact: true })
     .fill(name);
@@ -99,9 +99,9 @@ test("owner persists edits and toggles public private public with current owner 
     query(`SELECT grade FROM app_grades WHERE app_id='${id}' ORDER BY grade`),
   ).toEqual([["중1"], ["초3"]]);
   const guestContext = await browser.newContext(browserContextOptions);
-  await blockExternalRequests(guestContext);
-  const guest = await guestContext.newPage();
   try {
+    await blockExternalRequests(guestContext);
+    const guest = await guestContext.newPage();
     await guest.goto(`/apps/${id}`);
     await expect(guest).toHaveURL(
       `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}`)}`,
@@ -115,7 +115,28 @@ test("owner persists edits and toggles public private public with current owner 
     await expect(
       guest.getByRole("heading", { name, exact: true }),
     ).toBeVisible();
-    form = await edit(page, id);
+  } finally {
+    await guestContext.close();
+  }
+});
+
+test("owner makes an app private and excludes guest and other member reads", async ({
+  page,
+  browser,
+}) => {
+  await login(page, "approval-24");
+  const name = "API 비공개 전환 165";
+  const id = await register(page, name);
+  const guestContext = await browser.newContext(browserContextOptions);
+  try {
+    await blockExternalRequests(guestContext);
+    const guest = await guestContext.newPage();
+    await loginMember(guest);
+    await guest.goto(`/apps/${id}`);
+    await expect(
+      guest.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+    const form = await edit(page, id);
     await form.getByRole("switch", { name: "전체 공개", exact: true }).click();
     await save(page, form, name);
     await page.reload();
@@ -158,7 +179,30 @@ test("owner persists edits and toggles public private public with current owner 
     ).toBeVisible();
     await page.getByRole("button", { name: "로그아웃", exact: true }).click();
     await expect(page).toHaveURL("/");
-    await login(page, "approval-24");
+  } finally {
+    await guestContext.close();
+  }
+});
+
+test("owner makes a private app public again for another member", async ({
+  page,
+  browser,
+}) => {
+  await login(page, "approval-24");
+  const name = "API 공개 복원 165";
+  const id = await register(page, name);
+  let form = await edit(page, id);
+  await form.getByRole("switch", { name: "전체 공개", exact: true }).click();
+  await save(page, form, name);
+  const guestContext = await browser.newContext(browserContextOptions);
+  try {
+    await blockExternalRequests(guestContext);
+    const guest = await guestContext.newPage();
+    await loginMember(guest);
+    await guest.goto(`/apps/${id}`);
+    await expect(
+      guest.getByText("아카이브 앱을 찾을 수 없어요", { exact: true }),
+    ).toBeVisible();
     form = await edit(page, id);
     await form.getByRole("switch", { name: "전체 공개", exact: true }).click();
     await save(page, form, name);
@@ -168,7 +212,7 @@ test("owner persists edits and toggles public private public with current owner 
     ).toBeVisible();
     expect(
       query(`SELECT is_public,version FROM apps WHERE id='${id}'`),
-    ).toEqual([[1, 4]]);
+    ).toEqual([[1, 3]]);
   } finally {
     await guestContext.close();
   }
