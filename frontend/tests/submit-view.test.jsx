@@ -225,6 +225,24 @@ describe.each(["issuance", "create"])("registration %s failure", (stage) => {
     expectDraft(form);
     expect(issue).toHaveBeenCalledTimes(1);
     expect(create).toHaveBeenCalledTimes(stage === "issuance" ? 0 : 1);
+  });
+
+  it("clears only the edited field's error after a server validation failure", async () => {
+    rejectStage(
+      stage,
+      new ServiceError("VALIDATION_ERROR", "서버 검증 안내", {
+        httpStatus: 422,
+        fields,
+      }),
+    );
+    const form = await fillDraft();
+    await user.click(getButton(form, "아카이브에 등록"));
+    await screen.findByRole("alert");
+    const themes = form.getByRole("group", { name: "Pantone 테마 컬러" });
+    const visibility = form.getByRole("switch", { name: "전체 공개" });
+    expectFieldError(themes, fields.themeId);
+    expectFieldError(visibility, fields.isPublic);
+    expectFieldError(getTextbox(form, "DB"), fields["stack.db"]);
     await user.click(getThemeButton(form, "Niagara"));
     expect(themes).toHaveAttribute("aria-invalid", "false");
     expect(themes).not.toHaveAttribute("aria-describedby");
