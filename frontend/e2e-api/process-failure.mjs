@@ -126,3 +126,26 @@ export async function withProcessCleanup(body, cleanup) {
   if (bodyFailed) throw bodyError;
   return value;
 }
+
+const cliTokens = new Set([
+  "CLI_FAILED",
+  "CLI_USAGE_INVALID",
+  "CLI_COMPLETED",
+  "DIAGNOSTIC_SUPPRESSED",
+  "HEALTH_STOP_REQUIRED",
+  "HEALTH_DISABLED",
+]);
+export function cliProtocolToken(result) {
+  for (const output of [result.stdout, result.stderr]) {
+    for (const line of String(output ?? "").split("\n")) {
+      if (cliTokens.has(line.trim())) return line.trim();
+      try {
+        const code = JSON.parse(line)?.code;
+        if (cliTokens.has(code)) return code;
+      } catch {
+        continue;
+      }
+    }
+  }
+  return null;
+}

@@ -1,3 +1,4 @@
+import { cliProtocolToken, processOutcome } from "./process-failure.mjs";
 import { publicOrigin } from "./helpers.js";
 import { spawn, spawnSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
@@ -358,7 +359,14 @@ test.describe("connection checks over real API, queue and worker", () => {
         stdio: "pipe",
       },
     );
-    expect(disabled.status).toBe(3);
+    expect(
+      disabled.status,
+      "disable-health " +
+        JSON.stringify({
+          ...processOutcome(disabled),
+          protocol: cliProtocolToken(disabled),
+        }),
+    ).toBe(3);
     expect(disabled.stdout.toString().trim()).toBe("HEALTH_STOP_REQUIRED");
     // This worker belongs to this runner's private DB; never signal another process.
     const stopped = spawnSync(

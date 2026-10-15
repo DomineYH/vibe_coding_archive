@@ -6,6 +6,7 @@ import { control } from "../e2e-api/fault-control.mjs";
 afterEach(() => vi.restoreAllMocks());
 import {
   ProcessDrillFailure,
+  cliProtocolToken,
   checkProcessResult,
   processOutcome,
   withProcessCleanup,
@@ -171,3 +172,46 @@ for (const diagnostic of [false, true]) {
     }
   });
 }
+
+it("reads only fixed CLI protocol tokens, never raw output or safe-log metadata", () => {
+  expect(
+    cliProtocolToken({
+      stdout: "secret-output",
+      stderr: 'raw secret\n{"code":"CLI_FAILED","secret":"cookie-secret"}',
+    }),
+  ).toBe("CLI_FAILED");
+  expect(
+    cliProtocolToken({
+      stdout: "HEALTH_STOP_REQUIRED\n",
+      stderr: "secret-output",
+    }),
+  ).toBe("HEALTH_STOP_REQUIRED");
+  expect(
+    cliProtocolToken({
+      stdout: "AUTH_COOKIE_SECRET",
+      stderr: '{"code":"secret-code"}\ninvalid JSON',
+    }),
+  ).toBeNull();
+  expect(cliProtocolToken({ stdout: null, stderr: null })).toBeNull();
+});
+
+it("reports independent health exit, signal and spawn-error channels", () => {
+  expect(processOutcome({ status: 1, signal: null, stderr: "secret" })).toEqual(
+    {
+      status: 1,
+      signal: null,
+      spawnError: null,
+    },
+  );
+  expect(
+    processOutcome({
+      status: null,
+      signal: "SIGTERM",
+      error: { code: "ENOENT", message: "secret" },
+    }),
+  ).toEqual({
+    status: null,
+    signal: "SIGTERM",
+    spawnError: "ENOENT",
+  });
+});
