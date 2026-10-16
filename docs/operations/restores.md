@@ -52,6 +52,28 @@ and original clocks; legitimate invalidation, cancellation and expired retention
 cleanup use the existing policies. The source database, artifact and supplied
 ledger are never repaired or overwritten.
 
+Deletion replay identifies members by their internal UUID and apps by their IDs,
+never by login ID. After administrator deletion or initial pending-expiry deletion
+is applied to the database, anyone passing the existing signup validation and rate
+limits may immediately reuse the login ID. A current member's normalized key,
+including pending or revoked members, still rejects duplicate signup. Reuse is not
+reserved for the former owner: even the same teacher receives a new UUID, ordinary
+member role and fresh pending approval, inheriting no approval history, apps,
+sessions or recovery rights. Login ID/nickname matches are not identity proof;
+operators must assess the new application separately and must not automatically
+approve it or restore the former account or data. See [ADR 0003](../adr/0003-deleted-login-id-reuse.md)
+and the [member deletion guide](../development/user-delete.md).
+
+A backup containing the old member re-deletes that member and its apps. A backup
+containing the new member with the reused login ID preserves the new UUID and its
+apps, including after repeated `reconcile(restored=True)`. If an older backup does
+not contain the new member, its absence is recovery-point loss, not a replay
+collision. All past authentication authority is still invalidated. The independent
+ledger stores no login IDs or normalized login keys. Its existing retention rule
+is seven days after confirmed expiry of all related backups/copies; the current
+implementation does not prune without that evidence. Pending's 90 days, audit's
+90 days and backup's 30 days are not fixed ledger lifetimes.
+
 A private `restore-receipt.json` binds the artifact core, target logical contents,
 finished ledger replica, observed source ledger, revision and original expiry.
 It flags legacy optional contact fields by count only; collection stays disabled.

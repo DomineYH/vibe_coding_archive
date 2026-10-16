@@ -113,6 +113,30 @@ def make_expired(path):
     return id_
 
 
+def test_expired_pending_login_id_can_register_as_a_new_member(member_app):
+    from tests.contracts.test_auth_register import register
+
+    app, path = member_app()
+    with TestClient(app) as client:
+        applicant = Browser(client).prepare().anonymous()
+        login_id = AUTH_MEMBERS["pending"][1].upper()
+        duplicate = register(applicant, login_id=login_id)
+        assert duplicate.status_code == 409
+        assert duplicate.json()["error"]["code"] == "LOGIN_ID_TAKEN"
+        old_id = make_expired(path)
+        sweep_pending(app.state.session_factory)
+        created = register(applicant, login_id=login_id)
+        assert created.status_code == 201, created.text
+        member_id = created.json()["id"]
+        assert member_id != old_id
+        assert created.json()["approved"] is False
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT id,approval_status,is_admin,first_approved_at FROM members WHERE login_id_key=?",
+                (login_id.lower(),),
+            ).fetchall() == [(member_id, "pending", 0, None)]
+
+
 def test_approval_commits_first_while_deletion_waits_for_final_write_lock(member_app):
     app, path = member_app()
     with TestClient(app):

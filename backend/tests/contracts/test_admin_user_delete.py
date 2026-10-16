@@ -56,6 +56,62 @@ from tests.password_reset_client import cancel, headers
 from tests.support import AUTH_MEMBERS
 
 
+@pytest.mark.parametrize("login_id", ["member-a", "MEMBER-A"])
+def test_deleted_login_id_registers_a_new_pending_member_without_inheritance(
+    member_app, login_id
+):
+    from tests.app_update_client import registered
+    from tests.contracts.test_auth_register import PASSWORD, register
+
+    app, path = member_app()
+    with (
+        TestClient(app) as client,
+        TestClient(app) as target_client,
+        TestClient(app) as signup_client,
+    ):
+        admin = signed_in(client, "admin")
+        target = signed_in(target_client)
+        old_app = registered(target)
+        applicant = Browser(signup_client).prepare().anonymous()
+        duplicate = register(applicant, login_id=login_id)
+        assert duplicate.status_code == 409
+        assert code(duplicate) == "LOGIN_ID_TAKEN"
+        key = issue(admin, count=1).json()["key"]
+        assert execute(admin, key, count=1).status_code == 204
+        assert target.me().status_code == 401
+
+        created = register(applicant, login_id=login_id)
+        assert created.status_code == 201, created.text
+        member_id = created.json()["id"]
+        assert member_id != TARGET
+        assert created.json()["approved"] is False
+        assert target.me().status_code == 401
+        assert code(applicant.login(login_id, PASSWORD)) == "ACCOUNT_NOT_APPROVED"
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT login_id_key,approval_status,is_admin,first_approved_at FROM members WHERE id=?",
+                (member_id,),
+            ).fetchone() == ("member-a", "pending", 0, None)
+            assert (
+                db.execute(
+                    "SELECT id FROM apps WHERE id=? OR owner_id IN (?,?)",
+                    (old_app["id"], TARGET, member_id),
+                ).fetchall()
+                == []
+            )
+            assert (
+                db.execute(
+                    "SELECT member_id FROM sessions WHERE member_id IN (?,?)",
+                    (TARGET, member_id),
+                ).fetchall()
+                == []
+            )
+            assert db.execute(
+                "SELECT count(*) FROM recovery_credentials WHERE flow_id=? AND revoked_at IS NULL",
+                (target.flow,),
+            ).fetchone() == (0,)
+
+
 def code(response):
     return response.json()["error"]["code"]
 
