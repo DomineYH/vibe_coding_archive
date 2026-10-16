@@ -587,3 +587,29 @@ Meaningful SPA navigation moves focus to the final displayed main with `preventS
 The existing detail `focus:outline-none` policy applies to programmatic main focus across screens; control focus-visible styles remain intact. Tailwind expresses this as a transparent outline in normal color mode. No new live region, focus trap, positive tab index, header redesign or service/auth protocol change is introduced. #231/#232 notice text and draft continuity are preserved.
 
 Main/control focus screenshots are execution artifacts under the coordinator report directory. Existing visual references and comparison thresholds are unchanged. This behavior approval does not approve new image baselines. Exact local comparison failures, base-control results and remaining CI gates are recorded in `/home/dominelinux/.cache/vibe_coding_archive/coord/b227w/report-impl227.md`; human screen-reader, device and visual acceptance remains pending.
+
+## I254-R — public header authentication recovery
+
+Issue #254 adds “인증 복구” beside “다시 확인” only for API-mode
+AUTH_STATE_CHANGED, AUTH_REQUIRED and RECOVERY_REQUIRED observation errors.
+The action opens the existing authentication screen with an allowlisted current
+path/search return destination, falling back to `/`; on `/auth` it retains the
+validated existing return destination. #232's recovering edit destination and
+explicit draft restoration retain priority. Checking, concealed, unavailable,
+anonymous, member and unresolved header behavior stays unchanged.
+
+The link performs navigation only. Existing reset eligibility and explicit
+“브라우저 인증 초기화” remain authoritative: proof loss on an active flow cannot
+create a new flow or submit login; an expired/revoked flow can prepare login only
+after explicit reset. Public gallery reads and protected-route guards remain.
+
+Approval source: the accepted #254 Agent Brief and coordinator-approved
+b254-VP1 plan. Recorder: **Codex gpt-6.1-sol**, **2026-10-16**. Browser geometry,
+header-only screenshots at 1440×1000, 1024×900, 768×1024, 390×844 and 360×844,
+keyboard focus/Enter and destination-main focus results are recorded in
+`/home/dominelinux/.cache/vibe_coding_archive/coord/b254/impl/report.md`.
+All five viewport bounds, single-line labels, separation and overflow checks pass
+with the existing spacing. Tab reveals the recovery focus outline at every size;
+Enter at 360px reaches the existing error main and its arrival focus.
+Existing visual baselines, masks and tolerances are unchanged. Automated checks
+do not claim human visual, screen-reader, physical-device or CI acceptance.

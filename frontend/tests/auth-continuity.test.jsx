@@ -1019,6 +1019,71 @@ it("corrects the foreground header after proof loss and restores the concealed e
   ).toHaveValue("232 복구할 초안");
 }, 30000);
 
+it("header recovery keeps recovering edit destination ahead of current location", async () => {
+  const id = "00000000-0000-4000-8000-000000000091";
+  const path = `/apps/${id}/edit`;
+  const router = await visit(path, 1);
+  fireEvent.change(await screen.findByLabelText("어플리케이션 이름"), {
+    target: { value: "232 복구할 초안" },
+  });
+  const state = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  state.auth_flow.session_cookie_present = false;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(state));
+  fireEvent.click(screen.getByRole("button", { name: "변경사항 저장" }));
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("button", { name: "로그아웃" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(
+    screen.queryByRole("textbox", { name: "어플리케이션 이름" }),
+  ).not.toBeInTheDocument();
+  const link = await screen.findByRole("link", { name: "로그인 및 인증 복구" });
+  expect(link).toHaveAttribute(
+    "href",
+    `/auth?mode=login&return_to=${encodeURIComponent(path)}`,
+  );
+  fireEvent.click(
+    within(screen.getByRole("banner")).getByRole("button", {
+      name: "인증 복구",
+      exact: true,
+    }),
+  );
+  expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(router.state.location.pathname).toBe("/auth"));
+  expect(
+    await screen.findByText("인증 결과를 확인할 수 없어요"),
+  ).toBeInTheDocument();
+  expect(router.state.location.search).toBe(
+    `?mode=login&return_to=${encodeURIComponent(path)}`,
+  );
+  fireEvent.click(
+    within(screen.getByRole("banner")).getByRole("button", {
+      name: "인증 복구",
+      exact: true,
+    }),
+  );
+  expect(router.state.location.search).toBe(
+    `?mode=login&return_to=${encodeURIComponent(path)}`,
+  );
+  expect(
+    screen.queryByRole("textbox", { name: "어플리케이션 이름" }),
+  ).not.toBeInTheDocument();
+  const missing = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEY));
+  missing.auth_flow.session_cookie_present = true;
+  localStorage.setItem(MOCK_STORAGE_KEY, JSON.stringify(missing));
+  await act(async () => {
+    window.dispatchEvent(new Event("blur"));
+    window.dispatchEvent(new Event("focus"));
+  });
+  fireEvent.click(
+    await screen.findByRole("button", { name: "편집으로 돌아가기" }),
+  );
+  expect(
+    await screen.findByRole("textbox", { name: "어플리케이션 이름" }),
+  ).toHaveValue("232 복구할 초안");
+}, 30000);
+
 it("keeps the original unknown key and input across proof-loss recovery without replay", async () => {
   const id = "00000000-0000-4000-8000-000000000091";
   const router = await visit(`/apps/${id}/edit`, 1);

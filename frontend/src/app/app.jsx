@@ -214,9 +214,21 @@ function Header({
               </Btn>
             </>
           ) : auth.status === "error" ? (
-            <Btn size="sm" variant="line" onClick={onRetryAuth}>
-              다시 확인
-            </Btn>
+            <>
+              <Btn size="sm" variant="line" onClick={onRetryAuth}>
+                다시 확인
+              </Btn>
+              {__DATA_MODE__ === "api" &&
+              [
+                "AUTH_STATE_CHANGED",
+                "AUTH_REQUIRED",
+                "RECOVERY_REQUIRED",
+              ].includes(auth.error?.code) ? (
+                <Btn size="sm" variant="line" onClick={onLogin}>
+                  인증 복구
+                </Btn>
+              ) : null}
+            </>
           ) : auth.status === "unresolved" ? (
             <Btn size="sm" variant="line" onClick={onLogin}>
               인증 복구
@@ -3206,11 +3218,22 @@ export default function App() {
         access={authMetadata}
         onLogin={() => {
           const slot = editMemory.current.slot;
-          navigate(
-            slot?.recovering
-              ? editRecoveryHref(`/apps/${slot.appId}/edit`)
-              : "/auth?mode=login",
-          );
+          if (slot?.recovering) {
+            navigate(editRecoveryHref(`/apps/${slot.appId}/edit`));
+            return;
+          }
+          if (__DATA_MODE__ === "api" && auth.status === "error") {
+            const { returnTo } = readAuthRoute(
+              location.pathname === "/auth"
+                ? location.search
+                : `?return_to=${encodeURIComponent(location.pathname + location.search)}`,
+            );
+            navigate(
+              `/auth?mode=login&return_to=${encodeURIComponent(returnTo)}`,
+            );
+            return;
+          }
+          navigate("/auth?mode=login");
         }}
         onLogout={logout}
         onRetryAuth={recheckAuth}

@@ -1,5 +1,10 @@
 import { expect } from "@playwright/test";
-import { blockExternalRequests, query } from "./helpers.js";
+import {
+  blockExternalRequests,
+  query,
+  viewports,
+  prepareViewportCapture,
+} from "./helpers.js";
 import {
   test,
   openAdmin,
@@ -10,6 +15,7 @@ import {
   approvalHeaders,
 } from "./user-delete-helpers.js";
 import { deferred, holdLists, monitorList } from "./admin-apps-helpers.js";
+test.use({ trace: "off", screenshot: "off", video: "off" });
 const prepared = process.env.API_E2E_AUTH_BOUNDARY === "prepared";
 test.describe("account deletion over real HTTP", () => {
   test.skip(!prepared, "requires isolated prepared authentication");
@@ -264,5 +270,236 @@ test.describe("account deletion over real HTTP", () => {
     } finally {
       gate.resolve();
     }
+  });
+});
+
+test.describe("254 public header recovery", () => {
+  test.skip(!prepared, "requires isolated prepared authentication");
+  test.beforeEach(async ({ context }) => {
+    test.setTimeout(90000);
+    await blockExternalRequests(context);
+  });
+
+  async function retainedRecord(page) {
+    return page.evaluate(() => localStorage.getItem("eduvibe-auth-flow-v1"));
+  }
+  function monitor(page) {
+    const counts = { creates: 0, logins: 0, resets: 0, writes: 0 };
+    page.on("request", (request) => {
+      if (!["POST", "PATCH", "DELETE"].includes(request.method())) return;
+      const path = new URL(request.url()).pathname;
+      if (path.endsWith("/auth/flows")) counts.creates++;
+      else if (path.endsWith("/auth/login")) counts.logins++;
+      else if (/\/auth\/.*(?:reset|recovery)/.test(path)) counts.resets++;
+      else if (/\/(?:apps|write-operations)(?:\/|$)/.test(path))
+        counts.writes++;
+    });
+    return counts;
+  }
+  async function assertRetained(page, record, counts) {
+    expect(
+      (await retainedRecord(page)) === record,
+      "retained browser record",
+    ).toBe(true);
+    expect(counts).toEqual({ creates: 0, logins: 0, resets: 0, writes: 0 });
+  }
+  async function errorHeader(page, member) {
+    const header = page.getByRole("banner");
+    await expect(
+      header.getByRole("button", { name: "인증 복구", exact: true }),
+    ).toBeVisible();
+    await expect(
+      header.getByRole("button", { name: "다시 확인", exact: true }),
+    ).toBeVisible();
+    await expect(header.getByRole("button", { name: "로그아웃" })).toHaveCount(
+      0,
+    );
+    await expect(header.getByText(member.login, { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(page.getByPlaceholder("앱·작성자 검색")).toBeEnabled();
+    return header;
+  }
+  async function recoveryScreen(page) {
+    await expect(page).toHaveURL("/auth?mode=login&return_to=%2F");
+    const main = page.getByRole("main");
+    await expect(main).toContainText("로그인 상태를 확인할 수 없어요");
+    await expect(
+      main.getByRole("button", { name: "브라우저 인증 초기화", exact: true }),
+    ).toBeVisible();
+    return main;
+  }
+  async function loginReady(page, counts) {
+    await expect(
+      page.getByLabel("로그인 아이디", { exact: true }),
+    ).toBeEnabled();
+    await expect(page.getByLabel("비밀번호", { exact: true })).toBeEnabled();
+    await expect(
+      page
+        .getByRole("main")
+        .getByRole("button", { name: "로그인", exact: true }),
+    ).toBeEnabled();
+    await expect(page.getByRole("link", { name: /회원가입/ })).toBeVisible();
+    expect(counts.creates).toBe(1);
+    expect(counts.logins).toBe(0);
+    expect(counts.writes).toBe(0);
+    await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
+  }
+
+  test("254 deleted member reaches explicit auth recovery from public header", async ({
+    page,
+    owned,
+  }, testInfo) => {
+    const memberContext = await owned.newContext();
+    await blockExternalRequests(memberContext);
+    const memberPage = await memberContext.newPage();
+    await login(memberPage, owned.member.login, PASSWORD);
+    await expect(
+      memberPage.getByRole("button", { name: "로그아웃" }),
+    ).toBeVisible();
+    await memberPage.goto("/");
+    await expect(
+      memberPage.getByRole("button", { name: "로그아웃" }),
+    ).toBeVisible();
+    const record = await retainedRecord(memberPage);
+    const counts = monitor(memberPage);
+    await openAdmin(page, owned);
+    const panel = await openDelete(page, owned);
+    await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
+    await expect(panel).toContainText("삭제가 확정됐어요");
+    await memberPage.reload();
+    const header = await errorHeader(memberPage, owned.member);
+    await assertRetained(memberPage, record, counts);
+    const geometry = [];
+    for (const viewport of viewports) {
+      await prepareViewportCapture(memberPage, viewport);
+      const controls = [
+        header.getByRole("link", { name: "EduVibe 아카이브 홈" }),
+        header.getByRole("button", { name: "다시 확인", exact: true }),
+        header.getByRole("button", { name: "인증 복구", exact: true }),
+      ];
+      const outer = await header.boundingBox();
+      const boxes = await Promise.all(
+        controls.map((control) => control.boundingBox()),
+      );
+      for (let index = 0; index < boxes.length; index++) {
+        const box = boxes[index];
+        expect(box.x).toBeGreaterThanOrEqual(0);
+        expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
+        expect(box.y).toBeGreaterThanOrEqual(outer.y);
+        expect(box.y + box.height).toBeLessThanOrEqual(outer.y + outer.height);
+        if (index) {
+          const lines = await controls[index].evaluate((button) => {
+            const range = document.createRange();
+            range.selectNodeContents(button);
+            return [...range.getClientRects()].map((rect) => rect.top);
+          });
+          expect(new Set(lines).size).toBe(1);
+        }
+        for (const previous of boxes.slice(0, index))
+          expect(previous.x + previous.width).toBeLessThanOrEqual(box.x);
+      }
+      await controls[1].focus();
+      await memberPage.keyboard.press("Tab");
+      await expect(controls[2]).toBeFocused();
+      const outline = await controls[2].evaluate((button) => {
+        const style = getComputedStyle(button);
+        return {
+          style: style.outlineStyle,
+          width: parseFloat(style.outlineWidth),
+          color: style.outlineColor,
+        };
+      });
+      expect(outline.style).not.toBe("none");
+      expect(outline.width).toBeGreaterThan(0);
+      expect(outline.color).not.toBe("rgba(0, 0, 0, 0)");
+      geometry.push({ viewport, boxes, outline });
+      const shot = testInfo.outputPath(`header-recovery-${viewport.width}.png`);
+      await header.screenshot({ path: shot });
+      await testInfo.attach(`header-recovery-${viewport.width}`, {
+        path: shot,
+        contentType: "image/png",
+      });
+    }
+    await testInfo.attach("header-geometry", {
+      body: JSON.stringify(geometry),
+      contentType: "application/json",
+    });
+    await memberPage.keyboard.press("Enter");
+    const main = await recoveryScreen(memberPage);
+    await expect(main).toContainText("이전 흐름이 종료됐어요");
+    await expect(main).toBeFocused();
+    await assertRetained(memberPage, record, counts);
+    await main
+      .getByRole("button", { name: "브라우저 인증 초기화", exact: true })
+      .click();
+    await loginReady(memberPage, counts);
+    expect((await retainedRecord(memberPage)) !== record).toBe(true);
+    expect(
+      query(`SELECT count(*) FROM members WHERE id='${owned.member.id}'`),
+    ).toEqual([[0]]);
+    expect(
+      query(`SELECT count(*) FROM apps WHERE owner_id='${owned.member.id}'`),
+    ).toEqual([[0]]);
+    await expect(userRow(page, owned.member.login)).toHaveCount(0);
+  });
+
+  test("254 active proof loss reaches recovery without bypass", async ({
+    owned,
+  }) => {
+    const context = await owned.newContext();
+    await blockExternalRequests(context);
+    const page = await context.newPage();
+    await login(page, owned.member.login, PASSWORD);
+    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+    const record = await retainedRecord(page);
+    const counts = monitor(page);
+    const eligible = [];
+    page.on("response", async (response) => {
+      if (response.url().endsWith("/restart-eligibility") && response.ok())
+        eligible.push((await response.json()).restart_eligible);
+    });
+    await context.clearCookies();
+    await page.reload();
+    const header = await errorHeader(page, owned.member);
+    await expect.poll(() => eligible.includes(false)).toBe(true);
+    await assertRetained(page, record, counts);
+    await header
+      .getByRole("button", { name: "인증 복구", exact: true })
+      .click();
+    const main = await recoveryScreen(page);
+    await expect(main).toContainText("증명");
+    await assertRetained(page, record, counts);
+    const reads = eligible.length;
+    await main
+      .getByRole("button", { name: "브라우저 인증 초기화", exact: true })
+      .click();
+    await expect.poll(() => eligible.length).toBeGreaterThan(reads);
+    await expect(main).toContainText(
+      "이전 흐름이 종료될 때까지 공개 열람만 가능합니다.",
+    );
+    await main.getByRole("button", { name: "다시 확인", exact: true }).click();
+    await expect(
+      main.getByRole("button", { name: "브라우저 인증 초기화", exact: true }),
+    ).toBeEnabled();
+    await assertRetained(page, record, counts);
+    await expect(page.getByLabel("로그인 아이디", { exact: true })).toHaveCount(
+      0,
+    );
+    const flow = JSON.parse(record).flowId;
+    query(
+      `UPDATE auth_flows SET expires_at='2000-01-01T00:00:00Z' WHERE id='${flow}'`,
+    );
+    await main.getByRole("button", { name: "다시 확인", exact: true }).click();
+    await expect(main).toContainText("이전 흐름이 종료됐어요");
+    await expect.poll(() => eligible.includes(true)).toBe(true);
+    await assertRetained(page, record, counts);
+    await main
+      .getByRole("button", { name: "브라우저 인증 초기화", exact: true })
+      .click();
+    await loginReady(page, counts);
+    expect((await retainedRecord(page)) !== record).toBe(true);
   });
 });
