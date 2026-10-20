@@ -153,6 +153,10 @@ API 테스트는 각자 임시 DB와 서버를 만들어 쓰므로, 개발 DB에
 
 브라우저 버전이나 폰트가 다르면 사전 검사에서 실패합니다. 기준 이미지는 일반 실행에서 갱신되지 않습니다.
 
+`FONTCONFIG_FILE`이 가리키는 `frontend/visual/fontconfig.conf`는 한국어 폰트 선택과 서브픽셀 렌더링(`rgba=rgb`)을 고정해, 호스트의 fontconfig 설정이 달라도 CI·기준 이미지와 같은 글자 렌더링을 씁니다.
+사전 검사가 `rgba=1 (rgb)`가 아니라고 실패하면 위 3번처럼 `FONTCONFIG_FILE`을 이 파일로 지정해 실행하세요.
+지원 환경은 Linux + 고정 Chromium이며 기준은 CI(Ubuntu 24.04)입니다. 다른 OS나 호스트의 힌팅 설정에서는 픽셀이 달라질 수 있습니다.
+
 ### 실행 산출물과 보존 증거
 
 - 일반 `npm run test:e2e`, `npm run test:e2e:api`, `npm run test:visual` 실행이 만드는 스크린샷·비교 결과는 `frontend/test-results/`(git 추적 안 함) 아래 테스트별 디렉터리에 PNG 파일로 남고, 첨부 사본도 각 테스트의 출력 디렉터리에 함께 저장됩니다.

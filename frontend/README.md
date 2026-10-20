@@ -23,7 +23,7 @@ npm run check:reference
 
 `npm run build` creates the API-only `dist/`; `npm run build:mock` creates the development demo at `dist-mock/`. Neither command updates the visual reference files. `npm run mock:reset` prints the browser URL for the mock storage page. The mock state is reset only after the explicit button is used there.
 
-The visual comparison uses the exact Chromium 151.0.7922.34 headless-shell binary used by the source evidence. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its executable path and `FONTCONFIG_FILE` to the absolute path shown above; preflight fails if the browser or source font differs.
+The visual comparison uses the exact Chromium 151.0.7922.34 headless-shell binary used by the source evidence. Set `PLAYWRIGHT_CHROMIUM_EXECUTABLE` to its executable path and `FONTCONFIG_FILE` to the absolute path shown above; preflight fails if the browser or source font differs. The same file also pins subpixel rendering (`rgba=rgb`) so the host fontconfig cannot change glyph edges; if the preflight reports `rgba` is not 1 (rgb), run with `FONTCONFIG_FILE` pointing at it. Other OS or host hinting setups may still differ; CI (Ubuntu 24.04) is the reference.
 
 ### T01 API preparation boundary
 
