@@ -63,6 +63,7 @@ describe("dev malformed path guard plugin", () => {
     "/%FF",
     "/apps/%E0%A4%A/",
     "/@fs/%E0",
+    "/src/%E0",
   ])("rejects malformed path %s with a fixed 400", (url) => {
     const { res, next, headers } = run(url);
     expect(res.statusCode).toBe(400);
@@ -160,6 +161,13 @@ describe.each(["mock", "api"])("dev server malformed paths (%s)", (mode) => {
     const res = await raw(port, "GET", "/apps/%E0%A4%A");
     expect(res.status).toBe(400);
     expect(res.type).toBe("text/plain; charset=utf-8");
+    expect(res.body).toBe(BODY);
+  });
+
+  // In api mode no upstream runs, so a proxied request would fail instead of 400.
+  it("rejects a malformed /api path before the proxy", async () => {
+    const res = await raw(port, "GET", "/api/%zz");
+    expect(res.status).toBe(400);
     expect(res.body).toBe(BODY);
   });
 
