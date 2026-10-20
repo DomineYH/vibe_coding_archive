@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { pauseClockAtCurrentTime } from "../playwright-clock.js";
+import { assertSubpixelRgb } from "./render-precheck.js";
 
 const root = path.resolve("..");
 const baselineRoot = path.join(
@@ -80,6 +81,7 @@ const dimensionMismatchStates = new Set([
 ]);
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
+  assertSubpixelRgb();
   let fontPath;
   try {
     fontPath = execFileSync(

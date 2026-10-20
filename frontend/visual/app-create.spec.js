@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { capture as captureImage } from "./app-create-capture.js";
+import { assertSubpixelRgb } from "./render-precheck.js";
 
 // Scoped I105-L/P/V/A/N/H approval; preserved references remain unchanged.
 const referenceRoot = path.resolve(
@@ -90,6 +91,7 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
 
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
+  assertSubpixelRgb();
   const fontPath = execFileSync(
     "fc-match",
     ["--format=%{file}", "Noto Sans CJK JP"],

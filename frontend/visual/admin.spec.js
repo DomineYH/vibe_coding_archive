@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { assertSubpixelRgb } from "./render-precheck.js";
 
 const referenceRoot = path.resolve(
   "../docs/evidence/basic-design-runtime-20260922/reference",
@@ -159,6 +160,7 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
 
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
+  assertSubpixelRgb();
 });
 
 test.afterAll(() => {

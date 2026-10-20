@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { assertSubpixelRgb } from "./render-precheck.js";
 
 const root = path.resolve("..");
 const referenceRoot = path.join(
@@ -187,6 +188,7 @@ async function capture(
 
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
+  assertSubpixelRgb();
 });
 
 test.afterAll(() => {

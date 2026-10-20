@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { assertSubpixelRgb } from "./render-precheck.js";
 
 const appId = "00000000-0000-4000-8000-000000000091";
 const referenceRoot = path.resolve(
@@ -154,6 +155,7 @@ async function capture(page, state, viewport, testInfo, baseline = null) {
 
 test.beforeAll(async ({ browser }) => {
   expect(browser.version()).toBe("151.0.7922.34");
+  assertSubpixelRgb();
   const fontPath = execFileSync(
     "fc-match",
     ["--format=%{file}", "Noto Sans CJK JP"],
