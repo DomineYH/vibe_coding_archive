@@ -613,3 +613,30 @@ with the existing spacing. Tab reveals the recovery focus outline at every size;
 Enter at 360px reaches the existing error main and its arrival focus.
 Existing visual baselines, masks and tolerances are unchanged. Automated checks
 do not claim human visual, screen-reader, physical-device or CI acceptance.
+
+## I262-N — signup nickname length hint
+
+Issue #262 (part of #260) adds an always-visible `2~20자` hint directly under
+the signup 별명 input, reusing the login-ID/password hint pattern
+(`<p id="nickname-hint" class="mt-1 text-[11px] text-neutral-400">`). The input
+`aria-describedby` is `nickname-hint`, and `nickname-hint nickname-error` while
+the field error shows; the hint stays visible in the error state. Validation,
+normalization, error text, error clearing and the 2–20 policy in
+`contracts/openapi.yaml` are unchanged, as is all other copy.
+
+Every full-page signup capture (auth-signup, auth-signup-confirm-error,
+auth-support-*-signup/field-errors and auth-nickname-format-error) becomes
+about one hint line taller at 1440×1000, 1024×900, 768×1024, 390×844 and
+360×844; width is unchanged. The source-reference comparisons (09-signup.png and
+10-signup-error.png under `docs/evidence/basic-design-runtime-20260922/reference/`)
+stay report-only, and no reference, baseline PNG, mask or threshold was created,
+replaced or changed. The nickname format error visual test now also asserts the
+hint text, its placement inside the viewport width, below the input and above
+the error without overlap, and no horizontal scroll.
+
+Approval source: the accepted #262 Agent Brief and coordinator-approved
+b262-VP1 plan. Recorder: **Claude Opus 5.5**, **2026-10-20**. Results and
+commands are recorded in
+`/home/dominelinux/.cache/vibe_coding_archive/coord/b262/impl/report.md`.
+Automated checks do not claim human visual, screen-reader, physical-device or CI
+acceptance.

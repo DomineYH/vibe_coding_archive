@@ -398,7 +398,7 @@ it("preserves signup input and connects the nickname field error to focus and AR
   );
   expect(container.querySelector("#nickname")).toHaveAttribute(
     "aria-describedby",
-    "nickname-error",
+    "nickname-hint nickname-error",
   );
   expect(container.querySelector("#nickname")).toHaveValue(nickname);
   expect(container.querySelector("#login-id")).toHaveValue("teacher");

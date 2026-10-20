@@ -128,7 +128,7 @@ with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
       );
       await expect(page.locator("#nickname")).toHaveAttribute(
         "aria-describedby",
-        "nickname-error",
+        "nickname-hint nickname-error",
       );
       for (const [selector, value] of [
         ["#nickname", nickname],

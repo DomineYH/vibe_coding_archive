@@ -637,12 +637,26 @@ for (const viewport of viewports) {
       "별명은 제어문자 없이 보이는 문자로 2~20자 입력해 주세요.",
     );
     await expect(field).toBeFocused();
-    await expect(field).toHaveAttribute("aria-describedby", "nickname-error");
+    await expect(field).toHaveAttribute(
+      "aria-describedby",
+      "nickname-hint nickname-error",
+    );
     await expect(field).toHaveAttribute("aria-invalid", "true");
     const bounds = await error.boundingBox();
     expect(bounds.width).toBeGreaterThan(0);
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(viewport.width);
+    const hint = page.locator("#nickname-hint");
+    await expect(hint).toHaveText("2~20자");
+    const fieldBounds = await field.boundingBox();
+    const hintBounds = await hint.boundingBox();
+    expect(hintBounds.width).toBeGreaterThan(0);
+    expect(hintBounds.x).toBeGreaterThanOrEqual(0);
+    expect(hintBounds.x + hintBounds.width).toBeLessThanOrEqual(viewport.width);
+    expect(hintBounds.y).toBeGreaterThanOrEqual(
+      fieldBounds.y + fieldBounds.height,
+    );
+    expect(bounds.y).toBeGreaterThanOrEqual(hintBounds.y + hintBounds.height);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,

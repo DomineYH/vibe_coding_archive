@@ -898,7 +898,7 @@ test("signup rejects raw format characters, preserves fields and accepts a corre
     );
     await expect(page.locator("#nickname")).toHaveAttribute(
       "aria-describedby",
-      "nickname-error",
+      "nickname-hint nickname-error",
     );
     for (const [selector, value] of [
       ["#nickname", nickname],

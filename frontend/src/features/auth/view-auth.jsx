@@ -1064,10 +1064,14 @@ export function AuthView({
                 autoComplete="nickname"
                 aria-required="true"
                 aria-invalid={fieldErrors.nickname ? "true" : undefined}
-                aria-describedby={
-                  fieldErrors.nickname ? "nickname-error" : undefined
-                }
+                aria-describedby={`nickname-hint${fieldErrors.nickname ? " nickname-error" : ""}`}
               />
+              <p
+                id="nickname-hint"
+                className="mt-1 text-[11px] text-neutral-400"
+              >
+                2~20자
+              </p>
               {fieldErrors.nickname ? (
                 <p
                   id="nickname-error"
