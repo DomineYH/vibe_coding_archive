@@ -34,7 +34,10 @@ async function loginAs(page, loginId, password = "1234") {
 async function createOwnedApp(page, name) {
   await loginAs(page, "교사김코딩");
 
-  await page.getByRole("link", { name: "앱 등록", exact: true }).click();
+  const register = page.getByRole("link", { name: "앱 등록", exact: true });
+  // The header link is hidden at mobile widths.
+  if (await register.isVisible()) await register.click();
+  else await page.goto("/apps/new");
   await expect(page).toHaveURL(/\/apps\/new$/);
   const form = page.getByRole("form", { name: "새 앱 등록 양식", exact: true });
   await expect(form).toBeVisible();
@@ -875,3 +878,54 @@ test("231 unknown edit other-tab logout keeps uncertain wording without automati
   );
   await other.close();
 });
+
+async function storedVersions(page, id) {
+  return page.evaluate(
+    ({ key, id }) => {
+      const state = JSON.parse(localStorage.getItem(key));
+      return [...state.apps, ...state.private_apps]
+        .filter((app) => app.id === id)
+        .map((app) => app.version);
+    },
+    { key, id },
+  );
+}
+
+for (const [viewportName, viewport] of [
+  ["desktop", null],
+  ["Pixel 7", { width: 412, height: 915 }],
+]) {
+  test.describe(`edit submit burst on ${viewportName}`, () => {
+    if (viewport) test.use({ viewport, isMobile: true, hasTouch: true });
+
+    for (const [burst, clickCount] of [
+      ["double click", 2],
+      ["triple click", 3],
+    ]) {
+      test(`saves exactly once on ${burst}`, async ({ page }) => {
+        const id = await createOwnedApp(
+          page,
+          `edit burst ${burst} ${viewportName} before`,
+        );
+        const form = await openEdit(page, id);
+        const name = `edit burst ${burst} ${viewportName} after`;
+        await form
+          .getByRole("textbox", { name: "어플리케이션 이름", exact: true })
+          .fill(name);
+        const [before] = await storedVersions(page, id);
+        await form
+          .getByRole("button", { name: "변경사항 저장", exact: true })
+          .click({ clickCount });
+        await expect(page).toHaveURL(new RegExp(`/apps/${id}$`));
+        await expect(
+          page.getByRole("heading", { name, exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("status").filter({ hasText: /^앱을 수정했어요\.$/ }),
+        ).toBeVisible();
+        await expect(page.getByRole("alert")).toHaveCount(0);
+        expect(await storedVersions(page, id)).toEqual([before + 1]);
+      });
+    }
+  });
+}
