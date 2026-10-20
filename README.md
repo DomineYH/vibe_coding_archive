@@ -102,6 +102,7 @@ X-Forwarded-Proto를 실제 연결 scheme으로 덮어쓰고 입력 Forwarded를
 백엔드의 8000 포트는 loopback 전용이며 비신뢰 로컬 프로세스를 이 신뢰 경계에 넣지 않습니다.
 `--forwarded-allow-ips='*'`는 사용하지 않습니다. 자세한 전제는
 [프록시 신뢰 경계](docs/operations/static-serving.md#trusted-proxy-and-host-boundary)를 봅니다.
+개발 서버는 경로(쿼리 제외)에 잘못된 %인코딩이 있는 요청을 Vite 내부 오류(500) 대신 400 텍스트로 거절합니다.
 
 ### 3. 빌드
 

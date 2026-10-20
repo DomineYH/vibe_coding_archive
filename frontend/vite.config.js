@@ -6,6 +6,21 @@ import react from "@vitejs/plugin-react";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
+const MALFORMED_PATH_BODY =
+  "Bad Request: malformed percent-encoding in the URL path\n";
+
+// Pathname only: a malformed query must still reach the app and API.
+function hasMalformedPath(url) {
+  const pathname = (url ?? "").split(/[?#]/, 1)[0];
+  if (!pathname.includes("%")) return false;
+  try {
+    decodeURI(pathname);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export default defineConfig(({ command, mode: viteMode }) => {
   const env = loadEnv(viteMode, root, "VITE_");
   const unsupported = new Set(
@@ -28,6 +43,22 @@ export default defineConfig(({ command, mode: viteMode }) => {
 
   return {
     plugins: [
+      {
+        name: "dev-malformed-path-guard",
+        apply: "serve",
+        configureServer(server) {
+          // Registered pre-hook so it runs before the proxy/static/html-fallback that throw on bad URIs.
+          server.middlewares.use(
+            function devMalformedPathGuard(req, res, next) {
+              if (!hasMalformedPath(req.url)) return next();
+              res.statusCode = 400;
+              res.setHeader("Content-Type", "text/plain; charset=utf-8");
+              res.setHeader("X-Content-Type-Options", "nosniff");
+              res.end(MALFORMED_PATH_BODY);
+            },
+          );
+        },
+      },
       react(),
       ...(dataMode === "api"
         ? [
