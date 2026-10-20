@@ -24,6 +24,10 @@ import type {
   AuthService,
 } from "../auth-service";
 import { mockMetaWire } from "./apps";
+import {
+  PASSWORD_EQUALS_LOGIN_ID_MESSAGE,
+  passwordEqualsLoginId,
+} from "./password";
 import { DEMO_ACCOUNTS } from "./accounts";
 import {
   addMockRegisteredAccount,
@@ -302,6 +306,8 @@ function normalizeRegistration(input: AuthRegisterInput) {
     fields.login_id = "로그인 아이디를 확인해 주세요.";
   if (codePointLength(password) < 15 || codePointLength(password) > 128)
     fields.password = "비밀번호는 15~128자로 입력해 주세요.";
+  else if (!fields.login_id && passwordEqualsLoginId(loginId, password))
+    fields.password = PASSWORD_EQUALS_LOGIN_ID_MESSAGE;
   if (
     codePointLength(nickname) < 2 ||
     codePointLength(nickname) > 20 ||
@@ -748,6 +754,10 @@ export const authService: AuthService = {
         if (passwordLength < 15 || passwordLength > 128)
           throw invalidRegistration({
             password: "비밀번호는 15~128자로 입력해 주세요.",
+          });
+        if (passwordEqualsLoginId(account.loginId, password))
+          throw invalidRegistration({
+            password: PASSWORD_EQUALS_LOGIN_ID_MESSAGE,
           });
         if (password === account.password.normalize("NFC"))
           throw invalidRegistration({

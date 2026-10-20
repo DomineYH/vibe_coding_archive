@@ -402,3 +402,103 @@ def test_malformed_result_or_cancel_key_has_safe_422(make_test_app, tmp_path, me
         response = getattr(client, method)(path, headers=headers(browser))
         assert response.status_code == 422
         assert code(response) == "VALIDATION_ERROR"
+
+
+LOGIN_ID_MESSAGE = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다."
+SAME_ID = "member-a-long-login-id"
+
+
+def rename(path, member_id, login):
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET login_id=?, login_id_key=? WHERE id=?",
+            (login, login.lower(), member_id),
+        )
+
+
+def rejected_without_effect(response, path, before):
+    assert response.status_code == 422, response.text
+    assert response.json()["error"]["fields"] == {"new_password": LOGIN_ID_MESSAGE}
+    after = snapshot(path)
+    for table in ("members", "write_operations", "audit_logs"):
+        assert after[table] == before[table]
+
+
+def test_issue_rejects_the_target_login_id_but_not_the_actor_login_id(
+    make_test_app, tmp_path
+):
+    app, path, _ = reset_app(make_test_app, tmp_path)
+    rename(path, TARGET, SAME_ID)
+    with TestClient(app) as client:
+        browser = admin(client)
+        before = snapshot(path)
+        rejected_without_effect(issue(browser, password=SAME_ID.upper()), path, before)
+        # The comparison is with the TARGET row, never with the signed-in administrator.
+        rename(path, AUTH_MEMBERS["admin"][0], "admin-login-padded-15")
+        assert issue(browser, password="admin-login-padded-15").status_code == 201
+
+
+def test_execute_rejects_a_target_renamed_after_issue_and_keeps_the_key_unresolved(
+    make_test_app, tmp_path
+):
+    app, path, _ = reset_app(make_test_app, tmp_path)
+    with TestClient(app) as client:
+        browser = admin(client)
+        key = issue(browser, password=SAME_ID).json()["key"]
+        rename(path, TARGET, SAME_ID)
+        before = snapshot(path)
+        rejected_without_effect(execute(browser, key, password=SAME_ID), path, before)
+        assert result(browser, key).json()["state"] == "unresolved"
+        rename(path, TARGET, "member-a")
+        assert execute(browser, key, password=SAME_ID).status_code == 204
+
+
+def test_finalize_rejects_a_target_renamed_while_hashing(
+    make_test_app, tmp_path, monkeypatch
+):
+    from app.auth_login import HASHER
+
+    app, path, _ = reset_app(make_test_app, tmp_path)
+    original = HASHER.hash
+    with TestClient(app) as client:
+        browser = admin(client)
+        key = issue(browser, password=SAME_ID).json()["key"]
+        before = snapshot(path)
+
+        def rename_while_hashing(value):
+            rename(path, TARGET, SAME_ID)
+            return original(value)
+
+        with monkeypatch.context() as patch:
+            patch.setattr("app.auth_login.HASHER.hash", rename_while_hashing)
+            response = execute(browser, key, password=SAME_ID)
+        assert response.status_code == 422, response.text
+        assert response.json()["error"]["fields"] == {"new_password": LOGIN_ID_MESSAGE}
+        after = snapshot(path)
+        assert after["write_operations"] == before["write_operations"]
+        assert after["audit_logs"] == before["audit_logs"]
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT account_version, must_change_password FROM members WHERE id=?",
+                (TARGET,),
+            ).fetchone() == (1, 0)
+        assert result(browser, key).json()["state"] == "unresolved"
+
+
+def test_target_state_refusals_win_over_login_id_equality(make_test_app, tmp_path):
+    app, path, _ = reset_app(make_test_app, tmp_path)
+    with TestClient(app) as client:
+        browser = admin(client)
+        rename(path, TARGET, SAME_ID)
+        assert (
+            code(issue(browser, version=2, password=SAME_ID)) == "USER_STATE_CONFLICT"
+        )
+        assert code(issue(browser, str(uuid4()), password=SAME_ID)) == "USER_NOT_FOUND"
+        hangul = AUTH_MEMBERS["hangul"][0]
+        rename(path, hangul, "protected-admin-login-id")
+        with sqlite3.connect(path) as db:
+            db.execute("UPDATE members SET is_admin=1 WHERE id=?", (hangul,))
+        assert (
+            code(issue(browser, hangul, password="protected-admin-login-id"))
+            == "ADMIN_ACCOUNT_PROTECTED"
+        )

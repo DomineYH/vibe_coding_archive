@@ -789,6 +789,11 @@ describe("demo authentication and protected reads", () => {
     ["invalid login characters", { loginId: "bad name" }, "login_id"],
     ["short Unicode password", { password: "가".repeat(14) }, "password"],
     ["long Unicode password", { password: "가".repeat(129) }, "password"],
+    [
+      "password equal to login id",
+      { loginId: "Same-Login-Id-15", password: "same-login-id-15" },
+      "password",
+    ],
     ["control character in nickname", { nickname: "새\n교사" }, "nickname"],
     ["invalid email", { email: "display name <a@example.invalid>" }, "email"],
     ["invalid phone", { phone: "010-12" }, "phone"],
@@ -805,6 +810,23 @@ describe("demo authentication and protected reads", () => {
       httpStatus: 422,
       fields: { [field]: expect.any(String) },
     });
+  });
+
+  it("reports the login ID rule message and allows a password that merely contains the ID", async () => {
+    const base = {
+      loginId: " Same-Login-Id-15 ",
+      nickname: "새 교사",
+    };
+    await expect(
+      authService.register({ ...base, password: "SAME-LOGIN-ID-15" }),
+    ).rejects.toMatchObject({
+      fields: {
+        password: "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.",
+      },
+    });
+    await expect(
+      authService.register({ ...base, password: " same-login-id-15" }),
+    ).resolves.toMatchObject({ loginId: "Same-Login-Id-15" });
   });
 
   it("does not create a late account after mock reset and reset removes registrations", async () => {

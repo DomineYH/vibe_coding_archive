@@ -399,6 +399,72 @@ describe("admin service", () => {
     ).resolves.toMatchObject({ state: "succeeded", appliedAccountVersion: 2 });
   });
 
+  it("rejects a new password equal to the target login ID for reset and self change", async () => {
+    const message = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.";
+    const registered = await authService.register({
+      loginId: "Target-Login-Id-15",
+      password: "a sufficiently long fake password",
+      nickname: "같은 아이디 확인",
+    });
+    await reauthenticateAdmin();
+    const pending = await adminService.getUser(registered.id);
+    const approval = await adminService.createApprovalOperation({
+      targetId: pending.id,
+      expectedAccountVersion: pending.accountVersion,
+      approved: true,
+    });
+    await adminService.setApproval(
+      pending.id,
+      true,
+      pending.accountVersion,
+      approval.key,
+    );
+    const target = await adminService.getUser(registered.id);
+
+    await expect(
+      adminService.createPasswordResetOperation({
+        targetId: target.id,
+        expectedAccountVersion: target.accountVersion,
+        newPassword: "target-login-id-15",
+      }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 422,
+      fields: { new_password: message },
+    });
+    expect(await adminService.getUser(target.id)).toMatchObject({
+      accountVersion: target.accountVersion,
+    });
+
+    const temporaryPassword = "A valid temporary passphrase 15";
+    const reset = await adminService.createPasswordResetOperation({
+      targetId: target.id,
+      expectedAccountVersion: target.accountVersion,
+      newPassword: temporaryPassword,
+    });
+    await adminService.setPasswordReset(
+      target.id,
+      temporaryPassword,
+      target.accountVersion,
+      reset.key,
+    );
+    await authService.logout();
+    await authService.login({
+      loginId: "Target-Login-Id-15",
+      password: temporaryPassword,
+    });
+    await expect(
+      authService.changePassword({ password: "TARGET-LOGIN-ID-15" }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      httpStatus: 422,
+      fields: { password: message },
+    });
+    await expect(
+      authService.changePassword({ password: "Target-Login-Id-15 and more" }),
+    ).resolves.toBeDefined();
+  });
+
   it("keeps an unresolved reset bound to the same input until explicit cancel", async () => {
     await loginAdmin();
     await authService.reauthenticate({ password: "admin123" });

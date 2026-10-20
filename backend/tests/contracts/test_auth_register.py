@@ -100,6 +100,7 @@ import pytest
         ({"password": "short"}, "password"),
         ({"password": "😀" * 129}, "password"),
         ({"password": "123456789012345"}, "password"),
+        ({"login_id": "Same-Login-Id-15", "password": "same-login-id-15"}, "password"),
         ({"email": "teacher@example.test"}, "email"),
         ({"phone": "010-1234-5678"}, "phone"),
         ({"approved": True}, "approved"),
@@ -129,6 +130,35 @@ def test_invalid_registration_counts_attempt_without_partial_member(
                     "SELECT count(*) FROM rate_limit_events WHERE purpose='register'"
                 ).fetchone()[0]
                 == 1
+            )
+
+
+def test_password_equal_to_login_id_is_rejected_with_the_policy_message(member_app):
+    app, path = member_app()
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        result = register(
+            browser, login_id=" Same-Login-Id-15 ", password="SAME-login-ID-15"
+        )
+        assert result.status_code == 422, result.text
+        assert result.json()["error"]["fields"] == {
+            "password": "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다."
+        }
+        # Length wins over equality, and an invalid login id leaves nothing to compare.
+        short = register(browser, login_id="same-id-14-ch", password="same-id-14-ch")
+        assert short.json()["error"]["fields"] == {
+            "password": "비밀번호는 15~128자로 입력해 주세요."
+        }
+        bad = register(
+            browser, login_id="bad name 15 chars", password="bad name 15 chars"
+        )
+        assert bad.json()["error"]["fields"].keys() == {"login_id"}
+        with sqlite3.connect(path) as db:
+            assert (
+                db.execute(
+                    "SELECT count(*) FROM members WHERE nickname='같은 별명'"
+                ).fetchone()[0]
+                == 0
             )
 
 

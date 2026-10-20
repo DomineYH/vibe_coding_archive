@@ -20,7 +20,7 @@ from app.auth_boundary import AuthError, after, now, response
 from app.auth_login import HASHER
 from app.auth_reauth import current_admin, require_recent_admin
 from app.auth_runtime import auth_available
-from app.password_policy import new_password
+from app.password_policy import LOGIN_ID_MESSAGE, new_password, same_as_login_id
 from app.password_reset_secret import fingerprint
 
 router = APIRouter(dependencies=[Depends(check_json)])
@@ -58,10 +58,20 @@ def password_reset_operation_body(row):
 
 def password(request, body):
     try:
-        return new_password(body.new_password, request.app.state.password_blocklist)
+        return new_password(
+            body.new_password, request.app.state.password_blocklist, login_id=None
+        )
     except AuthError as error:
         error.fields = {"new_password": error.fields["password"]}
         raise
+
+
+def target_password(value, member):
+    # The id comes from the stored target row, never from the request.
+    if same_as_login_id(value, member["login_id"]):
+        raise AuthError(
+            "VALIDATION_ERROR", 422, fields={"new_password": LOGIN_ID_MESSAGE}
+        )
 
 
 @contextmanager
@@ -84,6 +94,7 @@ def issue_reset_operation(db, request, body):
         secret, key_id = gate.verify()
         value = password(request, body)
         member = ordinary_target(db, body.target_id, body.expected_account_version)
+        target_password(value, member)
         if member["account_version"] == 9007199254740991:
             raise AuthError("SERVICE_UNAVAILABLE", 503)
         stamp, key = now(), str(uuid4())
@@ -180,6 +191,7 @@ def finalize(db, request, key, id_, body, hashed):
             operation(db, key, actor)
             db.commit()
             raise
+        target_password(value, member)
         if member["account_version"] == 9007199254740991:
             raise AuthError("SERVICE_UNAVAILABLE", 503)
         if hashed is None:
@@ -233,6 +245,7 @@ def reset_password(id: UUID, request: Request, body: SetPasswordReset, db=Unlock
             refusal = False
             try:
                 member = ordinary_target(db, id, body.expected_account_version)
+                target_password(value, member)
                 if member["account_version"] == 9007199254740991:
                     raise AuthError("SERVICE_UNAVAILABLE", 503)
             except AuthError as error:

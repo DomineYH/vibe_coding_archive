@@ -930,3 +930,141 @@ test("signup rejects raw format characters, preserves fields and accepts a corre
     ),
   ).toBe("é😀");
 });
+
+const sameAsLoginId = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.";
+
+async function expectNoHorizontalOverflow(page) {
+  await page.setViewportSize({ width: 360, height: 800 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+}
+
+test("signup rejects a password equal to the login id, preserves fields and accepts a corrected password", async ({
+  page,
+}) => {
+  await page.goto("/auth?mode=signup");
+  const loginId = "Same-Login-Id-15";
+  const password = "same-login-id-15";
+  await fillRegistration(page, { loginId, password, nickname: "동일아이디" });
+  await page
+    .getByRole("button", { name: "가입 신청하기", exact: true })
+    .click();
+  await expect(page.locator("#password-error")).toHaveText(sameAsLoginId);
+  await expect(page.locator("#login-password")).toBeFocused();
+  await expect(page.locator("#login-password")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await expect(page.locator("#login-password")).toHaveAttribute(
+    "aria-describedby",
+    /password-error/,
+  );
+  for (const [selector, value] of [
+    ["#login-id", loginId],
+    ["#login-password", password],
+    ["#password-confirm", password],
+    ["#nickname", "동일아이디"],
+  ])
+    await expect(page.locator(selector)).toHaveValue(value);
+  expect(
+    await page.evaluate(
+      () =>
+        JSON.parse(localStorage.getItem("eduvibe-archive-mock-v1"))
+          .registered_accounts.length,
+    ),
+  ).toBe(0);
+  await expectNoHorizontalOverflow(page);
+
+  const corrected = "correct horse battery staple";
+  await page.locator("#login-password").fill(corrected);
+  await page.locator("#password-confirm").fill(corrected);
+  await page
+    .getByRole("button", { name: "가입 신청하기", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+  ).toBeVisible();
+});
+
+test("password change rejects a new password equal to the login id and accepts a corrected one", async ({
+  page,
+}) => {
+  const loginId = "Self-Change-Id-15";
+  const temporaryPassword = "Temporary password for issue 259!";
+  await page.goto("/auth?mode=login");
+  await page.evaluate(
+    async ({ loginId, temporaryPassword }) => {
+      const { authService } = await import("/src/services/mock/auth.ts");
+      const { adminService } = await import("/src/services/mock/admin.ts");
+      const member = await authService.register({
+        loginId,
+        password: "Registered password for issue 259!",
+        nickname: "자기변경교사",
+      });
+      await authService.login({ loginId: "admin", password: "admin123" });
+      await authService.reauthenticate({ password: "admin123" });
+      const versionOf = async () =>
+        (await adminService.getUser(member.id)).accountVersion;
+      const pendingVersion = await versionOf();
+      const approval = await adminService.createApprovalOperation({
+        targetId: member.id,
+        expectedAccountVersion: pendingVersion,
+        approved: true,
+      });
+      await adminService.setApproval(
+        member.id,
+        true,
+        pendingVersion,
+        approval.key,
+      );
+      const expectedAccountVersion = await versionOf();
+      const reset = await adminService.createPasswordResetOperation({
+        targetId: member.id,
+        expectedAccountVersion,
+        newPassword: temporaryPassword,
+      });
+      await adminService.setPasswordReset(
+        member.id,
+        temporaryPassword,
+        expectedAccountVersion,
+        reset.key,
+      );
+      await authService.logout();
+    },
+    { loginId, temporaryPassword },
+  );
+
+  // Mock temporary passwords live in memory only, so log in without a reload.
+  await login(page, loginId, temporaryPassword);
+  await expect(page).toHaveURL(/mode=password-change/);
+  const form = page.locator('[data-screen-label="비밀번호 변경"] form');
+  await expect(form).toBeVisible();
+  const sameId = loginId.toLowerCase();
+  await form.locator("#new-password").fill(sameId);
+  await form.locator("#new-password-confirm").fill(sameId);
+  await form
+    .getByRole("button", { name: "비밀번호 변경", exact: true })
+    .click();
+  await expect(form.locator("#new-password-error")).toHaveText(sameAsLoginId);
+  await expect(form.locator("#new-password")).toBeFocused();
+  await expect(form.locator("#new-password")).toHaveAttribute(
+    "aria-invalid",
+    "true",
+  );
+  await expect(page).toHaveURL(/mode=password-change/);
+  await expectNoHorizontalOverflow(page);
+
+  const corrected = "Self chosen password for 259!";
+  await form.locator("#new-password").fill(corrected);
+  await form.locator("#new-password-confirm").fill(corrected);
+  await form
+    .getByRole("button", { name: "비밀번호 변경", exact: true })
+    .click();
+  await expect(page).toHaveURL("/");
+  await expect(
+    page.getByRole("button", { name: "로그아웃", exact: true }),
+  ).toBeVisible();
+});

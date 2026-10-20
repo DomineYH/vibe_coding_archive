@@ -10,7 +10,7 @@ NEW_PASSWORD = "  새 본인 비밀번호 보존 AbC 1234  "
 ADMIN = AUTH_MEMBERS["admin"][1]
 
 
-def temporary_admin(path):
+def temporary_admin(path, login=ADMIN):
     with sqlite3.connect(path) as db:
         db.execute(
             "UPDATE members SET must_change_password=1, temporary_password_expires_at=? WHERE login_id=?",
@@ -18,7 +18,7 @@ def temporary_admin(path):
                 (datetime.now(UTC) + timedelta(hours=24))
                 .isoformat()
                 .replace("+00:00", "Z"),
-                ADMIN,
+                login,
             ),
         )
 
@@ -92,6 +92,33 @@ def test_invalid_or_equal_password_is_a_terminal_rejection_and_can_be_corrected(
         assert result.json()["error"]["fields"].keys() == {"password"}
         assert browser.state()["pending_transition"] is None
         assert change(browser).status_code == 200
+
+
+def test_password_equal_to_own_login_id_is_a_terminal_rejection_and_can_be_corrected(
+    member_app,
+):
+    app, path = member_app()
+    login = "admin-user-long-login-id"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET login_id=?, login_id_key=? WHERE login_id=?",
+            (login, login, ADMIN),
+        )
+    temporary_admin(path, login)
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        assert browser.login(login).status_code == 200
+        result = change(browser, login.upper())
+        assert result.status_code == 422
+        assert result.json()["error"]["fields"] == {
+            "password": "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다."
+        }
+        assert browser.state()["pending_transition"] is None
+        assert change(browser).status_code == 200
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT account_version FROM members WHERE login_id=?", (login,)
+            ).fetchone() == (2,)
 
 
 def test_whole_blocklist_policy_does_not_trim_casefold_or_use_substrings(

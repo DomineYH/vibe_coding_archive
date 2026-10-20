@@ -35,7 +35,9 @@ def admin_credentials(command):
         if command == "bootstrap-admin":
             nickname = normalize_nickname(input("Nickname: "))
         try:
-            password = new_password(getpass("Temporary password: "), blocklist)
+            password = new_password(
+                getpass("Temporary password: "), blocklist, login_id=login
+            )
         except AuthError:
             raise ValueError(
                 "Temporary password does not meet the password policy."

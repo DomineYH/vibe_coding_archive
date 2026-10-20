@@ -56,6 +56,30 @@ def answers(
     ]
 
 
+def test_cli_rejects_a_temporary_password_equal_to_the_login_id(
+    member_app, password_blocklist
+):
+    _app, path = member_app()
+    login = "Bootstrap-Admin-Login-Id"
+    with sqlite3.connect(path) as db:
+        db.execute("DELETE FROM members WHERE is_admin=1")
+        before = db.execute("SELECT * FROM members ORDER BY id").fetchall()
+    status, output = run_admin_cli(
+        "bootstrap-admin",
+        path,
+        password_blocklist,
+        answers(login, password=login.lower()),
+    )
+    assert status == 1
+    assert "does not meet the password policy" in output
+    assert (
+        login.lower() not in output
+    )  # the typed login is mixed-case; the secret is not echoed
+    with sqlite3.connect(path) as db:
+        assert db.execute("SELECT * FROM members ORDER BY id").fetchall() == before
+        assert db.execute("SELECT COUNT(*) FROM audit_logs").fetchone() == (0,)
+
+
 def test_cli_guards_collisions_promotion_and_recovery_target(
     member_app, password_blocklist
 ):

@@ -190,6 +190,18 @@ describe("OpenAPI app detail schema", () => {
     ).toBe("#/components/schemas/AuthResult");
   });
 
+  it("documents the new-password rule against the target login id", () => {
+    for (const name of [
+      "ChangePasswordInput",
+      "RegisterInput",
+      "CreatePasswordResetOperation",
+      "SetPasswordResetInput",
+    ])
+      expect(openapi.components.schemas[name].description).toContain(
+        "login id",
+      );
+  });
+
   it("defines admin pages, aggregate stats, and contact-free approval targets", () => {
     const list = openapi.paths["/admin/users"].get;
     const user = openapi.components.schemas.AdminUser;

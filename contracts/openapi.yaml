@@ -1763,7 +1763,11 @@ components:
         service. The Phase 1 mock does not apply this check while list
         redistribution rights remain unresolved. T03 uses individually prepared,
         integrity-verified R15 data in the test environment. The browser confirmation is
-        never sent.
+        never sent. A new password equal to the caller's own login id (login id trimmed
+        and NFC-normalized, password NFC-normalized and untrimmed, ASCII letters
+        compared case-insensitively, whole-string comparison only, no substring check)
+        is rejected with 422 VALIDATION_ERROR and fields.password; the Phase 1 mock
+        applies this rule too, and existing stored passwords are not re-validated.
       properties:
         password:
           type: string
@@ -1782,7 +1786,11 @@ components:
         rights remain unresolved. T04 uses individually prepared integrity-verified
         R15 data. Real email/phone collection remains disabled: only omitted,
         null or normalized-empty values are accepted. password_confirm is never
-        part of this request.
+        part of this request. A password equal to the submitted login id (login id
+        trimmed and NFC-normalized, password NFC-normalized and untrimmed, ASCII
+        letters compared case-insensitively, whole-string comparison only, no
+        substring check) is rejected with 422 VALIDATION_ERROR and fields.password;
+        the Phase 1 mock applies this rule too.
       properties:
         login_id:
           type: string
@@ -1938,7 +1946,13 @@ components:
         password policy after NFC normalization, preserving spaces and case. A dedicated
         versioned HMAC binds the input; unavailable secret verification returns
         503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies
-        to the real API; Phase 1 mock does not apply that check.
+        to the real API; Phase 1 mock does not apply that check. The new_password must
+        not equal the target member's login id as stored on the server, never the
+        actor's login id or any client-supplied value (login id trimmed and
+        NFC-normalized, password NFC-normalized and untrimmed, ASCII letters compared
+        case-insensitively, whole-string comparison only, no substring check); it is
+        rejected with 422 VALIDATION_ERROR and fields.new_password, and the Phase 1 mock
+        applies this rule too. Existing stored passwords are not re-validated.
       properties:
         kind: { type: string, const: user_password_reset }
         target_id: { type: string, format: uuid }
@@ -2073,7 +2087,13 @@ components:
         password policy after NFC normalization, preserving spaces and case. A dedicated
         versioned HMAC binds the input; unavailable secret verification returns
         503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies
-        to the real API; Phase 1 mock does not apply that check.
+        to the real API; Phase 1 mock does not apply that check. The new_password must
+        not equal the target member's login id as stored on the server, never the
+        actor's login id or any client-supplied value (login id trimmed and
+        NFC-normalized, password NFC-normalized and untrimmed, ASCII letters compared
+        case-insensitively, whole-string comparison only, no substring check); it is
+        rejected with 422 VALIDATION_ERROR and fields.new_password, and the Phase 1 mock
+        applies this rule too. Existing stored passwords are not re-validated.
       properties:
         new_password: { type: string, minLength: 15, maxLength: 128 }
         expected_account_version:

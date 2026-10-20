@@ -81,7 +81,11 @@ def registration_values(body, blocklist):
             errors["password"] = "유효한 Unicode 문자를 입력해 주세요."
         else:
             try:
-                password = new_password(password, blocklist)
+                password = new_password(
+                    password,
+                    blocklist,
+                    login_id=login if "login_id" not in errors else None,
+                )
             except AuthError as error:
                 errors.update(error.fields)
     for key in ("email", "phone"):

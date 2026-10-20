@@ -14,6 +14,10 @@ import {
 } from "../../contracts/mappers";
 import { ServiceError } from "../service-error";
 import {
+  PASSWORD_EQUALS_LOGIN_ID_MESSAGE,
+  passwordEqualsLoginId,
+} from "./password";
+import {
   normalizeAdminUsersQuery,
   normalizeAdminAppsQuery,
   normalizeResetPassword,
@@ -523,6 +527,12 @@ export const adminService: AdminService = {
         "회원 상태가 바뀌었어요. 다시 확인해 주세요.",
         409,
       );
+    if (passwordEqualsLoginId(target.loginId, newPassword))
+      throw new ServiceError("VALIDATION_ERROR", "요청 형식을 확인해 주세요.", {
+        httpStatus: 422,
+        outcome: "rejected",
+        fields: { new_password: PASSWORD_EQUALS_LOGIN_ID_MESSAGE },
+      });
     if (passwordResetSequence >= Number.MAX_SAFE_INTEGER - 0x300)
       throw fail("SERVICE_UNAVAILABLE", "작업 키를 발급할 수 없어요.", 503);
 

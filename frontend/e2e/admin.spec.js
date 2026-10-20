@@ -176,6 +176,60 @@ test("admins see the complete public and private app monitor summaries", async (
   );
 });
 
+test("a temporary password equal to the target login id is rejected at the field and can be corrected", async ({
+  page,
+}) => {
+  const loginId = "Equal-Login-Id-15";
+  const corrected = "Corrected temporary password 259!";
+  await page.goto("/auth?mode=login");
+  await page.evaluate(async (loginId) => {
+    const { authService } = await import("/src/services/mock/auth.ts");
+    await authService.register({
+      loginId,
+      password: "Registered password for issue 259!",
+      nickname: "동일아이디교사",
+    });
+  }, loginId);
+  await login(page, "admin", "admin123");
+  await page.goto("/admin");
+  await authenticateAdmin(page);
+  const row = userRow(page, "동일아이디교사");
+  await expect(row).toHaveCount(1);
+  await row
+    .getByRole("button", { name: "임시 비밀번호 설정", exact: true })
+    .click();
+  const panel = page.getByRole("region", { name: /임시 비밀번호 초기화 확인/ });
+  const temporaryInput = panel.getByLabel("임시 비밀번호", { exact: true });
+  await expect(temporaryInput).toBeVisible();
+  await temporaryInput.fill(loginId);
+  await panel.getByLabel("임시 비밀번호 확인", { exact: true }).fill(loginId);
+  await panel.getByRole("button", { name: "초기화 확인", exact: true }).click();
+
+  await expect(panel.locator("#temporary-password-error")).toHaveText(
+    "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.",
+  );
+  await expect(temporaryInput).toBeFocused();
+  await expect(temporaryInput).toHaveAttribute("aria-invalid", "true");
+  await expect(temporaryInput).toHaveAttribute(
+    "aria-describedby",
+    "temporary-password-error",
+  );
+  await expect(panel.getByRole("alert")).toHaveCount(0);
+  await page.setViewportSize({ width: 360, height: 800 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+
+  await temporaryInput.fill(corrected);
+  await panel.getByLabel("임시 비밀번호 확인", { exact: true }).fill(corrected);
+  await panel.getByRole("button", { name: "초기화 확인", exact: true }).click();
+  await expect(panel.getByRole("status")).toContainText(
+    "임시 비밀번호 설정이 확정됐어요",
+  );
+});
+
 test("member password reset requires reauthentication and an explicit submit", async ({
   page,
 }) => {

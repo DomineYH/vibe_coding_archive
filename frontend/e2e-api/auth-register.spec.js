@@ -155,6 +155,36 @@ with sqlite3.connect(os.environ['DATABASE_PATH']) as db:
     ).toEqual([["é😀"]]);
   });
 
+  test("signup rejects a password equal to the login id in another ASCII case and accepts a correction", async ({
+    page,
+  }) => {
+    const message = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.";
+    await signup(page, "register-same-id-15");
+    await page.locator("#login-password").fill("REGISTER-SAME-ID-15");
+    await page.locator("#password-confirm").fill("REGISTER-SAME-ID-15");
+    const response = page.waitForResponse("**/api/v1/auth/register");
+    await submit(page);
+    const rejected = await response;
+    expect(rejected.status()).toBe(422);
+    expect((await rejected.json()).error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      fields: { password: message },
+    });
+    await expect(page.locator("#password-error")).toHaveText(message);
+    await expect(page.locator("#login-password")).toBeFocused();
+    expect(
+      query(
+        "SELECT count(*) FROM members WHERE login_id_key='register-same-id-15'",
+      ),
+    ).toEqual([[0]]);
+    await page.locator("#login-password").fill(PASSWORD);
+    await page.locator("#password-confirm").fill(PASSWORD);
+    await submit(page);
+    await expect(
+      page.getByRole("heading", { name: "가입 신청이 접수되었어요" }),
+    ).toBeVisible();
+  });
+
   test("confirmation is browser-only, anonymous cookie unchanged, pending DB and exact credentials", async ({
     page,
     context,

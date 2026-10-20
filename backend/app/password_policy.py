@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import string
 from functools import cache
 from pathlib import Path
 from unicodedata import normalize
@@ -63,13 +64,30 @@ def prepare_blocklist(path):
         temporary.unlink(missing_ok=True)
 
 
-def new_password(value, blocklist):
+LOGIN_ID_MESSAGE = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다."
+ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
+
+
+def ascii_lower(value):
+    return value.translate(ASCII_LOWER)
+
+
+def same_as_login_id(password, login_id):
+    return ascii_lower(normalize("NFC", password)) == ascii_lower(
+        normalize("NFC", login_id.strip())
+    )
+
+
+def new_password(value, blocklist, *, login_id):
+    """`login_id=None` means the target is not known yet; the caller compares later."""
     value = normalize("NFC", value)
     message = None
     if not 15 <= len(value) <= 128:
         message = "비밀번호는 15~128자로 입력해 주세요."
     elif value in blocklist:
         message = "흔한 비밀번호는 사용할 수 없습니다."
+    elif login_id is not None and same_as_login_id(value, login_id):
+        message = LOGIN_ID_MESSAGE
     if message:
         raise AuthError("VALIDATION_ERROR", 422, fields={"password": message})
     return value

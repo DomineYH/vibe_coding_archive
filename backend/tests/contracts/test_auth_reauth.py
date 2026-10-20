@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from pwdlib import PasswordHash
 from starlette.requests import Request
 
 from tests.auth_client import API, Browser, signed_in
@@ -667,3 +668,20 @@ def test_admission_uses_body_flow_context_without_execution_headers(member_app):
             headers={"Origin": "http://localhost:5174", "X-CSRF-Token": browser.csrf},
         )
         assert result.status_code == 201, result.text
+
+
+def test_existing_member_with_password_equal_to_login_id_still_logs_in_and_reauthenticates(
+    member_app,
+):
+    # The login-id rule applies only to newly chosen passwords, never to stored ones.
+    app, path = member_app()
+    login = "admin-user-long-login-id"
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET login_id=?, login_id_key=?, password_hash=? WHERE login_id=?",
+            (login, login, PasswordHash.recommended().hash(login), ADMIN),
+        )
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        assert browser.login(login, login).status_code == 200
+        assert reauth(browser, login).status_code == 200

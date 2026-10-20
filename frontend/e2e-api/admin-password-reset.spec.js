@@ -162,6 +162,89 @@ test.describe("real administrator password reset", () => {
     }
   });
 
+  test("temporary self change rejects its own login id and then accepts a new password", async ({
+    browser,
+    members,
+  }) => {
+    const message = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.";
+    const temporaryContext = await browser.newContext(browserContextOptions);
+    try {
+      const temporary = await temporaryContext.newPage();
+      await login(temporary, members.temporary.login, ORIGINAL);
+      await expect(
+        temporary.getByRole("heading", { name: "비밀번호를 변경해 주세요" }),
+      ).toBeVisible();
+      const sameId = members.temporary.login.toUpperCase();
+      await temporary
+        .getByLabel("새 비밀번호 (필수)", { exact: true })
+        .fill(sameId);
+      await temporary
+        .getByLabel("새 비밀번호 확인 (필수)", { exact: true })
+        .fill(sameId);
+      const response = temporary.waitForResponse("**/api/v1/auth/password");
+      await temporary
+        .getByRole("button", { name: "비밀번호 변경", exact: true })
+        .click();
+      const rejected = await response;
+      expect(rejected.status()).toBe(422);
+      expect((await rejected.json()).error).toMatchObject({
+        code: "VALIDATION_ERROR",
+        fields: { password: message },
+      });
+      await expect(temporary.locator("#new-password-error")).toHaveText(
+        message,
+      );
+      await expect(temporary.locator("#new-password")).toBeFocused();
+      await change(temporary);
+      await expect(
+        temporary
+          .getByRole("banner")
+          .getByText(members.temporary.login, { exact: true }),
+      ).toBeVisible();
+    } finally {
+      await temporaryContext.close();
+    }
+  });
+
+  test("admin reset rejects the target login id, leaves the account unchanged and accepts a correction", async ({
+    page,
+    members,
+  }) => {
+    const message = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.";
+    await openAdmin(page, members);
+    await openReset(page, members);
+    const response = page.waitForResponse(
+      (candidate) =>
+        candidate.request().method() === "POST" &&
+        candidate.url().endsWith("/write-operations"),
+    );
+    await submit(page, members.member.login);
+    const rejected = await response;
+    expect(rejected.status()).toBe(422);
+    expect((await rejected.json()).error).toMatchObject({
+      code: "VALIDATION_ERROR",
+      fields: { new_password: message },
+    });
+    await expect(page.locator("#temporary-password-error")).toHaveText(message);
+    await expect(page.locator("#temporary-password")).toBeFocused();
+    expect(
+      query(
+        `SELECT account_version,must_change_password FROM members WHERE id='${members.member.id}'`,
+      )[0],
+    ).toEqual([1, 0]);
+    expect(
+      query(
+        `SELECT count(*) FROM write_operations WHERE target_id='${members.member.id}'`,
+      ),
+    ).toEqual([[0]]);
+    await submit(page);
+    await expect(
+      page.getByText(
+        "임시 비밀번호 설정이 확정됐어요. 승인 상태는 그대로 유지됩니다.",
+      ),
+    ).toBeVisible();
+  });
+
   test("pending and revoked targets remain unapproved; existing temporary sessions are revoked", async ({
     page,
     members,

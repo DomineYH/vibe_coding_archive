@@ -43,7 +43,13 @@ def change_password(request: Request, body: PasswordBody, db=Unlocked):
                 ),
                 secrets.token_urlsafe(32),
             )
-            password = new_password(body.password, request.app.state.password_blocklist)
+            login = db.execute(
+                text("SELECT login_id FROM members WHERE id=:id"),
+                {"id": session["member_id"]},
+            ).scalar()
+            password = new_password(
+                body.password, request.app.state.password_blocklist, login_id=login
+            )
         except AuthError as error:
             fail(db, item, transition, error)
         _, _, snapshot = member_session(db, request)

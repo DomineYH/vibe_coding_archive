@@ -1126,6 +1126,56 @@ it.each(["reset", "delete"])(
   },
 );
 
+it("connects a rejected login-id-equal temporary password to the field and focuses it", async () => {
+  const { ServiceError } = await import("../src/services/service-error");
+  const message = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다.";
+  await authService.reauthenticate({ password: "admin123" });
+  const issue = vi
+    .spyOn(adminService, "createPasswordResetOperation")
+    .mockRejectedValue(
+      new ServiceError("VALIDATION_ERROR", "요청 형식을 확인해 주세요.", {
+        httpStatus: 422,
+        outcome: "rejected",
+        fields: { new_password: message },
+      }),
+    );
+  const execute = vi.spyOn(adminService, "setPasswordReset");
+  render(panelTree());
+  await clickMemberAction("reset");
+  await confirmMemberAction("reset");
+  const error = await screen.findByText(message);
+  expect(error).toHaveAttribute("id", "temporary-password-error");
+  const input = screen.getByLabelText("임시 비밀번호", { exact: true });
+  await waitFor(() => expect(input).toHaveFocus());
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(input.getAttribute("aria-describedby")).toContain(
+    "temporary-password-error",
+  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(issue).toHaveBeenCalledTimes(1);
+  expect(execute).not.toHaveBeenCalled();
+});
+
+it("keeps non-field reset rejections in the generic alert", async () => {
+  const { ServiceError } = await import("../src/services/service-error");
+  await authService.reauthenticate({ password: "admin123" });
+  vi.spyOn(adminService, "createPasswordResetOperation").mockRejectedValue(
+    new ServiceError("USER_STATE_CONFLICT", "conflict", {
+      httpStatus: 409,
+      outcome: "rejected",
+    }),
+  );
+  render(panelTree());
+  await clickMemberAction("reset");
+  await confirmMemberAction("reset");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "회원 상태가 바뀌었어요. 현재 상태를 다시 확인해 주세요.",
+  );
+  const input = screen.getByLabelText("임시 비밀번호", { exact: true });
+  expect(input).not.toHaveAttribute("aria-invalid");
+  expect(input).not.toHaveFocus();
+});
+
 it.each([
   ["reset", "absent"],
   ["reset", "expired"],

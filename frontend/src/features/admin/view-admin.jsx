@@ -518,6 +518,7 @@ function PasswordResetPanel({
   loading,
   busy,
   error,
+  fieldError,
   operation,
   operationKey,
   expectedAccountVersion,
@@ -532,6 +533,8 @@ function PasswordResetPanel({
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
+  const passwordRef = useRef(null);
+  const passwordError = fieldErrors.password || fieldError;
   const hasPendingKey = Boolean(operationKey && !operation);
   const unresolved = operation?.state === "unresolved" || hasPendingKey;
   const versionMatches =
@@ -544,6 +547,10 @@ function PasswordResetPanel({
     (!operation || operation.state === "unresolved") &&
     !hasPendingKey &&
     versionMatches;
+
+  useEffect(() => {
+    if (fieldError) passwordRef.current?.focus();
+  }, [fieldError]);
 
   async function submit(event) {
     event.preventDefault();
@@ -717,6 +724,7 @@ function PasswordResetPanel({
             </label>
             <input
               id="temporary-password"
+              ref={passwordRef}
               type="password"
               className="w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-[14px] text-neutral-900 outline-none transition-shadow focus:border-[#4C7A96]/40 focus:ring-4 focus:ring-[#4C7A96]/10"
               value={password}
@@ -724,17 +732,17 @@ function PasswordResetPanel({
               disabled={busy}
               autoComplete="new-password"
               aria-required="true"
-              aria-invalid={fieldErrors.password ? "true" : undefined}
+              aria-invalid={passwordError ? "true" : undefined}
               aria-describedby={
-                fieldErrors.password ? "temporary-password-error" : undefined
+                passwordError ? "temporary-password-error" : undefined
               }
             />
-            {fieldErrors.password ? (
+            {passwordError ? (
               <p
                 id="temporary-password-error"
                 className="mt-1 text-[12px] text-red-700"
               >
-                {fieldErrors.password}
+                {passwordError}
               </p>
             ) : null}
           </div>
@@ -2039,6 +2047,7 @@ export function AdminView({
     const owner = scopeKey;
     setResetBusy(true);
     setResetError("");
+    setResetSelection((current) => ({ ...current, fieldError: "" }));
     let operation = resetSelection.operation;
     try {
       if (!operation) {
@@ -2111,6 +2120,15 @@ export function AdminView({
           operationKey: operation.key,
           operation: null,
         }));
+      if (
+        error instanceof ServiceError &&
+        error.outcome === "rejected" &&
+        error.fields?.new_password
+      ) {
+        const fieldError = error.fields.new_password;
+        setResetSelection((current) => ({ ...current, fieldError }));
+        return;
+      }
       setResetError(
         operation ||
           (error instanceof ServiceError && error.outcome === "rejected")
@@ -2367,6 +2385,7 @@ export function AdminView({
         loading={resetSelection.loading}
         busy={resetBusy}
         error={resetError || resetSelection.error}
+        fieldError={resetSelection.fieldError}
         operation={resetSelection.operation}
         operationKey={resetSelection.operationKey}
         expectedAccountVersion={resetSelection.expectedAccountVersion}
