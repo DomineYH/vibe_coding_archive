@@ -1,6 +1,5 @@
 import { expect, test } from "@playwright/test";
 import { execFileSync } from "node:child_process";
-import { mkdirSync } from "node:fs";
 import path from "node:path";
 import { pauseClockAtCurrentTime } from "../playwright-clock.js";
 import {
@@ -10,16 +9,6 @@ import {
   prepareViewportCapture,
   viewports,
 } from "../e2e-api/helpers.js";
-
-function evidencePath(testInfo, name) {
-  const mode = testInfo.project.use.baseURL.endsWith("5174") ? "api" : "mock";
-  const directory = path.resolve(
-    "../docs/evidence/phase-2/issue95/2026-09-30/visual",
-    mode,
-  );
-  mkdirSync(directory, { recursive: true });
-  return path.join(directory, name);
-}
 
 test.beforeEach(async ({ page, context }) => {
   await blockExternalRequests(context);
@@ -117,20 +106,27 @@ for (const viewport of viewports) {
           (element) => element.scrollWidth <= element.clientWidth,
         ),
       ).toBe(true);
+      const size = `${viewport.width}x${viewport.height}`;
+      const fullPath = testInfo.outputPath(`long-query-${size}.png`);
       await page.screenshot({
-        path: evidencePath(
-          testInfo,
-          `long-query-${viewport.width}x${viewport.height}.png`,
-        ),
+        path: fullPath,
         fullPage: true,
         animations: "disabled",
       });
+      await testInfo.attach(`long-query-${size}`, {
+        path: fullPath,
+        contentType: "image/png",
+      });
+      const componentPath = testInfo.outputPath(
+        `long-query-component-${size}.png`,
+      );
       await conditions.locator("../..").screenshot({
-        path: evidencePath(
-          testInfo,
-          `long-query-component-${viewport.width}x${viewport.height}.png`,
-        ),
+        path: componentPath,
         animations: "disabled",
+      });
+      await testInfo.attach(`long-query-component-${size}`, {
+        path: componentPath,
+        contentType: "image/png",
       });
       const search = page.getByRole("textbox", { name: "앱·작성자 검색" });
       await search.focus();
@@ -152,13 +148,15 @@ for (const viewport of viewports) {
       expect(await page.evaluate(() => history.length)).toBe(historyLength);
       await expect(page.locator("a.card-r").first()).toBeVisible();
       await prepareViewportCapture(page, viewport);
+      const resetPath = testInfo.outputPath(`reset-focused-${size}.png`);
       await page.screenshot({
-        path: evidencePath(
-          testInfo,
-          `reset-focused-${viewport.width}x${viewport.height}.png`,
-        ),
+        path: resetPath,
         fullPage: true,
         animations: "disabled",
+      });
+      await testInfo.attach(`reset-focused-${size}`, {
+        path: resetPath,
+        contentType: "image/png",
       });
     });
   }

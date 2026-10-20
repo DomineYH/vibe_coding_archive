@@ -1,24 +1,16 @@
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { test } from "@playwright/test";
 import { prepareViewportCapture, viewports } from "./helpers.js";
 
-const captureDirectory = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../docs/evidence/phase-2/issue82/2026-09-29/visual/api-mode",
-);
-
-export async function captureGalleryState(page, state) {
-  await mkdir(captureDirectory, { recursive: true });
+export async function captureGalleryState(page, state, testInfo = test.info()) {
   for (const viewport of viewports) {
     await prepareViewportCapture(page, viewport);
+    const name = `${state}-${viewport.width}x${viewport.height}`;
+    const file = testInfo.outputPath(`${name}.png`);
     await page.screenshot({
-      path: path.join(
-        captureDirectory,
-        `${state}-${viewport.width}x${viewport.height}.png`,
-      ),
+      path: file,
       fullPage: true,
       animations: "disabled",
     });
+    await testInfo.attach(name, { path: file, contentType: "image/png" });
   }
 }

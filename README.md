@@ -152,6 +152,12 @@ API 테스트는 각자 임시 DB와 서버를 만들어 쓰므로, 개발 DB에
 
 브라우저 버전이나 폰트가 다르면 사전 검사에서 실패합니다. 기준 이미지는 일반 실행에서 갱신되지 않습니다.
 
+### 실행 산출물과 보존 증거
+
+- 일반 `npm run test:e2e`, `npm run test:e2e:api`, `npm run test:visual` 실행이 만드는 스크린샷·비교 결과는 `frontend/test-results/`(git 추적 안 함)에 남고 Playwright 리포트 첨부로 열어볼 수 있습니다.
+- `docs/evidence/**`는 이슈별로 보존하는 증거입니다. 일반 실행은 이 폴더를 읽기만 하고 파일을 새로 쓰거나 덮어쓰지 않습니다.
+- 기준 이미지 갱신은 `VISUAL_BASELINE_CAPTURE=1`을 명시한 별도 절차에서만 일어나며 일반 실행으로는 갱신되지 않습니다.
+
 ## 더 보기
 
 - [frontend/README.md](frontend/README.md), [backend/README.md](backend/README.md): 각 영역의 세부 명령

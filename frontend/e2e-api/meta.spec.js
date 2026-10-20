@@ -1,8 +1,5 @@
 import { expect, test } from "@playwright/test";
 import { createRequire } from "node:module";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   blockExternalRequests,
   loopbackHosts,
@@ -11,10 +8,6 @@ import {
 } from "./helpers.js";
 
 const catalog = createRequire(import.meta.url)("../../contracts/catalog.json");
-const captureDirectory = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../docs/evidence/phase-2/issue81/2026-09-29/visual/api-mode",
-);
 
 async function inspectViewport(page, viewport, state, testInfo) {
   await prepareViewportCapture(page, viewport);
@@ -33,18 +26,20 @@ async function inspectViewport(page, viewport, state, testInfo) {
     page.getByRole("textbox", { name: "앱·작성자 검색" }),
   ).toBeVisible();
   const name = `${state}-${viewport.width}x${viewport.height}`;
-  await mkdir(captureDirectory, { recursive: true });
+  const fullPath = testInfo.outputPath(`${name}-full.png`);
+  const statusPath = testInfo.outputPath(`${name}-status.png`);
   await page.screenshot({
-    path: path.join(captureDirectory, `${name}-full.png`),
+    path: fullPath,
     fullPage: true,
     animations: "disabled",
   });
-  await status.screenshot({
-    path: path.join(captureDirectory, `${name}-status.png`),
-    animations: "disabled",
-  });
+  await status.screenshot({ path: statusPath, animations: "disabled" });
   await testInfo.attach(`${name}-full`, {
-    path: path.join(captureDirectory, `${name}-full.png`),
+    path: fullPath,
+    contentType: "image/png",
+  });
+  await testInfo.attach(`${name}-status`, {
+    path: statusPath,
     contentType: "image/png",
   });
 }

@@ -1,8 +1,5 @@
 import { expect } from "@playwright/test";
 import { test, loginMember } from "./detail-login-helpers.js";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   blockExternalRequests,
   disableAutomaticPagination,
@@ -10,21 +7,13 @@ import {
   prepareViewportCapture,
   viewports,
 } from "./helpers.js";
-const captureDirectory = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../docs/evidence/phase-2/issue81/2026-09-29/visual/api-mode",
-);
 async function capture(page, state, viewport) {
   await prepareViewportCapture(page, viewport);
-  await mkdir(captureDirectory, { recursive: true });
-  await page.screenshot({
-    path: path.join(
-      captureDirectory,
-      `${state}-${viewport.width}x${viewport.height}.png`,
-    ),
-    fullPage: true,
-    animations: "disabled",
-  });
+  const testInfo = test.info();
+  const name = `${state}-${viewport.width}x${viewport.height}`;
+  const file = testInfo.outputPath(`${name}.png`);
+  await page.screenshot({ path: file, fullPage: true, animations: "disabled" });
+  await testInfo.attach(name, { path: file, contentType: "image/png" });
 }
 
 for (const viewport of viewports) {

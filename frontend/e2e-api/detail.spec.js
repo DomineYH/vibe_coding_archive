@@ -1,9 +1,6 @@
 import { expect } from "@playwright/test";
 import { test, loginMember } from "./detail-login-helpers.js";
 import { approvalHeaders } from "./approval-helpers.js";
-import { mkdir } from "node:fs/promises";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import {
   blockExternalRequests,
   deferred,
@@ -38,10 +35,6 @@ test.describe("member detail", () => {
     frontend: "React · Vite",
     hosting: "Cloudflare Pages",
   };
-  const captureDirectory = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "../../docs/evidence/phase-2/issue83/2026-09-29/visual/api-mode",
-  );
   const expectedDescription = [
     "첫째 줄  앞 공백",
     "",
@@ -81,15 +74,15 @@ test.describe("member detail", () => {
         `${state} text overflows at ${viewport.width}px`,
       ).toBe(false);
     }
-    await mkdir(captureDirectory, { recursive: true });
+    const testInfo = test.info();
+    const name = `${state}-${viewport.width}x${viewport.height}`;
+    const file = testInfo.outputPath(`${name}.png`);
     await page.screenshot({
-      path: path.join(
-        captureDirectory,
-        `${state}-${viewport.width}x${viewport.height}.png`,
-      ),
+      path: file,
       fullPage: true,
       animations: "disabled",
     });
+    await testInfo.attach(name, { path: file, contentType: "image/png" });
   }
 
   test("reads the real long detail, rejects query input, and reloads without writes", async ({
