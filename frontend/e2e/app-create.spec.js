@@ -637,3 +637,57 @@ test("defers internal navigation until a dirty draft is kept or discarded", asyn
     .click();
   await expect(page).toHaveURL(/\/$/);
 });
+
+for (const [viewportName, viewport] of [
+  ["desktop", null],
+  ["Pixel 7", { width: 412, height: 915 }],
+]) {
+  test.describe(`registration submit burst on ${viewportName}`, () => {
+    if (viewport) test.use({ viewport, isMobile: true, hasTouch: true });
+
+    for (const [burst, submit] of [
+      ["double click", (button) => button.click({ clickCount: 2 })],
+      ["triple click", (button) => button.click({ clickCount: 3 })],
+      [
+        "repeated Enter",
+        async (button, form, page) => {
+          await form
+            .getByRole("textbox", { name: "어플리케이션 이름", exact: true })
+            .focus();
+          await page.keyboard.press("Enter");
+          await page.keyboard.press("Enter");
+        },
+      ],
+    ]) {
+      test(`creates exactly one app on ${burst}`, async ({ page }) => {
+        const name = `burst ${burst} ${viewportName} e2e`;
+        await login(page);
+        await openNewApp(page);
+        const form = await fillValidForm(page, name);
+        const button = form.getByRole("button", {
+          name: "아카이브에 등록",
+          exact: true,
+        });
+        await submit(button, form, page);
+        await expect(page).toHaveURL(/\/apps\/(?!new$)[^/]+$/);
+        await expect(
+          page.getByRole("heading", { name, exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("status").filter({ hasText: /^앱을 등록했어요\.$/ }),
+        ).toBeVisible();
+        const created = await page.evaluate(
+          ({ key, name }) => {
+            const state = JSON.parse(localStorage.getItem(key));
+            return [...state.apps, ...state.private_apps]
+              .filter((app) => app.name === name)
+              .map((app) => app.id);
+          },
+          { key, name },
+        );
+        expect(created).toHaveLength(1);
+        expect(page.url()).toMatch(new RegExp(`/apps/${created[0]}$`));
+      });
+    }
+  });
+}

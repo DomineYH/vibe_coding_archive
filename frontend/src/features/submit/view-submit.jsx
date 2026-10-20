@@ -163,6 +163,7 @@ export function SubmitView({
   const allowNavigation = useRef(false);
   const mounted = useRef(true);
   const attempt = useRef(0);
+  const submitLock = useRef(Boolean(restored?.unknown));
   const beginAttempt = () => {
     const request = ++attempt.current;
     return () =>
@@ -235,6 +236,7 @@ export function SubmitView({
     if (canEdit) return;
     ++attempt.current;
     if (saving && operationKey) setUnknown(true);
+    else if (saving) submitLock.current = false;
     setSaving(false);
     setLoadingLatest(false);
     setConfirmedUpdate(null);
@@ -320,6 +322,7 @@ export function SubmitView({
       setFormError(createMessage || error.message);
       return;
     }
+    submitLock.current = false;
     setSaving(false);
     setUnknown(false);
     setOperationKey(null);
@@ -369,7 +372,7 @@ export function SubmitView({
 
   const submit = async (event) => {
     event.preventDefault();
-    if (savingLocked || conflictPending) return;
+    if (savingLocked || conflictPending || submitLock.current) return;
     setFieldErrors({});
     setFormError("");
     let input;
@@ -384,6 +387,8 @@ export function SubmitView({
       }
       return;
     }
+    // A state check alone lets events dispatched before the next render through.
+    submitLock.current = true;
     const isCurrent = beginAttempt();
     setSaving(true);
     try {
