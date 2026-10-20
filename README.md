@@ -154,7 +154,7 @@ API 테스트는 각자 임시 DB와 서버를 만들어 쓰므로, 개발 DB에
 
 ### 실행 산출물과 보존 증거
 
-- 일반 `npm run test:e2e`, `npm run test:e2e:api`, `npm run test:visual` 실행이 만드는 스크린샷·비교 결과는 `frontend/test-results/`(git 추적 안 함)에 남고 Playwright 리포트 첨부로 열어볼 수 있습니다.
+- 일반 `npm run test:e2e`, `npm run test:e2e:api`, `npm run test:visual` 실행이 만드는 스크린샷·비교 결과는 `frontend/test-results/`(git 추적 안 함) 아래 테스트별 디렉터리에 PNG 파일로 남고, 첨부 사본도 각 테스트의 출력 디렉터리에 함께 저장됩니다.
 - `docs/evidence/**`는 이슈별로 보존하는 증거입니다. 일반 실행은 이 폴더를 읽기만 하고 파일을 새로 쓰거나 덮어쓰지 않습니다.
 - 기준 이미지 갱신은 `VISUAL_BASELINE_CAPTURE=1`을 명시한 별도 절차에서만 일어나며 일반 실행으로는 갱신되지 않습니다.
 
