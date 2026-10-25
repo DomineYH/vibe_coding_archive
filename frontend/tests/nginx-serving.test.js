@@ -50,6 +50,26 @@ it("renders fixed deployment tokens while preserving Nginx variables", () => {
   expect(rendered).toContain("$request_uri");
   expect(rendered).not.toContain("{{");
 });
+it("pins every compiled-in temporary path under the private runtime root", () => {
+  const rendered = renderNginx(template, values);
+  for (const kind of ["client_body", "proxy", "fastcgi", "uwsgi", "scgi"]) {
+    const match = new RegExp(`^\\s*${kind}_temp_path (\\S+);$`, "m").exec(
+      rendered,
+    );
+    expect(match, `${kind}_temp_path must be pinned`).not.toBeNull();
+    expect(match[1].startsWith(`${values.RUNTIME_ROOT}/`)).toBe(true);
+  }
+});
+it("keeps the proxy read deadline above the SQLite busy deadline", () => {
+  const busy = /PRAGMA busy_timeout = (\d+)/.exec(
+    readFileSync("../backend/app/database.py", "utf8"),
+  );
+  expect(busy).not.toBeNull();
+  const read = /^\s*proxy_read_timeout (\d+)s;$/m.exec(template);
+  expect(read).not.toBeNull();
+  // Leave room for hashing waits so the API's 503 DB_BUSY is not masked by 504.
+  expect(Number(read[1]) * 1000).toBeGreaterThanOrEqual(Number(busy[1]) * 2);
+});
 it.each([
   ["RELEASE_ROOT", "/srv/release; return 200"],
   ["TLS_CERTIFICATE", '/tls/"bad"'],

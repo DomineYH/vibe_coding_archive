@@ -117,8 +117,15 @@ while the isolated Vite→Uvicorn regression checks the actual development chain
 Local tests and the Nginx template checks do not replace #144 G11 actual production
 host acceptance, which remains **NOT RUN**.
 
-The template uses a 2 s connect / 5 s read timeout; actual-host timing still needs
-operating review.
+The template uses a 2 s connect / 10 s read timeout. The read timeout must stay
+above the SQLite `busy_timeout` (5 s, `backend/app/database.py`) plus hashing
+waits, so a locked database returns the API's `503 DB_BUSY` with `Retry-After`
+instead of an Nginx `504`. A stopped or hung upstream therefore fails with 504
+after about 10 s. Actual-host timing still needs operating review.
+
+All compiled-in temporary paths (`client_body`, `proxy`, `fastcgi`, `uwsgi`,
+`scgi`) are pinned under `RUNTIME_ROOT`, so a non-root `nginx -t` does not try
+to create directories under the distribution default `/var/lib/nginx`.
 
 ## Header budget semantics
 

@@ -512,7 +512,10 @@ test("keeps operational capabilities disabled and fails when the upstream is una
     expect([502, 504]).toContain(failure.status());
     expect((await failure.text()).includes('<div id="root">')).toBe(false);
     await page.goto("/");
-    await expect(page.getByRole("alert").first()).toBeVisible();
+    // API requests to the stopped upstream wait for the proxy read deadline.
+    await expect(page.getByRole("alert").first()).toBeVisible({
+      timeout: 30000,
+    });
     expect(await page.locator("a.card-r").count()).toBe(0);
     expect(
       (await page.locator("body").textContent()).includes("분수 피자 가게"),
@@ -589,8 +592,11 @@ test("sanitized proxy and API logs exclude request secrets on every result", asy
     await new Promise((resolve) => setTimeout(resolve, 1000));
     return response;
   });
-  // The proxy read deadline and SQLite busy deadline are both five seconds.
-  expect([503, 504]).toContain(busy.status);
+  // The proxy read deadline exceeds the SQLite busy deadline, so the API's
+  // contracted DB_BUSY envelope and Retry-After reach the client.
+  expect(busy.status).toBe(503);
+  expect(busy.response).toMatch(/^retry-after: 1\r$/im);
+  expect(busy.response).toContain('"DB_BUSY"');
   const pid = Number(readFileSync(process.env.API_E2E_UPSTREAM_PID, "utf8"));
   expect(Number.isSafeInteger(pid) && pid > 1).toBe(true);
   process.kill(pid, "SIGSTOP");

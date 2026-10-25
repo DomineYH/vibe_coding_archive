@@ -21,6 +21,10 @@ http {
     disable_symlinks on;
     client_body_temp_path {{RUNTIME_ROOT}}/body;
     proxy_temp_path {{RUNTIME_ROOT}}/proxy;
+    # Unused modules still create their compiled-in temp paths; keep them private too.
+    fastcgi_temp_path {{RUNTIME_ROOT}}/fastcgi;
+    uwsgi_temp_path {{RUNTIME_ROOT}}/uwsgi;
+    scgi_temp_path {{RUNTIME_ROOT}}/scgi;
 
     # ponytail: force counted buffers; revisit if exact 16KiB acceptance replaces fail-closed packing.
     client_header_buffer_size 1;
@@ -40,7 +44,9 @@ http {
     proxy_intercept_errors off;
     proxy_redirect off;
     proxy_connect_timeout 2s;
-    proxy_read_timeout 5s;
+    # Must exceed the SQLite busy_timeout (5 s) plus hashing waits so the API's
+    # 503 DB_BUSY/Retry-After envelope reaches clients instead of a proxy 504.
+    proxy_read_timeout 10s;
 
     server {
         set $eduvibe_route unmatched;
