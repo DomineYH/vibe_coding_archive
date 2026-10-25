@@ -685,3 +685,18 @@ def test_existing_member_with_password_equal_to_login_id_still_logs_in_and_reaut
         browser = Browser(client).prepare().anonymous()
         assert browser.login(login, login).status_code == 200
         assert reauth(browser, login).status_code == 200
+
+
+def test_admin_with_an_eight_character_password_can_reauthenticate(member_app):
+    app, path = member_app()
+    password = "여덟자관리비번!"
+    assert len(password) == 8
+    with sqlite3.connect(path) as db:
+        db.execute(
+            "UPDATE members SET password_hash=? WHERE login_id=?",
+            (PasswordHash.recommended().hash(password), ADMIN),
+        )
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        assert browser.login(ADMIN, password).status_code == 200
+        assert reauth(browser, password).status_code == 200

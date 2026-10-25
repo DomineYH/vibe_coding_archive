@@ -18,6 +18,10 @@ import type {
   RegisteredUser,
 } from "../contracts/mappers";
 
+// New-password length in Unicode code points; ADR 0004 records why 8.
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
+
 export type AuthLoginInput = { loginId: string; password: string };
 export type AuthRegisterInput = {
   loginId: string;

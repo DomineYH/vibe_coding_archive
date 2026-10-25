@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Btn, Chip, EmptyState } from "../../components/ui";
 import { ServiceError } from "../../services/service-error";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "../../services/auth-service";
 
 const registrationErrorFields = {
   login_id: "loginId",
@@ -136,7 +140,8 @@ function PasswordChangeCard({
             id="new-password-hint"
             className="mt-1 text-[11px] text-neutral-400"
           >
-            15~128자 · 공백은 유지되며 NFC로 정규화됩니다.
+            {PASSWORD_MIN_LENGTH}~{PASSWORD_MAX_LENGTH}자 · 공백은 유지되며
+            NFC로 정규화됩니다.
           </p>
           {fieldErrors.password ? (
             <p
@@ -518,8 +523,8 @@ export function AuthView({
     const confirmation = passwordConfirm.normalize("NFC");
     const errors = {};
     const length = Array.from(nextPassword).length;
-    if (length < 15 || length > 128)
-      errors.password = "비밀번호는 15~128자로 입력해 주세요.";
+    if (length < PASSWORD_MIN_LENGTH || length > PASSWORD_MAX_LENGTH)
+      errors.password = `비밀번호는 ${PASSWORD_MIN_LENGTH}~${PASSWORD_MAX_LENGTH}자로 입력해 주세요.`;
     if (!confirmation)
       errors.passwordConfirm = "비밀번호를 한 번 더 입력해 주세요.";
     else if (nextPassword !== confirmation)
@@ -1002,7 +1007,7 @@ export function AuthView({
           />
           {mode === "signup" ? (
             <p id="password-hint" className="mt-1 text-[11px] text-neutral-400">
-              15~128자 · 공백 포함 가능
+              {PASSWORD_MIN_LENGTH}~{PASSWORD_MAX_LENGTH}자 · 공백 포함 가능
             </p>
           ) : null}
           {fieldErrors.password ? (

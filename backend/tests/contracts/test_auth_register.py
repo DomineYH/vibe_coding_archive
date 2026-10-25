@@ -145,9 +145,9 @@ def test_password_equal_to_login_id_is_rejected_with_the_policy_message(member_a
             "password": "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다."
         }
         # Length wins over equality, and an invalid login id leaves nothing to compare.
-        short = register(browser, login_id="same-id-14-ch", password="same-id-14-ch")
+        short = register(browser, login_id="same-7c", password="same-7c")
         assert short.json()["error"]["fields"] == {
-            "password": "비밀번호는 15~128자로 입력해 주세요."
+            "password": "비밀번호는 8~128자로 입력해 주세요."
         }
         bad = register(
             browser, login_id="bad name 15 chars", password="bad name 15 chars"
@@ -160,6 +160,33 @@ def test_password_equal_to_login_id_is_rejected_with_the_policy_message(member_a
                 ).fetchone()[0]
                 == 0
             )
+
+
+@pytest.mark.parametrize("length,status", [(7, 422), (8, 201), (128, 201), (129, 422)])
+def test_new_password_length_boundaries(member_app, length, status):
+    app, _ = member_app()
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        result = register(browser, password="가" * length)
+        assert result.status_code == status, result.text
+        if status == 422:
+            assert result.json()["error"]["fields"] == {
+                "password": "비밀번호는 8~128자로 입력해 주세요."
+            }
+
+
+def test_short_blocklist_entry_is_rejected_as_common(member_app, password_blocklist):
+    # Pick a fixed 8-14 character source row without putting a leaked entry in source or output.
+    entries = password_blocklist.read_text().split("\n")
+    blocked = next(value for value in entries if 8 <= len(value) <= 14)
+    app, _ = member_app()
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        result = register(browser, password=blocked)
+        assert result.status_code == 422
+        assert result.json()["error"]["fields"] == {
+            "password": "흔한 비밀번호는 사용할 수 없습니다."
+        }
 
 
 def test_normalized_ids_are_unique_but_unicode_nicknames_are_not(member_app):

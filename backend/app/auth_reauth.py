@@ -28,12 +28,15 @@ from app.auth_login import (
     refuse_when_limited,
     unchanged,
 )
+from app.password_policy import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 
 router = APIRouter(prefix="/auth", dependencies=[Depends(check_json)])
 
 
 class ReauthenticateBody(StrictModel):
-    password: Annotated[str, Field(min_length=15, max_length=128)]
+    password: Annotated[
+        str, Field(min_length=PASSWORD_MIN_LENGTH, max_length=PASSWORD_MAX_LENGTH)
+    ]
 
 
 def current_admin(db, request, *, flow_id=None):

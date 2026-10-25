@@ -777,7 +777,7 @@ test("temporary member can browse publicly, then change to a full session", asyn
     .getByRole("button", { name: "비밀번호 변경", exact: true })
     .click();
   await expect(changeForm.locator("#new-password-error")).toContainText(
-    "15~128자",
+    "8~128자",
   );
 
   await changeForm
@@ -816,6 +816,36 @@ test("temporary member can browse publicly, then change to a full session", asyn
   await expect(freshLoginForm.getByRole("alert")).toContainText(
     "로그인 아이디 또는 비밀번호를 확인해 주세요",
   );
+});
+
+test("password change rejects 7 characters and accepts 8", async ({ page }) => {
+  await page.goto("/auth?mode=login");
+  const loginForm = page.locator('[data-screen-label="로그인"] form');
+  await expect(loginForm).toBeVisible();
+  await loginForm.locator("#login-id").fill("임시교사38");
+  await loginForm.locator("#login-password").fill("Temporary Demo Password 38");
+  await loginForm.getByRole("button", { name: "로그인", exact: true }).click();
+
+  await expect(page).toHaveURL(/mode=password-change/);
+  const changeForm = page.locator('[data-screen-label="비밀번호 변경"] form');
+  const submit = changeForm.getByRole("button", {
+    name: "비밀번호 변경",
+    exact: true,
+  });
+  await changeForm.locator("#new-password").fill("일곱글자비번!");
+  await changeForm.locator("#new-password-confirm").fill("일곱글자비번!");
+  await submit.click();
+  await expect(changeForm.locator("#new-password-error")).toHaveText(
+    "비밀번호는 8~128자로 입력해 주세요.",
+  );
+
+  await changeForm.locator("#new-password").fill("여덟글자비번!!");
+  await changeForm.locator("#new-password-confirm").fill("여덟글자비번!!");
+  await submit.click();
+  await expect(page).toHaveURL("/");
+  await expect(
+    page.getByRole("button", { name: "로그아웃", exact: true }),
+  ).toBeVisible();
 });
 
 test("temporary administrator is kept out of admin tools until changing password", async ({

@@ -7,6 +7,7 @@ import type {
   UserDeleteOperation,
 } from "../contracts/mappers";
 import type { ProtectedReadContext } from "./auth-state";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./auth-service";
 import { ServiceError } from "./service-error";
 
 export type ListAdminUsersQuery = { limit?: number; offset?: number };
@@ -77,16 +78,14 @@ export function normalizeResetPassword(password: string): string {
   const normalized =
     typeof password === "string" ? password.normalize("NFC") : "";
   const length = Array.from(normalized).length;
-  if (length < 15 || length > 128)
-    throw new ServiceError(
-      "VALIDATION_ERROR",
-      "임시 비밀번호는 15~128자로 입력해 주세요.",
-      {
-        httpStatus: 422,
-        outcome: "rejected",
-        fields: { new_password: "임시 비밀번호는 15~128자로 입력해 주세요." },
-      },
-    );
+  if (length < PASSWORD_MIN_LENGTH || length > PASSWORD_MAX_LENGTH) {
+    const message = `임시 비밀번호는 ${PASSWORD_MIN_LENGTH}~${PASSWORD_MAX_LENGTH}자로 입력해 주세요.`;
+    throw new ServiceError("VALIDATION_ERROR", message, {
+      httpStatus: 422,
+      outcome: "rejected",
+      fields: { new_password: message },
+    });
+  }
   return normalized;
 }
 

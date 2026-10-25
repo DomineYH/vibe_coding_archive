@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { authService } from "../src/services/mock/auth";
 import { appsService } from "../src/services/mock/apps";
 import { adminService } from "../src/services/mock/admin";
+import { normalizeResetPassword } from "../src/services/admin-service";
 import {
   getMockAccounts,
   getMockSnapshot,
@@ -1014,4 +1015,22 @@ describe("admin service", () => {
       await adminService.getUserDeleteOperation(operation.key),
     ).toMatchObject({ state: "succeeded" });
   });
+});
+
+describe("temporary password length", () => {
+  it.each([7, 8, 128, 129])(
+    "applies the 8~128 code point rule to %i characters",
+    (length) => {
+      const password = "가".repeat(length);
+      if (length >= 8 && length <= 128) {
+        expect(normalizeResetPassword(password)).toBe(password);
+        return;
+      }
+      expect(() => normalizeResetPassword(password)).toThrow(
+        expect.objectContaining({
+          fields: { new_password: "임시 비밀번호는 8~128자로 입력해 주세요." },
+        }),
+      );
+    },
+  );
 });

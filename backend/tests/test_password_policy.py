@@ -67,9 +67,26 @@ def test_login_id_is_a_required_keyword():
         new_password("a valid synthetic password", BLOCKLIST, LOGIN)
 
 
+@pytest.mark.parametrize(
+    "length,accepted", [(7, False), (8, True), (128, True), (129, False)]
+)
+def test_length_boundaries_count_nfc_code_points(length, accepted):
+    value = "가" * length
+    if accepted:
+        assert new_password(value, BLOCKLIST, login_id=LOGIN) == value
+    else:
+        assert rejected(value) == "비밀번호는 8~128자로 입력해 주세요."
+    # NFD input counts after NFC normalization.
+    if accepted:
+        assert (
+            len(new_password(normalize("NFD", value), BLOCKLIST, login_id=LOGIN))
+            == length
+        )
+
+
 def test_length_then_blocklist_win_over_login_id_equality():
-    short = "short-id-14-ch"
-    assert rejected(short, short) == "비밀번호는 15~128자로 입력해 주세요."
+    short = "short-7"
+    assert rejected(short, short) == "비밀번호는 8~128자로 입력해 주세요."
     blocked = "synthetic-blocked-entry-15"
     assert rejected(blocked, blocked) == "흔한 비밀번호는 사용할 수 없습니다."
 

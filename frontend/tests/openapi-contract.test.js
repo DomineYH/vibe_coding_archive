@@ -175,7 +175,7 @@ describe("OpenAPI app detail schema", () => {
     expect(input.required).toEqual(["password"]);
     expect(input.additionalProperties).toBe(false);
     expect(input.properties.password).toMatchObject({
-      minLength: 15,
+      minLength: 8,
       maxLength: 128,
     });
     expect(input.properties).not.toHaveProperty("password_confirm");

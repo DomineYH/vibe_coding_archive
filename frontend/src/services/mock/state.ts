@@ -6,6 +6,7 @@ import {
   mapAppDetailResponse,
   mapRegisteredUser,
 } from "../../contracts/mappers";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../auth-service";
 import { ServiceError } from "../service-error";
 import type {
   AuthTransitionKind,
@@ -579,8 +580,8 @@ function validateRegisteredAccounts(accounts: unknown[]): void {
       registered.loginId !== loginId ||
       !/^[가-힣A-Za-z0-9_.-]{2,32}$/u.test(loginId) ||
       typeof registered.password !== "string" ||
-      Array.from(registered.password).length < 15 ||
-      Array.from(registered.password).length > 128 ||
+      Array.from(registered.password).length < PASSWORD_MIN_LENGTH ||
+      Array.from(registered.password).length > PASSWORD_MAX_LENGTH ||
       registered.nickname !== registered.nickname.trim().normalize("NFC") ||
       ids.has(registered.id) ||
       loginIds.has(loginId.toLowerCase())
@@ -685,8 +686,8 @@ function validateCredentialOverrides(
       !accountIds.has(override.account_id) ||
       seen.has(override.account_id) ||
       typeof override.password !== "string" ||
-      Array.from(override.password).length < 15 ||
-      Array.from(override.password).length > 128 ||
+      Array.from(override.password).length < PASSWORD_MIN_LENGTH ||
+      Array.from(override.password).length > PASSWORD_MAX_LENGTH ||
       typeof override.must_change_password !== "boolean" ||
       (override.temporary_password_expires_at !== null &&
         !isDateTime(override.temporary_password_expires_at)) ||

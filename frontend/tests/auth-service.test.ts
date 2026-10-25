@@ -135,6 +135,24 @@ describe("demo authentication and protected reads", () => {
     ).rejects.toMatchObject({ code: "ACCOUNT_NOT_APPROVED", httpStatus: 403 });
   });
 
+  it("rejects a 7-character new password and accepts an 8-character one", async () => {
+    await authService.login({
+      loginId: "임시교사38",
+      password: "Temporary Demo Password 38",
+    });
+    await expect(
+      authService.changePassword({ password: "가".repeat(7) }),
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR",
+      fields: { password: "비밀번호는 8~128자로 입력해 주세요." },
+    });
+    await authService.changePassword({ password: "가".repeat(8) });
+    await authService.logout();
+    await expect(
+      authService.login({ loginId: "임시교사38", password: "가".repeat(8) }),
+    ).resolves.toMatchObject({ user: { mustChangePassword: false } });
+  });
+
   it("consumes the temporary password and preserves NFC and surrounding spaces", async () => {
     await authService.login({
       loginId: "임시교사38",
@@ -787,7 +805,7 @@ describe("demo authentication and protected reads", () => {
 
   it.each([
     ["invalid login characters", { loginId: "bad name" }, "login_id"],
-    ["short Unicode password", { password: "가".repeat(14) }, "password"],
+    ["short Unicode password", { password: "가".repeat(7) }, "password"],
     ["long Unicode password", { password: "가".repeat(129) }, "password"],
     [
       "password equal to login id",
@@ -811,6 +829,29 @@ describe("demo authentication and protected reads", () => {
       fields: { [field]: expect.any(String) },
     });
   });
+
+  it.each([7, 8, 128, 129])(
+    "applies the 8~128 code point rule to a %i-character password",
+    async (length) => {
+      const input = {
+        loginId: `length-teacher-${length}`,
+        password: "가".repeat(length),
+        nickname: "새 교사",
+      };
+      if (length < 8 || length > 128) {
+        await expect(authService.register(input)).rejects.toMatchObject({
+          code: "VALIDATION_ERROR",
+          fields: { password: "비밀번호는 8~128자로 입력해 주세요." },
+        });
+        return;
+      }
+      await authService.register(input);
+      // The persisted account must survive storage validation on the next read.
+      await expect(authService.login(input)).rejects.toMatchObject({
+        code: "ACCOUNT_NOT_APPROVED",
+      });
+    },
+  );
 
   it("reports the login ID rule message and allows a password that merely contains the ID", async () => {
     const base = {

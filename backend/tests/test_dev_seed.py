@@ -536,7 +536,7 @@ def test_seed_cli_rejects_missing_or_incompatible_revision_without_migrating(
 @pytest.mark.parametrize(
     ("passwords", "message"),
     [
-        (("short-password", "short-password"), "15 to 128"),
+        (("short-7", "short-7"), "8 to 128"),
         ((TEST_PASSWORD, "Different-synthetic-password"), "do not match"),
     ],
 )

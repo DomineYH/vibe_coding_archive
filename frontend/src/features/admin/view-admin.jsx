@@ -12,6 +12,10 @@ import catalog from "../../../../contracts/catalog.json";
 import { adminService } from "@services/admin";
 import { healthService } from "@services/health";
 import { ServiceError } from "../../services/service-error";
+import {
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+} from "../../services/auth-service";
 import { HealthCheckControl } from "./health-check-control";
 import { refreshAdminApps } from "./refresh-admin-apps";
 
@@ -559,8 +563,8 @@ function PasswordResetPanel({
     const confirmation = passwordConfirm.normalize("NFC");
     const errors = {};
     const length = Array.from(normalized).length;
-    if (length < 15 || length > 128)
-      errors.password = "비밀번호는 15~128자로 입력해 주세요.";
+    if (length < PASSWORD_MIN_LENGTH || length > PASSWORD_MAX_LENGTH)
+      errors.password = `비밀번호는 ${PASSWORD_MIN_LENGTH}~${PASSWORD_MAX_LENGTH}자로 입력해 주세요.`;
     if (!confirmation)
       errors.passwordConfirm = "비밀번호를 한 번 더 입력해 주세요.";
     else if (normalized !== confirmation)
@@ -779,8 +783,9 @@ function PasswordResetPanel({
             ) : null}
           </div>
           <p className="text-[11px] leading-relaxed text-neutral-500">
-            15~128자 · 공백은 유지되며 NFC로 정규화됩니다. 확인 후 입력은
-            지워지고 결과 확인이나 재제출 때 다시 입력해야 합니다.
+            {PASSWORD_MIN_LENGTH}~{PASSWORD_MAX_LENGTH}자 · 공백은 유지되며
+            NFC로 정규화됩니다. 확인 후 입력은 지워지고 결과 확인이나 재제출 때
+            다시 입력해야 합니다.
           </p>
           <div className="flex flex-wrap gap-2">
             <Btn type="submit" size="sm" disabled={busy}>

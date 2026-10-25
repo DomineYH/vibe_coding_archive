@@ -24,6 +24,7 @@ from app.auth_boundary import (
 )
 from app.auth_login import member_session
 from app.auth_runtime import auth_available
+from app.password_policy import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 
 
 def unique_fields(pairs):
@@ -71,7 +72,11 @@ class SetPasswordReset(StrictModel):
     expected_account_version: Version
     new_password: Annotated[
         str,
-        Field(strict=True, min_length=15, max_length=128),
+        Field(
+            strict=True,
+            min_length=PASSWORD_MIN_LENGTH,
+            max_length=PASSWORD_MAX_LENGTH,
+        ),
         BeforeValidator(normalize_reset_password),
     ]
 

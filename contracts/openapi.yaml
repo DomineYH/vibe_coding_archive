@@ -1757,7 +1757,7 @@ components:
       additionalProperties: false
       required: [password]
       description: >-
-        A new password of 15-128 Unicode code points. Normalize to NFC without
+        A new password of 8-128 Unicode code points. Normalize to NFC without
         trimming or truncation; compare the full normalized value against the
         versioned local common-password blocklist. Do not send it to an external
         service. The Phase 1 mock does not apply this check while list
@@ -1771,7 +1771,7 @@ components:
       properties:
         password:
           type: string
-          minLength: 15
+          minLength: 8
           maxLength: 128
     RegisterInput:
       type: object
@@ -1780,7 +1780,7 @@ components:
       description: >-
         login_id and nickname are trimmed and normalized to NFC; password is
         normalized to NFC without trimming. Lengths count Unicode code points.
-        Password length is 15-128. The production contract checks the full
+        Password length is 8-128. The production contract checks the full
         normalized value against the versioned local common-password blocklist;
         the Phase 1 mock does not apply the check while list redistribution
         rights remain unresolved. T04 uses individually prepared integrity-verified
@@ -1799,7 +1799,7 @@ components:
           pattern: "^[가-힣A-Za-z0-9_.-]+$"
         password:
           type: string
-          minLength: 15
+          minLength: 8
           maxLength: 128
         nickname:
           type: string
@@ -1942,7 +1942,7 @@ components:
       description: >-
         The new_password is included only in this key-issuance request and is
         never echoed or stored in the operation result. The implementation
-        enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point
+        enforces a 16 KiB UTF-8 request limit and the shared 8–128 code point
         password policy after NFC normalization, preserving spaces and case. A dedicated
         versioned HMAC binds the input; unavailable secret verification returns
         503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies
@@ -1960,7 +1960,7 @@ components:
           type: integer
           minimum: 1
           maximum: 9007199254740991
-        new_password: { type: string, minLength: 15, maxLength: 128 }
+        new_password: { type: string, minLength: 8, maxLength: 128 }
     CreateUserDeleteOperation:
       type: object
       additionalProperties: false
@@ -2083,7 +2083,7 @@ components:
       description: >-
         The new_password is matched against the same key-issuance input and is
         never echoed or stored in the operation result. The implementation
-        enforces a 16 KiB UTF-8 request limit and the shared 15–128 code point
+        enforces a 16 KiB UTF-8 request limit and the shared 8–128 code point
         password policy after NFC normalization, preserving spaces and case. A dedicated
         versioned HMAC binds the input; unavailable secret verification returns
         503 SERVICE_UNAVAILABLE. The versioned local common-password blocklist applies
@@ -2095,7 +2095,7 @@ components:
         rejected with 422 VALIDATION_ERROR and fields.new_password, and the Phase 1 mock
         applies this rule too. Existing stored passwords are not re-validated.
       properties:
-        new_password: { type: string, minLength: 15, maxLength: 128 }
+        new_password: { type: string, minLength: 8, maxLength: 128 }
         expected_account_version:
           type: integer
           minimum: 1
@@ -2586,7 +2586,7 @@ components:
       additionalProperties: false
       required: [password]
       properties:
-        password: { type: string, minLength: 15, maxLength: 128 }
+        password: { type: string, minLength: 8, maxLength: 128 }
     AuthResult:
       type: object
       additionalProperties: false

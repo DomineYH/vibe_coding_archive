@@ -94,6 +94,21 @@ def test_invalid_or_equal_password_is_a_terminal_rejection_and_can_be_corrected(
         assert change(browser).status_code == 200
 
 
+@pytest.mark.parametrize("length,status", [(7, 422), (8, 200), (128, 200), (129, 422)])
+def test_new_password_length_boundaries(member_app, length, status):
+    app, path = member_app()
+    temporary_admin(path)
+    with TestClient(app) as client:
+        browser = Browser(client).prepare().anonymous()
+        assert browser.login(ADMIN).status_code == 200
+        result = change(browser, "가" * length)
+        assert result.status_code == status, result.text
+        if status == 422:
+            assert result.json()["error"]["fields"] == {
+                "password": "비밀번호는 8~128자로 입력해 주세요."
+            }
+
+
 def test_password_equal_to_own_login_id_is_a_terminal_rejection_and_can_be_corrected(
     member_app,
 ):

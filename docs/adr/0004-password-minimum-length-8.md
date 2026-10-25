@@ -1,0 +1,9 @@
+# 새 비밀번호 최소 길이는 8자로 둔다
+
+[#275](https://github.com/DomineYH/vibe_coding_archive/issues/275)에 따라 가입·본인 변경·관리자 임시 비밀번호·개발 seed CLI의 새 비밀번호는 NFC 정규화 후 8~128 Unicode code point를 허용한다. 7자 이하·129자 이상은 422 `VALIDATION_ERROR`와 "비밀번호는 8~128자로 입력해 주세요."로 거부한다. 관리자 재인증 입력의 최소 길이도 8로 맞춰 8~14자 비밀번호를 가진 관리자가 재인증할 수 있게 한다. 길이 → 차단 목록 → 로그인 아이디 동일 순서의 검사와 로그인 DTO의 `min_length=1`은 바꾸지 않는다. 백엔드는 `backend/app/password_policy.py`의 `PASSWORD_MIN_LENGTH`·`PASSWORD_MAX_LENGTH`, 프런트는 `frontend/src/services/auth-service.ts`의 같은 이름 상수 한 쌍을 기준으로 한다.
+
+이전 15자 기준은 NIST SP 800-63B의 "비밀번호가 유일한 인증 수단이면 최소 15자, 다중 인증과 함께면 8자" 권고에서 왔다([차단 목록 출처 조사](../research/password-blocklist-provenance.md), [실제 인증 계획](../plans/login-real-auth.md) I02). 이 서비스에는 다중 인증이 없으므로 8자는 이 권고보다 낮다. 교사·학생용 내부 아카이브의 사용성 요청과 유지보수자의 8자 승인에 따라 이 차이를 알고 받아들인다.
+
+보완 통제는 그대로 유지한다. 로그인 실패는 계정당 15분에 10회, IP당 200회에서 `429 RATE_LIMITED`로 막혀(`backend/app/auth_login.py`) 온라인 추측이 하루 약 960회로 제한된다. NCSC 100k 차단 목록 전체를 길이 필터 없이 대조하므로, 15자 하한에서 길이로 먼저 탈락하던 8~14자 흔한 비밀번호가 이제 차단 목록에서 거부된다. 차단 목록 파일·sha256·로드 방식은 바뀌지 않는다. 로그인 아이디와 같은 새 비밀번호 거부([#259](https://github.com/DomineYH/vibe_coding_archive/issues/259))와 Argon2 해시도 유지한다.
+
+이미 저장된 비밀번호는 재검증하지 않고 강제 재설정도 하지 않는다. 10자·12자 절충은 유지보수자가 8자를 명시했고 사용성 요청의 취지에 맞지 않아, 15자 유지는 요청 거부에 해당해, 다중 인증 도입 후 완화는 범위 밖이고 일정이 없어 기각했다. 다중 인증을 도입하거나 로그인 실패 제한을 완화하면 이 결정을 다시 검토한다. 차단 목록 조사 문서와 `docs/evidence/**`의 15자 기준 실측은 당시 기록으로 남긴다.

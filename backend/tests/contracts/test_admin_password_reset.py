@@ -219,7 +219,7 @@ def test_request_body_boundaries(make_test_app, tmp_path, problem, caplog):
             value["new_password"] = "x" * 16 + "\ud800"
         if problem == "blocklist":
             value["new_password"] = next(
-                p for p in app.state.password_blocklist if 15 <= len(p) <= 128
+                p for p in app.state.password_blocklist if 8 <= len(p) <= 128
             )
         raw = json.dumps(value)
         if problem == "duplicate":
@@ -328,6 +328,24 @@ def test_other_operation_kind_cancel_is_409_and_does_not_mutate(
         assert response.status_code == 409
         assert code(response) == "OPERATION_KIND_NOT_CANCELLABLE"
         assert snapshot(path) == before
+
+
+@pytest.mark.parametrize(
+    "length,valid", [(7, False), (8, True), (128, True), (129, False)]
+)
+def test_temporary_password_length_boundaries(make_test_app, tmp_path, length, valid):
+    app, path, _ = reset_app(make_test_app, tmp_path)
+    password = "가" * length
+    with TestClient(app) as client:
+        browser = admin(client)
+        created = issue(browser, password=password)
+        if not valid:
+            assert created.status_code == 422, created.text
+            assert snapshot(path)["write_operations"] == []
+            return
+        assert created.status_code == 201, created.text
+        key = created.json()["key"]
+        assert execute(browser, key, password=password).status_code == 204
 
 
 def test_nfc_precedes_codepoint_validation_and_spaces_are_bound(

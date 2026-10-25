@@ -21,6 +21,7 @@ from app.auth_boundary import normalized_login_id as _normalized_login_id
 from app.auth_maintenance import reconcile
 from app.database import current_head, current_revision, make_engine
 from app.models import App, AppGrade, HealthResult, Member
+from app.password_policy import PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH
 from app.safe_logging import SafeParser, emit, install
 from app.settings import ROOT, ConfigurationError, Settings
 
@@ -101,13 +102,16 @@ def _development_database() -> Settings:
     return settings
 
 
+PASSWORD_LENGTH_GUIDANCE = f"Password must contain {PASSWORD_MIN_LENGTH} to {PASSWORD_MAX_LENGTH} Unicode characters."
+
+
 def _shared_password() -> str:
     password = normalize("NFC", getpass("Shared development password: "))
     confirmation = normalize("NFC", getpass("Confirm development password: "))
     if password != confirmation:
         raise SeedError("The entered passwords do not match.")
-    if not 15 <= len(password) <= 128:
-        raise SeedError("Password must contain 15 to 128 Unicode characters.")
+    if not PASSWORD_MIN_LENGTH <= len(password) <= PASSWORD_MAX_LENGTH:
+        raise SeedError(PASSWORD_LENGTH_GUIDANCE)
     return password
 
 
@@ -352,7 +356,7 @@ _GUIDANCE = (
     "Invalid login ID.",
     "Login ID collision; no member was promoted.",
     "Nickname must contain 2 to 20 characters.",
-    "Password must contain 15 to 128 Unicode characters.",
+    PASSWORD_LENGTH_GUIDANCE,
     "Recovery requires an existing administrator.",
     "Run the explicit development migration first.",
     "Run the explicit migration first.",

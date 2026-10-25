@@ -64,6 +64,11 @@ def prepare_blocklist(path):
         temporary.unlink(missing_ok=True)
 
 
+PASSWORD_MIN_LENGTH = 8
+PASSWORD_MAX_LENGTH = 128
+LENGTH_MESSAGE = (
+    f"비밀번호는 {PASSWORD_MIN_LENGTH}~{PASSWORD_MAX_LENGTH}자로 입력해 주세요."
+)
 LOGIN_ID_MESSAGE = "로그인 아이디와 같은 비밀번호는 사용할 수 없습니다."
 ASCII_LOWER = str.maketrans(string.ascii_uppercase, string.ascii_lowercase)
 
@@ -82,8 +87,8 @@ def new_password(value, blocklist, *, login_id):
     """`login_id=None` means the target is not known yet; the caller compares later."""
     value = normalize("NFC", value)
     message = None
-    if not 15 <= len(value) <= 128:
-        message = "비밀번호는 15~128자로 입력해 주세요."
+    if not PASSWORD_MIN_LENGTH <= len(value) <= PASSWORD_MAX_LENGTH:
+        message = LENGTH_MESSAGE
     elif value in blocklist:
         message = "흔한 비밀번호는 사용할 수 없습니다."
     elif login_id is not None and same_as_login_id(value, login_id):
