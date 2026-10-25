@@ -380,7 +380,8 @@ def list_public_apps(
     context = read_context(request)
     try:
         if context is not None:
-            session.execute(text("BEGIN IMMEDIATE"))
+            # The list never writes, so a read transaction avoids the write reservation.
+            session.execute(text("BEGIN"))
             screen_read_context(session, request, context)
         candidates = (
             select(App.id, App.name, Member.nickname, App.description)
