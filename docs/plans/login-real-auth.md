@@ -151,7 +151,7 @@ revision/issued_seq는 SQLite INTEGER overflow로 순환시키지 않는다. Pyt
 | GET /write-operations/{key}, POST /write-operations/{key}/cancel              | 기존 처리 결과 DTO; cancel도 결과를 반환                                                                                       | 조회/cancel은 현재 관리자·키 소유 확인, R만으로 불가. unknown→조회→명시적 동일 제출/취소; 자동 최신 버전 치환 금지                                        |
 | GET /apps/{id} 인증 읽기                                                      | 기존 상세 DTO·소유자 또는 관리자만 비공개 허용                                                                                 | 무권한/없는 비공개 모두 동일 404, change_only는 익명 범위                                                                                                 |
 
-새 비밀번호 입력과 기존 비밀번호 검증을 구별한다. 가입/변경/임시 암호 생성은 15~128 정책을 적용하지만 로그인 DTO의 기존 minLength=1을 임의로 바꿔 과거 자격증명 검증을 막지 않는다. 본문 최대 16KiB·더미 해시·과부하 제한을 함께 적용한다. 정확한 비밀번호에만 미승인→임시 만료 순으로 알리며 미존재/삭제/불일치는 동일 INVALID_CREDENTIALS다.
+새 비밀번호 입력과 기존 비밀번호 검증을 구별한다. 가입/변경/임시 암호 생성은 8~128 정책(ADR 0004)을 적용하지만 로그인 DTO의 기존 minLength=1을 임의로 바꿔 과거 자격증명 검증을 막지 않는다. 본문 최대 16KiB·더미 해시·과부하 제한을 함께 적용한다. 정확한 비밀번호에만 미승인→임시 만료 순으로 알리며 미존재/삭제/불일치는 동일 INVALID_CREDENTIALS다.
 
 ### 준비·복구 경로
 
