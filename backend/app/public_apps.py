@@ -17,7 +17,7 @@ from pydantic import (
     ValidationError,
     WithJsonSchema,
 )
-from sqlalchemy import or_, select, text
+from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, load_only, object_session, selectinload
 from starlette.responses import JSONResponse
@@ -394,18 +394,32 @@ def list_public_apps(
             candidates = candidates.where(
                 App.grades.any(AppGrade.grade == grade_filter)
             )
-        # ponytail: Python Unicode casefold scans public search fields; add a SQLite Unicode index if catalogue size makes this costly.
-        matching_ids = [
-            app_id
-            for app_id, name, nickname, description in session.execute(candidates).all()
-            if folded_query is None
-            or any(
-                folded_query in _fold_search_value(value)
-                for value in (name, nickname, description)
+        if folded_query is None:
+            total = session.scalar(
+                select(func.count()).select_from(candidates.order_by(None).subquery())
             )
-        ]
-        total = len(matching_ids)
-        page_ids = matching_ids[offset : offset + limit]
+            # Skip the page query past the end so an offset beyond SQLite's int64 is never bound.
+            page_ids = (
+                session.scalars(
+                    candidates.with_only_columns(App.id).limit(limit).offset(offset)
+                ).all()
+                if offset < total
+                else []
+            )
+        else:
+            # ponytail: Python Unicode casefold scans public search fields; add a SQLite Unicode index if catalogue size makes this costly.
+            matching_ids = [
+                app_id
+                for app_id, name, nickname, description in session.execute(
+                    candidates
+                ).all()
+                if any(
+                    folded_query in _fold_search_value(value)
+                    for value in (name, nickname, description)
+                )
+            ]
+            total = len(matching_ids)
+            page_ids = matching_ids[offset : offset + limit]
         apps = (
             session.scalars(
                 select(App)

@@ -14,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models import App
 from tests.auth_client import signed_in
-from tests.support import populate_auth_members
+from tests.support import populate_auth_members, populate_public_and_private_apps
 
 ROOT = Path(__file__).resolve().parents[3]
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
@@ -821,3 +821,71 @@ def test_public_owner_preserves_existing_format_character_nickname(
             )["owner"]["nickname"]
             == nickname
         )
+
+
+def test_public_list_without_query_pages_like_match_all_search_path(
+    tmp_path: Path, make_test_app
+):
+    database_path = tmp_path / "sql-pagination.sqlite3"
+    app = make_test_app(database_path)
+    populate_public_and_private_apps(database_path, public_count=60)
+    subjects, grades = CATALOG["subjects"], CATALOG["grades"]
+
+    with TestClient(app) as client:
+        with app.state.engine.begin() as connection:
+            app_ids = connection.execute(
+                text("SELECT id FROM apps WHERE is_public = 1 ORDER BY id")
+            ).scalars()
+            connection.execute(text("DELETE FROM app_grades"))
+            for index, app_id in enumerate(app_ids):
+                # Colliding, id-unordered timestamps exercise the id tie-break.
+                connection.execute(
+                    text(
+                        "UPDATE apps SET subject = :subject, created_at = :created_at, "
+                        "is_public = :is_public WHERE id = :id"
+                    ),
+                    {
+                        "subject": subjects[index % 4],
+                        "created_at": f"2026-09-{1 + index * 7 % 20:02d}T12:00:00.000000Z",
+                        "is_public": int(index % 10 != 9),
+                        "id": app_id,
+                    },
+                )
+                connection.execute(
+                    text("INSERT INTO app_grades (app_id, grade) VALUES (:id, :grade)"),
+                    [
+                        {"id": app_id, "grade": grade}
+                        for grade in {grades[index % 3], grades[index % 5]}
+                    ],
+                )
+            private_ids = set(
+                connection.execute(
+                    text("SELECT id FROM apps WHERE is_public = 0")
+                ).scalars()
+            )
+
+        def walk(**params: str) -> tuple[list[str], list[tuple[int, bool]]]:
+            ids, pages, offset = [], [], 0
+            while True:
+                response = client.get(
+                    "/api/v1/apps", params={**params, "limit": 7, "offset": offset}
+                )
+                assert response.status_code == 200
+                body = response.json()
+                ids += [item["id"] for item in body["items"]]
+                pages.append(
+                    (body["pagination"]["total"], body["pagination"]["has_more"])
+                )
+                if not body["pagination"]["has_more"]:
+                    return ids, pages
+                offset += 7
+
+        for filters in ({}, {"subject": "과학"}, {"grade": "초3"}):
+            listed = walk(**filters)
+            searched = walk(q="공개 별명", **filters)
+            assert listed == searched
+            assert len(listed[0]) == len(set(listed[0])) == listed[1][0][0]
+            assert not private_ids & set(listed[0])
+        assert listed[1][0][0] >= 10
+        assert len(private_ids) == 7
+        assert walk()[1][0][0] == 54
