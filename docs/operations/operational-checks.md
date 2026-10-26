@@ -189,8 +189,9 @@ approval it closes all auth, including login. Keep this order:
    no directories; create the parent first. Every directory from `/` down must
    be owned by root or `eduvibe` without group/world write; the parent must be
    `eduvibe`-owned with mode exactly 0700. An existing leaf must be a regular
-   single-link `eduvibe` file with mode 0600. Otherwise the command fails
-   with exit 1 `CLI_FAILED`.
+   single-link `eduvibe` file with mode 0600. Failing these filesystem checks
+   exits 1 `CLI_FAILED`; an invalid (e.g. relative) path is rejected earlier as
+   configuration, exit 2 `CLI_USAGE_INVALID`.
 3. Add only the path, never secret bytes:
    `PASSWORD_RESET_HMAC_PATH=<reset-hmac-path>` in `runtime.env`.
 4. Use the [operator shell](migrations.md#numbered-operator-procedure)
@@ -201,18 +202,21 @@ approval it closes all auth, including login. Keep this order:
    Expect `RESET_KEY_ROTATED` and an `eduvibe` regular 0600 leaf.
 5. In the same shell print a template as in the
    [approval procedure](auth-candidate.md#미승인-템플릿과-운영자-완료).
-   `configuration.password_reset_hmac_path` must be the step 3 string (`null`
-   means the path was not exported) and other fields unchanged. Obtain a new
-   #144 approval comment and replace the record by that procedure.
+   `configuration.password_reset_hmac_path` must be the normalized absolute
+   form of the step 3 path (`null` means it was not exported) and other fields
+   unchanged. Obtain a new #144 approval comment and replace the record by
+   that procedure.
 6. Start the API and health worker. `/readyz` 200 only confirms startup: it
    checks the Alembic head and reconciliation, not approval or the reset gate.
-   Reopen ingress only when `GET /api/v1/meta` shows both
-   `capabilities.auth_login.enabled` and
-   `capabilities.admin_password_reset.enabled` true.
+   Verify that `GET /api/v1/meta` shows both `capabilities.auth_login.enabled`
+   and `capabilities.admin_password_reset.enabled` true. These flags are not
+   ingress approval: a limited candidate keeps external ingress closed, and
+   ingress returns only to the state the separate operating-release/ingress
+   authorization already allows.
 
 ```sh
-# Authorized operator, before step 4:
-install -d -o eduvibe -g eduvibe -m 0700 /srv/eduvibe/secrets
+# Privileged (root) authorized operator, before step 4:
+sudo install -d -o eduvibe -g eduvibe -m 0700 /srv/eduvibe/secrets
 # eduvibe operator shell in the installed backend, steps 4-5:
 .venv/bin/python -m app.cli rotate-reset-key --generate
 .venv/bin/python -m app.auth_runtime
