@@ -53,11 +53,13 @@ def test_cleanup_deletes_only_the_rate_events_the_fixture_owns(member_app, monke
         add_rate_event(path, "login_ip", peer),
         add_rate_event(path, "prepare", peer),
         add_rate_event(path, "login_account", digest(f"{login}\n{peer}")),
+        add_rate_event(path, "login_account_global", digest(login)),
     ]
     unrelated = [
         add_rate_event(path, "login_account", "unowned-subject"),
         add_rate_event(path, "login_account", digest(f"someone-else\n{peer}")),
         add_rate_event(path, "prepare", digest("203.0.113.9")),
+        add_rate_event(path, "login_account_global", digest("someone-else")),
     ]
     leftovers = fixtures.cleanup({**owned, "flows": []})
     assert not any(leftovers.values()), leftovers

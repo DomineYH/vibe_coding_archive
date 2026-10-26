@@ -41,13 +41,14 @@ from app.auth_boundary import (
     response,
 )
 from app.auth_runtime import auth_available
+from app.safe_logging import emit
 
 router = APIRouter(prefix="/auth")
 
 # pwdlib's recommended Argon2id profile (RFC 9106 low-memory: m=64MiB, t=3, p=4).
 # Production timing on the real host is measured at T07, not assumed here.
 HASHER = PasswordHash.recommended()
-ACCOUNT_FAILURES, IP_FAILURES, WINDOW = 10, 200, 900
+ACCOUNT_FAILURES, IP_FAILURES, ACCOUNT_GLOBAL_FAILURES, WINDOW = 10, 200, 50, 900
 FULL_ABSOLUTE, FULL_IDLE = 8 * 3600, 30 * 60
 
 
@@ -189,12 +190,19 @@ def refuse_expired_permit(db, item, transition):
     raise AuthError("AUTH_STATE_CHANGED")
 
 
-def refuse_when_limited(db, item, transition, subjects):
+def refuse_when_limited(db, request, item, transition, subjects):
     """Rolling failure windows; a blocked attempt records nothing and extends nothing."""
     for (purpose, subject), limit in zip(
-        subjects, (ACCOUNT_FAILURES, IP_FAILURES), strict=True
+        subjects, (ACCOUNT_FAILURES, IP_FAILURES, ACCOUNT_GLOBAL_FAILURES), strict=True
     ):
         if retry_at := rate_limit_window(db, purpose, subject, limit, WINDOW):
+            if purpose == "login_account_global":
+                # Route template and status only: never the login ID, hash or address.
+                emit(
+                    "LOGIN_ACCOUNT_LIMITED",
+                    route=request.scope["route"].path,
+                    status=429,
+                )
             fail(
                 db, item, transition, AuthError("RATE_LIMITED", 429, retry_at=retry_at)
             )
@@ -327,6 +335,7 @@ def login(request: Request, body: LoginBody, db=Unlocked):
     subjects = (
         ("login_account", digest(f"{key}\n{client_subject(request)}")),
         ("login_ip", client_subject(request)),
+        ("login_account_global", digest(key)),
     )
     # Cheap proof first so unproven callers never occupy a hashing slot.
     execution_context(db, request, "login", "admitted")
@@ -336,7 +345,7 @@ def login(request: Request, body: LoginBody, db=Unlocked):
         if session["kind"] != "anonymous":
             raise AuthError("ALREADY_AUTHENTICATED")
         refuse_expired_permit(db, item, transition)
-        refuse_when_limited(db, item, transition, subjects)
+        refuse_when_limited(db, request, item, transition, subjects)
         seq = increment(item["issued_seq"])
         token = secrets.token_urlsafe(32)
         name = cookie_name(request, "session", item["id"], seq)
@@ -357,7 +366,7 @@ def login(request: Request, body: LoginBody, db=Unlocked):
         refuse_expired_permit(db, item, transition)
         timestamp = now()
         # Concurrent attempts may have filled the windows while this one was hashing.
-        refuse_when_limited(db, item, transition, subjects)
+        refuse_when_limited(db, request, item, transition, subjects)
         # Decide on the row as it is now, but only for the very account that was verified.
         member = find_member(db, key)
         if not verified or not member:

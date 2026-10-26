@@ -62,9 +62,11 @@ def insert_app(db, id_, owner, name, public, created, health):
 def owned_rate_subjects(members):
     """Per-client subjects and the fixture logins' per-account subjects."""
     peers = [digest(peer) for peer in PEERS]
-    return peers + [
-        digest(f"{member['login']}\n{peer}") for member in members for peer in peers
-    ]
+    return (
+        peers
+        + [digest(f"{member['login']}\n{peer}") for member in members for peer in peers]
+        + [digest(member["login"]) for member in members]
+    )
 
 
 def create(value):

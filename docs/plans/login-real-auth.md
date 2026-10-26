@@ -47,7 +47,7 @@ Phase 1은 브라우저 데모 인증이고 현재 FastAPI는 공개 읽기만 �
 | I06 활동·승인 해제는?            | me/CSRF/polling으로 연장 없음. 승인 해제는 대상 전체 세션 폐기·공개 앱 유지                  | [R7 Q9·23][R7], PRD §6.3          | 계승-#7  |
 | I07 Origin·CSRF는?               | Origin 우선·없을 때 exact Referer, null/둘 다 없음 거부. 현재 S에 결합된 CSRF                | [R7 Q27][R7]                      | 계승-#7  |
 | I08 로그인·가입 예외는?          | full/change_only에서 409, 잘못된 자격증명 401을 전역 로그아웃으로 바꾸지 않음                | [R7 Q26·38][R7]                   | 계승-#7  |
-| I09 남용 방지는?                 | rolling account+IP 10/15분·IP 200/15분 실패, 가입 IP 100/시간, 더미 해시                     | [R7 Q12·29·31·37][R7]             | 계승-#7  |
+| I09 남용 방지는?                 | rolling account+IP 10/15분·IP 200/15분·계정(IP 무관) 50/15분([ADR 0005](../adr/0005-login-account-failure-cap.md)) 실패, 가입 IP 100/시간, 더미 해시 | [R7 Q12·29·31·37][R7]             | 계승-#7  |
 | I10 자원 상한은?                 | 본문 16KiB, 해싱 동시 2·대기 4·1초 후보, 포화 503·Retry-After 1; 실측 별도                   | [R7 Q13·30][R7]                   | 계승-#7  |
 | I11 최초 관리자 경로는?          | 관리자 0명일 때 bootstrap, 기존 관리자만 recovery, hidden input·임시 암호·감사 원자성        | [R7 Q15·32~35][R7]                | 계승-#7  |
 | I12 재인증·초기화 경계는?        | 승인에는 recent-auth 불필요. 초기화/삭제 15분 recent-auth, 재인증 별도 operation은 Phase 5   | [R7 Q10·24~25][R7], PRD Phase 3/5 | 계승-#7  |

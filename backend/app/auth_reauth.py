@@ -78,9 +78,10 @@ def reauthenticate(request: Request, body: ReauthenticateBody, db=Unlocked):
                 digest(f"{member['login_id_key']}\n{client_subject(request)}"),
             ),
             ("login_ip", client_subject(request)),
+            ("login_account_global", digest(member["login_id_key"])),
         )
         refuse_expired_permit(db, item, transition)
-        refuse_when_limited(db, item, transition, subjects)
+        refuse_when_limited(db, request, item, transition, subjects)
         try:
             cookie_budget(
                 request,
@@ -115,7 +116,7 @@ def reauthenticate(request: Request, body: ReauthenticateBody, db=Unlocked):
             for key in ("token_hash", "issued_seq", "member_id", "absolute_expires_at")
         ):
             fail(db, item, transition, AuthError("AUTH_STATE_CHANGED"))
-        refuse_when_limited(db, item, transition, subjects)
+        refuse_when_limited(db, request, item, transition, subjects)
         if not verified:
             fail(
                 db,

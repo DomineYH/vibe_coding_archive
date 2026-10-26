@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 import threading
 from datetime import UTC, datetime, timedelta
@@ -94,8 +95,9 @@ def test_blocked_attempts_do_not_extend_the_window_and_it_survives_restart(
 
 
 def test_address_wide_failures_stop_at_two_hundred_per_window(
-    member_app, server_clock, fast_hasher
+    member_app, server_clock, fast_hasher, caplog
 ):
+    caplog.set_level(logging.INFO, logger="eduvibe.safe")
     app, _ = member_app()
     with TestClient(app) as client:
         browser = Browser(client).prepare().anonymous()
@@ -103,6 +105,7 @@ def test_address_wide_failures_stop_at_two_hundred_per_window(
             assert browser.login(f"nobody-{index}", WRONG).status_code == 401
         blocked = browser.login(AUTH_MEMBERS["hangul"][1], AUTH_PASSWORD)
         assert (blocked.status_code, code(blocked)) == (429, "RATE_LIMITED")
+    assert account_limited(caplog) == []
     server_clock[0] += timedelta(seconds=900)
     with TestClient(app) as later:
         fresh = Browser(later).prepare().anonymous()
@@ -208,4 +211,116 @@ def test_shared_ip_limit_includes_reauth_and_survives_rolling_restart(
                 "SELECT count(*) FROM rate_limit_events WHERE purpose='login_ip'"
             ).fetchone() == (200,)
         # Success does not delete even the now-expired persisted failure events.
+        assert admin.me().json()["login_id"] == ADMIN
+
+
+def at(app, host):
+    """A client whose ASGI peer, the address the IP subjects hash, is `host`."""
+    return TestClient(app, client=(host, 50000))
+
+
+def account_limited(caplog):
+    return [
+        record._safe_event
+        for record in caplog.records
+        if getattr(record, "_safe_event", {}).get("code") == "LOGIN_ACCOUNT_LIMITED"
+    ]
+
+
+def global_rows(path):
+    with sqlite3.connect(path) as db:
+        return db.execute(
+            "SELECT count(*), count(DISTINCT subject_hash) FROM rate_limit_events WHERE purpose='login_account_global'"
+        ).fetchone()
+
+
+def test_account_failures_across_addresses_stop_at_fifty_per_window(
+    member_app, server_clock, fast_hasher, caplog
+):
+    caplog.set_level(logging.INFO, logger="eduvibe.safe")
+    app, path = member_app()
+    for host in range(1, 6):
+        with at(app, f"10.0.0.{host}") as client:
+            browser = Browser(client).prepare().anonymous()
+            for _ in range(10):
+                assert browser.login(APPROVED, WRONG).status_code == 401
+            # The account+address window blocks here; the account-wide one is not yet full.
+            assert code(browser.login(APPROVED, WRONG)) == "RATE_LIMITED"
+        server_clock[0] += timedelta(seconds=60)
+    assert account_limited(caplog) == []
+    with at(app, "10.0.0.6") as client:
+        browser = Browser(client).prepare().anonymous()
+        blocked = browser.login(APPROVED, AUTH_PASSWORD)
+        assert (blocked.status_code, code(blocked)) == (429, "RATE_LIMITED")
+        # The first address's failures leave the account-wide window at +900s.
+        assert blocked.json()["error"]["retry_at"] == "2026-10-01T00:15:00.000000Z"
+        assert blocked.headers["Retry-After"] == "600"
+        assert account_limited(caplog) == [
+            {
+                "code": "LOGIN_ACCOUNT_LIMITED",
+                "at": account_limited(caplog)[0]["at"],
+                "run_id": account_limited(caplog)[0]["run_id"],
+                "route": "/auth/login",
+                "status": 429,
+            }
+        ]
+        # Another account from the same new address is not blocked.
+        assert browser.login(AUTH_MEMBERS["hangul"][1]).status_code == 200
+    # Blocked attempts were not recorded.
+    assert global_rows(path) == (50, 1)
+    server_clock[0] = datetime(2026, 10, 1, 0, 15, tzinfo=UTC)
+    with at(app, "10.0.0.6") as client:
+        fresh = Browser(client).prepare().anonymous()
+        assert fresh.login(APPROVED, AUTH_PASSWORD).status_code == 200
+
+
+def test_unknown_login_id_meets_the_same_account_wide_cap(
+    member_app, server_clock, fast_hasher
+):
+    app, _ = member_app()
+    for host in range(1, 6):
+        with at(app, f"10.0.0.{host}") as client:
+            browser = Browser(client).prepare().anonymous()
+            for login_id in (APPROVED, "nobody-here"):
+                for _ in range(10):
+                    assert browser.login(login_id, WRONG).status_code == 401
+    with at(app, "10.0.0.6") as client:
+        browser = Browser(client).prepare().anonymous()
+        known, unknown = (
+            browser.login(login_id, WRONG) for login_id in (APPROVED, "nobody-here")
+        )
+    assert (unknown.status_code, code(unknown)) == (429, "RATE_LIMITED")
+    assert unknown.headers["Retry-After"] == known.headers["Retry-After"]
+    known_error, unknown_error = known.json()["error"], unknown.json()["error"]
+    known_error.pop("request_id"), unknown_error.pop("request_id")
+    assert unknown_error == known_error
+    assert unknown_error["retry_at"] == "2026-10-01T00:15:00.000000Z"
+
+
+def test_reauth_shares_the_account_wide_cap_and_keeps_the_session(
+    member_app, server_clock, fast_hasher
+):
+    from tests.auth_client import signed_in
+    from tests.contracts.test_auth_reauth import ADMIN, reauth
+
+    app, path = member_app()
+    with at(app, "10.0.0.9") as client:
+        admin = signed_in(client, "admin")
+        for host in range(1, 5):
+            with at(app, f"10.0.0.{host}") as other:
+                browser = Browser(other).prepare().anonymous()
+                for _ in range(10):
+                    assert browser.login(ADMIN, WRONG).status_code == 401
+        for _ in range(9):
+            assert reauth(admin, WRONG).status_code == 401
+        with at(app, "10.0.0.5") as other:
+            browser = Browser(other).prepare().anonymous()
+            assert browser.login(ADMIN, WRONG).status_code == 401
+        # Login and re-auth failures of one account fill one account-wide window.
+        assert global_rows(path) == (50, 1)
+        blocked = reauth(admin)
+        assert (blocked.status_code, code(blocked)) == (429, "RATE_LIMITED")
+        assert blocked.json()["error"]["retry_at"] == "2026-10-01T00:15:00.000000Z"
+        # The existing full session is not revoked.
+        admin.revision = admin.state()["revision"]
         assert admin.me().json()["login_id"] == ADMIN
