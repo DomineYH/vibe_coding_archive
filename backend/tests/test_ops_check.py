@@ -27,7 +27,7 @@ def ops_storage(tmp_path, tmp_path_factory, migrate_test_database):
     return database, backups
 
 
-def cli(database, backups, *args):
+def cli(database, backups, *args, **environment):
     return subprocess.run(
         [
             sys.executable,
@@ -40,11 +40,12 @@ def cli(database, backups, *args):
         ],
         cwd=BACKEND,
         env={
-            **os.environ,
+            **{k: v for k, v in os.environ.items() if k != "PASSWORD_RESET_HMAC_PATH"},
             "APP_ENV": "test",
             "DATABASE_PATH": str(database),
             "PUBLIC_ORIGIN": "http://localhost:5174",
             "HEALTH_CHECKS_ENABLED": "false",
+            **environment,
         },
         capture_output=True,
         timeout=20,
@@ -568,3 +569,37 @@ def test_ops_check_safe_output_and_partial_failure(ops_storage, monkeypatch):
     )
     with pytest.raises(ValueError):
         main(settings_for(database), backup_dir=backups)
+
+
+def reset_supply_run(database, backups, path=None):
+    environment = {} if path is None else {"PASSWORD_RESET_HMAC_PATH": str(path)}
+    result = cli(database, backups, **environment)
+    assert result.returncode == 3
+    if path is not None:
+        assert str(path) not in result.stdout.decode() + result.stderr.decode()
+    checks = json.loads(result.stdout)["checks"]
+    return checks.pop("reset_supply"), checks
+
+
+def test_ops_check_reset_supply_unset_is_absent(ops_storage):
+    assert reset_supply_run(*ops_storage)[0] == "ABSENT"
+
+
+@pytest.mark.parametrize("fit", ["valid", "public", "missing"])
+def test_ops_check_reset_supply_set_path_is_present_only_when_verified(
+    ops_storage, tmp_path, fit
+):
+    from tests.password_reset_client import supply
+
+    database, backups = ops_storage
+    _, baseline = reset_supply_run(database, backups)
+    directory = tmp_path / "SECRET_RESET_SUPPLY_SENTINEL"
+    directory.mkdir(mode=0o700)
+    path = directory / "reset-hmac.json"
+    if fit != "missing":
+        supply(path)
+    if fit == "public":
+        path.chmod(0o644)
+    value, checks = reset_supply_run(database, backups, path)
+    assert value == ("PRESENT" if fit == "valid" else "UNCONFIRMED")
+    assert checks == baseline

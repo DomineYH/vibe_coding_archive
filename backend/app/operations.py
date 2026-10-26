@@ -267,8 +267,9 @@ def ops_check(
     checks["maintenance"] = (
         "RESTRICT" if maintenance_blocked(settings.database_path) else "ABSENT"
     )
-    checks["reset_supply"] = "UNCONFIRMED"
+    checks["reset_supply"] = "ABSENT"
     if settings.password_reset_hmac_path is not None:
+        checks["reset_supply"] = "UNCONFIRMED"
         path = settings.password_reset_hmac_path
         try:
             parent = _directory(path.parent, test=settings.app_env == "test")
