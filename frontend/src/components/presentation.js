@@ -28,6 +28,9 @@ export function formatCheckedAt(checkedAt, serverTime) {
   return `${checked.year}.${Number(checked.month)}.${Number(checked.day)}. ${time}`;
 }
 
+export const HEALTH_OPERATIONAL_NOTE =
+  "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
+
 export function formatDate(value) {
   const date = seoulDateParts(value, {
     year: "numeric",

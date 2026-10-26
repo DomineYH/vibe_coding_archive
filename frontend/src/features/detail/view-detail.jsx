@@ -8,7 +8,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { formatCheckedAt, formatDate } from "../../components/presentation";
+import {
+  formatCheckedAt,
+  formatDate,
+  HEALTH_OPERATIONAL_NOTE,
+} from "../../components/presentation";
 import {
   Avatar,
   Btn,
@@ -320,6 +324,7 @@ export function AppDetailView({
   healthStale = false,
   isAdmin = false,
   canCheckHealth = false,
+  healthCheckOperationallyRestricted = false,
   checkingHealth = false,
   checkHealthError,
   checkFeedback = "",
@@ -867,6 +872,25 @@ export function AppDetailView({
                   ? ` 다시 요청할 수 있는 시각: ${formatCheckedAt(checkHealthError.retryAt, checkHealthError.serverTime ?? healthServerTime ?? app.serverTime)}.`
                   : ""}
               </p>
+            ) : null}
+            {!canCheckHealth && healthCheckOperationallyRestricted ? (
+              <>
+                <p
+                  id="detail-health-operational-note"
+                  className="mt-3 text-[12px] leading-relaxed text-neutral-500"
+                >
+                  {HEALTH_OPERATIONAL_NOTE}
+                </p>
+                <Btn
+                  variant="soft"
+                  className="mt-4 w-full"
+                  disabled
+                  aria-describedby="detail-health-operational-note"
+                >
+                  <RefreshCw size={14} aria-hidden="true" />
+                  <span>연결 다시 확인</span>
+                </Btn>
+              </>
             ) : null}
             {canCheckHealth ? (
               <Btn

@@ -756,6 +756,15 @@ function DetailRoute({
       document.removeEventListener("visibilitychange", onVisibilityChange);
   }, [eligible, jobIsActive, jobQueryError, refetchJob, refreshStaleHealth]);
   const canCheckHealth = Boolean(app && eligible && healthCheckEnabled);
+  const healthCheckOperationallyRestricted = Boolean(
+    app &&
+    eligible &&
+    healthReadEnabled &&
+    access.meta?.capabilities.health_check.enabled === false &&
+    access.meta.capabilities.health_check.reasons.includes(
+      "operational_restriction",
+    ),
+  );
   const isHealthStale = staleAt !== null && freshnessNow >= staleAt;
   const checkFeedback = checkMutation.data
     ? {
@@ -1145,6 +1154,7 @@ function DetailRoute({
         !auth.user.mustChangePassword
       }
       canCheckHealth={canCheckHealth}
+      healthCheckOperationallyRestricted={healthCheckOperationallyRestricted}
       checkingHealth={checkMutation.isPending}
       checkHealthError={checkMutation.error}
       checkFeedback={checkFeedback}

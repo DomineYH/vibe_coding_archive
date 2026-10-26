@@ -7,7 +7,10 @@ import {
 } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Avatar, Btn, StatusBadge } from "../../components/ui";
-import { formatCheckedAt } from "../../components/presentation";
+import {
+  formatCheckedAt,
+  HEALTH_OPERATIONAL_NOTE,
+} from "../../components/presentation";
 import catalog from "../../../../contracts/catalog.json";
 import { adminService } from "@services/admin";
 import { healthService } from "@services/health";
@@ -2799,8 +2802,7 @@ export function AdminView({
               id="health-operational-note"
               className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
             >
-              연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요.
-              기존 연결 결과는 확인할 수 있어요.
+              {HEALTH_OPERATIONAL_NOTE}
             </p>
           ) : null}
 

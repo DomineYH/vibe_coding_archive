@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   act,
   fireEvent,
@@ -8,11 +9,18 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import catalog from "../../contracts/catalog.json";
+import App from "../src/app/app";
 import { AppDetailView } from "../src/features/detail/view-detail";
+import publicApps from "../src/fixtures/public-apps.json";
+import { authService } from "../src/services/mock/auth";
 import { ServiceError } from "../src/services/service-error";
 
 import { mapHealthSnapshot } from "../src/contracts/mappers";
 import { healthErrorCases } from "./health-identifiers.fixture";
+
+// The route reads meta and detail through the real API service and mapper.
+vi.mock("@services/apps", () => import("../src/services/api/apps"));
 
 const clipboardDescriptor = Object.getOwnPropertyDescriptor(
   navigator,
@@ -373,3 +381,215 @@ it.each(["checking", "unresolved", "error", "concealed"])(
     expect(screen.queryByText(app.prompt)).not.toBeInTheDocument();
   },
 );
+
+describe("health check operational restriction", () => {
+  const note =
+    "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
+  function renderPanel(props) {
+    return render(
+      <MemoryRouter>
+        <AppDetailView app={app} meta={meta} {...props} />
+      </MemoryRouter>,
+    );
+  }
+
+  it("disables the re-check button and describes it with the visible reason", async () => {
+    const onCheckHealth = vi.fn();
+    const view = renderPanel({
+      healthCheckOperationallyRestricted: true,
+      onCheckHealth,
+    });
+    const text = screen.getByText(note);
+    expect(text.tagName).toBe("P");
+    expect(text).toBeVisible();
+    expect(text).not.toHaveClass("sr-only");
+    expect(text.closest('[role="alert"], [aria-live="assertive"]')).toBeNull();
+    const button = screen.getByRole("button", { name: "연결 다시 확인" });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription(note);
+    expect(button).toHaveAttribute("aria-describedby", text.id);
+    expect(view.container.querySelectorAll(`[id="${text.id}"]`)).toHaveLength(
+      1,
+    );
+    await userEvent.click(button);
+    expect(onCheckHealth).not.toHaveBeenCalled();
+
+    view.rerender(
+      <MemoryRouter>
+        <AppDetailView app={app} meta={meta} canCheckHealth />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(note)).not.toBeInTheDocument();
+    expect(document.getElementById(text.id)).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "연결 다시 확인" }),
+    ).not.toHaveAttribute("aria-describedby");
+  });
+
+  it("keeps the enabled re-check button without a reason", async () => {
+    const onCheckHealth = vi.fn();
+    renderPanel({ canCheckHealth: true, onCheckHealth });
+    expect(screen.queryByText(note)).not.toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "연결 다시 확인" });
+    expect(button).toBeEnabled();
+    expect(button).not.toHaveAttribute("aria-describedby");
+    await userEvent.click(button);
+    expect(onCheckHealth).toHaveBeenCalledOnce();
+  });
+
+  it("shows no reason without an app", () => {
+    render(
+      <MemoryRouter>
+        <AppDetailView
+          app={null}
+          meta={meta}
+          error={new ServiceError("NOT_FOUND", "없는 앱")}
+          healthCheckOperationallyRestricted
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByText(note)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "연결 다시 확인" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("detail route health check operational restriction", () => {
+  const note =
+    "연결 검사 운영 준비가 확인되지 않아 새 검사를 접수할 수 없어요. 기존 연결 결과는 확인할 수 있어요.";
+  let queryClient;
+
+  async function visit(capabilities, { login = true } = {}) {
+    localStorage.clear();
+    if (login)
+      await authService.login({ loginId: "교사김코딩", password: "1234" });
+    vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    const routeMeta = {
+      ...catalog,
+      server_time: app.serverTime,
+      capabilities: {
+        ...Object.fromEntries(
+          [
+            "auth_register",
+            "auth_login",
+            "auth_logout",
+            "auth_password_change",
+            "admin_users_read",
+            "admin_approval",
+            "admin_summary",
+            "apps_create",
+            "apps_update_own",
+            "apps_delete_own",
+            "admin_apps_read",
+            "admin_apps_manage",
+            "admin_reauth",
+            "admin_password_reset",
+            "admin_user_delete",
+            "health_batch",
+            "email_collection",
+            "phone_collection",
+          ].map((key) => [
+            key,
+            { enabled: false, reasons: ["not_implemented"] },
+          ]),
+        ),
+        apps_read: { enabled: true, reasons: [] },
+        health_read: { enabled: true, reasons: [] },
+        ...capabilities,
+      },
+      support: { email: null, service_url: null, announcement_url: null },
+      initial_pending_days: 90,
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, options) => {
+        const body =
+          url === "/api/v1/meta"
+            ? routeMeta
+            : { item: publicApps[0], server_time: app.serverTime };
+        return new Response(JSON.stringify(body), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "private, no-store",
+            ...Object.fromEntries(options.headers),
+          },
+        });
+      }),
+    );
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={[`/apps/${publicApps[0].id}`]}>
+          <App />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+  }
+
+  afterEach(async () => {
+    queryClient?.clear();
+    vi.unstubAllGlobals();
+    await authService.logout();
+  });
+
+  it("explains an operational restriction on the detail re-check button", async () => {
+    await visit({
+      health_check: { enabled: false, reasons: ["operational_restriction"] },
+    });
+    const button = await screen.findByRole("button", {
+      name: "연결 다시 확인",
+    });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAccessibleDescription(note);
+    expect(screen.getAllByText(note)).toHaveLength(1);
+  });
+
+  // The meta mapper rejects enabled/reasons mismatches before the route sees them.
+  it.each([
+    { enabled: true, reasons: [] },
+    { enabled: false, reasons: ["not_implemented"] },
+    { enabled: false, reasons: ["verification_pending"] },
+    { enabled: false, reasons: ["collection_disabled"] },
+  ])(
+    "does not invent a detail operational restriction for %j",
+    async (value) => {
+      await visit({ health_check: value });
+      await screen.findByRole("link", { name: "앱 열기" });
+      expect(screen.queryByText(note)).not.toBeInTheDocument();
+      const buttons = screen.queryAllByRole("button", {
+        name: "연결 다시 확인",
+      });
+      expect(buttons).toHaveLength(value.enabled ? 1 : 0);
+      for (const button of buttons) {
+        expect(button).toBeEnabled();
+        expect(button).not.toHaveAccessibleDescription(note);
+      }
+    },
+  );
+
+  it("shows no reason when health reads are disabled", async () => {
+    await visit({
+      health_read: { enabled: false, reasons: ["not_implemented"] },
+      health_check: { enabled: false, reasons: ["operational_restriction"] },
+    });
+    await screen.findByRole("link", { name: "앱 열기" });
+    expect(screen.queryByText(note)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "연결 다시 확인" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows no reason to an anonymous visitor", async () => {
+    await visit(
+      {
+        health_check: { enabled: false, reasons: ["operational_restriction"] },
+      },
+      { login: false },
+    );
+    await screen.findByLabelText("로그인 아이디", { exact: true });
+    expect(screen.queryByText(note)).not.toBeInTheDocument();
+  });
+});

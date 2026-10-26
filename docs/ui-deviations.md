@@ -640,3 +640,18 @@ commands are recorded in
 `/home/dominelinux/.cache/vibe_coding_archive/coord/b262/impl/report.md`.
 Automated checks do not claim human visual, screen-reader, physical-device or CI
 acceptance.
+
+## I284-H — detail connection-check operational note
+
+Issue #284 extends the #210 Health Monitor notice to the app detail connection
+panel. When `health_check` is explicitly disabled with `operational_restriction`
+and the viewer could otherwise request a check (an approved full-session member
+who can read the app, with `health_read` enabled), the panel shows the same
+sentence as the administrator notice (one shared constant) in a visible
+`<p id="detail-health-operational-note" class="mt-3 text-[12px] leading-relaxed text-neutral-500">`
+inside the existing panel padding, and keeps the `연결 다시 확인` button rendered
+`disabled` with `aria-describedby` pointing at it. Other reasons, enabled
+checks, ineligible sessions, disabled health reads and missing apps keep the
+previous behavior with no notice. Mock mode cannot reach this state, so mock
+visual baselines are unchanged; recorded by **Claude Opus 5.5**, **2026-10-26**,
+in `/home/dominelinux/.cache/vibe_coding_archive/coord/b284/impl/report.md`.
