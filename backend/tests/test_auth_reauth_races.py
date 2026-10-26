@@ -8,9 +8,9 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from tests.auth_client import API, signed_in
+from tests.auth_client import API, Browser, signed_in
 from tests.contracts.test_auth_login import rows
-from tests.contracts.test_auth_reauth import ADMIN, execute
+from tests.contracts.test_auth_reauth import ADMIN, WRONG, execute, reauth
 from tests.support import AUTH_PASSWORD
 
 
@@ -240,3 +240,47 @@ def test_allocation_cannot_cross_the_live_authority_deadline(
         assert rows(path, "SELECT count(*) AS n FROM sessions WHERE kind='full'") == [
             {"n": 1}
         ]
+
+
+def test_a_login_failure_during_the_reauth_hash_fills_the_account_wide_window(
+    member_app, monkeypatch
+):
+    from app import auth_login
+    from app.auth_boundary import digest
+
+    app, path = member_app()
+    with sqlite3.connect(path) as db:
+        for _ in range(49):
+            db.execute(
+                "INSERT INTO rate_limit_events(purpose, subject_hash, occurred_at, expires_at) "
+                "VALUES ('login_account_global', ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now','+900 seconds'))",
+                (digest(ADMIN),),
+            )
+    real = auth_login.argon2_verify
+    # A different address, so the account+address window is not what blocks.
+    with (
+        TestClient(app) as client,
+        TestClient(app, client=("10.0.0.2", 50000)) as other,
+    ):
+        browser = signed_in(client, "admin")
+        anonymous = Browser(other).prepare().anonymous()
+        pending = [
+            # Re-auth passed its initial check at 49; a login elsewhere records the fiftieth.
+            lambda: anonymous.login(ADMIN, WRONG).status_code == 401
+        ]
+
+        def during(stored, password):
+            if pending:
+                assert pending.pop()()
+            return real(stored, password)
+
+        monkeypatch.setattr(auth_login, "argon2_verify", during)
+        result = reauth(browser, WRONG)
+        assert (result.status_code, result.json()["error"]["code"]) == (
+            429,
+            "RATE_LIMITED",
+        )
+        assert rows(
+            path,
+            "SELECT count(*) AS n FROM rate_limit_events WHERE purpose='login_account_global'",
+        ) == [{"n": 50}]

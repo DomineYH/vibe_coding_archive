@@ -633,6 +633,44 @@ def test_concurrent_wrong_guesses_cannot_push_the_account_window_past_ten(
         assert count == [{"n": 10}]
 
 
+def test_concurrent_wrong_guesses_cannot_push_the_account_wide_window_past_fifty(
+    member_app, change_during_hash
+):
+    from app.auth_boundary import digest
+
+    app, path = member_app()
+    with sqlite3.connect(path) as db:
+        for _ in range(49):
+            db.execute(
+                "INSERT INTO rate_limit_events(purpose, subject_hash, occurred_at, expires_at) "
+                "VALUES ('login_account_global', ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'), strftime('%Y-%m-%dT%H:%M:%fZ','now','+900 seconds'))",
+                (digest("member-a"),),
+            )
+    # A different address, so the account+address window is not what blocks.
+    with (
+        TestClient(app) as first,
+        TestClient(app, client=("10.0.0.2", 50000)) as second,
+    ):
+        slow = Browser(first).prepare().anonymous()
+        quick = Browser(second).prepare().anonymous()
+
+        def other_request_finishes_first():
+            # Passed its initial check at 49 failures, then records the fiftieth.
+            assert quick.login(APPROVED, "wrong password 12345").status_code == 401
+
+        change_during_hash["run"] = other_request_finishes_first
+        result = slow.login(APPROVED, "wrong password 12345")
+        assert (result.status_code, result.json()["error"]["code"]) == (
+            429,
+            "RATE_LIMITED",
+        )
+        count = rows(
+            path,
+            "SELECT count(*) AS n FROM rate_limit_events WHERE purpose='login_account_global'",
+        )
+        assert count == [{"n": 50}]
+
+
 def test_a_member_session_whose_cookie_was_never_received_is_discarded_exactly(
     member_app,
 ):
