@@ -25,7 +25,7 @@ API와 health worker는 같은 전용 서비스 UID를 사용한다. Nginx 계�
 
 ## 미승인 템플릿과 운영자 완료
 
-운영자는 먼저 명시적인 서비스 환경에 origin·DB·검증된 blocklist 경로·선택 HMAC 경로·auth record 경로·release ID를 준비한다. 파일 생성은 운영자만 수행한다. backend에서 다음 명령은 stdout에 metadata만 출력하며 파일을 쓰거나 승인을 하지 않는다. redirect는 `umask 077` 아래 운영자가 수행한다.
+운영자는 먼저 명시적인 서비스 환경에 origin·DB·검증된 blocklist 경로·선택 HMAC 경로·auth record 경로·release ID를 준비한다. 승인 뒤 HMAC 경로를 처음 추가하면 기록의 configuration이 달라져 로그인을 포함한 auth가 닫히므로 [재승인 절차](operational-checks.md#first-supply-on-an-already-approved-candidate)를 따른다. 파일 생성은 운영자만 수행한다. backend에서 다음 명령은 stdout에 metadata만 출력하며 파일을 쓰거나 승인을 하지 않는다. redirect는 `umask 077` 아래 운영자가 수행한다.
 
 ```sh
 python -m app.auth_runtime

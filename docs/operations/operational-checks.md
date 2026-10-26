@@ -173,6 +173,58 @@ invalidations are not undone, and uncertain publication is not reported as
 success. A stale temp after abrupt process death requires operator proof that
 no rotation is alive before removing it. Never restore outstanding old work.
 
+### First supply on an already approved candidate
+
+An approved auth record binds `password_reset_hmac_path` in `configuration`
+(`null` if approved without a path) and must match the running configuration as
+whole JSON. Adding the path is therefore not reset-only: without renewed
+approval it closes all auth, including login. Keep this order:
+
+1. Close ingress and stop the API and health worker as in the first paragraph
+   of [Reset HMAC rotation or loss](#reset-hmac-rotation-or-loss). Edit
+   `/etc/eduvibe/runtime.env` only afterwards: the API reads it at start, and
+   `Restart=on-failure` could otherwise restart into the new path unapproved.
+2. Choose an absolute path outside the release root with no symlink or `..`
+   component, e.g. `/srv/eduvibe/secrets/<reset-hmac-file>`. The command creates
+   no directories; create the parent first. Every directory from `/` down must
+   be owned by root or `eduvibe` without group/world write; the parent must be
+   `eduvibe`-owned with mode exactly 0700. An existing leaf must be a regular
+   single-link `eduvibe` file with mode 0600. Otherwise the command fails
+   with exit 1 `CLI_FAILED`.
+3. Add only the path, never secret bytes:
+   `PASSWORD_RESET_HMAC_PATH=<reset-hmac-path>` in `runtime.env`.
+4. Use the [operator shell](migrations.md#numbered-operator-procedure)
+   (explicit exports, `set -eu`, `umask 0077`): the CLI and `app.auth_runtime`
+   read only their process environment, never `runtime.env` or production
+   dotenv. Export every variable the API unit receives plus the new path; the
+   command also writes the DB.
+   Expect `RESET_KEY_ROTATED` and an `eduvibe` regular 0600 leaf.
+5. In the same shell print a template as in the
+   [approval procedure](auth-candidate.md#미승인-템플릿과-운영자-완료).
+   `configuration.password_reset_hmac_path` must be the step 3 string (`null`
+   means the path was not exported) and other fields unchanged. Obtain a new
+   #144 approval comment and replace the record by that procedure.
+6. Start the API and health worker. `/readyz` 200 only confirms startup: it
+   checks the Alembic head and reconciliation, not approval or the reset gate.
+   Reopen ingress only when `GET /api/v1/meta` shows both
+   `capabilities.auth_login.enabled` and
+   `capabilities.admin_password_reset.enabled` true.
+
+```sh
+# Authorized operator, before step 4:
+install -d -o eduvibe -g eduvibe -m 0700 /srv/eduvibe/secrets
+# eduvibe operator shell in the installed backend, steps 4-5:
+.venv/bin/python -m app.cli rotate-reset-key --generate
+.venv/bin/python -m app.auth_runtime
+```
+
+Restarting with the path but without step 5 keeps login and all auth closed.
+To roll back while the previous record is still installed, stop the units,
+remove the path from `runtime.env` and restart: the configuration matches that
+record again and the in-process revocation latch is gone. The generated file is
+then unused. Once the renewed record is installed, removing the path is again a
+configuration change that needs approval.
+
 ## Synthetic load measurement (deferred long profile)
 
 The stdlib `tests.ops_load` harness creates a dedicated temporary migrated
