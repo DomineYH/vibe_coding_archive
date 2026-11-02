@@ -35,6 +35,7 @@ afterEach(() => {
   client.clear();
   localStorage.clear();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 async function mount(entry = "/admin?tab=backups") {
@@ -220,6 +221,46 @@ it("cycles Arrow keys through users, health and backups", async () => {
     ),
   );
   expect(screen.getByRole("tab", { name: "사용자 관리" })).toHaveFocus();
+});
+
+it("skips the disabled Health Monitor tab in the Arrow key cycle", async () => {
+  vi.stubGlobal("__DATA_MODE__", "api");
+  const getMeta = appsService.getMeta.bind(appsService);
+  vi.spyOn(appsService, "getMeta").mockImplementation(async () => {
+    const meta = await getMeta();
+    meta.capabilities.admin_apps_read = {
+      enabled: false,
+      reasons: ["operational_restriction"],
+    };
+    return meta;
+  });
+  await mount("/admin");
+  const users = await screen.findByRole("tab", { name: "사용자 관리" });
+  const health = screen.getByRole("tab", { name: "Health Monitor" });
+  const backups = screen.getByRole("tab", { name: "백업" });
+  expect(health).toBeDisabled();
+  const expectSelected = async (tab, name) => {
+    await waitFor(() =>
+      expect(screen.getByRole("main")).toHaveAccessibleName(
+        `관리자 대시보드 — ${name}`,
+      ),
+    );
+    expect(tab).toHaveAttribute("aria-selected", "true");
+    expect(tab).toHaveFocus();
+    expect(health).toHaveAttribute("aria-selected", "false");
+    expect(
+      screen.getAllByRole("tab").filter((item) => item.tabIndex === 0),
+    ).toEqual([tab]);
+  };
+  users.focus();
+  fireEvent.keyDown(users, { key: "ArrowRight" });
+  await expectSelected(backups, "백업");
+  fireEvent.keyDown(backups, { key: "ArrowLeft" });
+  await expectSelected(users, "사용자 관리");
+  fireEvent.keyDown(users, { key: "ArrowLeft" });
+  await expectSelected(backups, "백업");
+  fireEvent.keyDown(backups, { key: "ArrowRight" });
+  await expectSelected(users, "사용자 관리");
 });
 
 it("never claims success in the backup UI source", () => {
