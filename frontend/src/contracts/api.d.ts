@@ -582,6 +582,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/backups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List local encrypted database backups and the current run
+         * @description Requires the current administrator session. Reads only each run's manifest.json; never opens ciphertext. Reports local completion only; remote confirmation is never inferred. configured=false means the API process has no BACKUP_ROOT/BACKUP_RECIPIENT_FILE or they fail the private-path checks.
+         */
+        get: operations["listAdminBackups"];
+        put?: never;
+        /**
+         * Start one local encrypted database backup
+         * @description Requires the current administrator session, Origin and CSRF proof, and an empty body. At most one run per API process; the shared .backup.lock also excludes the CLI/timer. 409 BACKUP_NOT_CONFIGURED when the process is not configured, 409 BACKUP_IN_PROGRESS when a run or another process holds the lock. Completion is observed via GET.
+         */
+        post: operations["createAdminBackup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/users": {
         parameters: {
             query?: never;
@@ -1387,6 +1411,34 @@ export interface components {
             /** @enum {string} */
             disposition: "created" | "active_reused";
             batch: components["schemas"]["HealthBatch"];
+        };
+        /** @enum {string} */
+        BackupRunState: "running" | "local_only" | "failed" | "rejected";
+        BackupRun: {
+            /** Format: uuid */
+            run_id: string;
+            state: components["schemas"]["BackupRunState"];
+            /** Format: date-time */
+            started_at: string;
+        };
+        BackupItem: {
+            /** Format: uuid */
+            run_id: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            original_expires_at: string;
+            ciphertext_bytes: number;
+            release_id: string;
+            revision: string;
+            /** @enum {string} */
+            status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED";
+        };
+        BackupList: {
+            configured: boolean;
+            current: null | components["schemas"]["BackupRun"];
+            items: components["schemas"]["BackupItem"][];
+            invalid_count: number;
         };
         AppCard: {
             /** Format: uuid */
@@ -2702,6 +2754,69 @@ export interface operations {
             403: components["responses"]["ServiceError"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    listAdminBackups: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Configuration flag, the last run in this process, and valid manifests. */
+            200: {
+                headers: {
+                    "Cache-Control"?: "private, no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupList"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            422: components["responses"]["ServiceError"];
+            503: components["responses"]["ServiceError"];
+        };
+    };
+    createAdminBackup: {
+        parameters: {
+            query?: never;
+            header: {
+                Origin: components["parameters"]["Origin"];
+                "X-CSRF-Token": components["parameters"]["CsrfToken"];
+                "X-EduVibe-Flow-Id": components["parameters"]["AuthFlowId"];
+                "X-EduVibe-Auth-Revision": components["parameters"]["AuthRevision"];
+                "X-EduVibe-Session-Generation": components["parameters"]["SessionGeneration"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run was accepted and is executing in the API process. */
+            202: {
+                headers: {
+                    "Cache-Control"?: "private, no-store";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupRun"];
+                };
+            };
+            401: components["responses"]["ServiceError"];
+            403: components["responses"]["ServiceError"];
+            409: components["responses"]["ServiceError"];
+            413: components["responses"]["ServiceError"];
             422: components["responses"]["ServiceError"];
             503: components["responses"]["ServiceError"];
         };

@@ -1253,6 +1253,66 @@ paths:
         "409": { $ref: "#/components/responses/ServiceError" }
         "422": { $ref: "#/components/responses/ServiceError" }
         "503": { $ref: "#/components/responses/ServiceError" }
+  /admin/backups:
+    get:
+      operationId: listAdminBackups
+      summary: List local encrypted database backups and the current run
+      description: >-
+        Requires the current administrator session. Reads only each run's
+        manifest.json; never opens ciphertext. Reports local completion only;
+        remote confirmation is never inferred. configured=false means the API
+        process has no BACKUP_ROOT/BACKUP_RECIPIENT_FILE or they fail the
+        private-path checks.
+      security:
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "200":
+          description: Configuration flag, the last run in this process, and valid manifests.
+          headers:
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BackupList" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
+    post:
+      operationId: createAdminBackup
+      summary: Start one local encrypted database backup
+      description: >-
+        Requires the current administrator session, Origin and CSRF proof, and
+        an empty body. At most one run per API process; the shared
+        .backup.lock also excludes the CLI/timer. 409 BACKUP_NOT_CONFIGURED
+        when the process is not configured, 409 BACKUP_IN_PROGRESS when a run
+        or another process holds the lock. Completion is observed via GET.
+      security:
+        - SessionCookie: []
+      parameters:
+        - $ref: "#/components/parameters/Origin"
+        - $ref: "#/components/parameters/CsrfToken"
+        - $ref: "#/components/parameters/AuthFlowId"
+        - $ref: "#/components/parameters/AuthRevision"
+        - $ref: "#/components/parameters/SessionGeneration"
+      responses:
+        "202":
+          description: The run was accepted and is executing in the API process.
+          headers:
+            Cache-Control: { schema: { type: string, const: "private, no-store" } }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BackupRun" }
+        "401": { $ref: "#/components/responses/ServiceError" }
+        "403": { $ref: "#/components/responses/ServiceError" }
+        "409": { $ref: "#/components/responses/ServiceError" }
+        "413": { $ref: "#/components/responses/ServiceError" }
+        "422": { $ref: "#/components/responses/ServiceError" }
+        "503": { $ref: "#/components/responses/ServiceError" }
   /admin/users:
     get:
       operationId: listAdminUsers
@@ -2941,6 +3001,44 @@ components:
       properties:
         disposition: { type: string, enum: [created, active_reused] }
         batch: { $ref: "#/components/schemas/HealthBatch" }
+    BackupRunState:
+      type: string
+      enum: [running, local_only, failed, rejected]
+    BackupRun:
+      type: object
+      additionalProperties: false
+      required: [run_id, state, started_at]
+      properties:
+        run_id: { type: string, format: uuid }
+        state: { $ref: "#/components/schemas/BackupRunState" }
+        started_at: { type: string, format: date-time }
+    BackupItem:
+      type: object
+      additionalProperties: false
+      required:
+        [run_id, created_at, original_expires_at, ciphertext_bytes, release_id, revision, status]
+      properties:
+        run_id: { type: string, format: uuid }
+        created_at: { type: string, format: date-time }
+        original_expires_at: { type: string, format: date-time }
+        ciphertext_bytes: { type: integer, minimum: 1 }
+        release_id: { type: string, maxLength: 80 }
+        revision: { type: string, maxLength: 80 }
+        status: { type: string, enum: [LOCAL_ONLY_REMOTE_NOT_CONFIRMED] }
+    BackupList:
+      type: object
+      additionalProperties: false
+      required: [configured, current, items, invalid_count]
+      properties:
+        configured: { type: boolean }
+        current:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/BackupRun"
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/BackupItem" }
+        invalid_count: { type: integer, minimum: 0 }
     AppCard:
       type: object
       additionalProperties: false
