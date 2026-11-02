@@ -140,6 +140,11 @@ test("admins see the complete public and private app monitor summaries", async (
   await expect(healthTab).toHaveAttribute("aria-current", "page");
   const statistics = page.getByRole("region", { name: "전체 통계" });
   await expect(statistics).toContainText("15 / 17");
+  await expect(
+    page.getByRole("tabpanel", { name: "Health Monitor" }),
+  ).toContainText(
+    "매일 00·06·12·18시(KST)에 전체 연결 검사가 자동으로 실행돼요.",
+  );
 
   const list = page.getByRole("list", { name: "전체 앱 목록" });
   await expect(list).toBeVisible();
