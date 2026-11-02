@@ -391,5 +391,21 @@ for (const viewport of viewports) {
     await expect(batchSummary).toContainText("실패 1");
     await expect(batchSummary).toContainText("취소 1");
     await capture(page, "admin-health-batch-final", viewport, testInfo);
+
+    await page.goto("/admin?tab=backups");
+    const backupsPanel = page.getByRole("tabpanel", { name: "백업" });
+    await expect(backupsPanel).toBeVisible();
+    const runBackup = backupsPanel.getByRole("button", {
+      name: "백업 실행",
+      exact: true,
+    });
+    await expect(runBackup).toBeEnabled();
+    await capture(page, "admin-backups", viewport, testInfo);
+    await runBackup.click();
+    await expect(backupsPanel.getByRole("status")).toContainText(
+      "로컬 완료 · 원격 미확인",
+      { timeout: 15000 },
+    );
+    await capture(page, "admin-backups-done", viewport, testInfo);
   });
 }

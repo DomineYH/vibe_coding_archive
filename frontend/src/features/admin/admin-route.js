@@ -5,7 +5,7 @@ export function readAdminTab(search) {
   const value = params.get("tab");
   return keys.length === 1 &&
     keys[0] === "tab" &&
-    ["users", "health"].includes(value)
+    ["users", "health", "backups"].includes(value)
     ? { tab: value, invalid: false }
     : { tab: "users", invalid: true };
 }

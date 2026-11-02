@@ -117,6 +117,7 @@ test("non-admins are denied and the protected admin account has no approval cont
   await login(page, "교사김코딩", "1234");
   await page.goto("/admin");
   await expect(page.getByRole("alert")).toContainText("관리자 권한이 필요해요");
+  await expect(page.getByRole("tab", { name: "백업" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "로그아웃", exact: true }).click();
   await login(page, "admin", "admin123");
