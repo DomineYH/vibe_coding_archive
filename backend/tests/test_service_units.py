@@ -131,6 +131,10 @@ def test_unit_lifecycle_and_privilege_contracts():
     assert directives(UNITS / "eduvibe-api.service")["ExecStart"] == [
         f"{PYTHON} -m app.api --host 127.0.0.1 --port 8000"
     ]
+    assert directives(UNITS / "eduvibe-api.service")["EnvironmentFile"] == [
+        "/etc/eduvibe/runtime.env",
+        "/etc/eduvibe/backup.env",
+    ]
     assert directives(UNITS / "eduvibe-health-worker.service")["ExecStart"] == [
         f"{PYTHON} -m app.health_worker"
     ]

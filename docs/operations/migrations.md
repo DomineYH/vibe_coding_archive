@@ -47,7 +47,8 @@ on `HEALTH_WORKER_LOCK_PATH=/srv/eduvibe/worker/health-worker.lock`.
 
 Required root-owned 0600 EnvironmentFiles are `/etc/eduvibe/runtime.env` for API,
 worker and backup; `/etc/eduvibe/backup.env` adds BACKUP_ROOT,
-BACKUP_RECIPIENT_FILE and APP_RELEASE_ID; `/etc/eduvibe/nginx.env` contains only
+BACKUP_RECIPIENT_FILE and APP_RELEASE_ID for backup and the API (administrator
+backup API), so the API also fails to start without it; `/etc/eduvibe/nginx.env` contains only
 approved nonsecret ingress settings. Missing files fail startup. EnvironmentFile
 syntax is systemd syntax, not a shell script. These files must also explicitly
 set APP_ENV=production and HEALTH_CHECKS_ENABLED=false; EnvironmentFile values

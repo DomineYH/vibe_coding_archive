@@ -535,6 +535,40 @@ def _publish(root, run_id, binary, recipient_fd, dump, core):
             os.close(stage_fd)
 
 
+def _checked_paths(stack, settings, output_dir, recipient_file):
+    """Root, recipient and source DB/ledger path policy; descriptors close with stack."""
+
+    def directory(path):
+        fd = _directory(path, test=settings.app_env == "test")
+        stack.callback(os.close, fd)
+        return fd
+
+    def file(parent, name):
+        fd = _file(parent, name)
+        stack.callback(os.close, fd)
+        return fd
+
+    root = directory(Path(output_dir))
+    recipient_file = Path(recipient_file)
+    recipient_fd = file(directory(recipient_file.parent), recipient_file.name)
+    raw = os.read(recipient_fd, 65537)
+    if len(raw) > 65536:
+        raise BackupUsageError()
+    _recipients(raw)
+    os.lseek(recipient_fd, 0, os.SEEK_SET)
+    parent = directory(settings.database_path.parent)
+    file(parent, settings.database_path.name)
+    ledger_name = settings.database_path.with_suffix(".deletions.sqlite3").name
+    file(parent, ledger_name)
+    return root, recipient_fd, raw, parent, ledger_name
+
+
+def check_paths(settings, *, output_dir, recipient_file):
+    """Pre-flight without lock, age, DB reads or writes; raises like backup_database."""
+    with ExitStack() as stack:
+        _checked_paths(stack, settings, output_dir, recipient_file)
+
+
 def backup_database(settings, *, output_dir, recipient_file, release_id, run_id=None):
     """Publish one private pair; source and independent deletion evidence are read-only."""
     run_id = str(uuid4()) if run_id is None else run_id
@@ -543,31 +577,12 @@ def backup_database(settings, *, output_dir, recipient_file, release_id, run_id=
     ):
         raise BackupUsageError()
     with ExitStack() as stack:
-
-        def directory(path):
-            fd = _directory(path, test=settings.app_env == "test")
-            stack.callback(os.close, fd)
-            return fd
-
-        def file(parent, name, flags=os.O_RDONLY):
-            fd = _file(parent, name, flags)
-            stack.callback(os.close, fd)
-            return fd
-
-        root = directory(Path(output_dir))
-        recipient_file = Path(recipient_file)
-        recipient_fd = file(directory(recipient_file.parent), recipient_file.name)
-        raw = os.read(recipient_fd, 65537)
-        if len(raw) > 65536:
-            raise BackupUsageError()
-        _recipients(raw)
-        os.lseek(recipient_fd, 0, os.SEEK_SET)
+        root, recipient_fd, raw, parent, ledger_name = _checked_paths(
+            stack, settings, output_dir, recipient_file
+        )
         binary, age_version = _age()
-        parent = directory(settings.database_path.parent)
-        file(parent, settings.database_path.name)
-        ledger_name = settings.database_path.with_suffix(".deletions.sqlite3").name
-        file(parent, ledger_name)
-        lock = file(root, ".backup.lock", os.O_CREAT | os.O_RDWR)
+        lock = _file(root, ".backup.lock", os.O_CREAT | os.O_RDWR)
+        stack.callback(os.close, lock)
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         if run_id in os.listdir(root):
             raise RuntimeError()

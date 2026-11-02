@@ -522,6 +522,8 @@ uvicorn.run('app.main:app', host='127.0.0.1', port=0)
         {"AUTH_ACTIVATION_PATH": "/tmp/auth.json", "APP_RELEASE_ID": "release-1"},
         {"DATABASE_PATH": "/var/tmp/api.sqlite3"},
         {"DATABASE_PATH": "/dev/shm/api.sqlite3"},
+        {"BACKUP_ROOT": "relative"},
+        {"BACKUP_ROOT": "/tmp/backups"},
     ],
 )
 def test_production_candidate_configuration_rejects_invalid_input(updates):
@@ -548,6 +550,34 @@ def test_candidate_configuration_accepts_explicit_release():
     )
     assert settings.auth_activation_path == Path("/srv/eduvibe/data/auth.json")
     assert settings.app_release_id == "release-1"
+
+
+def test_backup_paths_are_optional_absolute_and_production_checked(tmp_path):
+    base = _test_environment(tmp_path / "api.sqlite3")
+    base.pop("BACKUP_ROOT", None)
+    base.pop("BACKUP_RECIPIENT_FILE", None)
+    settings = Settings.from_environment(base)
+    assert settings.backup_root is None and settings.backup_recipient_file is None
+    settings = Settings.from_environment(
+        {**base, "BACKUP_ROOT": "~/x", "BACKUP_RECIPIENT_FILE": "/keys/recipients.txt"}
+    )
+    assert settings.backup_root == Path("~/x").expanduser()
+    assert settings.backup_root.is_absolute()
+    assert settings.backup_recipient_file == Path("/keys/recipients.txt")
+    assert Settings.from_environment({**base, "BACKUP_ROOT": ""}).backup_root is None
+    for name in ("BACKUP_ROOT", "BACKUP_RECIPIENT_FILE"):
+        with pytest.raises(ConfigurationError):
+            Settings.from_environment({**base, name: "relative/path"})
+    production = Settings.from_environment(
+        {
+            "APP_ENV": "production",
+            "DATABASE_PATH": "/srv/eduvibe/data/api.sqlite3",
+            "PUBLIC_ORIGIN": "https://archive.example.org",
+            "BACKUP_ROOT": "/srv/eduvibe/backups",
+            "BACKUP_RECIPIENT_FILE": "/etc/eduvibe/backup-recipients.txt",
+        }
+    )
+    assert production.backup_root == Path("/srv/eduvibe/backups")
 
 
 @pytest.mark.parametrize(

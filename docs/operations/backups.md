@@ -30,6 +30,31 @@ These are example paths/origin only. Use actual approved operator configuration.
 
 Errors use fixed safe messages, without raw exception values or age stderr. A missing tool/recipient/ledger, incompatible revision, or uncertain publication cannot be reported as success. Retry a failed attempt with a new run ID after resolving its cause.
 
+## Administrator API
+
+`POST /api/v1/admin/backups` starts the same `backup_database` run inside the API process; `GET /api/v1/admin/backups` lists it. Both require the current administrator session; POST also requires Origin and CSRF proof and an empty body. Before authentication activation they return 503 `FEATURE_UNAVAILABLE`. POST returns 202 with `{run_id, state: "running", started_at}`; completion is observed by GET. At most one run per API process, and the shared `.backup.lock` also excludes the CLI/timer: 409 `BACKUP_IN_PROGRESS`. `configured` means both `BACKUP_ROOT` and `BACKUP_RECIPIENT_FILE` are set and the backup root, recipient file (including its recipients) and source database with its adjacent ledger all pass the same path/file policy `backup-db` applies (above). Otherwise GET reports `configured: false` with no items and POST returns 409 `BACKUP_NOT_CONFIGURED`. The `age` executable is not part of this check; a missing or untrusted `age` makes the run `failed`.
+
+The API reports **local complete · remote unconfirmed** only: a listed item's status is always `LOCAL_ONLY_REMOTE_NOT_CONFIRMED`, the same meaning as exit 3. Run states `failed` (runtime/verification/encryption/publication failure) and `rejected` (lock lost to another process after the pre-check, or usage/configuration error) are distinct from that status and never appear as listed items; previous pairs are preserved. `release_id` is `APP_RELEASE_ID`; a value outside the release-ID pattern above makes every run `rejected`, as it does for the CLI. Development without `APP_RELEASE_ID` uses the `APP_ENV` name. Each accepted run writes one `audit_logs` row (`action=backup_create`, `target_id=run_id`, outcome `local_only`/`failed`/`rejected`); pre-check 409s write none. An audit write failure is not retried; the run state remains visible by GET. An audit write failure, or an API shutdown during a run, can leave no audit row for that run. Responses, logs and audit rows contain no paths, recipients or exception text.
+
+GET reads only each run's `manifest.json` and checks its structure (expired-but-unpurged pairs still list, as in ops-check); it never opens `backup.tar.age`, so its cost scales with the number of runs. Entries other than `.backup.lock`, `.stage-…` and `.purge-…` that fail the UUID-name/manifest checks are counted in `invalid_count`. The API writes nothing to `BACKUP_ROOT` except the pair and the persistent `.backup.lock`, so `purge-expired` and `ops-check` results are unchanged by API runs.
+
+The run state is held in API memory only (the last run stays as `current` until the next POST). After an API restart `current` is `null`. A run interrupted by stop/restart (systemd sends SIGKILL after `TimeoutStopSec`) may leave an unfinished `.stage-…`; handle it with the stale-stage procedure below. `eduvibe-api.service` now loads `/etc/eduvibe/backup.env` after `runtime.env`, without a `-` prefix: the API fails to start if that file is missing.
+
+## Development setup
+
+Development DB, backup root and recipient file must be on the Linux filesystem outside the repository, in owned 0700 directories with 0600 files. Any path on a Windows drive (`/mnt/c/...`) fails the ownership/0700/0600 checks, so the default `storage/development.sqlite3` (inside the repository, also rejected) must move as well:
+
+```bash
+install -d -m 0700 ~/.local/share/eduvibe/dev ~/.local/share/eduvibe/dev/db \
+  ~/.local/share/eduvibe/dev/backups ~/.local/share/eduvibe/dev/keys
+age-keygen -o ~/.local/share/eduvibe/dev/keys/identity.txt
+age-keygen -y ~/.local/share/eduvibe/dev/keys/identity.txt \
+  > ~/.local/share/eduvibe/dev/keys/recipients.txt
+chmod 0600 ~/.local/share/eduvibe/dev/keys/*
+```
+
+In `backend/.env` set absolute paths (examples): `DATABASE_PATH=/home/<user>/.local/share/eduvibe/dev/db/development.sqlite3`, `BACKUP_ROOT=/home/<user>/.local/share/eduvibe/dev/backups`, `BACKUP_RECIPIENT_FILE=/home/<user>/.local/share/eduvibe/dev/keys/recipients.txt`. Then from `backend/` run `alembic upgrade head` and `seed` against the new `DATABASE_PATH`, `chmod 0600` the database file, and start the API (startup creates the adjacent 0600 `.deletions.sqlite3` ledger). Restart the API after changing these values. If any of the three is missing or unsafe, GET reports `configured: false` and POST returns 409.
+
 ## Payload and manifest v1
 
 The output root contains a persistent owned 0600 `.backup.lock`, hidden owned 0700 `.stage-…` directories during attempts, and published owned 0700 UUID directories. A complete UUID directory contains exactly `backup.tar.age` and `manifest.json`, both 0600. The pair becomes visible by directory rename after successful encryption and file/directory fsync; the parent directory is also fsynced. Consumers ignore hidden stages.
