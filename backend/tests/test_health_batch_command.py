@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import create_engine
+from sqlalchemy.exc import IntegrityError
 
 from app import health_store
 from app.database import make_session_factory
@@ -148,3 +149,21 @@ def test_health_batch_injection_is_test_only(batch_settings):
         health_batch(
             settings.model_copy(update={"app_env": "production"}), enabled=True
         )
+
+
+def test_health_batch_rolls_back_partial_insert(batch_settings, capsys):
+    database, settings = batch_settings
+    ready_worker(database)
+    # Fires only once an item exists, so the batch, first job and first item
+    # are already inserted when the second item aborts.
+    with sqlite3.connect(database) as db:
+        db.execute(
+            """CREATE TRIGGER fail_second_item BEFORE INSERT ON health_batch_items
+            WHEN (SELECT count(*) FROM health_batch_items) >= 1
+            BEGIN SELECT RAISE(ABORT, 'second item blocked'); END"""
+        )
+    assert rows(database, "SELECT count(*) FROM apps")[0][0] >= 2
+    with pytest.raises(IntegrityError, match="second item blocked"):
+        run(settings, capsys, enabled=True)
+    for table in ("health_batches", "health_batch_items", "health_jobs"):
+        assert rows(database, f"SELECT count(*) FROM {table}") == [(0,)]
