@@ -473,6 +473,7 @@ describe("response mappers", () => {
       ["Unknown"],
       ["수학", "수학"],
       ["과학", "수학"],
+      ["기타", "창체"],
     ]) {
       expect(() =>
         mapAppPage({
@@ -481,6 +482,12 @@ describe("response mappers", () => {
         }),
       ).toThrowError(expect.objectContaining({ code: "CONTRACT_ERROR" }));
     }
+    expect(
+      mapAppPage({
+        ...page,
+        facets: { subjects_in_use: ["정보", "창체", "기타"] },
+      }).facets.subjectsInUse,
+    ).toEqual(["정보", "창체", "기타"]);
     expect(() => mapMeta({ ...meta, grades: ["중4"] })).toThrowError(
       expect.objectContaining({ code: "CONTRACT_ERROR" }),
     );

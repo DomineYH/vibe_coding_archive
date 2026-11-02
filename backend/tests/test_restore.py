@@ -443,7 +443,7 @@ def test_restore_migrates_known_ancestor(restore_case):
     with sqlite3.connect(target) as db:
         assert rows(db)["members"] == members
         assert db.execute("SELECT version_num FROM alembic_version").fetchall() == [
-            ("0012_health_checks",)
+            ("0013_subject_changche",)
         ]
 
 

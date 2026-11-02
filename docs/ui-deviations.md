@@ -655,3 +655,20 @@ checks, ineligible sessions, disabled health reads and missing apps keep the
 previous behavior with no notice. Mock mode cannot reach this state, so mock
 visual baselines are unchanged; recorded by **Claude Opus 5.5**, **2026-10-26**,
 in `/home/dominelinux/.cache/vibe_coding_archive/coord/b284/impl/report.md`.
+
+## I288-S — '창체' subject chip
+
+Issue #288 adds `창체` to the catalog subjects between `정보` and `기타`. The
+registration and edit forms render every catalog subject as a chip, so the
+교과 과목 group shows nine chips; at 390×844 and 360×844 `기타` wraps to a third
+row and the page grows by 42px. No copy, color, font or other control changes.
+Change ID **I288-S** re-approves only `16-submit`, `17-submit-error` and
+`13-edit` at all five viewports under the
+[#288 evidence ledger](evidence/phase-8/issue288/2026-11-02/README.md); #105 and
+#216 PNGs remain intact. Approval source: coordinator decision §7-D1 for #288.
+Recorder: **Claude Opus 5.5**, **2026-11-02**. At 1440×1000, 1024×900 and
+768×1024 every changed pixel lies in the chip row. At 390×844 and 360×844 the
+off-group differences come from the +42px page reflow — re-rasterization of the
+thumbnail preview, theme swatches, public toggle and header — and the images are
+visually identical outside the chip group. CI's threshold-0 visual job remains
+the authority; no human visual acceptance is claimed.

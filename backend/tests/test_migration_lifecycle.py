@@ -130,7 +130,7 @@ def state(database):
     return schema, rows(database, tables)
 
 
-def integrity(database, revision="0012_health_checks"):
+def integrity(database, revision="0013_subject_changche"):
     with sqlite3.connect(database) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchall() == [
             (revision,)
@@ -373,7 +373,7 @@ def test_downgrade_and_incompatible_release_refuse_without_data_changes(
     assert command(database, "alembic", "downgrade", "0011_user_delete").returncode != 0
     assert state(database) == original
     release = copied_release(tmp_path / "old-release")
-    (release / "alembic" / "versions" / "0012_health_checks.py").unlink()
+    (release / "alembic" / "versions" / "0013_subject_changche.py").unlink()
     head = subprocess.run(
         [
             sys.executable,
@@ -387,7 +387,7 @@ def test_downgrade_and_incompatible_release_refuse_without_data_changes(
         text=True,
         timeout=15,
     )
-    assert head.stdout.strip() == "0011_user_delete"
+    assert head.stdout.strip() == "0012_health_checks"
     imported = subprocess.run(
         [sys.executable, "-c", "import app.main; print('loaded')"],
         cwd=release,
