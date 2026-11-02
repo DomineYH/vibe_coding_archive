@@ -666,5 +666,9 @@ Change ID **I288-S** re-approves only `16-submit`, `17-submit-error` and
 `13-edit` at all five viewports under the
 [#288 evidence ledger](evidence/phase-8/issue288/2026-11-02/README.md); #105 and
 #216 PNGs remain intact. Approval source: coordinator decision §7-D1 for #288.
-Recorder: **Claude Opus 5.5**, **2026-11-02**. The ledger's after images are
-PENDING the CI artifact; no human visual acceptance is claimed.
+Recorder: **Claude Opus 5.5**, **2026-11-02**. At 1440×1000, 1024×900 and
+768×1024 every changed pixel lies in the chip row. At 390×844 and 360×844 the
+off-group differences come from the +42px page reflow — re-rasterization of the
+thumbnail preview, theme swatches, public toggle and header — and the images are
+visually identical outside the chip group. CI's threshold-0 visual job remains
+the authority; no human visual acceptance is claimed.
