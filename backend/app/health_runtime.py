@@ -41,6 +41,11 @@ def checks_available(db, request, *, auth_decision=None) -> bool:
         return False
     if not state.health_testing and not runtime_enabled(state.settings):
         return False
+    return worker_available(db)
+
+
+def worker_available(db) -> bool:
+    """Request-free worker gate shared by the API and the health-batch CLI."""
     boot_id, mono = boot_clock()
     return health_store.availability(db, boot_id=boot_id, mono=mono)
 

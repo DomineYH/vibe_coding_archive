@@ -236,6 +236,7 @@ def _main() -> int:
     choice.add_argument("--invalidate-only", action="store_true")
     choice.add_argument("--generate", action="store_true")
     subparsers.add_parser("disable-health", allow_abbrev=False)
+    subparsers.add_parser("health-batch", allow_abbrev=False)
     ops = subparsers.add_parser("ops-check", allow_abbrev=False)
     ops.add_argument("--backup-dir", required=True)
     ops.add_argument("--observations-file")
@@ -251,7 +252,12 @@ def _main() -> int:
     for command in ("bootstrap-admin", "recover-admin", "prepare-password-blocklist"):
         subparsers.add_parser(command)
     args = parser.parse_args()
-    if args.command in ("ops-check", "disable-health", "rotate-reset-key"):
+    if args.command in (
+        "ops-check",
+        "disable-health",
+        "health-batch",
+        "rotate-reset-key",
+    ):
         settings = Settings.from_environment()
         raw = os.environ.get("DATABASE_PATH")
         if raw is not None and Path(raw) != settings.database_path:
@@ -264,6 +270,10 @@ def _main() -> int:
         from app.operational_commands import disable_health
 
         return disable_health(settings)
+    if args.command == "health-batch":
+        from app.operational_commands import health_batch
+
+        return health_batch(settings)
     if args.command == "ops-check":
         from app.operations import main as ops_main
 
@@ -380,6 +390,7 @@ def main() -> int:
         "maintenance-block",
         "ops-check",
         "disable-health",
+        "health-batch",
         "rotate-reset-key",
         "backup-db",
         "restore-db",
@@ -393,7 +404,7 @@ def main() -> int:
             lambda record: record.name == "eduvibe.safe"
         )
     previous = {}
-    if command in ("ops-check", "disable-health", "rotate-reset-key"):
+    if command in ("ops-check", "disable-health", "health-batch", "rotate-reset-key"):
         from app.backup import BackupInterrupted
 
         resource.setrlimit(resource.RLIMIT_CORE, (0, 0))

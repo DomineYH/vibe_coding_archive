@@ -3,7 +3,9 @@
 구현 범위는 [계획](../plans/phase-6-health-checks.md), 최종 정책은
 [#14](https://github.com/DomineYH/vibe_coding_archive/issues/14)를 따른다.
 API는 작업 접수·조회만 하고 실제 HTTP는 같은 Linux 호스트의 별도 worker가
-실행한다. SQLite migration `0012_health_checks`가 필요하다. 자동 정기 검사는 없다.
+실행한다. SQLite migration `0012_health_checks`가 필요하다. 자동 전체 검사는
+`eduvibe-health-batch.timer`(KST 00·06·12·18시)가 `python -m app.cli health-batch`로
+접수한다([migrations.md](migrations.md) 참조).
 로컬 결합 검증은 [검증 기록](../evidence/phase-6/verification.md)에 기록한다.
 
 ## 개발 중 기대 상태와 검증

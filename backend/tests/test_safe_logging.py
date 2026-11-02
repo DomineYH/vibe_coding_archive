@@ -482,6 +482,7 @@ assert not worker.enabled()
     [
         ("ops-check", ("--backup-dir", SECRET), "app.operations", "main"),
         ("disable-health", (), "app.operational_commands", "disable_health"),
+        ("health-batch", (), "app.operational_commands", "health_batch"),
         (
             "rotate-reset-key",
             ("--generate",),
