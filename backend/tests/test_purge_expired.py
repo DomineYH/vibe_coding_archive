@@ -474,15 +474,20 @@ def test_purge_reports_partial_backup_progress(backup_case, monkeypatch, capsys)
 def test_production_configuration_failure_is_usage_without_mutation(
     member_app, tmp_path, capsys
 ):
+    from contextlib import closing
+
     from app.retention import purge_expired
 
     _, database = member_app()
     settings = backup.Settings.from_environment(environment((database, None, None)))
     invalid = settings.model_copy(update={"app_env": "production"})
-    before = database.read_bytes()
+    # Logical dump: GC of the discarded app may checkpoint its WAL into the file bytes.
+    with closing(sqlite3.connect(database)) as db:
+        before = list(db.iterdump())
     assert purge_expired(invalid, backup_dir=tmp_path / "missing") == 2
     output = json.loads(capsys.readouterr().out)
     assert output["codes"][0] == "PURGE_USAGE_INVALID"
     assert output["counts"] == {}
-    unchanged = before == database.read_bytes()
+    with closing(sqlite3.connect(database)) as db:
+        unchanged = before == list(db.iterdump())
     assert unchanged, "invalid production configuration must fail before maintenance"
