@@ -86,6 +86,7 @@ uv run --frozen uvicorn app.main:app --host 127.0.0.1 --port 8000 --proxy-header
 - 개발 환경은 실제 인증을 켜므로 검증된 비밀번호 차단 목록이 필요합니다. 기본 위치는 `storage/password-blocklist-ncsc.txt`이고 `PASSWORD_BLOCKLIST_PATH`로 바꿀 수 있습니다. 없거나 손상되면 서버가 시작하지 않고 `prepare-password-blocklist` 실행을 안내합니다.
 - 시드 회원 `seed-member-one`, `seed-member-two`는 `seed`에서 입력한 공통 비밀번호로 로그인합니다. `bootstrap-admin`으로 만든 관리자는 임시 비밀번호로 로그인한 뒤 비밀번호를 바꿔야 합니다.
 - 관리자 비밀번호 초기화가 필요하면 [개발 HMAC 최초 준비·실행 안내](docs/development/password-reset.md)를 따릅니다. 비밀은 저장소 밖 0600 파일에 보관하고 절대 경로만 프로세스 환경으로 공급합니다. 공급 실패 후에는 파일을 복구하고 API를 완전히 재시작해야 합니다.
+- 관리자 백업 API 준비는 [백업 문서의 개발 준비 절](docs/operations/backups.md#development-setup)을 따릅니다. DB·백업 위치·recipient 파일을 저장소 밖 Linux 파일시스템(0700/0600)에 두어야 하며, 설정하지 않으면 백업 API는 미구성으로 응답합니다.
 - 상태 확인: `GET /healthz`(프로세스 생존), `GET /readyz`(DB·인증 준비).
 
 **프런트엔드** (`frontend/`):
