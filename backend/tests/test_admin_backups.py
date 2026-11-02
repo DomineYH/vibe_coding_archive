@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app import backup
+from app.settings import Settings
 from tests.auth_client import Browser, signed_in
 from tests.support import AUTH_MEMBERS, populate_auth_members
 from tests.test_backup import (  # noqa: F401 - shared fixture
@@ -294,3 +295,41 @@ def test_api_run_leaves_purge_and_ops_check_unchanged(admin_case):
     assert ops_after == ops_before
     assert counts_after["backups_invalid"] == counts_before["backups_invalid"] == 0
     assert counts_after["backups_valid"] == counts_before["backups_valid"] + 1
+
+
+@pytest.mark.parametrize(
+    "problem",
+    ["recipient_missing", "recipient_0644", "database_0644", "development_default"],
+)
+def test_unusable_backup_paths_are_not_configured(admin_case, problem):
+    app, database, output, recipient = admin_case
+    with TestClient(app) as client:
+        admin = signed_in(client, "admin")
+        if problem == "recipient_missing":
+            recipient.unlink()
+        elif problem == "recipient_0644":
+            recipient.chmod(0o644)
+        elif problem == "database_0644":
+            database.chmod(0o644)
+        else:
+            # Development without DATABASE_PATH resolves into the repository's storage/.
+            default = Settings.from_environment(
+                {"APP_ENV": "development"}, backend_root=output.parent
+            ).database_path
+            assert default.is_relative_to(BACKEND.parent)
+            app.state.settings = app.state.settings.model_copy(
+                update={"database_path": default}
+            )
+        listed = client.get(URL, headers=headers(admin))
+        assert listed.status_code == 200, listed.text
+        assert listed.json() == {
+            "configured": False,
+            "current": None,
+            "items": [],
+            "invalid_count": 0,
+        }
+        created = client.post(URL, headers=headers(admin))
+        assert created.status_code == 409, created.text
+        assert error_code(created) == "BACKUP_NOT_CONFIGURED"
+    assert os.listdir(output) == []
+    assert audit_rows(database) == []

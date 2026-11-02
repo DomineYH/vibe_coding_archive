@@ -21,9 +21,18 @@ ENTRY = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 
 
 def _configured(settings):
-    return (
-        settings.backup_root is not None and settings.backup_recipient_file is not None
-    )
+    """Both paths set and passing backup_database's root/recipient/source-DB policy."""
+    if settings.backup_root is None or settings.backup_recipient_file is None:
+        return False
+    try:
+        backup.check_paths(
+            settings,
+            output_dir=settings.backup_root,
+            recipient_file=settings.backup_recipient_file,
+        )
+    except (OSError, backup.BackupUsageError):
+        return False
+    return True
 
 
 def _release_id(settings):
@@ -154,7 +163,7 @@ def list_backups(request: Request, db=Db):
             body["items"], body["invalid_count"] = _listing(settings)
             body["configured"] = True
         except (OSError, backup.BackupUsageError):
-            pass  # unsafe or missing root (e.g. /mnt/c) == not configured, never 500
+            pass  # root changed after the check == not configured, never 500
     return response(db, request, body, metadata=item, private=True)
 
 

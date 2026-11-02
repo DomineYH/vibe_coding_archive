@@ -591,7 +591,7 @@ export interface paths {
         };
         /**
          * List local encrypted database backups and the current run
-         * @description Requires the current administrator session. Reads only each run's manifest.json; never opens ciphertext. Reports local completion only; remote confirmation is never inferred. configured=false means the API process has no BACKUP_ROOT/BACKUP_RECIPIENT_FILE or they fail the private-path checks.
+         * @description Requires the current administrator session. Reads only each run's manifest.json; never opens ciphertext. Reports local completion only; remote confirmation is never inferred. configured=true means the API process has BACKUP_ROOT and BACKUP_RECIPIENT_FILE and the backup root, recipient file and source database all pass the backup path policy.
          */
         get: operations["listAdminBackups"];
         put?: never;
