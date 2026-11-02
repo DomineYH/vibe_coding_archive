@@ -672,3 +672,27 @@ off-group differences come from the +42px page reflow — re-rasterization of th
 thumbnail preview, theme swatches, public toggle and header — and the images are
 visually identical outside the chip group. CI's threshold-0 visual job remains
 the authority; no human visual acceptance is claimed.
+
+## I289-B — administrator backup tab
+
+Issue #289 adds a third administrator tab pill, `백업`, after `사용자 관리` and
+`Health Monitor` (`/admin?tab=backups`, same pill classes, roving tab index and
+cyclic Arrow-key order users → health → backups). Its panel uses the Health
+Monitor card layout: a `데이터베이스 백업` header with a `백업 실행` button whose
+`aria-describedby` points at one polite status note, then the local backup list
+(creation/expiry time in KST, size, truncated release id and a
+`로컬 완료 · 원격 미확인` chip). An unconfigured backup root keeps the button
+`disabled` and puts the reason in that note. Remote transfer is never shown as
+confirmed, and the panel avoids success wording.
+
+The pill changes the tablist region of the existing `admin-users` and
+`admin-health` captures, but page heights are unchanged at every viewport and
+those source-reference comparisons (`18-admin-users.png`, `21-admin-health.png`)
+were already report-only `dimensions_mismatch` before this change, so no
+`differentPixels`/`bounds` are produced. New `admin-backups` and
+`admin-backups-done` captures are product-only. No reference, baseline PNG, mask
+or threshold was created, replaced or changed. Recorder: **Claude Opus 5.5**,
+**2026-11-02**; results in
+`/home/dominelinux/.cache/vibe_coding_archive/coord/b289/report-impl289.md`.
+Automated checks do not claim human visual, screen-reader, physical-device or CI
+acceptance.

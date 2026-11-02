@@ -782,3 +782,140 @@ it.each([
     ).rejects.toMatchObject({ code: expected });
   },
 );
+
+describe("admin backups API", () => {
+  const backupItem = {
+    run_id: "00000000-0000-4000-8000-000000000901",
+    created_at: "2026-09-20T22:00:00.000Z",
+    original_expires_at: "2026-10-20T22:00:00.000Z",
+    ciphertext_bytes: 1572864,
+    release_id: "build.194",
+    revision: "0012",
+    status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED",
+  };
+  const list = {
+    configured: true,
+    current: null,
+    items: [backupItem],
+    invalid_count: 0,
+  };
+  const run = {
+    run_id: "00000000-0000-4000-8000-000000000902",
+    state: "running",
+    started_at: "2026-09-22T00:12:00.000Z",
+  };
+  const errorBody = (code: string) =>
+    JSON.stringify({ error: { code, message: code, request_id: "r" } });
+
+  it("reads the backup list with flow headers and maps it", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          adminResponse(JSON.stringify(list), { status: 200 }),
+        ),
+    );
+    const result = await adminService.listBackups();
+    expect(result).toMatchObject({ configured: true, invalidCount: 0 });
+    expect(result.items[0].runId).toBe(backupItem.run_id);
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/v1/admin/backups");
+    expect(init?.method).toBe("GET");
+    const headers = new Headers(init?.headers);
+    expect(headers.get("X-EduVibe-Flow-Id")).toBe(
+      "00000000-0000-4000-8000-000000000200",
+    );
+    expect(headers.has("X-CSRF-Token")).toBe(false);
+  });
+
+  it("requires the private no-store header for a captured read", async () => {
+    const flow = {
+      flowId: "00000000-0000-4000-8000-000000000300",
+      revision: "9",
+      sessionGeneration: "5",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify(list), {
+          status: 200,
+          headers: {
+            "X-EduVibe-Flow-Id": flow.flowId,
+            "X-EduVibe-Auth-Revision": "9",
+            "X-EduVibe-Session-Generation": "5",
+            "Cache-Control": "no-store",
+          },
+        }),
+      ),
+    );
+    const context = captureAuthObservation(
+      {
+        status: "ready",
+        user: {
+          id: "00000000-0000-4000-8000-000000000100",
+          role: "admin",
+          approved: true,
+          sessionKind: "full",
+          mustChangePassword: false,
+        },
+        flow,
+      } as never,
+      () => true,
+    );
+    await expect(
+      adminService.listBackups({ readContext: context }),
+    ).rejects.toMatchObject({ code: "CONTRACT_ERROR" });
+  });
+
+  it("starts a backup with CSRF and an empty body", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(adminResponse(JSON.stringify(run), { status: 202 })),
+    );
+    await expect(adminService.createBackup()).resolves.toEqual({
+      runId: run.run_id,
+      state: "running",
+      startedAt: run.started_at,
+    });
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe("/api/v1/admin/backups");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBeUndefined();
+    const headers = new Headers(init?.headers);
+    expect(headers.get("X-CSRF-Token")).toBe("csrf-test-token");
+    expect(headers.has("Content-Type")).toBe(false);
+  });
+
+  it.each(["BACKUP_IN_PROGRESS", "BACKUP_NOT_CONFIGURED"])(
+    "maps POST 409 %s",
+    async (code) => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValue(adminResponse(errorBody(code), { status: 409 })),
+      );
+      await expect(adminService.createBackup()).rejects.toMatchObject({
+        code,
+        httpStatus: 409,
+      });
+    },
+  );
+
+  it("does not accept backup conflict codes on the list read", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValue(
+          adminResponse(errorBody("BACKUP_IN_PROGRESS"), { status: 409 }),
+        ),
+    );
+    await expect(adminService.listBackups()).rejects.toMatchObject({
+      code: "CONTRACT_ERROR",
+    });
+  });
+});

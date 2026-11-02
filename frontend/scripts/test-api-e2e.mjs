@@ -5,6 +5,7 @@ import {
   copyFile,
   mkdir,
   mkdtemp,
+  open,
   rm,
   readFile,
   writeFile,
@@ -213,7 +214,7 @@ async function run() {
     nginx ||
     (!process.argv.includes("--auth-unavailable") &&
       arguments_.some((arg) =>
-        /(?:apps|detail|gallery-refetch)\.spec|health-real|auth-(candidate|support|prepare|login|loss|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete)|app-(create|edit|delete)/.test(
+        /(?:apps|detail|gallery-refetch)\.spec|health-real|auth-(candidate|support|prepare|login|loss|reauth|password|register|lifecycle|access|races|recovery)|admin-(apps|approval|password-reset|user-delete|backups)|app-(create|edit|delete)/.test(
           arg,
         ),
       ));
@@ -356,11 +357,17 @@ raise SystemExit(status)`,
     const selectedCandidate = arguments_.filter(isCandidate);
     const isFault = (arg) => /auth-(races|recovery)/.test(arg);
     const isHealth = (arg) => /health-real/.test(arg);
+    const isBackups = (arg) => /admin-backups/.test(arg);
     const selectedFaults = arguments_.filter(isFault);
     const selectedHealth = arguments_.filter(isHealth);
+    const selectedBackups = arguments_.filter(isBackups);
     const selectedNormal = arguments_.filter(
       (arg) =>
-        !isFault(arg) && !isHealth(arg) && !isCandidate(arg) && !isSupport(arg),
+        !isFault(arg) &&
+        !isHealth(arg) &&
+        !isBackups(arg) &&
+        !isCandidate(arg) &&
+        !isSupport(arg),
     );
     const normalFiles = selectedNormal.filter((arg) => /\.spec\.js$/.test(arg));
     const options = selectedNormal.filter((arg) => !/\.spec\.js$/.test(arg));
@@ -383,6 +390,7 @@ raise SystemExit(status)`,
             ...(normalFiles.length ||
             (!selectedFaults.length &&
               !selectedHealth.length &&
+              !selectedBackups.length &&
               !selectedCandidate.length &&
               !selectedSupport.length)
               ? selectNormalRuns(selectedNormal, authPrepared)
@@ -418,6 +426,16 @@ raise SystemExit(status)`,
                   },
                 ]
               : []),
+            ...(selectedBackups.length
+              ? [
+                  {
+                    arguments_: [...selectedBackups, ...options],
+                    prepared: true,
+                    faults: false,
+                    backups: true,
+                  },
+                ]
+              : []),
           ]
         : [
             {
@@ -441,6 +459,12 @@ raise SystemExit(status)`,
               prepared: true,
               faults: false,
               health: true,
+            },
+            {
+              arguments_: ["e2e-api/admin-backups.spec.js"],
+              prepared: true,
+              faults: false,
+              backups: true,
             },
             emptyRun(["e2e-api/admin-apps-empty.spec.js"]),
           ];
@@ -539,6 +563,37 @@ raise SystemExit(status)`,
           flag: "wx",
         });
       }
+      if (run.backups && env.API_E2E_AGE_AVAILABLE === "1") {
+        // Private 0700 root and 0600 recipient under the per-run 0700 directory satisfy the backup path policy.
+        const backupRoot = path.join(runDirectory, "backups");
+        await mkdir(backupRoot, { mode: 0o700 });
+        const identity = path.join(runDirectory, "backup-identity.txt");
+        const keyFile = await open(identity, "wx", 0o600);
+        try {
+          const generated = spawnSync("age-keygen", [], {
+            stdio: ["ignore", keyFile.fd, "ignore"],
+          });
+          if (generated.error || generated.status !== 0)
+            throw new Error("Backup identity generation failed.");
+        } finally {
+          await keyFile.close();
+        }
+        const recipient = spawnSync("age-keygen", ["-y", identity], {
+          stdio: "pipe",
+        });
+        if (recipient.error || recipient.status !== 0)
+          throw new Error("Backup recipient generation failed.");
+        runEnv.BACKUP_RECIPIENT_FILE = path.join(
+          runDirectory,
+          "backup-recipients.txt",
+        );
+        await writeFile(runEnv.BACKUP_RECIPIENT_FILE, recipient.stdout, {
+          mode: 0o600,
+          flag: "wx",
+        });
+        runEnv.BACKUP_ROOT = backupRoot;
+        runEnv.API_E2E_BACKUPS = "1";
+      }
       await copyFile(
         run.empty ? emptyTemplate : template,
         runEnv.DATABASE_PATH,
@@ -575,6 +630,7 @@ raise SystemExit(status)`,
             API_E2E_AUTH_BOUNDARY: run.prepared ? "prepared" : "unavailable",
             API_E2E_FAULTS: run.faults ? "1" : "",
             API_E2E_HEALTH: run.health ? "1" : "",
+            API_E2E_BACKUP_GROUP: run.backups ? "1" : "",
             API_E2E_EMPTY_APPS: run.empty ? "1" : "",
             API_E2E_CLOCK: run.capture ? "2026-10-01T00:00:00Z" : "",
           },

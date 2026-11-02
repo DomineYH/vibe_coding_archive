@@ -1034,3 +1034,92 @@ describe("temporary password length", () => {
     },
   );
 });
+
+describe("admin backups (mock)", () => {
+  it("runs a backup that completes on the second read after acceptance", async () => {
+    await loginAdmin();
+    const initial = await adminService.listBackups();
+    expect(initial).toMatchObject({ configured: true, current: null });
+    expect(initial.items).toHaveLength(1);
+
+    const run = await adminService.createBackup();
+    expect(run.state).toBe("running");
+    await expect(adminService.createBackup()).rejects.toMatchObject({
+      code: "BACKUP_IN_PROGRESS",
+      httpStatus: 409,
+    });
+
+    const first = await adminService.listBackups();
+    expect(first.current).toEqual(run);
+    expect(first.items).toHaveLength(1);
+
+    const second = await adminService.listBackups();
+    expect(second.current).toMatchObject({
+      runId: run.runId,
+      state: "local_only",
+    });
+    expect(second.items).toHaveLength(2);
+    expect(second.items[0]).toMatchObject({
+      runId: run.runId,
+      status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED",
+    });
+
+    resetMockState();
+    await loginAdmin();
+    const cleared = await adminService.listBackups();
+    expect(cleared.current).toBeNull();
+    expect(cleared.items).toHaveLength(1);
+  });
+
+  it("reports an unconfigured backup root and rejects a run", async () => {
+    setMockScenario("backup_unconfigured");
+    await loginAdmin();
+    await expect(adminService.listBackups()).resolves.toEqual({
+      configured: false,
+      current: null,
+      items: [],
+      invalidCount: 0,
+    });
+    await expect(adminService.createBackup()).rejects.toMatchObject({
+      code: "BACKUP_NOT_CONFIGURED",
+      httpStatus: 409,
+    });
+  });
+
+  it("finishes a failed run without adding an item", async () => {
+    setMockScenario("backup_failed");
+    await loginAdmin();
+    await adminService.createBackup();
+    await adminService.listBackups();
+    const finished = await adminService.listBackups();
+    expect(finished.current?.state).toBe("failed");
+    expect(finished.items).toHaveLength(1);
+  });
+
+  it("requires an administrator", async () => {
+    await authService.login({ loginId: "교사김코딩", password: "1234" });
+    await expect(adminService.listBackups()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+      httpStatus: 403,
+    });
+    await expect(adminService.createBackup()).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+  });
+
+  it.each([
+    { current: null, pending_reads: -1, items: [] },
+    { current: { state: "garbage" }, pending_reads: 0, items: [] },
+  ])("rejects a malformed backup store %#", async (store) => {
+    await loginAdmin();
+    const raw = JSON.stringify(store);
+    localStorage.setItem("eduvibe-archive-mock-backups-v1", raw);
+    await expect(adminService.listBackups()).rejects.toMatchObject({
+      code: "MOCK_STORAGE_ERROR",
+    });
+    await expect(adminService.createBackup()).rejects.toMatchObject({
+      code: "MOCK_STORAGE_ERROR",
+    });
+    expect(localStorage.getItem("eduvibe-archive-mock-backups-v1")).toBe(raw);
+  });
+});

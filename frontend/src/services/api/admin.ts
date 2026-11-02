@@ -5,6 +5,8 @@ import {
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
+  mapBackupList,
+  mapBackupRun,
   mapPasswordResetOperation,
   mapUserDeleteOperation,
 } from "../../contracts/mappers";
@@ -31,7 +33,9 @@ type ApiEndpoint =
   | "POST /admin/users/{id}/password-reset"
   | "DELETE /admin/users/{id}"
   | "GET /write-operations/{key}"
-  | "POST /write-operations/{key}/cancel";
+  | "POST /write-operations/{key}/cancel"
+  | "GET /admin/backups"
+  | "POST /admin/backups";
 
 type ErrorCodesByStatus = Partial<Record<number, readonly ServiceErrorCode[]>>;
 
@@ -137,6 +141,29 @@ const CANCEL_ERRORS: ErrorCodesByStatus = {
   ],
   410: ["OPERATION_EXPIRED"],
 };
+const BACKUP_READ_ERRORS: ErrorCodesByStatus = {
+  ...ADMIN_READ_ERRORS,
+  422: ["VALIDATION_ERROR"],
+};
+const BACKUP_CREATE_ERRORS: ErrorCodesByStatus = {
+  ...ADMIN_READ_ERRORS,
+  403: [
+    "FORBIDDEN",
+    "PASSWORD_CHANGE_REQUIRED",
+    "SESSION_KIND_NOT_ALLOWED",
+    "REAUTH_REQUIRED",
+    "CSRF_INVALID",
+    "ORIGIN_REJECTED",
+  ],
+  409: [
+    "BACKUP_NOT_CONFIGURED",
+    "BACKUP_IN_PROGRESS",
+    "AUTH_STATE_CHANGED",
+    "AUTH_TRANSITION_PENDING",
+  ],
+  413: ["PAYLOAD_TOO_LARGE"],
+  422: ["VALIDATION_ERROR"],
+};
 
 const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "GET /admin/users": ADMIN_READ_ERRORS,
@@ -148,6 +175,8 @@ const ERROR_CODES_BY_ENDPOINT: Record<ApiEndpoint, ErrorCodesByStatus> = {
   "DELETE /admin/users/{id}": USER_DELETE_ERRORS,
   "GET /write-operations/{key}": KEY_READ_ERRORS,
   "POST /write-operations/{key}/cancel": CANCEL_ERRORS,
+  "GET /admin/backups": BACKUP_READ_ERRORS,
+  "POST /admin/backups": BACKUP_CREATE_ERRORS,
 };
 
 function capturedHeaders({ state }: ProtectedReadContext) {
@@ -434,6 +463,26 @@ export const adminService: AdminService = {
     );
     if (readContext) assertAuthObservation(readContext);
     return page;
+  },
+
+  async listBackups({ signal, readContext } = {}) {
+    const list = mapBackupList(
+      await request("GET /admin/backups", "/admin/backups", {
+        signal,
+        readContext,
+      }),
+    );
+    if (readContext) assertAuthObservation(readContext);
+    return list;
+  },
+
+  async createBackup() {
+    return mapBackupRun(
+      await request("POST /admin/backups", "/admin/backups", {
+        method: "POST",
+        write: true,
+      }),
+    );
   },
 
   async getUser(id, { signal } = {}) {

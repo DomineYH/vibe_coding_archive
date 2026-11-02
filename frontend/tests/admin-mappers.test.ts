@@ -4,6 +4,8 @@ import {
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
+  mapBackupList,
+  mapBackupRun,
   mapPasswordResetOperation,
   mapUserDeleteOperation,
 } from "../src/contracts/mappers";
@@ -390,4 +392,97 @@ it.each([
       [field]: "forbidden",
     }),
   ).toThrow(expect.objectContaining({ code: "CONTRACT_ERROR" }));
+});
+
+describe("admin backup mappers", () => {
+  const backupItem = {
+    run_id: "00000000-0000-4000-8000-000000000901",
+    created_at: "2026-09-20T22:00:00.000Z",
+    original_expires_at: "2026-10-20T22:00:00.000Z",
+    ciphertext_bytes: 1572864,
+    release_id: "build.194",
+    revision: "0012",
+    status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED",
+  };
+  const backupList = {
+    configured: true,
+    current: null,
+    items: [backupItem],
+    invalid_count: 0,
+  };
+  const contractError = expect.objectContaining({ code: "CONTRACT_ERROR" });
+
+  it("maps the backup list contract example to camelCase", () => {
+    expect(mapBackupList(backupList)).toEqual({
+      configured: true,
+      current: null,
+      items: [
+        {
+          runId: backupItem.run_id,
+          createdAt: backupItem.created_at,
+          originalExpiresAt: backupItem.original_expires_at,
+          ciphertextBytes: 1572864,
+          releaseId: "build.194",
+          revision: "0012",
+          status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED",
+        },
+      ],
+      invalidCount: 0,
+    });
+  });
+
+  it("maps a running backup run", () => {
+    const run = {
+      run_id: "00000000-0000-4000-8000-000000000902",
+      state: "running",
+      started_at: "2026-09-22T00:12:00.000Z",
+    };
+    expect(mapBackupRun(run)).toEqual({
+      runId: run.run_id,
+      state: "running",
+      startedAt: run.started_at,
+    });
+    expect(mapBackupList({ ...backupList, current: run }).current).toEqual({
+      runId: run.run_id,
+      state: "running",
+      startedAt: run.started_at,
+    });
+  });
+
+  it.each([
+    ["extra list key", { ...backupList, extra: true }],
+    ["extra item key", { ...backupList, items: [{ ...backupItem, extra: 1 }] }],
+    [
+      "zero bytes",
+      { ...backupList, items: [{ ...backupItem, ciphertext_bytes: 0 }] },
+    ],
+    [
+      "unknown status",
+      { ...backupList, items: [{ ...backupItem, status: "SUCCESS" }] },
+    ],
+    [
+      "non-uuid run id",
+      { ...backupList, items: [{ ...backupItem, run_id: "run-1" }] },
+    ],
+    [
+      "long release id",
+      { ...backupList, items: [{ ...backupItem, release_id: "x".repeat(81) }] },
+    ],
+    ["empty current", { ...backupList, current: {} }],
+    [
+      "unknown run state",
+      {
+        ...backupList,
+        current: {
+          run_id: backupItem.run_id,
+          state: "done",
+          started_at: backupItem.created_at,
+        },
+      },
+    ],
+    ["negative invalid count", { ...backupList, invalid_count: -1 }],
+    ["string configured", { ...backupList, configured: "true" }],
+  ])("rejects a backup list with %s", (_name, value) => {
+    expect(() => mapBackupList(value)).toThrow(contractError);
+  });
 });

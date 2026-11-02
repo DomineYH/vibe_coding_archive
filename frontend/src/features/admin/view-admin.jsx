@@ -20,9 +20,16 @@ import {
   PASSWORD_MIN_LENGTH,
 } from "../../services/auth-service";
 import { HealthCheckControl } from "./health-check-control";
+import { BackupControls } from "./backup-controls";
 import { refreshAdminApps } from "./refresh-admin-apps";
 
 const PAGE_SIZE = 24;
+const TAB_ORDER = ["users", "health", "backups"];
+const TAB_LABELS = {
+  users: "사용자 관리",
+  health: "Health Monitor",
+  backups: "백업",
+};
 const APPS_DENIED_CODES = new Set([
   "AUTH_REQUIRED",
   "FORBIDDEN",
@@ -1339,13 +1346,18 @@ export function AdminView({
     setDeleteSelection(null);
     setResetError("");
     setDeleteError("");
-    navigate(nextTab === "health" ? "/admin?tab=health" : "/admin");
+    navigate(nextTab === "users" ? "/admin" : `/admin?tab=${nextTab}`);
   }
 
   function handleTabKeyDown(event) {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
-    const nextTab = tab === "users" ? "health" : "users";
+    const index = TAB_ORDER.indexOf(tab);
+    const nextTab =
+      TAB_ORDER[
+        (index + (event.key === "ArrowRight" ? 1 : TAB_ORDER.length - 1)) %
+          TAB_ORDER.length
+      ];
     event.currentTarget.parentElement
       ?.querySelector(`[role="tab"][data-admin-tab="${nextTab}"]`)
       ?.focus();
@@ -2454,7 +2466,7 @@ export function AdminView({
     <main
       data-route-main
       tabIndex={-1}
-      aria-label={`관리자 대시보드 — ${tab === "health" ? "Health Monitor" : "사용자 관리"}`}
+      aria-label={`관리자 대시보드 — ${TAB_LABELS[tab]}`}
       className="focus:outline-none mx-auto w-full max-w-[1016px] px-5 pb-24 pt-12 sm:px-8"
     >
       <div className="flex flex-wrap items-end justify-between gap-5">
@@ -2501,6 +2513,21 @@ export function AdminView({
             onKeyDown={handleTabKeyDown}
           >
             Health Monitor
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="admin-backups-tab"
+            data-admin-tab="backups"
+            aria-selected={tab === "backups"}
+            aria-current={tab === "backups" ? "page" : undefined}
+            aria-controls="admin-backups-panel"
+            tabIndex={tab === "backups" ? 0 : -1}
+            className={`rounded-full px-4 py-2 ${tab === "backups" ? "bg-white text-neutral-900 shadow-sm" : "hover:text-neutral-700"}`}
+            onClick={() => changeTab("backups")}
+            onKeyDown={handleTabKeyDown}
+          >
+            백업
           </button>
         </div>
       </div>
@@ -2996,6 +3023,22 @@ export function AdminView({
               ) : null}
             </>
           )}
+        </section>
+      ) : null}
+      {tab === "backups" ? (
+        <section
+          id="admin-backups-panel"
+          role="tabpanel"
+          aria-labelledby="admin-backups-tab"
+          tabIndex={0}
+          className="mt-8 overflow-hidden rounded-[24px] border border-neutral-200/80 bg-white shadow-sm"
+        >
+          <BackupControls
+            key={scopeKey}
+            active={active && !route.invalid}
+            scopeKey={scopeKey}
+            readContext={readContext}
+          />
         </section>
       ) : null}
     </main>
