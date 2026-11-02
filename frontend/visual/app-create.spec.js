@@ -10,11 +10,12 @@ import { assertSubpixelRgb } from "./render-precheck.js";
 const referenceRoot = path.resolve(
   "../docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines",
 );
-// I216-C approves only the narrow cancel label and adjacent description reflow.
-const cancelReferenceRoot = path.resolve(
-  "../docs/evidence/phase-7/issue216/2026-10-11/visual-state-baselines",
+// I288-S re-approves the form captures for the added '창체' subject chip;
+// they also carry the earlier I216-C cancel-label change at 390/360.
+const subjectReferenceRoot = path.resolve(
+  "../docs/evidence/phase-8/issue288/2026-11-02/visual-state-baselines",
 );
-const cancelBaselines = new Set([
+const subjectBaselines = new Set([
   "16-submit.png",
   "17-submit-error.png",
   "13-edit.png",
@@ -80,10 +81,9 @@ async function setScenario(page, scenario) {
 
 async function capture(page, state, viewport, testInfo, baseline = null) {
   return captureImage(page, state, viewport, testInfo, baseline, {
-    referenceRoot:
-      viewport.width <= 390 && cancelBaselines.has(baseline)
-        ? cancelReferenceRoot
-        : referenceRoot,
+    referenceRoot: subjectBaselines.has(baseline)
+      ? subjectReferenceRoot
+      : referenceRoot,
     outputRoot,
     results,
   });
