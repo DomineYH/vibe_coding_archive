@@ -120,14 +120,18 @@ function readBackups(): MockBackups {
     throw backupStorageError();
   }
   const store = value as MockBackups;
-  if (
-    !store ||
-    typeof store !== "object" ||
-    !Number.isSafeInteger(store.pending_reads) ||
-    !Array.isArray(store.items)
-  )
+  try {
+    if (!Number.isSafeInteger(store.pending_reads) || store.pending_reads < 0)
+      throw backupStorageError();
+    mapBackupList({
+      configured: true,
+      current: store.current,
+      items: store.items,
+      invalid_count: 0,
+    });
+  } catch {
     throw backupStorageError();
-  // ponytail: item shape is checked by mapBackupList on every read.
+  }
   return store;
 }
 

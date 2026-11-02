@@ -1106,4 +1106,20 @@ describe("admin backups (mock)", () => {
       code: "FORBIDDEN",
     });
   });
+
+  it.each([
+    { current: null, pending_reads: -1, items: [] },
+    { current: { state: "garbage" }, pending_reads: 0, items: [] },
+  ])("rejects a malformed backup store %#", async (store) => {
+    await loginAdmin();
+    const raw = JSON.stringify(store);
+    localStorage.setItem("eduvibe-archive-mock-backups-v1", raw);
+    await expect(adminService.listBackups()).rejects.toMatchObject({
+      code: "MOCK_STORAGE_ERROR",
+    });
+    await expect(adminService.createBackup()).rejects.toMatchObject({
+      code: "MOCK_STORAGE_ERROR",
+    });
+    expect(localStorage.getItem("eduvibe-archive-mock-backups-v1")).toBe(raw);
+  });
 });

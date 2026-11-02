@@ -62,7 +62,9 @@ export function BackupControls({ active, scopeKey, readContext }) {
   });
   const data = query.data;
   const running = data?.current?.state === "running";
-  const canRun = Boolean(data?.configured) && !running && !pending;
+  // A failed status read keeps stale data; never offer a run on it.
+  const canRun =
+    Boolean(data?.configured) && !query.isError && !running && !pending;
 
   async function run() {
     if (!canRun || sending.current) return;
@@ -81,7 +83,7 @@ export function BackupControls({ active, scopeKey, readContext }) {
         failure instanceof ServiceError &&
         failure.code === "BACKUP_IN_PROGRESS"
       )
-        void query.refetch();
+        await query.refetch();
     } finally {
       sending.current = false;
       setPending(false);

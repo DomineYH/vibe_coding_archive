@@ -140,6 +140,66 @@ it("shows a conflict when another backup is already running", async () => {
   );
 });
 
+it("keeps the run button locked until the post-409 refresh settles", async () => {
+  const empty = { configured: true, current: null, items: [], invalidCount: 0 };
+  let finishRead;
+  vi.spyOn(adminService, "listBackups")
+    .mockResolvedValueOnce(empty)
+    .mockReturnValueOnce(new Promise((resolve) => (finishRead = resolve)))
+    .mockResolvedValue(empty);
+  const create = vi
+    .spyOn(adminService, "createBackup")
+    .mockRejectedValue(
+      new ServiceError("BACKUP_IN_PROGRESS", "busy", { httpStatus: 409 }),
+    );
+  const { panel, button } = await mount();
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  expect(await within(panel).findByRole("alert")).toHaveTextContent(
+    "이미 백업이 실행 중이에요",
+  );
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(create).toHaveBeenCalledTimes(1);
+  finishRead({
+    ...empty,
+    current: {
+      runId: "00000000-0000-4000-8000-000000000001",
+      state: "running",
+      startedAt: "2026-11-02T00:00:00Z",
+    },
+  });
+  await waitFor(() =>
+    expect(within(panel).getByRole("status")).toHaveTextContent(
+      "백업을 실행하고 있어요",
+    ),
+  );
+  expect(button).toBeDisabled();
+  expect(create).toHaveBeenCalledTimes(1);
+});
+
+it("locks the run button while the status read is failing until a retry succeeds", async () => {
+  const empty = { configured: true, current: null, items: [], invalidCount: 0 };
+  vi.spyOn(adminService, "listBackups")
+    .mockResolvedValueOnce(empty)
+    .mockRejectedValueOnce(new ServiceError("NETWORK_ERROR", "offline"))
+    .mockResolvedValue(empty);
+  const create = vi.spyOn(adminService, "createBackup").mockResolvedValue({
+    runId: "00000000-0000-4000-8000-000000000001",
+    state: "running",
+    startedAt: "2026-11-02T00:00:00Z",
+  });
+  const { panel, button } = await mount();
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  await within(panel).findByText("백업 목록을 불러오지 못했어요.");
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  fireEvent.click(within(panel).getByRole("button", { name: "다시 시도" }));
+  await waitFor(() => expect(button).toBeEnabled());
+  expect(create).toHaveBeenCalledTimes(1);
+});
+
 it("cycles Arrow keys through users, health and backups", async () => {
   await mount("/admin?tab=health");
   const health = await screen.findByRole("tab", { name: "Health Monitor" });
