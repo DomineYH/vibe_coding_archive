@@ -1,4 +1,4 @@
-"""Explicit health revocation and reset-key rotation; never start or stop services."""
+"""Explicit health revocation, scheduled batch admission and reset-key rotation; never start or stop services."""
 
 import ctypes
 import fcntl
@@ -16,14 +16,19 @@ from uuid import uuid4
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import URL
 
+from app.auth_boundary import AuthError
 from app.backup import _directory, _file
 from app.database import current_head, current_revision, make_session_factory
+from app.health_runtime import runtime_enabled, worker_available
+from app.health_store import request_batch
 from app.health_store_worker import cancel_all
 from app.password_reset_secret import (
     invalidate_reset_operations,
     load_secret,
     unique_object,
 )
+from app.restore_guard import maintenance_blocked, restore_blocked
+from app.safe_logging import emit
 
 
 @contextmanager
@@ -126,6 +131,64 @@ def disable_health(settings):
     )
     print("HEALTH_STOP_REQUIRED" if held else "HEALTH_DISABLED")
     return 3 if held else 0
+
+
+def health_batch(settings, *, enabled=None):
+    """Scheduled admin batch without a requester; exit table in docs/operations/migrations.md."""
+    if enabled is not None and settings.app_env != "test":
+        raise ValueError()
+    if maintenance_blocked(settings.database_path):
+        blocked = restore_blocked(settings.database_path)
+        emit(
+            "RESTORE_MAINTENANCE_REQUIRED"
+            if blocked
+            else "MIGRATION_MAINTENANCE_REQUIRED"
+        )
+        reason = "restore_blocked" if blocked else "migration_blocked"
+        return _report({"outcome": "unavailable", "reason": reason}, 1)
+    if not (runtime_enabled(settings) if enabled is None else enabled):
+        return _report({"outcome": "skipped", "reason": "disabled"}, 0)
+    with writer(settings) as factory, factory() as db:
+        db.execute(text("BEGIN IMMEDIATE"))
+        try:
+            _, body = request_batch(
+                db, None, datetime.now(UTC), available=worker_available(db)
+            )
+        except AuthError as error:
+            if error.code == "RATE_LIMITED":
+                return _report(
+                    {
+                        "outcome": "skipped",
+                        "reason": "batch_cooldown",
+                        "retry_at": error.retry_at,
+                    },
+                    0,
+                )
+            if error.code == "FEATURE_UNAVAILABLE":
+                return _report(
+                    {"outcome": "unavailable", "reason": "worker_unavailable"}, 1
+                )
+            raise
+        db.commit()
+    batch = body["batch"]
+    if body["disposition"] == "active_reused":
+        return _report(
+            {"outcome": "skipped", "reason": "active_reused", "batch_id": batch["id"]},
+            0,
+        )
+    return _report(
+        {
+            "outcome": "created",
+            "batch_id": batch["id"],
+            "target_count": batch["target_count"],
+        },
+        0,
+    )
+
+
+def _report(payload, status):
+    print(json.dumps(payload, separators=(",", ":")))
+    return status
 
 
 def process_states():

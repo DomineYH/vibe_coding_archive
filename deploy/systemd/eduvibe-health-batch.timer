@@ -1,0 +1,11 @@
+[Unit]
+Description=EduVibe KST scheduled health batch
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:00:00 Asia/Seoul
+Persistent=false
+RandomizedDelaySec=0
+Unit=eduvibe-health-batch.service
+
+[Install]
+WantedBy=timers.target

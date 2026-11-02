@@ -8,9 +8,11 @@ record. T07 consumes the names, paths and maintenance predicate below.
 
 ## Installation contract
 
-Install the five templates in `deploy/systemd/` only after host review:
+Install the nine templates in `deploy/systemd/` only after host review:
 `eduvibe-api.service`, `eduvibe-health-worker.service`, `eduvibe-nginx.service`,
-`eduvibe-backup.service`, `eduvibe-backup.timer`. There is no target, migration
+`eduvibe-backup.service`, `eduvibe-backup.timer`, `eduvibe-ops-check.service`,
+`eduvibe-ops-check.timer`, `eduvibe-health-batch.service`,
+`eduvibe-health-batch.timer`. There is no target, migration
 service, startup install/seed/bootstrap, or purge service/timer. The worker has no
 install section and is never enabled by this handoff. Requires/After on worker
 and Nginx bind them to the API; stopping the API stops dependent services first.
@@ -82,6 +84,18 @@ SuccessExitStatus=3 or ignored ExecStart failure. Catchup is not an RPO guarante
 Retention scheduling is an open T12 prerequisite; manual purge remains the T06
 command and does not become scheduled merely because backup/logrotate exists.
 
+The health-batch timer runs `python -m app.cli health-batch` at 00:00, 06:00,
+12:00 and 18:00 Asia/Seoul with Persistent=false (no catchup burst after boot; the
+next quarter is awaited) and no random delay. The command prints one JSON line.
+Exit 0: `created`, `skipped` with `active_reused`, `batch_cooldown` or `disabled`.
+Exit 1 leaves the unit failed: `unavailable` with `restore_blocked`,
+`migration_blocked` or `worker_unavailable`, and any database/head failure
+(`CLI_FAILED`). No SuccessExitStatus. `.restore-blocked` is permanent, so every
+quarter records a failed run until restore is resolved. Automatic batches have
+`requested_by` NULL and follow the existing 7-day retention and batch cooldown.
+Without `HEALTH_CHECKS_ENABLED=true` and the approved HEALTH_* supply in
+`/etc/eduvibe/runtime.env`, every run quietly ends as `skipped: disabled`.
+
 ## Numbered operator procedure
 
 These are commands for a reviewed host, not commands executed by this handoff.
@@ -104,6 +118,7 @@ working directory apply to every command, including offline checks.
    maintenance_rc=0
    "$OLD_RELEASE/backend/.venv/bin/python" -m app.cli maintenance-block || maintenance_rc=$?
    sudo systemctl stop eduvibe-backup.timer eduvibe-backup.service
+   sudo systemctl stop eduvibe-health-batch.timer eduvibe-health-batch.service
    sudo systemctl stop eduvibe-nginx.service
    sudo systemctl stop eduvibe-health-worker.service
    sudo systemctl stop eduvibe-api.service
@@ -126,7 +141,7 @@ working directory apply to every command, including offline checks.
    listener and completed backup processes. Inspect privately:
 
    ```sh
-   sudo systemctl show eduvibe-api.service eduvibe-health-worker.service eduvibe-nginx.service eduvibe-backup.service -p ActiveState -p SubState -p MainPID -p ControlGroup
+   sudo systemctl show eduvibe-api.service eduvibe-health-worker.service eduvibe-nginx.service eduvibe-backup.service eduvibe-health-batch.service -p ActiveState -p SubState -p MainPID -p ControlGroup
    sudo ss -ltnp
    exec 8<>/srv/eduvibe/worker/health-worker.lock
    flock --exclusive --nonblock 8
@@ -273,7 +288,8 @@ working directory apply to every command, including offline checks.
 
    Perform permitted functional/auth smoke privately under closed ingress. On
    failure recreate the durable latch, stop API and keep ingress closed. Only
-   after successful review reopen approved ingress and restart the backup timer.
+   after successful review reopen approved ingress and restart the backup and
+   health-batch timers.
    Health remains false. `.restore-blocked` is permanent quarantine with unchanged
    semantics; this procedure never removes it, even after restore verification.
    Release the migration lock only at the final accepted/stopped boundary:

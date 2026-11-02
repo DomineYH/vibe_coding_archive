@@ -19,6 +19,8 @@ EXPECTED = {
     "eduvibe-backup.timer",
     "eduvibe-ops-check.service",
     "eduvibe-ops-check.timer",
+    "eduvibe-health-batch.service",
+    "eduvibe-health-batch.timer",
 }
 
 
@@ -76,7 +78,11 @@ def test_unit_lifecycle_and_privilege_contracts():
         if path.suffix != ".service":
             continue
         nginx = path.name == "eduvibe-nginx.service"
-        backup = path.name in {"eduvibe-backup.service", "eduvibe-ops-check.service"}
+        backup = path.name in {
+            "eduvibe-backup.service",
+            "eduvibe-ops-check.service",
+            "eduvibe-health-batch.service",
+        }
         uid = "eduvibe-nginx" if nginx else "eduvibe"
         assert values["User"] == values["Group"] == [uid]
         assert values["UMask"] == ["0077"]
@@ -113,7 +119,11 @@ def test_unit_lifecycle_and_privilege_contracts():
             assert "Requires" not in values and "Wants" not in values
         if not nginx:
             assert values["WorkingDirectory"] == ["/opt/eduvibe/current/backend"]
-        if path.name in ("eduvibe-api.service", "eduvibe-health-worker.service"):
+        if path.name in (
+            "eduvibe-api.service",
+            "eduvibe-health-worker.service",
+            "eduvibe-health-batch.service",
+        ):
             assert (
                 "HEALTH_WORKER_LOCK_PATH=/srv/eduvibe/worker/health-worker.lock"
                 in values["Environment"]
@@ -152,6 +162,22 @@ def test_backup_timer_preserves_kst_and_nonzero_status():
     ]
     assert "SuccessExitStatus" not in backup
     assert not backup["ExecStart"][0].startswith("-")
+
+
+def test_health_batch_timer_runs_kst_quarters_without_catchup():
+    shipped()
+    timer = directives(UNITS / "eduvibe-health-batch.timer")
+    assert timer["OnCalendar"] == ["*-*-* 00,06,12,18:00:00 Asia/Seoul"]
+    assert timer["Persistent"] == ["false"]
+    assert timer["RandomizedDelaySec"] == ["0"]
+    assert timer["Unit"] == ["eduvibe-health-batch.service"]
+    service = directives(UNITS / "eduvibe-health-batch.service")
+    assert service["Type"] == ["oneshot"]
+    assert service["Restart"] == ["no"]
+    assert service["EnvironmentFile"] == ["/etc/eduvibe/runtime.env"]
+    assert service["ExecStart"] == [f"{PYTHON} -m app.cli health-batch"]
+    assert "SuccessExitStatus" not in service and "OnFailure" not in service
+    assert not service["ExecStart"][0].startswith("-")
 
 
 def test_ops_timer_uses_safe_read_only_command_and_preserves_failures():

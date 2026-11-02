@@ -2805,6 +2805,12 @@ export function AdminView({
               {HEALTH_OPERATIONAL_NOTE}
             </p>
           ) : null}
+          <p
+            id="health-schedule-note"
+            className="border-b border-neutral-200/70 px-6 py-3 text-[12px] text-neutral-500"
+          >
+            매일 00·06·12·18시(KST)에 전체 연결 검사가 자동으로 실행돼요.
+          </p>
 
           {!canReadApps ? (
             <p role="status" className="px-6 py-8 text-[13px] text-neutral-500">
