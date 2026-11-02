@@ -1,9 +1,12 @@
+import type { components } from "../../contracts/api";
 import { captureAuthInvalidation } from "../auth-invalidation";
 import {
   mapAdminAppPage,
   mapAdminUser,
   mapAdminUserPage,
   mapApprovalOperation,
+  mapBackupList,
+  mapBackupRun,
   mapPasswordResetOperation,
   mapUserDeleteOperation,
   type AdminUserPage,
@@ -29,6 +32,7 @@ import {
   finishMockApprovalOperation,
   getMockAccounts,
   getMockApprovalOperation,
+  getMockNow,
   getMockSnapshot,
   MOCK_WRITE_OPERATIONS_RESET_EVENT,
   MOCK_ACCOUNT_DELETED_EVENT,
@@ -74,6 +78,67 @@ window.addEventListener(MOCK_WRITE_OPERATIONS_RESET_EVENT, () => {
   userDeleteOperations.clear();
   userDeleteSequence = 0;
 });
+// Side store keeps backups out of MockState, whose shape is strictly versioned.
+const BACKUPS_KEY = "eduvibe-archive-mock-backups-v1";
+type MockBackups = {
+  current: components["schemas"]["BackupRun"] | null;
+  pending_reads: number;
+  items: components["schemas"]["BackupItem"][];
+};
+const SEEDED_BACKUP: components["schemas"]["BackupItem"] = {
+  run_id: "00000000-0000-4000-8000-000000000901",
+  created_at: "2026-09-20T22:00:00.000Z",
+  original_expires_at: "2026-10-20T22:00:00.000Z",
+  ciphertext_bytes: 1_572_864,
+  release_id: "mock-build.194",
+  revision: "0012",
+  status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED",
+};
+window.addEventListener(MOCK_WRITE_OPERATIONS_RESET_EVENT, () => {
+  try {
+    localStorage.removeItem(BACKUPS_KEY);
+  } catch {
+    // Reset remains available when browser storage is restricted.
+  }
+});
+
+function backupStorageError() {
+  return new ServiceError(
+    "MOCK_STORAGE_ERROR",
+    "개발용 저장 데이터를 읽거나 저장하지 못했어요.",
+  );
+}
+
+function readBackups(): MockBackups {
+  let value: unknown;
+  try {
+    const raw = localStorage.getItem(BACKUPS_KEY);
+    if (raw === null)
+      return { current: null, pending_reads: 0, items: [SEEDED_BACKUP] };
+    value = JSON.parse(raw);
+  } catch {
+    throw backupStorageError();
+  }
+  const store = value as MockBackups;
+  if (
+    !store ||
+    typeof store !== "object" ||
+    !Number.isSafeInteger(store.pending_reads) ||
+    !Array.isArray(store.items)
+  )
+    throw backupStorageError();
+  // ponytail: item shape is checked by mapBackupList on every read.
+  return store;
+}
+
+function writeBackups(store: MockBackups) {
+  try {
+    localStorage.setItem(BACKUPS_KEY, JSON.stringify(store));
+  } catch {
+    throw backupStorageError();
+  }
+}
+
 window.addEventListener(MOCK_ACCOUNT_DELETED_EVENT, (event) => {
   const accountId = (event as CustomEvent<{ accountId: string }>).detail
     .accountId;
@@ -453,6 +518,64 @@ export const adminService: AdminService = {
       server_time: state.mock_now,
     });
     return page;
+  },
+
+  async listBackups({ signal } = {}) {
+    if (signal?.aborted)
+      throw signal.reason ?? new DOMException("Request aborted", "AbortError");
+    const { state } = currentAdmin();
+    if (state.scenario === "backup_unconfigured")
+      return mapBackupList({
+        configured: false,
+        current: null,
+        items: [],
+        invalid_count: 0,
+      });
+    const store = readBackups();
+    if (store.current?.state === "running") {
+      // Deterministic completion: the second read after acceptance finishes the run.
+      if (store.pending_reads > 0) store.pending_reads -= 1;
+      else if (state.scenario === "backup_failed")
+        store.current = { ...store.current, state: "failed" };
+      else {
+        const now = getMockNow();
+        store.current = { ...store.current, state: "local_only" };
+        store.items.unshift({
+          ...SEEDED_BACKUP,
+          run_id: store.current.run_id,
+          created_at: now,
+          original_expires_at: new Date(
+            Date.parse(now) + 30 * 86_400_000,
+          ).toISOString(),
+          ciphertext_bytes: 1_048_576 + 4096 * store.items.length,
+          release_id: "mock-build.195",
+        });
+      }
+      writeBackups(store);
+    }
+    return mapBackupList({
+      configured: true,
+      current: store.current,
+      items: store.items,
+      invalid_count: 0,
+    });
+  },
+
+  async createBackup() {
+    const { state } = currentAdmin();
+    if (state.scenario === "backup_unconfigured")
+      throw fail("BACKUP_NOT_CONFIGURED", "백업이 구성되지 않았어요.", 409);
+    const store = readBackups();
+    if (store.current?.state === "running")
+      throw fail("BACKUP_IN_PROGRESS", "이미 백업이 실행 중이에요.", 409);
+    store.current = {
+      run_id: crypto.randomUUID(),
+      state: "running",
+      started_at: getMockNow(),
+    };
+    store.pending_reads = 1;
+    writeBackups(store);
+    return mapBackupRun(store.current);
   },
 
   async getUser(id, { signal } = {}) {

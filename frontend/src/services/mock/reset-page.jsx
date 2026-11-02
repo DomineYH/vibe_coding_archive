@@ -156,6 +156,8 @@ export default function MockResetPage() {
           <option value="admin_delete_pending_confirmation">
             회원 삭제 확인 대기
           </option>
+          <option value="backup_unconfigured">백업 미구성</option>
+          <option value="backup_failed">백업 실패</option>
         </select>
         <label
           className="mt-5 block text-[13px] font-semibold text-neutral-800"

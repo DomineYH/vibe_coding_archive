@@ -275,6 +275,27 @@ export type BatchAccepted = {
   disposition: "created" | "active_reused";
   batch: HealthBatch;
 };
+export type BackupRunState = Wire["BackupRunState"];
+export type BackupRun = {
+  runId: string;
+  state: BackupRunState;
+  startedAt: string;
+};
+export type BackupItem = {
+  runId: string;
+  createdAt: string;
+  originalExpiresAt: string;
+  ciphertextBytes: number;
+  releaseId: string;
+  revision: string;
+  status: "LOCAL_ONLY_REMOTE_NOT_CONFIRMED";
+};
+export type BackupList = {
+  configured: boolean;
+  current: BackupRun | null;
+  items: BackupItem[];
+  invalidCount: number;
+};
 export type AdminApp = {
   id: string;
   ownerId: string;
@@ -1840,6 +1861,81 @@ export function mapBatchAccepted(
   return {
     disposition: item.disposition as BatchAccepted["disposition"],
     batch,
+  };
+}
+
+const BACKUP_RUN_STATES: BackupRunState[] = [
+  "running",
+  "local_only",
+  "failed",
+  "rejected",
+];
+
+function uuid(value: unknown): string {
+  const result = string(value);
+  if (!isUuid(result)) throw contractError();
+  return result;
+}
+
+function shortString(value: unknown): string {
+  const result = string(value);
+  if (result.length > 80) throw contractError();
+  return result;
+}
+
+export function mapBackupRun(value: unknown): BackupRun {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, ["run_id", "state", "started_at"]) ||
+    !BACKUP_RUN_STATES.includes(item.state as BackupRunState)
+  )
+    throw contractError();
+  return {
+    runId: uuid(item.run_id),
+    state: item.state as BackupRunState,
+    startedAt: dateTime(item.started_at),
+  };
+}
+
+function mapBackupItem(value: unknown): BackupItem {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, [
+      "run_id",
+      "created_at",
+      "original_expires_at",
+      "ciphertext_bytes",
+      "release_id",
+      "revision",
+      "status",
+    ]) ||
+    item.status !== "LOCAL_ONLY_REMOTE_NOT_CONFIRMED"
+  )
+    throw contractError();
+  return {
+    runId: uuid(item.run_id),
+    createdAt: dateTime(item.created_at),
+    originalExpiresAt: dateTime(item.original_expires_at),
+    ciphertextBytes: integer(item.ciphertext_bytes, 1),
+    releaseId: shortString(item.release_id),
+    revision: shortString(item.revision),
+    status: item.status,
+  };
+}
+
+export function mapBackupList(value: unknown): BackupList {
+  const item = record(value);
+  if (
+    !hasExactKeys(item, ["configured", "current", "items", "invalid_count"]) ||
+    typeof item.configured !== "boolean" ||
+    !Array.isArray(item.items)
+  )
+    throw contractError();
+  return {
+    configured: item.configured,
+    current: item.current === null ? null : mapBackupRun(item.current),
+    items: item.items.map(mapBackupItem),
+    invalidCount: integer(item.invalid_count, 0),
   };
 }
 

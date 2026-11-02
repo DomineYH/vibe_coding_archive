@@ -39,7 +39,9 @@ export type ServiceErrorCode =
   | "CSRF_INVALID"
   | "ORIGIN_REJECTED"
   | "REAUTH_REQUIRED"
-  | "RATE_LIMITED";
+  | "RATE_LIMITED"
+  | "BACKUP_NOT_CONFIGURED"
+  | "BACKUP_IN_PROGRESS";
 
 export type ErrorOutcome = "not_applicable" | "rejected" | "unknown";
 

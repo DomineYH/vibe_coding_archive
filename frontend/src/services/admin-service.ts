@@ -3,6 +3,8 @@ import type {
   AdminUser,
   AdminUserPage,
   ApprovalOperation,
+  BackupList,
+  BackupRun,
   PasswordResetOperation,
   UserDeleteOperation,
 } from "../contracts/mappers";
@@ -40,6 +42,8 @@ export type AdminService = {
     query?: ListAdminAppsQuery,
     options?: AdminAppsRequestOptions,
   ): Promise<AdminAppPage>;
+  listBackups(options?: AdminAppsRequestOptions): Promise<BackupList>;
+  createBackup(): Promise<BackupRun>;
   getUser(id: string, options?: AdminRequestOptions): Promise<AdminUser>;
   createApprovalOperation(
     input: CreateApprovalOperationInput,

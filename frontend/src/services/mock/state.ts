@@ -90,6 +90,8 @@ const MOCK_SCENARIOS = [
   "health_batch_mixed",
   "health_batch_slow",
   "health_batch_query_failure",
+  "backup_unconfigured",
+  "backup_failed",
 ] as const;
 const V2_STATE_KEYS = [
   "version",
