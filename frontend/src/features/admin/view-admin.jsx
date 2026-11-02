@@ -1352,11 +1352,12 @@ export function AdminView({
   function handleTabKeyDown(event) {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
-    const index = TAB_ORDER.indexOf(tab);
+    const tabs = TAB_ORDER.filter((item) => item !== "health" || canReadApps);
+    const index = tabs.indexOf(tab);
     const nextTab =
-      TAB_ORDER[
-        (index + (event.key === "ArrowRight" ? 1 : TAB_ORDER.length - 1)) %
-          TAB_ORDER.length
+      tabs[
+        (index + (event.key === "ArrowRight" ? 1 : tabs.length - 1)) %
+          tabs.length
       ];
     event.currentTarget.parentElement
       ?.querySelector(`[role="tab"][data-admin-tab="${nextTab}"]`)
