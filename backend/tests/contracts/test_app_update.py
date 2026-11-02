@@ -422,3 +422,17 @@ def test_edit_unavailable_and_version_overflow_do_not_resolve_key(member_app):
             read(owner, key),
         ):
             error(result, 503, "FEATURE_UNAVAILABLE")
+
+
+def test_owner_changes_subject_to_changche(member_app):
+    app, _ = member_app()
+    with TestClient(app) as client, TestClient(app) as guest:
+        owner = signed_in(client)
+        item = registered(owner)
+        patch = {"subject": "창체"}
+        saved = update(owner, item["id"], update_key(owner, item["id"], patch), patch)
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["item"]["subject"] == "창체"
+        page = guest.get(f"{API}/apps?subject=창체").json()
+        assert [row["id"] for row in page["items"]] == [item["id"]]
+        assert page["facets"]["subjects_in_use"] == ["창체"]

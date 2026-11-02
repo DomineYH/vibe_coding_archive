@@ -133,10 +133,10 @@ def gate(*args, **kwargs):
         _, _, dump = unpack(source, artifact.name)
         replace_artifact(
             restore_case,
-            sql=dump.decode().replace("0012_health_checks", "0011_user_delete"),
+            sql=dump.decode().replace("0013_subject_changche", "0012_health_checks"),
             mutate=lambda m, inner: (
-                m.update(revision="0011_user_delete"),
-                inner.update(revision="0011_user_delete"),
+                m.update(revision="0012_health_checks"),
+                inner.update(revision="0012_health_checks"),
             ),
         )
         script += "restore.subprocess.run = gate\n"

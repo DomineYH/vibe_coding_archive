@@ -439,3 +439,22 @@ def test_expiry_cleanup_and_restore_invalidation_do_not_erase_saved_apps(member_
             ).json()["item"]
             == saved
         )
+
+
+def test_changche_subject_is_created_filtered_and_ordered_by_catalog(member_app):
+    app, _ = member_app()
+    with TestClient(app) as client, TestClient(app) as public:
+        owner = signed_in(client)
+        ids = {}
+        for subject in ("기타", "창체"):
+            body = {**INPUT, "subject": subject}
+            result = create(owner, issued_key(owner, body), body)
+            assert result.status_code == 201, result.text
+            assert result.json()["item"]["subject"] == subject
+            ids[subject] = result.json()["item"]["id"]
+        page = public.get(f"{API}/apps?subject=창체").json()
+        assert [row["id"] for row in page["items"]] == [ids["창체"]]
+        assert public.get(f"{API}/apps").json()["facets"]["subjects_in_use"] == [
+            "창체",
+            "기타",
+        ]

@@ -1179,7 +1179,7 @@ export interface components {
             expires_at: string;
         };
         /** @enum {string} */
-        Subject: "수학" | "과학" | "영어" | "역사" | "국어" | "사회" | "정보" | "기타";
+        Subject: "수학" | "과학" | "영어" | "역사" | "국어" | "사회" | "정보" | "창체" | "기타";
         /** @enum {string} */
         Grade: "초1" | "초2" | "초3" | "초4" | "초5" | "초6" | "중1" | "중2" | "중3" | "고1" | "고2" | "고3";
         ErrorEnvelope: {

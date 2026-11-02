@@ -91,7 +91,7 @@ def test_update_migration_preserves_all_old_rows_and_app_data_and_enforces_shape
     command.upgrade(config, "head")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0012_health_checks",
+            "0013_subject_changche",
         )
         assert (
             db.execute(
@@ -180,7 +180,7 @@ def test_update_migration_preserves_all_old_rows_and_app_data_and_enforces_shape
         command.downgrade(config, "0007_app_create")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0012_health_checks",
+            "0013_subject_changche",
         )
         assert db.execute("SELECT count(*) FROM write_operations").fetchone() == (7,)
     with (

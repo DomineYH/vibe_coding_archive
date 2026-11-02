@@ -7,7 +7,7 @@ from app.database import current_head
 
 def test_account_group_schema_is_current_and_has_no_target_cascade(member_app):
     _, path = member_app()
-    assert current_head() == "0012_health_checks"
+    assert current_head() == "0013_subject_changche"
     with sqlite3.connect(path) as db:
         assert "expected_app_count" in [
             r[1] for r in db.execute("PRAGMA table_info(write_operations)")
@@ -139,7 +139,7 @@ def test_upgrade_preserves_every_predecessor_value_and_structure(tmp_path, monke
         command.downgrade(config, "0010_password_reset")
     with sqlite3.connect(path) as db:
         assert db.execute("SELECT version_num FROM alembic_version").fetchone() == (
-            "0012_health_checks",
+            "0013_subject_changche",
         )
 
 
