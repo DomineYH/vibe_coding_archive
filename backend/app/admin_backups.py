@@ -86,7 +86,7 @@ def _listing(settings):
                 if not backup._uuid(name):
                     raise ValueError()
                 manifest = _manifest(root, name)
-            except (OSError, ValueError, TypeError):
+            except (OSError, ValueError, TypeError, RecursionError):  # deep JSON
                 invalid += 1
                 continue
             items.append(

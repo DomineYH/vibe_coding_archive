@@ -333,3 +333,21 @@ def test_unusable_backup_paths_are_not_configured(admin_case, problem):
         assert error_code(created) == "BACKUP_NOT_CONFIGURED"
     assert os.listdir(output) == []
     assert audit_rows(database) == []
+
+
+def test_deeply_nested_manifest_is_invalid_without_hiding_valid_backups(admin_case):
+    app, database, output, recipient = admin_case
+    previous = str(uuid4())
+    assert run_backup((database, output, recipient), previous).returncode == 3
+    stray = output / str(uuid4())
+    stray.mkdir(mode=0o700)
+    raw = "[" * 20000 + "0" + "]" * 20000  # under the 64 KiB read cap
+    manifest = stray / "manifest.json"
+    manifest.write_text(raw)
+    manifest.chmod(0o600)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        admin = signed_in(client, "admin")
+        listed = client.get(URL, headers=headers(admin))
+    assert listed.status_code == 200, listed.text
+    assert [item["run_id"] for item in listed.json()["items"]] == [previous]
+    assert listed.json()["invalid_count"] == 1
