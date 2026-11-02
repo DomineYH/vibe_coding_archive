@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import sqlite3
 import sys
+import threading
 from asyncio import get_running_loop
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
@@ -27,6 +28,7 @@ from starlette.responses import JSONResponse
 from app import health_store
 from app.admin_approval import router as admin_approval_router
 from app.admin_apps import router as admin_apps_router
+from app.admin_backups import router as admin_backups_router
 from app.admin_password_reset import router as password_reset_router
 from app.admin_user_delete import router as user_delete_router
 from app.app_create import router as app_create_router
@@ -246,6 +248,9 @@ def create_app(
 
         app.state.health_testing = health_testing
         app.state.settings = resolved
+        app.state.loop = loop
+        app.state.backup_run = None
+        app.state.backup_guard = threading.Lock()
         app.state.auth_candidate = resolved.app_env == "production"
         app.state.auth_revoked = False
         app.state.auth_enabled = (
@@ -561,6 +566,7 @@ def create_app(
     api.include_router(register_router)
     api.include_router(admin_approval_router)
     api.include_router(admin_apps_router)
+    api.include_router(admin_backups_router)
     api.include_router(password_reset_router)
     api.include_router(user_delete_router)
     api.include_router(public_apps_router)

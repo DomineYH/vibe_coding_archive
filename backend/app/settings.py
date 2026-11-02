@@ -67,6 +67,8 @@ class Settings(BaseModel):
     health_activation_path: Path | None = None
     auth_activation_path: Path | None = None
     app_release_id: str | None = None
+    backup_root: Path | None = None
+    backup_recipient_file: Path | None = None
     support_email: str | None = None
     support_service_url: str | None = None
     support_announcement_url: str | None = None
@@ -325,6 +327,16 @@ class Settings(BaseModel):
                 raise ConfigurationError(
                     "Auth activation requires a valid APP_RELEASE_ID."
                 )
+        backup_paths = {}
+        for name in ("BACKUP_ROOT", "BACKUP_RECIPIENT_FILE"):
+            backup_path = None
+            if values.get(name):
+                backup_path = Path(values[name]).expanduser()
+                if not backup_path.is_absolute():
+                    raise ConfigurationError("Backup paths must be absolute.")
+                if app_env == "production":
+                    production_path(backup_path, repo_root=repo_root)
+            backup_paths[name.lower()] = backup_path
         if app_env == "production":
             for name in ("PASSWORD_BLOCKLIST_PATH", "PASSWORD_RESET_HMAC_PATH"):
                 if values.get(name) and not Path(values[name]).is_absolute():
@@ -352,6 +364,7 @@ class Settings(BaseModel):
                 health_activation_path=health_activation,
                 auth_activation_path=auth_activation,
                 app_release_id=release_id,
+                **backup_paths,
                 support_email=values.get("SUPPORT_EMAIL"),
                 support_service_url=values.get("SUPPORT_SERVICE_URL"),
                 support_announcement_url=values.get("SUPPORT_ANNOUNCEMENT_URL"),
@@ -375,6 +388,10 @@ class Settings(BaseModel):
                 if self.auth_activation_path
                 else "",
                 "APP_RELEASE_ID": self.app_release_id or "",
+                "BACKUP_ROOT": str(self.backup_root) if self.backup_root else "",
+                "BACKUP_RECIPIENT_FILE": str(self.backup_recipient_file)
+                if self.backup_recipient_file
+                else "",
                 "PASSWORD_BLOCKLIST_PATH": str(self.password_blocklist_path)
                 if self.password_blocklist_path
                 else "",

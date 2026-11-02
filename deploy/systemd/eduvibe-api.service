@@ -9,6 +9,7 @@ User=eduvibe
 Group=eduvibe
 WorkingDirectory=/opt/eduvibe/current/backend
 EnvironmentFile=/etc/eduvibe/runtime.env
+EnvironmentFile=/etc/eduvibe/backup.env
 Environment=APP_ENV=production
 Environment=HEALTH_CHECKS_ENABLED=false
 Environment=HEALTH_WORKER_LOCK_PATH=/srv/eduvibe/worker/health-worker.lock
