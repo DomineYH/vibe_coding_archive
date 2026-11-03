@@ -696,3 +696,67 @@ or threshold was created, replaced or changed. Recorder: **Claude Opus 5.5**,
 `/home/dominelinux/.cache/vibe_coding_archive/coord/b289/report-impl289.md`.
 Automated checks do not claim human visual, screen-reader, physical-device or CI
 acceptance.
+
+## I295-V — administrator source-reference size record
+
+Issue #295 records why the administrator captures no longer match the size of
+their preserved source references. `frontend/visual/admin.spec.js` compares the
+`admin-users` capture with `18-admin-users.png` and the `admin-health` capture
+with `21-admin-health.png` under
+`evidence/basic-design-runtime-20260922/reference/<WxH>/` at all five
+viewports. Both comparisons are report-only (`comparisonEnforced: false`,
+`review: "Human UI-D approval pending"`) and every one is
+`dimensions_mismatch`, so `differentPixels` and `bounds` stay `null`. No current
+spec captures or compares `1440x1000/21-admin-health-component.png`
+(1014×73); it is listed for completeness only.
+
+Full-page heights in px, product / reference, measured at main `675f175` (widths
+match at every viewport). The path column lists the earlier per-issue product
+heights found in the linked comparison JSON; a step not listed did not change
+the height.
+
+| Viewport  | `admin-users` | Users path          | `admin-health` | Health path                                |
+| --------- | ------------- | ------------------- | -------------- | ------------------------------------------ |
+| 1440×1000 | 1378 / 1111   | #37 1238 → #46 1378 | 1936 / 1966    | #45 1859 → #48 1893 → #287 1936            |
+| 1024×900  | 1378 / 1111   | #37 1238 → #46 1378 | 1936 / 1966    | #45 1859 → #48 1893 → #287 1936            |
+| 768×1024  | 1378 / 1218   | #37 1238 → #46 1378 | 2263 / 2112    | #45 2187 → #48 2220 → #287 2263            |
+| 390×844   | 1870 / 2456   | #37 1730 → #46 1870 | 3812 / 2977    | #45 3446 → #48 3479 → #70 3751 → #287 3812 |
+| 360×844   | 2110 / 1560   | #37 1730 → #46 2110 | 3829 / 3069    | #45 3773 → #48 3823 → #70 3768 → #287 3829 |
+
+Reasons, limited to what a section, evidence file or code line supports:
+
+- Users list: the #37 list fields and states (nickname, separate login ID and
+  signup date, approval/version) give the first product height; why the 390×844
+  product is shorter than its reference is not attributed. #44 adds the reset
+  action without changing any height. #46 adds the `삭제` row action and the
+  height grows by 140px (380px at 360×844, where row details and actions wrap
+  differently); the split between action and wrapping is not attributed.
+- Health Monitor: #45 adds author/version/visibility metadata and omits the
+  reference's latency and provider-error text, giving the first product height
+  (shorter than the reference at 1440/1024, taller below); the per-item split
+  is not attributed. #48 adds the global-check status note and the
+  synthetic/no-network notice below the toolbar (+33–50px). #70
+  moves the narrow status summary to its own row and wraps metadata between
+  items (+272px at 390×844, −55px at 360×844).
+- #210 operational notices appear only when a capability is disabled with
+  `operational_restriction`; the mock captures in the
+  [#210 evidence](evidence/phase-5/issue210/2026-10-10/mock/) keep the #70
+  heights, so they do not affect these captures.
+- #287 adds the always-visible `health-schedule-note` line
+  `매일 00·06·12·18시(KST)에 전체 연결 검사가 자동으로 실행돼요.`
+  (`frontend/src/features/admin/view-admin.jsx`), +43px at 1440/1024/768 and
+  +61px at 390/360. It was not recorded in this file before.
+- #289 adds the `백업` tab pill inside the existing tab row; heights are
+  unchanged (I289-B). #296 changes keyboard order only.
+
+Decision (issue #295 option 2): the references stay unchanged under this file's
+rule "Do not edit the original source, reference copies, source screenshots, or
+baseline to make a product comparison pass". The mismatch is the recorded
+expected state for current main; human UI-D visual approval remains pending and
+is not claimed. This table supersedes the earlier per-issue heights in the #37,
+#44, #45, #46, #48 and #70 sections for current main. Not done: product-only
+administrator regression baselines in a separate path, as I288-S did for the
+registration form, would let pixel comparisons catch unintended admin changes;
+that needs its own decision. Recorder: **Claude Opus 5.5**, **2026-11-03**;
+measurements and comparison JSON in the
+[#295 evidence](evidence/phase-8/issue295/2026-11-03/README.md).

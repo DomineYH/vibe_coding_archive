@@ -1,0 +1,17 @@
+{
+  "state": "admin-users",
+  "viewport": {
+    "width": 1024,
+    "height": 900
+  },
+  "baseline": "18-admin-users.png",
+  "screenshot": "admin-users-1024x900.png",
+  "width": 1024,
+  "height": 1378,
+  "expectedWidth": 1024,
+  "expectedHeight": 1111,
+  "comparisonStatus": "dimensions_mismatch",
+  "differentPixels": null,
+  "maxChannelDelta": null,
+  "bounds": null
+}
