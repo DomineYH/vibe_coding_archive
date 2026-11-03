@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from contextlib import closing
 from functools import cache
 from pathlib import Path
 
@@ -284,7 +285,7 @@ def populate_auth_members(database_path: Path) -> None:
         )
         for name in AUTH_MEMBERS
     ]
-    with sqlite3.connect(database_path) as connection:
+    with closing(sqlite3.connect(database_path)) as connection, connection:
         connection.executemany(
             "INSERT INTO members (id, login_id, nickname, password_hash, is_admin, "
             "approval_status, login_id_key, created_at, updated_at, first_approved_at) "
