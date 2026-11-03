@@ -85,12 +85,12 @@ Any changed target, receipt, marker, original expiry or newly supplied ledger
 contents fails verification and requires a fresh restore; verification never
 repairs or releases the target.
 
-| Exit | Meaning |
-| --- | --- |
-| 3 | `RESTORE_VERIFIED_LOCAL_ONLY_MAINTENANCE_REQUIRED`; local checks completed, service remains blocked |
-| 1 | `RESTORE_FAILED`; crypto, integrity, migration, replay or verification failed |
-| 2 | `RESTORE_USAGE_INVALID`; configuration, unsafe paths or nonempty target refused |
-| 130 / 143 | `RESTORE_INTERRUPTED`; SIGINT / SIGTERM |
+| Exit      | Meaning                                                                                             |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| 3         | `RESTORE_VERIFIED_LOCAL_ONLY_MAINTENANCE_REQUIRED`; local checks completed, service remains blocked |
+| 1         | `RESTORE_FAILED`; crypto, integrity, migration, replay or verification failed                       |
+| 2         | `RESTORE_USAGE_INVALID`; configuration, unsafe paths or nonempty target refused                     |
+| 130 / 143 | `RESTORE_INTERRUPTED`; SIGINT / SIGTERM                                                             |
 
 There is no successful exit 0 and no force/resume/unblock option. Failed,
 interrupted and concurrent attempts retain the marker; reuse of that directory is
