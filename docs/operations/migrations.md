@@ -26,18 +26,18 @@ remain authoritative. Use a separate `eduvibe-nginx` UID/group with read/travers
 access to immutable static files and its TLS/config files, and no DB, ledger,
 backup, HMAC or operator-record access. T12 verifies those host permissions.
 
-| Resource | Example canonical path / ownership |
-|---|---|
-| Immutable release | `/opt/eduvibe/releases/<id>/backend` with a prebuilt `.venv`; root-owned, service cannot modify |
-| Release selection | `/opt/eduvibe/current`, atomic symlink to a complete release |
-| Live DB / independent ledger | `/srv/eduvibe/database/database.sqlite3` / `database.deletions.sqlite3`, eduvibe, 0600; parent 0700 |
-| Migration / restore marker | `/srv/eduvibe/database/.migration-blocked` / `.restore-blocked` |
-| Persistent migration lock | `/srv/eduvibe/database/.migration.lock`, eduvibe, regular single-link 0600 |
-| Persistent worker lock | `/srv/eduvibe/worker/health-worker.lock`, eduvibe, regular single-link 0600; parent 0700 |
-| Backup namespace / lock | `/srv/eduvibe/backups` / `.backup.lock`, eduvibe, 0700 / 0600 |
-| Protected operator evidence | `/srv/eduvibe/operator`, eduvibe, 0700; files 0600, governed by local retention |
-| Nginx runtime / safe access log | `/srv/eduvibe/nginx` / `/var/log/eduvibe/nginx`, eduvibe-nginx, 0700; log 0600 |
-| Rendered Nginx configuration | `/etc/eduvibe/nginx.conf`, fixed physical config; root-owned, readable only by approved Nginx UID/group |
+| Resource                        | Example canonical path / ownership                                                                      |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Immutable release               | `/opt/eduvibe/releases/<id>/backend` with a prebuilt `.venv`; root-owned, service cannot modify         |
+| Release selection               | `/opt/eduvibe/current`, atomic symlink to a complete release                                            |
+| Live DB / independent ledger    | `/srv/eduvibe/database/database.sqlite3` / `database.deletions.sqlite3`, eduvibe, 0600; parent 0700     |
+| Migration / restore marker      | `/srv/eduvibe/database/.migration-blocked` / `.restore-blocked`                                         |
+| Persistent migration lock       | `/srv/eduvibe/database/.migration.lock`, eduvibe, regular single-link 0600                              |
+| Persistent worker lock          | `/srv/eduvibe/worker/health-worker.lock`, eduvibe, regular single-link 0600; parent 0700                |
+| Backup namespace / lock         | `/srv/eduvibe/backups` / `.backup.lock`, eduvibe, 0700 / 0600                                           |
+| Protected operator evidence     | `/srv/eduvibe/operator`, eduvibe, 0700; files 0600, governed by local retention                         |
+| Nginx runtime / safe access log | `/srv/eduvibe/nginx` / `/var/log/eduvibe/nginx`, eduvibe-nginx, 0700; log 0600                          |
+| Rendered Nginx configuration    | `/etc/eduvibe/nginx.conf`, fixed physical config; root-owned, readable only by approved Nginx UID/group |
 
 Keep DB, ledger, locks, secrets and operator evidence outside every release and
 web-served tree. Never unlink either lifetime lock during stop, restart, upgrade

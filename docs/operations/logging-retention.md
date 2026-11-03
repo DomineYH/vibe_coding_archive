@@ -24,14 +24,14 @@ Install `deploy/logrotate/eduvibe-nginx` under `/etc/logrotate.d/`. Its daily ro
 
 ## Independent clocks
 
-| Record class | Eligibility clock | Current enforcement |
-|---|---|---|
-| Request logs | Original event time + 7 days | Journald and Nginx host templates; pure boundary test |
-| Health execution history | Existing finished-at + 7 days | Existing health maintenance; last connection result stays separate |
-| Ordinary audit | occurred_at + 90 days, confirmed ordinary classification | Pure eligibility only; every production audit row retained |
-| Legal access | At least one calendar anniversary, confirmed legal classification | Pure minimum only; every production audit row retained pending T11 |
-| Backup pair | Original creation + 30 days; local cleanup at original expiry minus 1 day | Validated owned local pairs under the existing backup lock |
-| Deletion ledger | Maximum original expiry of every relevant copy + 7 days | Pure eligibility only; every production ledger row retained pending T10 |
+| Record class             | Eligibility clock                                                         | Current enforcement                                                     |
+| ------------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Request logs             | Original event time + 7 days                                              | Journald and Nginx host templates; pure boundary test                   |
+| Health execution history | Existing finished-at + 7 days                                             | Existing health maintenance; last connection result stays separate      |
+| Ordinary audit           | occurred_at + 90 days, confirmed ordinary classification                  | Pure eligibility only; every production audit row retained              |
+| Legal access             | At least one calendar anniversary, confirmed legal classification         | Pure minimum only; every production audit row retained pending T11      |
+| Backup pair              | Original creation + 30 days; local cleanup at original expiry minus 1 day | Validated owned local pairs under the existing backup lock              |
+| Deletion ledger          | Maximum original expiry of every relevant copy + 7 days                   | Pure eligibility only; every production ledger row retained pending T10 |
 
 All boundary comparisons are inclusive. The calendar anniversary of February 29 clamps to February 28 in the following year. These functions are policy calculations, not classification, inventory verification, or permission to delete records. T11 must supply actual legal applicability, classification/fields and any longer minimum before audit deletion is implemented. Missing/empty copy inventory never makes ledger evidence eligible.
 

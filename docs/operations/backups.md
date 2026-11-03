@@ -21,12 +21,12 @@ uv run --frozen python -m app.cli backup-db \
 
 These are example paths/origin only. Use actual approved operator configuration. Schedule at 07:00 and 19:00 KST and invoke before each explicit migration; T05 owns scheduling. A scheduler must distinguish exit 3 from operational backup success. HEALTH_CHECKS_ENABLED=false remains the handoff configuration; this command creates no activation or approval record.
 
-| Exit | Meaning |
-|---|---|
-| 3 | Valid local pair published; independent remote confirmation absent |
-| 1 | Runtime, verification, lock, encryption, or publication failure |
-| 2 | Usage/configuration error (also help; no backup command path returns 0) |
-| 130 / 143 | Handled SIGINT / SIGTERM |
+| Exit      | Meaning                                                                 |
+| --------- | ----------------------------------------------------------------------- |
+| 3         | Valid local pair published; independent remote confirmation absent      |
+| 1         | Runtime, verification, lock, encryption, or publication failure         |
+| 2         | Usage/configuration error (also help; no backup command path returns 0) |
+| 130 / 143 | Handled SIGINT / SIGTERM                                                |
 
 Errors use fixed safe messages, without raw exception values or age stderr. A missing tool/recipient/ledger, incompatible revision, or uncertain publication cannot be reported as success. Retry a failed attempt with a new run ID after resolving its cause.
 
@@ -84,6 +84,7 @@ The ledger is **not included in the archive**, and the checkpoint is a local his
 Production creates no plaintext DB/dump/archive file, including in staging. Snapshot, logical dump and tar input stay in process memory. Core dumps are disabled by the CLI. Disable or encrypt host swap before making a stronger plaintext-at-rest claim; the CLI cannot verify host policy. Allocation failure has no disk fallback.
 
 <!-- ponytail: RAM scales with DB size; evaluate protected tmpfs separately when target-scale memory is insufficient. -->
+
 RAM includes the SQLite copy and UTF-8 dump/encoding buffers. The target is 1,000 members / 5,000 apps; measure representative synthetic sizes before operational adoption. A synthetic small-prompt 1,000-member / 5,000-app measurement produced a 4,153,344-byte SQLite copy and 2,943,941-byte dump; the measurement process peaked at 45,544 KiB RSS, including an in-memory restore but excluding full CLI/application imports. Larger prompts increase memory beyond row-count estimates.
 
 SIGINT/SIGTERM, child failures/timeouts, broken pipes, ENOSPC and fsync errors close handles, reap the encryptor and remove the current unfinished stage when possible. Previous published runs are preserved. SIGKILL/OOM may leave a private ciphertext-only stage; no cleanup is promised after uncatchable termination. A parent-fsync failure after rename reports failure but preserves the published pair for inspection. Do not overwrite/reuse that UUID or assume its durability.
