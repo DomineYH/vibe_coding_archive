@@ -120,6 +120,7 @@ npm run check:dist
 
 ```sh
 npm run check        # OpenAPI lint·생성 타입 확인, typecheck, eslint, prettier
+                     # (prettier는 docs 최상위·operations·agents 문서 포함, evidence·research·plans 제외)
 npm test             # Vitest 단위 테스트
 npm run test:e2e     # Playwright 브라우저 테스트(mock)
 npm run test:e2e:api # 실제 백엔드를 띄운 Playwright 테스트
