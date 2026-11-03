@@ -154,6 +154,60 @@ test.describe("administrator app list over real HTTP", () => {
     }
   });
 
+  test("Arrow keys skip the disabled Health Monitor tab", async ({
+    page,
+    owned,
+  }) => {
+    await page.route("**/api/v1/meta", async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.capabilities.admin_apps_read = {
+        enabled: false,
+        reasons: ["operational_restriction"],
+      };
+      await route.fulfill({ response, json: body });
+    });
+    await signIn(page, owned.admin);
+    await page.goto("/admin");
+    const main = page.getByRole("main");
+    const tabs = page.getByRole("tablist", { name: "관리자 메뉴" });
+    const usersTab = tabs.getByRole("tab", {
+      name: "사용자 관리",
+      exact: true,
+    });
+    const backupsTab = tabs.getByRole("tab", { name: "백업", exact: true });
+    const healthTab = tabs.getByRole("tab", {
+      name: "Health Monitor",
+      exact: true,
+    });
+    await expect(usersTab).toHaveAttribute("aria-selected", "true");
+    const expectHealthSkipped = async () => {
+      await expect(healthTab).toBeDisabled();
+      await expect(healthTab).toHaveAttribute("tabindex", "-1");
+      await expect(healthTab).toHaveAttribute("aria-selected", "false");
+      await expect(healthTab).not.toBeFocused();
+    };
+    const expectArrow = async (key, label, url, tab) => {
+      await page.keyboard.press(key);
+      await expect(main).toBeFocused();
+      await expect(main).toHaveAccessibleName(`관리자 대시보드 — ${label}`);
+      await expect(page).toHaveURL(url);
+      await expectHealthSkipped();
+      await page.keyboard.press("Tab");
+      await expect(tab).toBeFocused();
+      await expect(tab).toHaveAttribute("aria-selected", "true");
+      await expect(tabs.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
+      await expect(tab).toHaveAttribute("tabindex", "0");
+      await expectHealthSkipped();
+    };
+    await expectHealthSkipped();
+    await usersTab.focus();
+    await expectArrow("ArrowRight", "백업", "/admin?tab=backups", backupsTab);
+    await expectArrow("ArrowLeft", "사용자 관리", "/admin", usersTab);
+    await expectArrow("ArrowLeft", "백업", "/admin?tab=backups", backupsTab);
+    await expectArrow("ArrowRight", "사용자 관리", "/admin", usersTab);
+  });
+
   test("the Health Monitor reads every owner's public and private apps with default and additional pages", async ({
     page,
     owned,
