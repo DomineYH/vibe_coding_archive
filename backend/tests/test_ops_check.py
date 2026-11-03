@@ -1,5 +1,6 @@
 """Observational CLI over quiescent synthetic storage, never application startup."""
 
+import gc
 import hashlib
 import json
 import os
@@ -7,6 +8,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -53,31 +55,43 @@ def cli(database, backups, *args, **environment):
     )
 
 
+def quiesce(database):
+    # sqlite3 connections sit in reference cycles; an unclosed one finalized by
+    # GC later would checkpoint the WAL mid-test, so finalize leftovers now.
+    gc.collect()
+    with closing(sqlite3.connect(database)) as db:
+        db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+
+
 def digest(database):
-    with sqlite3.connect(database) as db:
-        logical = list(db.iterdump())
+    # Hash raw files before our own connection can checkpoint what ops-check left.
+    # A frameless WAL holds no data; read-only ops-check creates one it cannot delete.
     files = {
         p.name: hashlib.sha256(p.read_bytes()).hexdigest()
         for p in database.parent.glob("*.sqlite3*")
         if not p.name.endswith("-shm")
+        and not (p.name.endswith("-wal") and p.stat().st_size == 0)
     }
+    with closing(sqlite3.connect(database)) as db:
+        logical = list(db.iterdump())
     return logical, files
 
 
 def test_ops_check_reports_observations_without_changing_business_database(ops_storage):
     database, backups = ops_storage
-    with sqlite3.connect(database) as db:
+    with closing(sqlite3.connect(database)) as db, db:
         db.execute(
             "INSERT INTO auth_flows(id,revision,issued_seq,recovery_ready,ever_ready,last_identity_change_revision,created_at,last_activity_at,expires_at) VALUES ('synthetic-expired','1','1',0,0,'1','2000-01-01T00:00:00Z','2000-01-01T00:00:00Z','2000-01-01T00:01:00Z')"
         )
     from tests.support import AUTH_MEMBERS, populate_auth_members
 
     populate_auth_members(database)
-    with sqlite3.connect(database) as db:
+    with closing(sqlite3.connect(database)) as db, db:
         db.execute(
             "INSERT INTO write_operations(key,actor_id,kind,target_id,expected_account_version,state,created_at,expires_at,reset_key_id,reset_request_hmac) VALUES ('synthetic-reset',?,'user_password_reset',?,1,'unresolved','2000-01-01T00:00:00Z','2000-01-02T00:00:00Z',?,?)",
             (AUTH_MEMBERS["admin"][0], AUTH_MEMBERS["approved"][0], "0" * 64, "1" * 64),
         )
+    quiesce(database)
     before = digest(database)
     result = cli(database, backups)
     assert result.returncode == 3, "ops-check must report unresolved observations"
@@ -89,7 +103,7 @@ def test_ops_check_reports_observations_without_changing_business_database(ops_s
     from app.backup import LEDGER_SCHEMA
 
     ledger = database.with_suffix(".deletions.sqlite3")
-    with sqlite3.connect(ledger) as db:
+    with closing(sqlite3.connect(ledger)) as db, db:
         for table, columns in LEDGER_SCHEMA.items():
             db.execute(f"CREATE TABLE {table}({columns})")
         db.execute(app_deletion_ledger.SCHEMA)
@@ -97,6 +111,7 @@ def test_ops_check_reports_observations_without_changing_business_database(ops_s
         for ddl in user_deletion_ledger.INDEXES:
             db.execute(ddl)
     ledger.chmod(0o600)
+    quiesce(database)
     before = digest(database)
     result = cli(database, backups)
     assert result.returncode == 3
@@ -280,7 +295,7 @@ def test_ops_check_worker_and_queue_boundaries(ops_storage, monkeypatch):
     settings = settings_for(database)
     instant = datetime(2026, 10, 9, tzinfo=UTC)
     monkeypatch.setattr("app.operations.boot_clock", lambda: ("test-boot", 100.0))
-    with sqlite3.connect(database) as db:
+    with closing(sqlite3.connect(database)) as db, db:
         db.execute(
             "INSERT INTO health_worker(singleton,worker_id,boot_id,heartbeat_mono,heartbeat_at,ready) VALUES (1,'worker','test-boot',100,?,1)",
             (instant.isoformat(),),
@@ -289,13 +304,14 @@ def test_ops_check_worker_and_queue_boundaries(ops_storage, monkeypatch):
             "INSERT INTO health_jobs(id,app_id,url_version,status,individual,created_at) VALUES ('synthetic-job','00000000-0000-4000-8000-000000000001',1,'queued',1,?)",
             ((instant - timedelta(minutes=5)).isoformat(),),
         )
+    quiesce(database)
     before = digest(database)
     output, _ = ops_check(settings, backup_dir=backups, instant=instant)
     assert output["checks"]["worker"] == "OK"
     assert output["checks"]["queue"] == "RESTRICT"
     assert output["counts"]["executable_queue"] == 1
     assert digest(database) == before
-    with sqlite3.connect(database) as db:
+    with closing(sqlite3.connect(database)) as db:
         for mono, boot, ready, code in (
             (85.001, "test-boot", 1, "OK"),
             (85, "test-boot", 1, "RESTRICT"),
