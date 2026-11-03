@@ -710,9 +710,9 @@ Full-page heights in px, product / reference, measured at main `675f175` (widths
 match at every viewport). The path column lists the earlier per-issue product
 heights found in the linked comparison JSON; a step not listed did not change
 the height. The #287 values (1936/2263/3812/3829) have no committed per-issue
-comparison JSON: they were derived from the `675f175` capture minus the
-code-attributed increments (+43/+61, `health-schedule-note` in `view-admin.jsx`),
-which gives back the preceding step at every viewport.
+comparison JSON: they are the `675f175` capture heights, and subtracting the
+code-attributed increments (+43/+61, `health-schedule-note` in `view-admin.jsx`)
+recovers the preceding step at every viewport.
 
 | Viewport  | `admin-users` | Users path          | `admin-health` | Health path                                |
 | --------- | ------------- | ------------------- | -------------- | ------------------------------------------ |
