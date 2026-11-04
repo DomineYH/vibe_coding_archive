@@ -447,3 +447,56 @@ test("231 other-tab logout after committed lost response keeps unknown without r
     release();
   }
 });
+
+test("307 server-ended stored flow opens / and /apps/<id> logged out", async ({
+  page,
+  context,
+  members,
+}) => {
+  await blockExternalRequests(context);
+  await login(page, members.member.login, ORIGINAL);
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+  const flow = await storedFlow(page);
+  // Cookies stay in the jar: the server alone decides the flow ended (30-min idle).
+  for (const statement of [
+    `UPDATE auth_flows SET expires_at='2000-01-01T00:00:00Z' WHERE id='${flow}'`,
+    `UPDATE recovery_credentials SET expires_at='2000-01-01T00:00:00Z' WHERE flow_id='${flow}'`,
+    `UPDATE sessions SET expires_at='2000-01-01T00:00:00Z' WHERE flow_id='${flow}'`,
+  ])
+    query(statement);
+  const counts = { creates: 0, logins: 0, writes: 0 };
+  page.on("request", (request) => {
+    if (!["POST", "PATCH", "DELETE"].includes(request.method())) return;
+    const path = new URL(request.url()).pathname;
+    if (path.endsWith("/auth/flows")) counts.creates++;
+    else if (path.endsWith("/auth/login")) counts.logins++;
+    else if (/\/(?:apps|write-operations)(?:\/|$)/.test(path)) counts.writes++;
+  });
+  const header = page.getByRole("banner");
+  for (const path of ["/", "/apps/00000000-0000-4000-8000-000000000001"]) {
+    await page.goto(path);
+    await expect(
+      header.getByRole("button", { name: "로그인", exact: true }),
+    ).toBeVisible();
+    for (const name of ["다시 확인", "인증 복구", "로그아웃"])
+      await expect(header.getByRole("button", { name })).toHaveCount(0);
+    await expect(page.getByText(/로그인 상태를 확인할 수 없/)).toHaveCount(0);
+    expect(await storedFlow(page)).not.toBe(flow);
+    expect(
+      (await context.cookies()).filter((cookie) => cookie.name.includes(flow)),
+    ).toEqual([]);
+    expect(counts).toEqual({ creates: 1, logins: 0, writes: 0 });
+  }
+  await header.getByRole("button", { name: "로그인", exact: true }).click();
+  await expect(page).toHaveURL(/\/auth\?mode=login/);
+  await page
+    .getByLabel("로그인 아이디", { exact: true })
+    .fill(members.member.login);
+  await page.getByLabel("비밀번호", { exact: true }).fill(ORIGINAL);
+  await page
+    .locator("form")
+    .getByRole("button", { name: "로그인", exact: true })
+    .click();
+  await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+  expect(counts).toEqual({ creates: 1, logins: 1, writes: 0 });
+});
