@@ -160,7 +160,7 @@ it("keeps the ended flow when its replacement cannot be created", async () => {
   expect(service.getRestartEligibility).toHaveBeenCalledTimes(1);
 });
 const preparing = { flowId, revision: "4", progress: "preparing" };
-it.each(["AUTH_REQUIRED", "RECOVERY_REQUIRED"])(
+it.each(["AUTH_REQUIRED", "RECOVERY_REQUIRED"] as const)(
   "replaces a purged half-prepared flow when abandon answers %s",
   async (code) => {
     localStorage.setItem(AUTH_FLOW_KEY, JSON.stringify(preparing));
