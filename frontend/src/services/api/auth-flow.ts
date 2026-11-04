@@ -222,14 +222,19 @@ async function observe(
       )
         throw failure;
       let eligible = false;
-      // R never arrived for this flow: abandon it; an ever-ready flow answers AUTH_STATE_CHANGED.
+      // R never arrived for this flow: abandon it. An ever-ready flow answers AUTH_STATE_CHANGED and
+      // a purged one AUTH_REQUIRED; both fall through to the server's eligibility check.
       if (record.progress === "preparing")
         eligible = await service.abandonFlow(record.flowId).then(
           (result) => result.restartEligible,
           (error) => {
             if (
               !(error instanceof ServiceError) ||
-              error.code !== "AUTH_STATE_CHANGED"
+              ![
+                "AUTH_STATE_CHANGED",
+                "AUTH_REQUIRED",
+                "RECOVERY_REQUIRED",
+              ].includes(error.code)
             )
               throw error;
             return false;

@@ -622,7 +622,8 @@ When both stored proofs fail and the server confirms the stored flow ended
 replaces it with a new flow and the page shows the ordinary logged-out state:
 the header “로그인” button on `/` and `/apps/<id>`, without the error card,
 “다시 확인” or “인증 복구”. A half-prepared flow whose recovery cookie never
-arrived is abandoned first. No session is issued outside `/auth`, no write is
+arrived is abandoned first; if the server refuses (it became ready) or no longer
+has it (purged), the server's eligibility answer alone decides. No session is issued outside `/auth`, no write is
 replayed, and an open edit draft is discarded through the existing identity
 change. Active-proof loss (`restart_eligible: false`) is unchanged and still
 requires the explicit recovery path. Behavior only: no source frame, visual

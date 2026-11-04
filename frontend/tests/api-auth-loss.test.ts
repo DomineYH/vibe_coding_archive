@@ -159,3 +159,36 @@ it("keeps the ended flow when its replacement cannot be created", async () => {
   });
   expect(service.getRestartEligibility).toHaveBeenCalledTimes(1);
 });
+const preparing = { flowId, revision: "4", progress: "preparing" };
+it.each(["AUTH_REQUIRED", "RECOVERY_REQUIRED"])(
+  "replaces a purged half-prepared flow when abandon answers %s",
+  async (code) => {
+    localStorage.setItem(AUTH_FLOW_KEY, JSON.stringify(preparing));
+    const service = fixture(true);
+    service.abandonFlow.mockRejectedValue(new ServiceError(code, "gone"));
+    await expect(observeApiAuth(replacement(service))).resolves.toMatchObject({
+      status: "ready",
+      user: null,
+      flow: { flowId: newId, sessionGeneration: null },
+    });
+    expect(service.getRestartEligibility).toHaveBeenCalledWith(
+      flowId,
+      undefined,
+    );
+    expect(service.createFlow).toHaveBeenCalledWith({ restartFrom: [flowId] });
+  },
+);
+it("keeps an ever-ready preparing flow when abandon is refused and eligibility=false", async () => {
+  localStorage.setItem(AUTH_FLOW_KEY, JSON.stringify(preparing));
+  const service = fixture(false);
+  service.abandonFlow.mockRejectedValue(
+    new ServiceError("AUTH_STATE_CHANGED", "ever ready"),
+  );
+  await expect(observeApiAuth(replacement(service))).rejects.toMatchObject({
+    code: "AUTH_STATE_CHANGED",
+    message:
+      "인증 증명을 잃었어요. 이전 흐름이 종료될 때까지 공개 열람만 가능합니다.",
+  });
+  expect(service.createFlow).not.toHaveBeenCalled();
+  expect(JSON.parse(localStorage.getItem(AUTH_FLOW_KEY)!)).toEqual(preparing);
+});
