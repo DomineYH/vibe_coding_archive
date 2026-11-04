@@ -175,14 +175,31 @@ for (const loss of ["session", "all-active", "all-expired"]) {
       await context.clearCookies({ name: /eduvibe_session_/ });
     else await context.clearCookies();
     if (loss === "all-expired")
-      query(
+      for (const statement of [
         `UPDATE auth_flows SET expires_at='2000-01-01T00:00:00Z' WHERE id='${flow}'`,
-      );
+        `UPDATE recovery_credentials SET expires_at='2000-01-01T00:00:00Z' WHERE flow_id='${flow}'`,
+        `UPDATE sessions SET expires_at='2000-01-01T00:00:00Z' WHERE flow_id='${flow}'`,
+      ])
+        query(statement);
     await page
       .getByRole("button", { name: "변경사항 저장", exact: true })
       .click();
-    await recoverLink(page, id);
-    expect(await storedFlow(page)).toBe(flow);
+    if (loss === "all-expired") {
+      // #307: the server-ended flow is replaced; the anonymous edit route leads to login.
+      await expect(page).toHaveURL(
+        `/auth?mode=login&return_to=${encodeURIComponent(`/apps/${id}/edit`)}`,
+      );
+      await expect(
+        page.getByLabel("로그인 아이디", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "브라우저 인증 초기화" }),
+      ).toHaveCount(0);
+      expect(await storedFlow(page)).not.toBe(flow);
+    } else {
+      await recoverLink(page, id);
+      expect(await storedFlow(page)).toBe(flow);
+    }
     expect(writes).toEqual([]);
     expect(
       query(`SELECT name,description,version FROM apps WHERE id='${id}'`),
@@ -192,7 +209,7 @@ for (const loss of ["session", "all-active", "all-expired"]) {
         `SELECT count(*) FROM write_operations WHERE actor_id='${members.member.id}'`,
       ),
     ).toEqual(operations);
-    expect(creates).toBe(0);
+    expect(creates).toBe(loss === "all-expired" ? 1 : 0);
     expect(logins).toBe(0);
     if (loss === "session") {
       await expect(
@@ -211,28 +228,18 @@ for (const loss of ["session", "all-active", "all-expired"]) {
         "232 보존할 설명",
       );
       expect(writes).toEqual([]);
-    } else {
+    } else if (loss === "all-active") {
       await expect(
         page.getByRole("button", { name: "브라우저 인증 초기화" }),
       ).toBeVisible();
       const eligibilityBeforeReset = eligibilityReads;
       await page.getByRole("button", { name: "브라우저 인증 초기화" }).click();
-      if (loss === "all-active") {
-        await expect
-          .poll(() => eligibilityReads)
-          .toBeGreaterThanOrEqual(eligibilityBeforeReset + 2);
-        expect(await storedFlow(page)).toBe(flow);
-        expect(creates).toBe(0);
-        expect(logins).toBe(0);
-      } else {
-        await expect(
-          page.getByLabel("로그인 아이디", { exact: true }),
-        ).toBeVisible();
-        const newFlow = await storedFlow(page);
-        expect(newFlow).not.toBe(flow);
-        expect(creates).toBe(1);
-        expect(logins).toBe(0);
-      }
+      await expect
+        .poll(() => eligibilityReads)
+        .toBeGreaterThanOrEqual(eligibilityBeforeReset + 2);
+      expect(await storedFlow(page)).toBe(flow);
+      expect(creates).toBe(0);
+      expect(logins).toBe(0);
     }
   });
 }

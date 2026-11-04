@@ -73,40 +73,26 @@ it("observes missing S with valid R as unresolved without issuing S or creating 
     revision: "4",
   });
 });
-it.each([false, true])(
-  "keeps an ID-only flow and requires explicit reset when eligibility=%s",
-  async (eligible) => {
-    const service = fixture(eligible);
-    const auth = service as unknown as AuthService;
-    await expect(observeApiAuth(auth)).rejects.toMatchObject({
-      code: "AUTH_STATE_CHANGED",
-    });
-    await expect(prepareApiAuthFlow(auth)).rejects.toMatchObject({
-      code: "AUTH_STATE_CHANGED",
-    });
-    expect(service.createFlow).not.toHaveBeenCalled();
-    expect(service.login).not.toHaveBeenCalled();
-    expect(JSON.parse(localStorage.getItem(AUTH_FLOW_KEY)!).flowId).toBe(
-      flowId,
-    );
-    if (eligible) {
-      await expect(recoverApiAuthFlow(auth, "reset")).rejects.toThrow(
-        "explicit preparation reached",
-      );
-      expect(service.createFlow).toHaveBeenCalledWith({
-        restartFrom: [flowId],
-      });
-    } else {
-      await expect(recoverApiAuthFlow(auth, "reset")).rejects.toMatchObject({
-        code: "AUTH_REQUIRED",
-      });
-      expect(service.createFlow).not.toHaveBeenCalled();
-      expect(service.resetFlow).not.toHaveBeenCalled();
-      expect(service.abandonFlow).not.toHaveBeenCalled();
-    }
-    expect(service.login).not.toHaveBeenCalled();
-  },
-);
+it("keeps an ID-only flow and requires explicit reset when eligibility=false", async () => {
+  const service = fixture(false);
+  const auth = service as unknown as AuthService;
+  await expect(observeApiAuth(auth)).rejects.toMatchObject({
+    code: "AUTH_STATE_CHANGED",
+  });
+  await expect(prepareApiAuthFlow(auth)).rejects.toMatchObject({
+    code: "AUTH_STATE_CHANGED",
+  });
+  expect(service.createFlow).not.toHaveBeenCalled();
+  expect(service.login).not.toHaveBeenCalled();
+  expect(JSON.parse(localStorage.getItem(AUTH_FLOW_KEY)!).flowId).toBe(flowId);
+  await expect(recoverApiAuthFlow(auth, "reset")).rejects.toMatchObject({
+    code: "AUTH_REQUIRED",
+  });
+  expect(service.createFlow).not.toHaveBeenCalled();
+  expect(service.resetFlow).not.toHaveBeenCalled();
+  expect(service.abandonFlow).not.toHaveBeenCalled();
+  expect(service.login).not.toHaveBeenCalled();
+});
 const newId = "00000000-0000-4000-8000-000000000307";
 function replacement(service: ReturnType<typeof fixture>) {
   service.createFlow.mockResolvedValue({ flowId: newId, revision: "0" });

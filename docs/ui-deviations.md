@@ -330,6 +330,10 @@ agreed test factory. [The T01 evidence ledger](evidence/phase-3/issue115/2026-10
 records five viewport observations, existing source/product visual comparisons,
 keyboard behavior, actual HTTP/cookie/SQLite tests and remaining operating checks.
 No reference PNG, visual mask, tolerance or baseline is changed.
+Since #307, a stored flow the server reports ended (`restart_eligible: true`) is
+replaced automatically on the next observation and the screen shows the
+logged-out state; “브라우저 인증 초기화” remains for active-proof loss and stored
+reset targets.
 
 ## Issue #116 T02 member login, restore and logout · UI-D02/UI-D03/UI-D07
 
@@ -596,8 +600,9 @@ anonymous, member and unresolved header behavior stays unchanged.
 
 The link performs navigation only. Existing reset eligibility and explicit
 “브라우저 인증 초기화” remain authoritative: proof loss on an active flow cannot
-create a new flow or submit login; an expired/revoked flow can prepare login only
-after explicit reset. Public gallery reads and protected-route guards remain.
+create a new flow or submit login; an expired/revoked flow is replaced
+automatically on observation (#307). Public gallery reads and protected-route
+guards remain.
 
 Approval source: the accepted #254 Agent Brief and coordinator-approved
 b254-VP1 plan. Recorder: **Codex gpt-6.1-sol**, **2026-10-16**. Browser geometry,
@@ -609,6 +614,20 @@ with the existing spacing. Tab reveals the recovery focus outline at every size;
 Enter at 360px reaches the existing error main and its arrival focus.
 Existing visual baselines, masks and tolerances are unchanged. Automated checks
 do not claim human visual, screen-reader, physical-device or CI acceptance.
+
+## I307 — server-ended stored flow is replaced automatically
+
+When both stored proofs fail and the server confirms the stored flow ended
+(`restart_eligible: true`, expired or revoked alike), the next observation
+replaces it with a new flow and the page shows the ordinary logged-out state:
+the header “로그인” button on `/` and `/apps/<id>`, without the error card,
+“다시 확인” or “인증 복구”. A half-prepared flow whose recovery cookie never
+arrived is abandoned first. No session is issued outside `/auth`, no write is
+replayed, and an open edit draft is discarded through the existing identity
+change. Active-proof loss (`restart_eligible: false`) is unchanged and still
+requires the explicit recovery path. Behavior only: no source frame, visual
+baseline, mask or tolerance is added or changed. The #254 header geometry and
+focus checks now run in the active proof-loss case.
 
 ## I262-N — signup nickname length hint
 
