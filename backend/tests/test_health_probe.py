@@ -125,6 +125,62 @@ async def test_get_fallback_redirect_uses_new_connections_no_cookie_and_get_pers
     assert b"Cookie:" not in network.streams[2].written
 
 
+async def test_head_403_falls_back_to_get_200():
+    network = Network(b"HTTP/1.1 403 Forbidden\r\n\r\n", b"HTTP/1.1 200 OK\r\n\r\n")
+    result = await probe(
+        "https://example.org/a",
+        dns_servers=(),
+        denied_ips=(),
+        resolver=Resolver(),
+        network_backend=network,
+    )
+    assert (result["state"], result["http_status"]) == ("healthy", 200)
+    assert [s.written.split(b" ")[0] for s in network.streams] == [b"HEAD", b"GET"]
+    assert all(s.closed for s in network.streams)
+    assert result["response_ms"] >= 0
+
+
+async def test_head_4xx_fallback_on_redirect_hop_keeps_get():
+    network = Network(
+        b"HTTP/1.1 302 Found\r\nLocation: /b\r\n\r\n",
+        b"HTTP/1.1 403 Forbidden\r\n\r\n",
+        b"HTTP/1.1 302 Found\r\nLocation: /c\r\n\r\n",
+        b"HTTP/1.1 200 OK\r\n\r\n",
+    )
+    result = await probe(
+        "https://example.org/a",
+        dns_servers=(),
+        denied_ips=(),
+        resolver=Resolver(),
+        network_backend=network,
+    )
+    assert (result["state"], result["http_status"]) == ("healthy", 200)
+    assert [s.written.split(b" ")[0] for s in network.streams] == [
+        b"HEAD",
+        b"HEAD",
+        b"GET",
+        b"GET",
+    ]
+    assert len(network.calls) == 4
+    assert all(s.closed for s in network.streams)
+
+
+async def test_head_redirect_chain_sends_no_get():
+    network = Network(
+        b"HTTP/1.1 302 Found\r\nLocation: /b\r\n\r\n",
+        b"HTTP/1.1 200 OK\r\n\r\n",
+    )
+    result = await probe(
+        "https://example.org/a",
+        dns_servers=(),
+        denied_ips=(),
+        resolver=Resolver(),
+        network_backend=network,
+    )
+    assert result["state"] == "healthy"
+    assert [s.written.split(b" ")[0] for s in network.streams] == [b"HEAD", b"HEAD"]
+
+
 @pytest.mark.parametrize(
     "status,state",
     [
@@ -137,7 +193,9 @@ async def test_get_fallback_redirect_uses_new_connections_no_cookie_and_get_pers
     ],
 )
 async def test_final_http_classification(status, state):
-    network = Network(f"HTTP/1.1 {status} Result\r\n\r\n".encode())
+    response = f"HTTP/1.1 {status} Result\r\n\r\n".encode()
+    requests = 2 if status >= 400 else 1
+    network = Network(*[response] * requests)
     result = await probe(
         "http://example.org",
         dns_servers=(),
@@ -147,6 +205,7 @@ async def test_final_http_classification(status, state):
     )
     assert (result["state"], result["http_status"]) == (state, status)
     assert result["response_ms"] >= 0
+    assert len(network.calls) == requests
 
 
 @pytest.mark.parametrize("extra,state", [(0, "healthy"), (1, "blocked")])
@@ -343,6 +402,23 @@ async def test_dns_partial_failure_is_not_ignored():
 
 async def test_redirect_limit_with_get_fallback_is_seven_requests():
     responses = [b"HTTP/1.1 501 Nope\r\n\r\n"] + [
+        f"HTTP/1.1 302 Found\r\nLocation: /{i}\r\n\r\n".encode() for i in range(6)
+    ]
+    network = Network(*responses)
+    result = await probe(
+        "http://example.org/start",
+        dns_servers=(),
+        denied_ips=(),
+        resolver=Resolver(),
+        network_backend=network,
+    )
+    assert result["state"] == "redirect_error"
+    assert len(network.calls) == 7
+    assert all(s.closed for s in network.streams)
+
+
+async def test_redirect_limit_with_4xx_fallback_is_seven_requests():
+    responses = [b"HTTP/1.1 403 Nope\r\n\r\n"] + [
         f"HTTP/1.1 302 Found\r\nLocation: /{i}\r\n\r\n".encode() for i in range(6)
     ]
     network = Network(*responses)
