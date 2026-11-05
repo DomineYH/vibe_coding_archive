@@ -779,3 +779,15 @@ registration form, would let pixel comparisons catch unintended admin changes;
 that needs its own decision. Recorder: **Claude Opus 5.5**, **2026-11-03**;
 measurements and comparison JSON in the
 [#295 evidence](evidence/phase-8/issue295/2026-11-03/README.md).
+
+Decision (issue #301 option 2 + (b)): administrator visual comparison stays
+record-only. `frontend/visual/admin.spec.js` remains report-only and
+`dimensions_mismatch` at all five viewports, and no product-only administrator
+baselines are added. Unintended administrator UI changes are caught by the
+functional e2e specs `frontend/e2e/admin.spec.js`,
+`frontend/e2e/admin-apps.spec.js` and `frontend/e2e/admin-backups.spec.js`, not
+by visual comparison. Adding product-only baselines, as I288-S did with
+`visual-state-baselines/`, needs a new issue with human UI-D approval.
+`1440x1000/21-admin-health-component.png` is an unused original capture: it
+stays byte-identical under `reference/**` and no spec compares it. Recorder:
+**Claude Opus 5.5**, **2026-11-05**.
