@@ -371,6 +371,55 @@ async def test_external_failure_uses_the_fixed_admin_taxonomy(failure, kind, sta
     assert "private diagnostic" not in str(result)
 
 
+@pytest.mark.parametrize(
+    "failure,state,kind,stage",
+    [
+        ("read_timeout", "timeout", "TIMEOUT", "response_headers"),
+        ("read", "network_error", "HTTP_PROTOCOL_ERROR", "response_headers"),
+        ("connect", "network_error", "CONNECT_FAILURE", "connect"),
+    ],
+)
+async def test_failed_get_after_head_403_discards_head_result(
+    failure, state, kind, stage
+):
+    import httpcore
+
+    class FailingStream(Stream):
+        async def read(self, max_bytes, timeout=None):
+            if failure == "read_timeout":
+                raise httpcore.ReadTimeout("private diagnostic")
+            raise httpcore.ReadError("private diagnostic")
+
+    class FailingNetwork(Network):
+        async def connect_tcp(self, host, port, **kwargs):
+            if failure == "connect" and len(self.calls) == 1:
+                self.calls.append((host, port))
+                raise httpcore.ConnectError("private diagnostic")
+            return await super().connect_tcp(host, port, **kwargs)
+
+    network = FailingNetwork()
+    network.streams = [Stream(b"HTTP/1.1 403 Forbidden\r\n\r\n")]
+    if failure != "connect":
+        network.streams.append(FailingStream(b""))
+    result = await probe(
+        "https://example.org",
+        dns_servers=(),
+        denied_ips=(),
+        resolver=Resolver(),
+        network_backend=network,
+    )
+    assert (result["state"], result["error_kind"]) == (state, kind)
+    assert result["error_stage"] == stage
+    assert result["http_status"] is None
+    assert result["response_ms"] is None
+    assert len(network.calls) == 2
+    assert [s.written.split(b" ")[0] for s in network.streams] == [
+        b"HEAD",
+        b"GET",
+    ][: len(network.streams)]
+    assert all(s.closed for s in network.streams)
+
+
 async def test_invalid_initial_url_is_blocked_at_url_stage():
     result = await probe("file:///private", dns_servers=(), denied_ips=())
     assert (result["state"], result["error_kind"], result["error_stage"]) == (
