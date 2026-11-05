@@ -494,15 +494,25 @@ test("admin tabs are operable with the keyboard", async ({ page }) => {
     name: "Health Monitor",
     exact: true,
   });
-  await expect(page.getByRole("main")).toBeFocused();
   await expect(page.getByRole("main")).toHaveAccessibleName(
     "관리자 대시보드 — Health Monitor",
   );
-  await page.keyboard.press("Tab");
   await expect(healthTab).toBeFocused();
   await expect(healthTab).toHaveAttribute("aria-selected", "true");
   await expect(page).toHaveURL("/admin?tab=health");
   await expect(
     page.getByRole("tabpanel", { name: "Health Monitor" }),
   ).toBeVisible();
+  const tabs = page.getByRole("tablist", { name: "관리자 메뉴" });
+  await expect(tabs.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);
+  const backupsTab = page.getByRole("tab", { name: "백업", exact: true });
+  await page.keyboard.press("ArrowRight");
+  await expect(backupsTab).toBeFocused();
+  await expect(backupsTab).toHaveAttribute("aria-selected", "true");
+  await expect(page).toHaveURL("/admin?tab=backups");
+  await expect(page.getByRole("tabpanel", { name: "백업" })).toBeVisible();
+  await page.keyboard.press("ArrowRight");
+  await expect(usersTab).toBeFocused();
+  await expect(usersTab).toHaveAttribute("aria-selected", "true");
+  await expect(page).toHaveURL("/admin");
 });
