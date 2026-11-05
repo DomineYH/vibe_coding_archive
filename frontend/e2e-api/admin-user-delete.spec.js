@@ -346,10 +346,10 @@ test.describe("254 public header recovery", () => {
     await expect(page.getByRole("button", { name: "로그아웃" })).toHaveCount(0);
   }
 
-  test("254 deleted member reaches explicit auth recovery from public header", async ({
+  test("254 deleted member's ended flow is replaced and the public header shows login", async ({
     page,
     owned,
-  }, testInfo) => {
+  }) => {
     const memberContext = await owned.newContext();
     await blockExternalRequests(memberContext);
     const memberPage = await memberContext.newPage();
@@ -368,11 +368,53 @@ test.describe("254 public header recovery", () => {
     await panel.getByRole("button", { name: "삭제 확인", exact: true }).click();
     await expect(panel).toContainText("삭제가 확정됐어요");
     await memberPage.reload();
-    const header = await errorHeader(memberPage, owned.member);
-    await assertRetained(memberPage, record, counts);
+    // #307: the server reports the revoked flow ended, so it is replaced and the visitor is logged out.
+    const header = memberPage.getByRole("banner");
+    await expect(
+      header.getByRole("button", { name: "로그인", exact: true }),
+    ).toBeVisible();
+    for (const name of ["다시 확인", "인증 복구", "로그아웃"])
+      await expect(header.getByRole("button", { name })).toHaveCount(0);
+    await expect(
+      header.getByText(owned.member.login, { exact: true }),
+    ).toHaveCount(0);
+    expect((await retainedRecord(memberPage)) !== record).toBe(true);
+    // The single "resets" hit is the replacement flow's recovery-cookie issuance, not a reset.
+    expect(counts).toEqual({ creates: 1, logins: 0, resets: 1, writes: 0 });
+    expect(
+      query(`SELECT count(*) FROM members WHERE id='${owned.member.id}'`),
+    ).toEqual([[0]]);
+    expect(
+      query(`SELECT count(*) FROM apps WHERE owner_id='${owned.member.id}'`),
+    ).toEqual([[0]]);
+    await expect(userRow(page, owned.member.login)).toHaveCount(0);
+  });
+
+  test("254 active proof loss reaches recovery without bypass", async ({
+    owned,
+  }, testInfo) => {
+    const context = await owned.newContext();
+    await blockExternalRequests(context);
+    const page = await context.newPage();
+    await login(page, owned.member.login, PASSWORD);
+    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+    await page.goto("/");
+    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
+    const record = await retainedRecord(page);
+    const counts = monitor(page);
+    const eligible = [];
+    page.on("response", async (response) => {
+      if (response.url().endsWith("/restart-eligibility") && response.ok())
+        eligible.push((await response.json()).restart_eligible);
+    });
+    await context.clearCookies();
+    await page.reload();
+    const header = await errorHeader(page, owned.member);
+    await expect.poll(() => eligible.includes(false)).toBe(true);
+    await assertRetained(page, record, counts);
     const geometry = [];
     for (const viewport of viewports) {
-      await prepareViewportCapture(memberPage, viewport);
+      await prepareViewportCapture(page, viewport);
       const controls = [
         header.getByRole("link", { name: "EduVibe 아카이브 홈" }),
         header.getByRole("button", { name: "다시 확인", exact: true }),
@@ -400,7 +442,7 @@ test.describe("254 public header recovery", () => {
           expect(previous.x + previous.width).toBeLessThanOrEqual(box.x);
       }
       await controls[1].focus();
-      await memberPage.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
       await expect(controls[2]).toBeFocused();
       const outline = await controls[2].evaluate((button) => {
         const style = getComputedStyle(button);
@@ -425,52 +467,10 @@ test.describe("254 public header recovery", () => {
       body: JSON.stringify(geometry),
       contentType: "application/json",
     });
-    await memberPage.keyboard.press("Enter");
-    const main = await recoveryScreen(memberPage);
-    await expect(main).toContainText("이전 흐름이 종료됐어요");
-    await expect(main).toBeFocused();
-    await assertRetained(memberPage, record, counts);
-    await main
-      .getByRole("button", { name: "브라우저 인증 초기화", exact: true })
-      .click();
-    await loginReady(memberPage, counts);
-    expect((await retainedRecord(memberPage)) !== record).toBe(true);
-    expect(
-      query(`SELECT count(*) FROM members WHERE id='${owned.member.id}'`),
-    ).toEqual([[0]]);
-    expect(
-      query(`SELECT count(*) FROM apps WHERE owner_id='${owned.member.id}'`),
-    ).toEqual([[0]]);
-    await expect(userRow(page, owned.member.login)).toHaveCount(0);
-  });
-
-  test("254 active proof loss reaches recovery without bypass", async ({
-    owned,
-  }) => {
-    const context = await owned.newContext();
-    await blockExternalRequests(context);
-    const page = await context.newPage();
-    await login(page, owned.member.login, PASSWORD);
-    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
-    await page.goto("/");
-    await expect(page.getByRole("button", { name: "로그아웃" })).toBeVisible();
-    const record = await retainedRecord(page);
-    const counts = monitor(page);
-    const eligible = [];
-    page.on("response", async (response) => {
-      if (response.url().endsWith("/restart-eligibility") && response.ok())
-        eligible.push((await response.json()).restart_eligible);
-    });
-    await context.clearCookies();
-    await page.reload();
-    const header = await errorHeader(page, owned.member);
-    await expect.poll(() => eligible.includes(false)).toBe(true);
-    await assertRetained(page, record, counts);
-    await header
-      .getByRole("button", { name: "인증 복구", exact: true })
-      .click();
+    await page.keyboard.press("Enter");
     const main = await recoveryScreen(page);
     await expect(main).toContainText("증명");
+    await expect(main).toBeFocused();
     await assertRetained(page, record, counts);
     const reads = eligible.length;
     await main
@@ -489,17 +489,15 @@ test.describe("254 public header recovery", () => {
       0,
     );
     const flow = JSON.parse(record).flowId;
-    query(
+    for (const statement of [
       `UPDATE auth_flows SET expires_at='2000-01-01T00:00:00Z' WHERE id='${flow}'`,
-    );
+      `UPDATE recovery_credentials SET expires_at='2000-01-01T00:00:00Z' WHERE flow_id='${flow}'`,
+      `UPDATE sessions SET expires_at='2000-01-01T00:00:00Z' WHERE flow_id='${flow}'`,
+    ])
+      query(statement);
     await main.getByRole("button", { name: "다시 확인", exact: true }).click();
-    await expect(main).toContainText("이전 흐름이 종료됐어요");
-    await expect.poll(() => eligible.includes(true)).toBe(true);
-    await assertRetained(page, record, counts);
-    await main
-      .getByRole("button", { name: "브라우저 인증 초기화", exact: true })
-      .click();
     await loginReady(page, counts);
+    await expect.poll(() => eligible.includes(true)).toBe(true);
     expect((await retainedRecord(page)) !== record).toBe(true);
   });
 });

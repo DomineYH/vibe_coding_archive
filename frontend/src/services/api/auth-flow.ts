@@ -221,16 +221,38 @@ async function observe(
         !["AUTH_REQUIRED", "RECOVERY_REQUIRED"].includes(failure.code)
       )
         throw failure;
-      const eligibility = await service.getRestartEligibility(
-        record.flowId,
-        options,
-      );
-      throw new ServiceError(
-        "AUTH_STATE_CHANGED",
-        eligibility.restartEligible
-          ? "이전 흐름이 종료됐어요. 브라우저 인증을 초기화해 주세요."
-          : "인증 증명을 잃었어요. 이전 흐름이 종료될 때까지 공개 열람만 가능합니다.",
-      );
+      let eligible = false;
+      // R never arrived for this flow: abandon it. An ever-ready flow answers AUTH_STATE_CHANGED and
+      // a purged one AUTH_REQUIRED; both fall through to the server's eligibility check.
+      if (record.progress === "preparing")
+        eligible = await service.abandonFlow(record.flowId).then(
+          (result) => result.restartEligible,
+          (error) => {
+            if (
+              !(error instanceof ServiceError) ||
+              ![
+                "AUTH_STATE_CHANGED",
+                "AUTH_REQUIRED",
+                "RECOVERY_REQUIRED",
+              ].includes(error.code)
+            )
+              throw error;
+            return false;
+          },
+        );
+      if (!eligible)
+        eligible = (await service.getRestartEligibility(record.flowId, options))
+          .restartEligible;
+      if (!eligible)
+        throw new ServiceError(
+          "AUTH_STATE_CHANGED",
+          "인증 증명을 잃었어요. 이전 흐름이 종료될 때까지 공개 열람만 가능합니다.",
+        );
+      // Server confirmed the stored flow ended (protocol #23 §6 row 5): replace it and continue logged out.
+      const state = await replace(service, [record.flowId], options);
+      const fresh = { flowId: state.flowId, revision: state.revision };
+      save(fresh);
+      return current(state, fresh);
     }
   }
   let state = await service.getFlowState(record.transitionId, options);
@@ -288,6 +310,17 @@ async function prepare(
   restartFrom: string[] = [],
   options?: AuthRequestOptions,
 ): Promise<CurrentAuthState> {
+  return startAnonymous(
+    service,
+    await replace(service, restartFrom, options),
+    options,
+  );
+}
+async function replace(
+  service: AuthService,
+  restartFrom: string[],
+  options?: AuthRequestOptions,
+): Promise<AuthFlowState> {
   const context = await service.getRecoveryContext(options);
   if (context.items.length) {
     save({ resetTargets: context.items });
@@ -314,7 +347,7 @@ async function prepare(
       "AUTH_STATE_CHANGED",
       "복구 쿠키 수령을 확인해야 합니다.",
     );
-  return startAnonymous(service, state, options);
+  return state;
 }
 async function startAnonymous(
   service: AuthService,
