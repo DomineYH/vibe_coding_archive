@@ -71,7 +71,7 @@ async def probe(
                 if time.monotonic() >= deadline:
                     stage, transport = "overall", None
                     raise TimeoutError()
-                if method == "HEAD" and code in (405, 501):
+                if method == "HEAD" and 400 <= code < 600:
                     method = "GET"
                     continue
                 if code not in (301, 302, 303, 307, 308):

@@ -12,7 +12,7 @@ PRD §8.3 및 §8.4에 따른 외부 URL 검사 요구사항:
 2. **모든 DNS 후보(A/AAAA) 및 비정상 IP·IDNA 검증**: loopback, private, link-local, multicast, unspecified, reserved, 클라우드 메타데이터(`169.254.169.254` 등), IPv4-mapped IPv6(`::ffff:127.0.0.1`), 8진수/16진수/정수 표기, IDNA 전각 문자 우회 차단.
 3. **엄격한 리다이렉트 통제**: `follow_redirects=True` 금지. 각 `Location`을 동일한 검증 파서로 재해석하여 대상·포트·DNS/IP를 재검증하고 최대 5회로 제한.
 4. **환경 격리 및 상태 비보존**: ambient 환경 변수(`HTTP_PROXY`, `HTTPS_PROXY`, `netrc`) 무의식적 상속 금지, 세션 쿠키 격리 및 비저장.
-5. **총 10초 Deadline 및 스트림 조기 종료**: DNS 조회·연결(3초)·리다이렉트·HEAD/GET 대체를 합산한 전체 10초 deadline, 405/501 시 제한된 GET 스트리밍 후 헤더만 확인하고 즉시 종료(`stream.close()`).
+5. **총 10초 Deadline 및 스트림 조기 종료**: DNS 조회·연결(3초)·리다이렉트·HEAD/GET 대체를 합산한 전체 10초 deadline, HEAD가 4xx/5xx일 때 제한된 GET 스트리밍 후 헤더만 확인하고 즉시 종료(`stream.close()`).
 6. **네트워크 레벨 심층 방어 (Defense-in-Depth)**: 애플리케이션 계층 검사 외에 OS/네트워크 레벨에서 내부망/호스트 내부 서비스/메타데이터 접근을 분리 차단.
 7. **모의 검증 및 Fail-Closed 계약**: 실제 사설망이나 메타데이터를 호출하지 않는 모의 transport/fixture 검증 체계 및 기본 비활성화(`HEALTH_CHECK_ENABLED=false`)와 실패 시 안전 차단(Fail-Closed) 보장.
 
@@ -178,7 +178,7 @@ v6_meta.is_link_local # False
 
 ### 4.4 HEAD 우선 및 제한된 GET 스트리밍과 헤더 폭탄(Header Bomb)의 한계
 - [RFC 9110 §9.3.2](https://www.rfc-editor.org/rfc/rfc9110.html) HEAD 메서드: 본문 없이 헤더만 요청.
-- 대상 웹 서버가 405 Method Not Allowed 또는 501 Not Implemented를 반환할 때만 GET으로 대체:
+- 대상 웹 서버가 HEAD에 4xx 또는 5xx를 반환하면(405·501 포함, #314) GET으로 한 번만 대체:
   - `client.stream("GET", url, ...)` 사용.
   - 헤더 확인 후 **본문을 읽지 않고 즉시 `response.close()`를 호출**하여 소켓 종료.
 - **헤더 폭탄(Header Bomb) 방어의 한계와 비복호화 터널에서의 미해결 상태**:
@@ -253,7 +253,7 @@ v6_meta.is_link_local # False
      - 전각/유니코드 IDNA 도메인의 해석 결과 차단 여부.
 3. **HTTP 응답 모의 트랜스포트 (`httpx.MockTransport`)**:
    - [HTTPX MockTransport 문서](https://www.python-httpx.org/advanced/transports/#mocktransport)를 활용하여:
-     - 405/501 응답 수신 시 GET 스트림으로 전환하는 동작.
+     - HEAD 4xx/5xx 응답 수신 시 GET 스트림으로 전환하는 동작.
      - `Location` 헤더를 포함한 302 응답 시 수동 리다이렉트 카운트(최대 5회) 및 재검증 동작.
      - 응답 헤더 수신 후 본문 없이 즉시 스트림이 닫히는지(`stream.close()`) 검증.
      - `Set-Cookie` 응답을 받았을 때 다음 요청에 `Cookie` 헤더가 누출되지 않는지 검증.
