@@ -189,11 +189,9 @@ test.describe("administrator app list over real HTTP", () => {
     };
     const expectArrow = async (key, label, url, tab) => {
       await page.keyboard.press(key);
-      await expect(main).toBeFocused();
       await expect(main).toHaveAccessibleName(`관리자 대시보드 — ${label}`);
       await expect(page).toHaveURL(url);
       await expectHealthSkipped();
-      await page.keyboard.press("Tab");
       await expect(tab).toBeFocused();
       await expect(tab).toHaveAttribute("aria-selected", "true");
       await expect(tabs.locator('[role="tab"][tabindex="0"]')).toHaveCount(1);

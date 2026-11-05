@@ -70,7 +70,7 @@ export function useRouteFocus(rootRef, location) {
       const dialog = active?.closest(
         '[role="dialog"], [role="alertdialog"], dialog[open]',
       );
-      const trigger = active?.matches('[role="tab"], a[href^="/auth?mode="]');
+      const trigger = active?.matches('a[href^="/auth?mode="]');
       if (
         displayed(active) &&
         ((dialog && displayed(dialog)) ||

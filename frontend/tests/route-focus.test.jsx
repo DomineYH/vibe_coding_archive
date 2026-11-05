@@ -251,19 +251,38 @@ it("227 search composition, filters, refetch and same-path history keep the cont
   await settle();
   expect(math).toHaveFocus();
 });
-it("227 admin tab clicks and Arrow navigation focus the named dashboard", async () => {
+it("308 admin tab clicks and Arrow navigation keep focus on the selected tab", async () => {
   await member("admin", "admin123");
   mount("/admin");
   await screen.findByRole("heading", { name: "관리자 대시보드" });
   await settle();
-  fireEvent.click(screen.getByRole("tab", { name: "Health Monitor" }));
-  await expectMain("관리자 대시보드 — Health Monitor");
+  const main = () => screen.getByRole("main");
   const health = screen.getByRole("tab", { name: "Health Monitor" });
   health.focus();
-  fireEvent.keyDown(health, { key: "ArrowLeft" });
-  await expectMain("관리자 대시보드 — 사용자 관리");
+  fireEvent.click(health);
+  await waitFor(() =>
+    expect(main()).toHaveAccessibleName("관리자 대시보드 — Health Monitor"),
+  );
+  await settle();
+  expect(health).toHaveFocus();
+  fireEvent.keyDown(health, { key: "ArrowRight" });
+  const backups = screen.getByRole("tab", { name: "백업" });
+  await waitFor(() =>
+    expect(main()).toHaveAccessibleName("관리자 대시보드 — 백업"),
+  );
+  await settle();
+  expect(backups).toHaveFocus();
+  fireEvent.keyDown(backups, { key: "ArrowRight" });
   const users = screen.getByRole("tab", { name: "사용자 관리" });
-  users.focus();
+  await waitFor(() =>
+    expect(main()).toHaveAccessibleName("관리자 대시보드 — 사용자 관리"),
+  );
+  await settle();
+  expect(users).toHaveFocus();
+  expect(users).toHaveAttribute("aria-selected", "true");
+  expect(screen.getAllByRole("tab").filter((t) => t.tabIndex === 0)).toEqual([
+    users,
+  ]);
   await navigate("/admin?tab=users", { replace: true });
   await settle();
   expect(users).toHaveFocus();

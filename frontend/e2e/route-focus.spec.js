@@ -184,14 +184,20 @@ for (const width of [1440, 360]) {
     await page.setViewportSize({ width, height: 900 });
     await login(page, "admin", "admin123");
     await page.goto("/admin");
-    await page.getByRole("tab", { name: "Health Monitor" }).click();
-    await destination(page, "관리자 대시보드 — Health Monitor");
-    await page.keyboard.press("Tab");
-    await expect(
-      page.getByRole("tab", { name: "Health Monitor" }),
-    ).toBeFocused();
+    const main = page.getByRole("main");
+    const tab = (name) => page.getByRole("tab", { name, exact: true });
+    await tab("Health Monitor").click();
+    await expect(main).toHaveAccessibleName("관리자 대시보드 — Health Monitor");
+    await expect(tab("Health Monitor")).toBeFocused();
     await page.keyboard.press("ArrowLeft");
-    await destination(page, "관리자 대시보드 — 사용자 관리");
+    await expect(main).toHaveAccessibleName("관리자 대시보드 — 사용자 관리");
+    await expect(tab("사용자 관리")).toBeFocused();
+    await page.keyboard.press("ArrowLeft");
+    await expect(page).toHaveURL("/admin?tab=backups");
+    await expect(tab("백업")).toBeFocused();
+    await page.keyboard.press("ArrowRight");
+    await expect(page).toHaveURL("/admin");
+    await expect(tab("사용자 관리")).toBeFocused();
     await page.keyboard.press("Shift+Tab");
     await expect(page.getByRole("button", { name: "로그아웃" })).toBeFocused();
     await page.goto("/apps/00000000-0000-4000-8000-000000000091/edit");
