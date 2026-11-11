@@ -114,6 +114,8 @@ npm run build:mock   # mock 데모 → dist-mock/
 npm run check:dist
 ```
 
+빌드와 개발 서버는 시작할 때 git HEAD 커밋을 읽어 footer에 `버전 <한국 날짜> (<짧은 해시>)`를 표시합니다. git을 읽을 수 없으면 버전 없이 빌드됩니다. `.git`이 없는 곳에서는 `APP_COMMIT_DATE=2026-01-02 APP_COMMIT_SHA=abc1234 npm run build`처럼 두 값을 함께 지정합니다(`YYYY-MM-DD`, 소문자 16진수 7~40자). 하나만 주거나 형식이 틀리면 빌드가 실패합니다. 시각 비교 테스트는 고정 값(`2026-09-22`, `0000000`)을 씁니다.
+
 ## 테스트와 검사
 
 프런트엔드 (`frontend/`):

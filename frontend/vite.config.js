@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
@@ -21,6 +22,45 @@ function hasMalformedPath(url) {
   }
 }
 
+// KST has no DST, so a fixed +9h shift of the committer time is exact.
+export const kstDate = (seconds) =>
+  new Date((seconds + 9 * 3600) * 1000).toISOString().slice(0, 10);
+
+function commitInfo() {
+  const date = process.env.APP_COMMIT_DATE;
+  const sha = process.env.APP_COMMIT_SHA;
+  // Empty string = unset, same as VITE_DATA_MODE.
+  if (date || sha) {
+    if (!date || !sha)
+      throw new Error(
+        "APP_COMMIT_DATE and APP_COMMIT_SHA must be set together",
+      );
+    const time = Date.parse(`${date}T00:00:00Z`);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      Number.isNaN(time) ||
+      new Date(time).toISOString().slice(0, 10) !== date
+    )
+      throw new Error("APP_COMMIT_DATE must be a real YYYY-MM-DD date");
+    if (!/^[0-9a-f]{7,40}$/.test(sha))
+      throw new Error("APP_COMMIT_SHA must be 7-40 lowercase hex characters");
+    return { date, sha };
+  }
+  try {
+    const match = /^([0-9a-f]{4,40}) (\d+)$/.exec(
+      execFileSync("git", ["log", "-1", "--format=%h %ct"], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim(),
+    );
+    if (match) return { date: kstDate(Number(match[2])), sha: match[1] };
+  } catch {
+    // git missing, not a repository, or refused: build without a version.
+  }
+  return { date: "", sha: "" };
+}
+
 export default defineConfig(({ command, mode: viteMode }) => {
   const env = loadEnv(viteMode, root, "VITE_");
   const unsupported = new Set(
@@ -40,6 +80,7 @@ export default defineConfig(({ command, mode: viteMode }) => {
     throw new Error("Mock output requires --mode mock");
   if (command === "build" && dataMode === "api" && viteMode === "mock")
     throw new Error("Mock mode cannot produce the API build");
+  const commit = commitInfo();
 
   return {
     plugins: [
@@ -102,7 +143,11 @@ export default defineConfig(({ command, mode: viteMode }) => {
         ),
       },
     },
-    define: { __DATA_MODE__: JSON.stringify(dataMode) },
+    define: {
+      __DATA_MODE__: JSON.stringify(dataMode),
+      __APP_COMMIT_DATE__: JSON.stringify(commit.date),
+      __APP_COMMIT_SHA__: JSON.stringify(commit.sha),
+    },
     server: {
       host: "localhost",
       port: dataMode === "mock" ? 5173 : 5174,

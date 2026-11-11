@@ -23,6 +23,8 @@ export default tseslint.config(
         ...globals.browser,
         ...globals.node,
         __DATA_MODE__: "readonly",
+        __APP_COMMIT_DATE__: "readonly",
+        __APP_COMMIT_SHA__: "readonly",
       },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },

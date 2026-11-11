@@ -6,20 +6,10 @@ import path from "node:path";
 import { capture as captureImage } from "./app-create-capture.js";
 import { assertSubpixelRgb } from "./render-precheck.js";
 
-// Scoped I105-L/P/V/A/N/H approval; preserved references remain unchanged.
+// I316-F re-approves all four enforced captures for the new footer; #105/#216/#288 PNGs stay unchanged.
 const referenceRoot = path.resolve(
-  "../docs/evidence/phase-2/issue105/2026-09-30/visual-state-baselines",
+  "../docs/evidence/phase-8/issue316/2026-11-11/visual-state-baselines",
 );
-// I288-S re-approves the form captures for the added '창체' subject chip;
-// they also carry the earlier I216-C cancel-label change at 390/360.
-const subjectReferenceRoot = path.resolve(
-  "../docs/evidence/phase-8/issue288/2026-11-02/visual-state-baselines",
-);
-const subjectBaselines = new Set([
-  "16-submit.png",
-  "17-submit-error.png",
-  "13-edit.png",
-]);
 const outputRoot = path.resolve("test-results/visual/app-create");
 const viewports = [
   { width: 1440, height: 1000 },
@@ -81,9 +71,7 @@ async function setScenario(page, scenario) {
 
 async function capture(page, state, viewport, testInfo, baseline = null) {
   return captureImage(page, state, viewport, testInfo, baseline, {
-    referenceRoot: subjectBaselines.has(baseline)
-      ? subjectReferenceRoot
-      : referenceRoot,
+    referenceRoot,
     outputRoot,
     results,
   });

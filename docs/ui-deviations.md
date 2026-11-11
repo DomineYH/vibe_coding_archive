@@ -792,3 +792,42 @@ automatically. Adding product-only baselines, as I288-S did with
 `1440x1000/21-admin-health-component.png` is an unused original capture: it
 stays byte-identical under `reference/**` and no spec compares it. Recorder:
 **Claude Opus 5.5**, **2026-11-05**.
+
+## I316-F — footer research-group name and build version
+
+Issue #316 removes the Pantone phrase from the footer. The footer now reads
+`EduVibe 아카이브 — 교사 에이전틱 코딩 공유 플랫폼 · 경북 데이터 인사이트 연구회 · 버전 <date> (<hash>)`,
+where the version is the KST calendar date of the HEAD committer time and the
+short commit hash. The version segment is omitted when git cannot be read. No
+color, spacing or markup changes; the source footer is
+`basic_design/app.jsx:177` and the original files stay untouched.
+
+Approval source: issue #316 (repository owner) and its triage comment; PRD §4.1
+is updated to match.
+
+Change ID **I316-F** re-approves all 65 enforced full-page baselines — `01-gallery`,
+`gallery-loading`, `gallery-failure`, `gallery-api-order`, `gallery-filtered`,
+`gallery-query-overflow`, `gallery-duplicate-continue`,
+`gallery-next-page-error`, `gallery-empty`, `16-submit`, `17-submit-error`,
+`13-edit` and `12-detail-private` at all five viewports — under the
+[#316 evidence ledger](evidence/phase-8/issue316/2026-11-11/README.md). The
+#31, #33, #95, #105 and #288 PNGs remain intact. `01-gallery` now compares with
+the #316 baseline instead of the original capture; the original→new
+differences are confined to the footer. Unaffected: the `detail` and
+`detail-copy-done` region comparisons, the two component captures, and the
+record-only `auth`, `admin` and `app-delete` captures.
+
+The visual web server uses the fixed values `APP_COMMIT_DATE=2026-09-22` and
+`APP_COMMIT_SHA=0000000` in `frontend/playwright.visual.config.js`, so the
+baselines do not change with every commit.
+
+Page heights are unchanged at all five viewports: the footer stays one line at
+1440×1000, 1024×900 and 768×1024 and two lines at 390×844 and 360×844. Three
+images also differ above the footer — `13-edit` at 1440×1000 and 1024×900 and
+`17-submit-error` at 360×844 — through gradient/swatch raster variance in the
+thumbnail preview, theme swatches and a few control edges (max channel delta
+27, 2 and 35), with no content or layout change; the ledger lists the pixel
+counts and bounds.
+
+Recorder: **Claude Opus 5.5**, **2026-11-11**. CI's threshold-0 visual job
+remains the authority; no human visual acceptance is claimed.
