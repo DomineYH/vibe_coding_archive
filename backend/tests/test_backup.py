@@ -154,6 +154,20 @@ def rows(db):
     }
 
 
+def freeze_backup_clock(monkeypatch, backup, stamp):
+    """Pin backup's real-clock reads to the patched stamp so expiry is date-independent."""
+    instant = datetime.fromisoformat(stamp)
+
+    class FrozenDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            if tz is None:
+                return instant.astimezone().replace(tzinfo=None)
+            return instant.astimezone(tz)
+
+    monkeypatch.setattr(backup, "datetime", FrozenDatetime)
+
+
 def test_logical_dump_round_trip_and_schema_premise(backup_case):
     # Protocol-only pass-through; real age encryption is separately required in CI.
     run_id = str(uuid4())
@@ -238,6 +252,7 @@ def test_backup_manifest_binds_original_expiry_and_scope(backup_case, monkeypatc
 
     fixed = "2026-10-08T00:00:00.000000Z"
     monkeypatch.setattr(backup, "_stamp", lambda: fixed)
+    freeze_backup_clock(monkeypatch, backup, fixed)
     settings = backup.Settings.from_environment(environment(backup_case))
     run_id = str(uuid4())
     value = backup.backup_database(
