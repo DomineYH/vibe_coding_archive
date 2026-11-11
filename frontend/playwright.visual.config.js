@@ -29,5 +29,11 @@ export default defineConfig({
     url: "http://localhost:5173",
     reuseExistingServer: false,
     timeout: 120000,
+    // Fixed build version so baselines do not change with every commit (I316-F).
+    env: {
+      ...process.env,
+      APP_COMMIT_DATE: "2026-09-22",
+      APP_COMMIT_SHA: "0000000",
+    },
   },
 });

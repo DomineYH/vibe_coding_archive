@@ -11,17 +11,10 @@ const baselineRoot = path.join(
   root,
   "docs/evidence/basic-design-runtime-20260922/reference",
 );
-const stateBaselineRoot = path.join(
+// I316-F re-approves every enforced full-page capture for the new footer copy.
+const issue316BaselineRoot = path.join(
   root,
-  "docs/evidence/phase-1/issue31/2026-09-25/visual-state-baselines",
-);
-const issue33BaselineRoot = path.join(
-  root,
-  "docs/evidence/phase-1/issue33/2026-09-25/visual-state-baselines",
-);
-const issue95BaselineRoot = path.join(
-  root,
-  "docs/evidence/phase-2/issue95/2026-09-30/visual-state-baselines",
+  "docs/evidence/phase-8/issue316/2026-11-11/visual-state-baselines",
 );
 const outputRoot = path.resolve("test-results/visual/captures");
 const originalApps = JSON.parse(
@@ -841,12 +834,14 @@ test.afterAll(() => {
 
 for (const viewport of viewports) {
   const tag = `${viewport.width}x${viewport.height}`;
-  test(`gallery matches the original at ${tag}`, async ({ page }, testInfo) => {
+  test(`gallery matches its #316 baseline at ${tag}`, async ({
+    page,
+  }, testInfo) => {
     await captureAndCompare(
       page,
       "gallery",
       viewport,
-      path.join(baselineRoot, tag, "01-gallery.png"),
+      path.join(issue316BaselineRoot, tag, "01-gallery.png"),
       testInfo,
     );
   });
@@ -883,18 +878,7 @@ for (const state of addedStates) {
       state === "corrupt-storage-recovery" ||
       state.startsWith("health-")
         ? null
-        : state === "gallery-empty"
-          ? path.join(issue95BaselineRoot, `${state}-${tag}.png`)
-          : [
-                "gallery-api-order",
-                "gallery-filtered",
-                "gallery-query-overflow",
-                "gallery-duplicate-continue",
-                "gallery-next-page-error",
-                "corrupt-storage-recovery",
-              ].includes(state)
-            ? path.join(issue33BaselineRoot, `${state}-${tag}.png`)
-            : path.join(stateBaselineRoot, `${state}-${tag}.png`);
+        : path.join(issue316BaselineRoot, `${state}-${tag}.png`);
     const comparison = baselinePath
       ? "matches its baseline"
       : "is captured product-only";
