@@ -47,7 +47,7 @@ function commitInfo() {
     return { date, sha };
   }
   try {
-    const match = /^([0-9a-f]{7,40}) (\d+)$/.exec(
+    const match = /^([0-9a-f]{4,40}) (\d+)$/.exec(
       execFileSync("git", ["log", "-1", "--format=%h %ct"], {
         cwd: root,
         encoding: "utf8",

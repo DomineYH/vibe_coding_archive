@@ -170,6 +170,29 @@ describe("Vite commit metadata", () => {
     expect(define.__APP_COMMIT_SHA__).toBe(JSON.stringify(expected[1]));
   });
 
+  it("keeps a short hash shorter than seven characters from git", () => {
+    vi.stubEnv("GIT_CONFIG_COUNT", "1");
+    vi.stubEnv("GIT_CONFIG_KEY_0", "core.abbrev");
+    vi.stubEnv("GIT_CONFIG_VALUE_0", "4");
+    vi.stubEnv("APP_COMMIT_DATE", "");
+    vi.stubEnv("APP_COMMIT_SHA", "");
+    let expected = "";
+    try {
+      expected = execFileSync(
+        "git",
+        ["-c", "core.abbrev=4", "log", "-1", "--format=%h"],
+        {
+          cwd: new URL("..", import.meta.url),
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"],
+        },
+      ).trim();
+    } catch {
+      // No readable git: the config must fall back to an empty value too.
+    }
+    expect(cfg().define.__APP_COMMIT_SHA__).toBe(JSON.stringify(expected));
+  });
+
   it("falls back to empty values when git cannot be read", () => {
     vi.stubEnv("GIT_DIR", "/nonexistent");
     vi.stubEnv("APP_COMMIT_DATE", "");
