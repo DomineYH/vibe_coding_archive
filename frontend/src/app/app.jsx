@@ -275,10 +275,13 @@ function Toast({ message }) {
 }
 
 function Footer() {
+  // Read at render time so tests can stub the build constants.
+  const version = __APP_COMMIT_SHA__
+    ? ` · 버전 ${__APP_COMMIT_DATE__} (${__APP_COMMIT_SHA__})`
+    : "";
   return (
     <footer className="border-t border-neutral-200/70 py-8 text-center text-[12px] text-neutral-400">
-      EduVibe 아카이브 — 교사 에이전틱 코딩 공유 플랫폼 · Pantone 11-4201 Cloud
-      Dancer, Color of the Year 2026
+      {`EduVibe 아카이브 — 교사 에이전틱 코딩 공유 플랫폼 · 경북 데이터 인사이트 연구회${version}`}
     </footer>
   );
 }

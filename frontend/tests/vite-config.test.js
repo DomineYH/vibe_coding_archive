@@ -1,7 +1,8 @@
 // @vitest-environment node
+import { execFileSync } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import viteConfig from "../vite.config.js";
+import viteConfig, { kstDate } from "../vite.config.js";
 import faultConfig from "../e2e-api/vite-fault.config.mjs";
 
 afterEach(() => vi.unstubAllEnvs());
@@ -131,5 +132,69 @@ describe("Vite API proxy identity boundary", () => {
     expect(
       viteConfig({ command: "serve", mode: "test" }).server.proxy,
     ).toBeUndefined();
+  });
+});
+
+describe("Vite commit metadata", () => {
+  const cfg = () => viteConfig({ command: "serve", mode: "test" });
+
+  it("uses explicit commit values without reading git", () => {
+    vi.stubEnv("APP_COMMIT_DATE", "2026-01-02");
+    vi.stubEnv("APP_COMMIT_SHA", "abc1234");
+    const { define } = cfg();
+    expect(define.__APP_COMMIT_DATE__).toBe('"2026-01-02"');
+    expect(define.__APP_COMMIT_SHA__).toBe('"abc1234"');
+  });
+
+  it("reads the HEAD short hash and its KST committer date", () => {
+    vi.stubEnv("APP_COMMIT_DATE", "");
+    vi.stubEnv("APP_COMMIT_SHA", "");
+    let expected = ["", ""];
+    try {
+      const [h, ct] = execFileSync("git", ["log", "-1", "--format=%h %ct"], {
+        cwd: new URL("..", import.meta.url),
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      })
+        .trim()
+        .split(" ");
+      expected = [
+        new Date((Number(ct) + 32400) * 1000).toISOString().slice(0, 10),
+        h,
+      ];
+    } catch {
+      // No readable git: the config must fall back to empty values too.
+    }
+    const { define } = cfg();
+    expect(define.__APP_COMMIT_DATE__).toBe(JSON.stringify(expected[0]));
+    expect(define.__APP_COMMIT_SHA__).toBe(JSON.stringify(expected[1]));
+  });
+
+  it("falls back to empty values when git cannot be read", () => {
+    vi.stubEnv("GIT_DIR", "/nonexistent");
+    vi.stubEnv("APP_COMMIT_DATE", "");
+    vi.stubEnv("APP_COMMIT_SHA", "");
+    const { define } = cfg();
+    expect(define.__APP_COMMIT_DATE__).toBe('""');
+    expect(define.__APP_COMMIT_SHA__).toBe('""');
+  });
+
+  it.each([
+    ["2026-01-02", ""],
+    ["", "abc1234"],
+    ["2026-1-2", "abc1234"],
+    ["2026-13-01", "abc1234"],
+    ["2026-02-30", "abc1234"],
+    ["2026-01-02", "ABC1234"],
+    ["2026-01-02", "abc123"],
+    ["2026-01-02", "a".repeat(41)],
+  ])("rejects APP_COMMIT_DATE=%j APP_COMMIT_SHA=%j", (date, sha) => {
+    vi.stubEnv("APP_COMMIT_DATE", date);
+    vi.stubEnv("APP_COMMIT_SHA", sha);
+    expect(cfg).toThrow(/APP_COMMIT_/);
+  });
+
+  it("converts committer time to the Korean calendar date", () => {
+    expect(kstDate(1792121763)).toBe("2026-10-16");
   });
 });
