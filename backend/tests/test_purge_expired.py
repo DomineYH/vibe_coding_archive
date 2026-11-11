@@ -75,11 +75,12 @@ def test_backup_cleanup_uses_original_expiry_without_refresh(backup_case, monkey
 
     from app import backup
     from app.backup_retention import purge_backups
-    from tests.test_backup import rows, run_backup, unpack
+    from tests.test_backup import freeze_backup_clock, rows, run_backup, unpack
 
     created = datetime(2026, 10, 8, tzinfo=UTC)
     fixed = "2026-10-08T00:00:00.000000Z"
     monkeypatch.setattr(backup, "_stamp", lambda: fixed)
+    freeze_backup_clock(monkeypatch, backup, fixed)
     settings = backup.Settings.from_environment(environment(backup_case))
     run_id = str(uuid4())
     backup.backup_database(
