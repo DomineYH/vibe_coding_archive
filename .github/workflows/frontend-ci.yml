@@ -10,6 +10,50 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  backend-tests:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
+    env:
+      BACKEND_TEST_SHARDS: |
+        tests/contracts
+        tests/test_[a-d]*.py
+        tests/test_[e-z]*.py
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: "0.11.28"
+          python-version: "3.12.3"
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: uv sync --locked
+      - name: Provision the fixed R15 password blocklist explicitly
+        working-directory: backend
+        run: |
+          export APP_ENV=development DATABASE_PATH="$RUNNER_TEMP/provisioning.sqlite3" PUBLIC_ORIGIN=http://localhost:5174
+          export PASSWORD_BLOCKLIST_PATH="$RUNNER_TEMP/password-blocklist-ncsc.txt"
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" uv run --frozen python -m app.cli prepare-password-blocklist
+          echo "PASSWORD_BLOCKLIST_PATH=$PASSWORD_BLOCKLIST_PATH" >> "$GITHUB_ENV"
+      - name: Install and record age from signed Ubuntu package indexes
+        run: |
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" sh -c 'sudo apt-get update && sudo apt-get install --yes age'
+          dpkg-query -W -f='${Version}\n' age
+          age --version
+          age-keygen --version
+          age --version | grep -Eq '^v?1\.[0-9]+\.[0-9]+$'
+      - name: Backend test shard guard
+        if: strategy.job-index == 0
+        working-directory: backend
+        run: APP_ENV=test bash "$GITHUB_WORKSPACE/.github/scripts/backend-shard-guard.sh" ${{ strategy.job-total }}
+      - name: Backend tests
+        working-directory: backend
+        env:
+          SHARD: ${{ matrix.shard }}
+        # unquoted so the selection's glob expands
+        run: APP_ENV=test uv run --frozen pytest $(printf '%s\n' "$BACKEND_TEST_SHARDS" | sed -n "$((SHARD + 1))p")
   backend-api:
     runs-on: ubuntu-24.04
     steps:
@@ -46,9 +90,6 @@ jobs:
         env:
           CI: "true"
         run: APP_ENV=test uv run --frozen pytest -m requires_age tests/test_backup_process.py tests/test_restore_process.py -ra
-      - name: Backend tests
-        working-directory: backend
-        run: APP_ENV=test uv run --frozen pytest
       - uses: actions/setup-node@v4
         with:
           node-version-file: frontend/.nvmrc
@@ -80,9 +121,6 @@ jobs:
         env:
           HEALTH_CHECKS_ENABLED: "false"
         run: APP_ENV=test uv run --frozen pytest tests/test_safe_logging.py tests/test_purge_expired.py -ra
-      - name: API end-to-end tests
-        working-directory: frontend
-        run: npm run test:e2e:api
       - name: Service unit syntax and explicit migration lifecycle contracts
         working-directory: backend
         env:
@@ -97,6 +135,45 @@ jobs:
           CI: "true"
           HEALTH_CHECKS_ENABLED: "false"
         run: npm run test:e2e:api -- --nginx-functional
+  api-e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: "0.11.28"
+          python-version: "3.12.3"
+      - name: Install locked backend dependencies
+        working-directory: backend
+        run: uv sync --locked
+      - name: Provision the fixed R15 password blocklist explicitly
+        working-directory: backend
+        run: |
+          export APP_ENV=development DATABASE_PATH="$RUNNER_TEMP/provisioning.sqlite3" PUBLIC_ORIGIN=http://localhost:5174
+          export PASSWORD_BLOCKLIST_PATH="$RUNNER_TEMP/password-blocklist-ncsc.txt"
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" uv run --frozen python -m app.cli prepare-password-blocklist
+          echo "PASSWORD_BLOCKLIST_PATH=$PASSWORD_BLOCKLIST_PATH" >> "$GITHUB_ENV"
+      - name: Install and record age from signed Ubuntu package indexes
+        run: |
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" sh -c 'sudo apt-get update && sudo apt-get install --yes age'
+          dpkg-query -W -f='${Version}\n' age
+          age --version
+          age-keygen --version
+          age --version | grep -Eq '^v?1\.[0-9]+\.[0-9]+$'
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: frontend/.nvmrc
+      - name: Pin npm
+        run: npm install --global npm@12.0.2
+      - name: Install locked frontend dependencies for API E2E
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright Chromium for API E2E
+        working-directory: frontend
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" npx playwright install --with-deps chromium
+      - name: API end-to-end tests
+        working-directory: frontend
+        run: npm run test:e2e:api
   frontend:
     runs-on: ubuntu-24.04
     steps:
