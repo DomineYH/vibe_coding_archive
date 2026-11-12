@@ -3,7 +3,7 @@
 # Fails unless the selections are exactly <job-total> lines that together collect every test exactly once.
 set -euo pipefail
 total=$1
-shards=$(printf '%s\n' "$BACKEND_TEST_SHARDS" | sed '/^[[:space:]]*$/d')
+shards=$(printf '%s\n' "$BACKEND_TEST_SHARDS") # same lines the Backend tests step picks from
 lines=$(printf '%s\n' "$shards" | wc -l)
 if [ "$lines" -ne "$total" ]; then
   echo "::error::BACKEND_TEST_SHARDS has $lines selections but the matrix has $total shards; make them match."
