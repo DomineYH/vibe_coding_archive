@@ -3,6 +3,11 @@ name: Frontend and backend/API CI
 on:
   pull_request:
   push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   backend-api:
@@ -21,7 +26,7 @@ jobs:
         run: |
           export APP_ENV=development DATABASE_PATH="$RUNNER_TEMP/provisioning.sqlite3" PUBLIC_ORIGIN=http://localhost:5174
           export PASSWORD_BLOCKLIST_PATH="$RUNNER_TEMP/password-blocklist-ncsc.txt"
-          uv run --frozen python -m app.cli prepare-password-blocklist
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" uv run --frozen python -m app.cli prepare-password-blocklist
           echo "PASSWORD_BLOCKLIST_PATH=$PASSWORD_BLOCKLIST_PATH" >> "$GITHUB_ENV"
       - name: Backend lint
         working-directory: backend
@@ -31,8 +36,7 @@ jobs:
         run: uv run --frozen ruff format --check .
       - name: Install and record age from signed Ubuntu package indexes
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes age
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" sh -c 'sudo apt-get update && sudo apt-get install --yes age'
           dpkg-query -W -f='${Version}\n' age
           age --version
           age-keygen --version
@@ -58,11 +62,10 @@ jobs:
         run: APP_ENV=test uv run --frozen pytest tests/integration/dev_proxy_chain.py -q
       - name: Install Playwright Chromium for API E2E
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" npx playwright install --with-deps chromium
       - name: Install native Nginx serving tools
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes nginx openssl
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" sh -c 'sudo apt-get update && sudo apt-get install --yes nginx openssl'
           nginx -v
           openssl version
           dpkg-query --show nginx openssl
@@ -110,10 +113,10 @@ jobs:
         run: npm ci
       - name: Install Playwright Chromium
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" npx playwright install --with-deps chromium
       - name: Install source-reference CJK font
         run: |
-          sudo apt-get install --yes fonts-noto-cjk
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" sudo apt-get install --yes fonts-noto-cjk
           sudo apt-get remove --yes fonts-wqy-zenhei
           fontconfig="$GITHUB_WORKSPACE/frontend/visual/fontconfig.conf"
           FONTCONFIG_FILE="$fontconfig" fc-cache --force
@@ -126,7 +129,7 @@ jobs:
           done
       - name: Install pinned visual Chromium
         run: |
-          curl --fail --location --silent --show-error https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-headless-shell-linux64.zip --output "$RUNNER_TEMP/chrome-151.zip"
+          bash "$GITHUB_WORKSPACE/.github/scripts/retry.sh" curl --fail --location --silent --show-error https://storage.googleapis.com/chrome-for-testing-public/151.0.7922.34/linux64/chrome-headless-shell-linux64.zip --output "$RUNNER_TEMP/chrome-151.zip"
           mkdir -p "$RUNNER_TEMP/chrome-151"
           unzip -q "$RUNNER_TEMP/chrome-151.zip" -d "$RUNNER_TEMP/chrome-151"
           echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$RUNNER_TEMP/chrome-151/chrome-headless-shell-linux64/chrome-headless-shell" >> "$GITHUB_ENV"
