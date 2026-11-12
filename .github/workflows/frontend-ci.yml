@@ -51,7 +51,7 @@ jobs:
       - name: Backend tests
         working-directory: backend
         env:
-          SHARD: ${{ matrix.shard }}
+          SHARD: ${{ strategy.job-index }}
         # unquoted so the selection's glob expands
         run: APP_ENV=test uv run --frozen pytest $(printf '%s\n' "$BACKEND_TEST_SHARDS" | sed -n "$((SHARD + 1))p")
   backend-api:
