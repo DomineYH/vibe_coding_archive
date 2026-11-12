@@ -615,3 +615,22 @@ def test_completed_deletion_replays_after_restore_even_when_clock_precedes_expir
             ("completed-app",)
         ]
         assert ledger.execute("SELECT * FROM deletion_cancellations").fetchall() == []
+
+
+def test_fixture_pending_member_survives_startup_sweep_at_any_real_date(
+    member_app, monkeypatch
+):
+    class Clock(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return datetime(2030, 1, 1, tzinfo=UTC).astimezone(tz)
+
+    monkeypatch.setattr("app.auth_boundary.datetime", Clock)
+    app, path = member_app()
+    with TestClient(app):
+        pass
+    with sqlite3.connect(path) as db:
+        assert db.execute(
+            "SELECT approval_status FROM members WHERE id=?",
+            (AUTH_MEMBERS["pending"][0],),
+        ).fetchone() == ("pending",)

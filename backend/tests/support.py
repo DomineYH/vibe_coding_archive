@@ -8,6 +8,8 @@ from pathlib import Path
 
 from pwdlib import PasswordHash
 
+from app.auth_boundary import after, now
+
 ROOT = Path(__file__).resolve().parents[2]
 CATALOG = json.loads((ROOT / "contracts/catalog.json").read_text())
 
@@ -269,7 +271,8 @@ def _auth_hash() -> str:
 
 def populate_auth_members(database_path: Path) -> None:
     """Insert synthetic members whose passwords are real Argon2id hashes."""
-    stamp = "2026-09-28T12:00:00.000000Z"
+    # App clock, not a literal: startup sweep expires pending rows 90 days after created_at.
+    stamp = after(now(), -86400)
     rows = [
         (
             *AUTH_MEMBERS[name],
