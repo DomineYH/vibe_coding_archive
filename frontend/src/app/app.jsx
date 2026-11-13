@@ -2107,6 +2107,8 @@ export default function App() {
     error: null,
     concealed: document.visibilityState === "hidden",
   });
+  const authNow = useRef(auth);
+  authNow.current = auth;
   const [logoutPending, setLogoutPending] = useState(false);
   const [deletion, setDeletion] = useState(null);
   const deletionAttempt = useRef(0);
@@ -2405,8 +2407,13 @@ export default function App() {
     (event) => {
       if (document.visibilityState === "hidden") return;
       // #328: a first focus is not a return; rechecking would swap the header under the click that caused it.
+      // Only a settled header can be swapped under the click; a failed or pending proof still retries.
       const firstFocus =
-        event?.type === "focus" && !everFocused.current && !pageAway.current;
+        event?.type === "focus" &&
+        !everFocused.current &&
+        !pageAway.current &&
+        authNow.current.status === "ready" &&
+        !authNow.current.concealed;
       // A return or a bfcache restore uses up the exemption; the initial-load pageshow does not.
       if (event?.type !== "pageshow" || event.persisted)
         everFocused.current = true;
