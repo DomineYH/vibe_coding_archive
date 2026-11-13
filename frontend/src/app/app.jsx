@@ -2092,6 +2092,7 @@ export default function App() {
   }, []);
   const authController = useRef(null);
   const pageAway = useRef(document.visibilityState === "hidden");
+  const everFocused = useRef(document.hasFocus());
   const authSnapshot = useRef({
     user: null,
     flow: null,
@@ -2106,6 +2107,13 @@ export default function App() {
     error: null,
     concealed: document.visibilityState === "hidden",
   });
+  // The latest queued auth state: a focus between a queued update and its commit must not read the old one.
+  const authNow = useRef(auth);
+  const queueAuth = useCallback((value) => {
+    authNow.current =
+      typeof value === "function" ? value(authNow.current) : value;
+    setAuth(authNow.current);
+  }, []);
   const [logoutPending, setLogoutPending] = useState(false);
   const [deletion, setDeletion] = useState(null);
   const deletionAttempt = useRef(0);
@@ -2247,7 +2255,7 @@ export default function App() {
       const controller = new AbortController();
       authController.current = controller;
       const observationId = ++authObservation.current;
-      setAuth({
+      queueAuth({
         ...authSnapshot.current,
         status: "checking",
         observationId,
@@ -2304,7 +2312,7 @@ export default function App() {
           error: null,
           concealed: pageAway.current || document.visibilityState === "hidden",
         };
-        setAuth(next);
+        queueAuth(next);
         return next;
       } catch (error) {
         if (request !== authRequest.current || controller.signal.aborted)
@@ -2316,7 +2324,7 @@ export default function App() {
           error,
           concealed: pageAway.current || document.visibilityState === "hidden",
         };
-        setAuth(failed);
+        queueAuth(failed);
         return failed;
       } finally {
         if (authController.current === controller)
@@ -2329,6 +2337,7 @@ export default function App() {
       cancelProtectedQueries,
       clearChangedScopeQueries,
       queryClient,
+      queueAuth,
     ],
   );
 
@@ -2384,7 +2393,7 @@ export default function App() {
     authController.current?.abort();
     authController.current = null;
     const observationId = ++authObservation.current;
-    setAuth({
+    queueAuth({
       ...authSnapshot.current,
       status: "ready",
       observationId,
@@ -2392,7 +2401,7 @@ export default function App() {
       concealed: true,
     });
     await cancelProtectedQueries();
-  }, [apiAuthEnabled, cancelProtectedQueries]);
+  }, [apiAuthEnabled, cancelProtectedQueries, queueAuth]);
 
   const concealOnDeparture = useCallback(() => {
     if (pageAway.current) return;
@@ -2400,11 +2409,26 @@ export default function App() {
     void beginAuthTransition();
   }, [beginAuthTransition]);
 
-  const restoreOnReturn = useCallback(() => {
-    if (document.visibilityState === "hidden") return;
-    pageAway.current = false;
-    if (!authController.current) void restoreAuth();
-  }, [restoreAuth]);
+  const restoreOnReturn = useCallback(
+    (event) => {
+      if (document.visibilityState === "hidden") return;
+      // #328: a first focus is not a return; rechecking would swap the header under the click that caused it.
+      // Only a settled header can be swapped under the click; a failed or pending proof still retries.
+      const firstFocus =
+        event?.type === "focus" &&
+        !everFocused.current &&
+        !pageAway.current &&
+        authNow.current.status === "ready" &&
+        !authNow.current.concealed;
+      // A return or a bfcache restore uses up the exemption; the initial-load pageshow does not.
+      if (event?.type !== "pageshow" || event.persisted)
+        everFocused.current = true;
+      pageAway.current = false;
+      if (firstFocus) return;
+      if (!authController.current) void restoreAuth();
+    },
+    [restoreAuth],
+  );
 
   const recheckAuth = useCallback(() => {
     if (document.visibilityState !== "hidden") pageAway.current = false;
@@ -2655,7 +2679,7 @@ export default function App() {
           error.outcome === "unknown"
         ) {
           // Keep the original transition for explicit confirmation; never repeat the POST.
-          setAuth({
+          queueAuth({
             ...previous,
             status: "unresolved",
             error,
@@ -2675,7 +2699,13 @@ export default function App() {
         throw error;
       }
     },
-    [beginAuthTransition, navigate, restoreAuth, isCurrentObservation],
+    [
+      beginAuthTransition,
+      navigate,
+      restoreAuth,
+      isCurrentObservation,
+      queueAuth,
+    ],
   );
 
   const logout = useCallback(async () => {
@@ -2878,7 +2908,7 @@ export default function App() {
       return;
     }
     if (!apiAuthEnabled) {
-      setAuth((current) => ({
+      queueAuth((current) => ({
         ...current,
         status: "unavailable",
         user: null,
@@ -2895,7 +2925,7 @@ export default function App() {
       activeDeletion.current?.navigationObservations.add(
         authObservation.current,
       );
-  }, [apiAuthEnabled, location, navigationType, restoreAuth]);
+  }, [apiAuthEnabled, location, navigationType, restoreAuth, queueAuth]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
@@ -2914,13 +2944,17 @@ export default function App() {
   useEffect(() => {
     const onStorage = (event) => {
       if (__DATA_MODE__ === "api" && event.key === "eduvibe-auth-flow-v1") {
+        everFocused.current = true;
         void beginAuthTransition().then(() => restoreAuth({ concealed: true }));
       }
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1") {
         reconcileMockReset(event.newValue);
         if (isMockHealthStorageUpdate(event.oldValue, event.newValue))
           onMockHealthUpdated();
-        else void refreshMockState();
+        else {
+          everFocused.current = true;
+          void refreshMockState();
+        }
       }
     };
     const onMockReset = () => void refreshMockState();
@@ -2957,7 +2991,7 @@ export default function App() {
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("blur", concealOnDeparture);
     window.addEventListener("focus", restoreOnReturn);
-    const onPageShow = () => restoreOnReturn();
+    const onPageShow = (event) => restoreOnReturn(event);
     window.addEventListener("pageshow", onPageShow);
     return () => {
       window.removeEventListener("eduvibe:mock-reset", onMockReset);
