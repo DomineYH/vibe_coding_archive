@@ -1,0 +1,88 @@
+{
+  "_comment": "Filled from .github/workflows/frontend-ci.yml (jobs backend-tests [3 path shards + shard guard, #321], backend-api, api-e2e and frontend, run in parallel on pull_request and on push to main). Keys are <job>:<step>; each command is the step's run line verbatim, prefixed with 'cd <working-directory> &&' and the step's env block where CI sets one. Steps run in order within a job (backend-tests:pytest is the union of the 3 shard selections, guarded by .github/scripts/backend-shard-guard.sh) and depend on the earlier setup steps (uv sync --locked, npm ci, Playwright/Nginx/age installs, blocklist provisioning).",
+  "generated_by": "claude-code (claude-opus-5-5)",
+  "generated_on": "2026-11-12",
+  "sources": [
+    ".routing/repo_checks.schema.json",
+    ".routing/repo_checks.example.json",
+    ".github/workflows/frontend-ci.yml",
+    "frontend/package.json",
+    "frontend/.nvmrc",
+    "backend/pyproject.toml",
+    "README.md",
+    "CLAUDE.md",
+    "frontend/e2e/ (spec file names)",
+    "frontend/e2e-api/ (spec file names)",
+    "gh api repos/DomineYH/vibe_coding_archive/branches/main/protection",
+    "gh api repos/DomineYH/vibe_coding_archive/rulesets"
+  ],
+  "required_ci": [
+    "backend-api:blocklist-provision",
+    "backend-api:lint",
+    "backend-api:format",
+    "backend-api:age-backup-tests",
+    "backend-tests:pytest",
+    "backend-api:dev-proxy-chain",
+    "backend-api:build-api",
+    "backend-api:nginx-static-serving",
+    "backend-api:safe-logging-retention",
+    "api-e2e:e2e-api",
+    "backend-api:service-units-migrations",
+    "backend-api:nginx-functional",
+    "frontend:check",
+    "frontend:unit",
+    "frontend:e2e",
+    "frontend:build-mock",
+    "frontend:build-api",
+    "frontend:check-reference",
+    "frontend:visual"
+  ],
+  "commands": {
+    "backend-api:blocklist-provision": "cd backend && export APP_ENV=development DATABASE_PATH=\"$RUNNER_TEMP/provisioning.sqlite3\" PUBLIC_ORIGIN=http://localhost:5174 && export PASSWORD_BLOCKLIST_PATH=\"$RUNNER_TEMP/password-blocklist-ncsc.txt\" && uv run --frozen python -m app.cli prepare-password-blocklist",
+    "backend-api:lint": "cd backend && uv run --frozen ruff check .",
+    "backend-api:format": "cd backend && uv run --frozen ruff format --check .",
+    "backend-api:age-backup-tests": "cd backend && CI=true APP_ENV=test uv run --frozen pytest -m requires_age tests/test_backup_process.py tests/test_restore_process.py -ra",
+    "backend-tests:pytest": "cd backend && for s in tests/contracts \"tests/test_[a-d]*.py\" \"tests/test_[e-z]*.py\"; do APP_ENV=test uv run --frozen pytest $s || exit 1; done",
+    "backend-api:dev-proxy-chain": "cd backend && APP_ENV=test uv run --frozen pytest tests/integration/dev_proxy_chain.py -q",
+    "backend-api:build-api": "cd frontend && npm run build && npm run check:dist",
+    "backend-api:nginx-static-serving": "cd frontend && npm run test:e2e:api -- --nginx e2e-api/static-serving.spec.js",
+    "backend-api:safe-logging-retention": "cd backend && HEALTH_CHECKS_ENABLED=false APP_ENV=test uv run --frozen pytest tests/test_safe_logging.py tests/test_purge_expired.py -ra",
+    "api-e2e:e2e-api": "cd frontend && npm run test:e2e:api",
+    "backend-api:service-units-migrations": "cd backend && systemd-analyze --version && CI=true HEALTH_CHECKS_ENABLED=false APP_ENV=test uv run --frozen pytest tests/test_service_units.py tests/test_migration_lifecycle.py tests/test_health_worker_process.py -ra",
+    "backend-api:nginx-functional": "cd frontend && CI=true HEALTH_CHECKS_ENABLED=false npm run test:e2e:api -- --nginx-functional",
+    "frontend:check": "cd frontend && npm run check",
+    "frontend:unit": "cd frontend && npm test",
+    "frontend:e2e": "cd frontend && npm run test:e2e",
+    "frontend:build-mock": "cd frontend && npm run build:mock",
+    "frontend:build-api": "cd frontend && npm run build && npm run check:dist",
+    "frontend:check-reference": "cd frontend && npm run check:reference",
+    "frontend:visual": "cd frontend && FONTCONFIG_FILE=\"$PWD/visual/fontconfig.conf\" npm run test:visual"
+  },
+  "branch_protection": {
+    "require_review": false,
+    "required_status_checks": [],
+    "source": "gh api repos/DomineYH/vibe_coding_archive/branches/main/protection -> HTTP 404 'Branch not protected'; gh api repos/DomineYH/vibe_coding_archive/rulesets -> [] (checked 2026-11-04)"
+  },
+  "e2e": {
+    "command": "cd frontend && npm run test:e2e:api",
+    "critical_flows": [
+      "Member registration and login (e2e-api/auth-register, auth-login, auth-login-return)",
+      "Create an app entry (e2e-api/app-create)",
+      "Edit and delete an own app entry (e2e-api/app-edit, app-delete)",
+      "Gallery browse, search and paging (e2e-api/gallery-query, gallery-paging, gallery-zero-result)",
+      "App detail view (e2e-api/detail)",
+      "Admin approval and app management (e2e-api/admin-approval, admin-apps, admin-apps-manage)",
+      "Admin user management: password reset and user deletion (e2e-api/admin-password-reset, admin-user-delete)",
+      "Admin backups and Health Monitor (e2e-api/admin-backups, health-real)"
+    ]
+  },
+  "unknowns": [
+    "repo: main has no branch protection or ruleset, so GitHub enforces no required checks or reviews; whether the team's process requires an independent review anyway (memory notes a Codex review per PR) is a human decision - require_review is false per the API only.",
+    "repo: GitHub check names are the job names 'backend-api' and 'frontend'; required_ci uses per-step <job>:<step> keys because a job has no single command. Confirm that granularity is wanted.",
+    "repo: backend-api steps after blocklist-provision rely on PASSWORD_BLOCKLIST_PATH exported via $GITHUB_ENV; locally it must be set by hand (no local runner variable equivalent to $RUNNER_TEMP).",
+    "repo: frontend:visual and frontend Playwright steps need pinned Chromium 151.0.7922.34 via PLAYWRIGHT_CHROMIUM_EXECUTABLE and fonts-noto-cjk (CI installs them in setup steps); age-backup, nginx and service-unit steps need age, nginx, openssl and systemd-analyze installed.",
+    "repo: CLAUDE.md says pre-commit runs the same commands as CI, but no .pre-commit-config.yaml or git pre-commit hook was found; pre-commit checks could not be listed.",
+    "repo: CLAUDE.md mentions 'black' and 'live streaming checks', but neither appears in CI, package.json or pyproject.toml; not included.",
+    "repo: critical_flows are inferred from e2e-api spec file names only; the spec contents were not read."
+  ]
+}

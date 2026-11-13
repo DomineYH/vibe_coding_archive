@@ -1,17 +1,38 @@
-Herdr을 사용하여 이 작업을 완료하세요:
+# Herdr Operating Rules (harness operations document)
 
-[TASK]
+This document covers only **how** workers are launched, waited on and wound down. What to assign to whom, when, and how results are verified and accepted is set by `.routing/ROUTING_POLICY.md`; where this document disagrees with it, the policy wins (AUTH-7). Rule IDs below refer to that policy.
 
-당신은 코디네이터입니다. 현재 Herdr 서버와 세션에서 사용 가능한 워커, 창(pane), 작업 디렉토리를 확인하세요. 가능한 한 기존 워커를 재사용하세요. 작업을 분할할 때는 조각들이 독립적으로 이동할 수 있는 경우에만 그렇게 하세요. 하나의 워커가 작업을 완료할 수 있다면, 하나만 사용하세요.
+## 1. Before starting
+- Check the workers, panes and working directories available in the current Herdr server and session.
+- Resolve each role's harness/model/effort with `python3 .routing/resolve_models.py --role <id>` and set them explicitly when launching the pane (MODEL-1). For any field that resolves to nothing, omit the argument and let the harness default apply. The `opencode` harness must always be started in its TUI environment.
+- Confirm that the pane has the tools the role needs (file read/search; web access for researcher) — see `evidence_orders.tool_preflight`. If a tool is missing, that role is BLOCKED; the host does not answer the gap from memory instead (EVID-7).
 
-각 워커에게 하나의 명확한 결과를 부여하세요. 작업 디렉토리, 필요한 맥락, 결과물(deliverable), 확인 방법, 변경할 수 있는 것, 건드려서는 안 되는 것을 지정하세요. 워커를 시작할 때 모델과 노력(effort)을 명시적으로 설정하며, 제 요구사항을 따르세요.
+## 2. Reusing and splitting workers
+- An existing pane may be reused for new work. It is **never** reused to review its own output (ROLE-7).
+- Split implementation work only into pieces that can move independently. If one implementer can finish the work, use one. This "minimum" applies to implementation workers only; it never reduces the reviewers and testers the workflow requires (WF-2, WF-3).
+- Give each worker that writes concurrently to a Git repository its own worktree. Two writers never share a checkout (SAFE-4).
 
-연구 및 검토 워커는 관련 체크아웃을 사용할 수 있지만, 읽기 전용으로 유지해야 합니다. Git 저장소에서 동시 변경을 하는 워커들에게는 별도의 작업 트리(worktree)를 부여하여 두 작성자가 체크아웃을 공유하지 않도록 하세요.
+## 3. Handing over instructions
+- What goes to a pane is a single work order: the required fields of `templates.work_order` (objective, acceptance criteria, input refs and version, read/write scope, allowed actions, constraints and local discretion, stop conditions, deliverable, report route), the relevant verification-plan entries and shared constraints only (ORDER-2). Never send the full policy, this document or the host prompt (ENF-7).
+- Evidence roles (inspector/researcher) use `evidence_orders.order_defaults`: read-only on the target repository, a single write path `.routing/evidence/<order_id>.json` (ORDER-7).
+- Never ask a worker to relay anything to another pane. All relaying is done by the host (AUTH-2).
 
-Herdr을 사용하여 작업을 할당하고, 결과를 기다리며, 보고서를 읽고, 직접 후속 조치를 취하세요. 창 사이에서 메시지를 전달해 달라고 요청하지 마세요. 워커들은 결과, 커밋 또는 아티팩트 위치, 검증 결과, 미해결 문제를 포함한 짧은 보고서를 반환하도록 하세요. 전체 로그를 메인 대화에 덤프하지 마세요. 작업을 위임한 후에는 다른 pane의 완료 신호가 올 때까지 응답 생성을 중단하고 대기하세요
+## 4. Waiting and liveness (ORDER-8)
+- After delegating, wait for a signal from the pane. There are four: `RESULT_SUBMITTED`, `NEEDS_DECISION`, `BLOCKED`, or a heartbeat timeout.
+- If 600,000 ms pass with no signal, check the pane's state (still running, or exited). After two consecutive silent checks, record the order as BLOCKED and reissue it or escalate to the user.
+- A worker that exited without a report has **not** submitted a result. Do not accept whatever it left behind; inspect it only for diagnosis, then reissue under a new revision (AUTH-5).
+- While waiting, the host may: answer a worker's `NEEDS_DECISION` (Q-2), issue read-only evidence or consultation orders, inspect reports and artifacts already returned, record state. The host may not: edit product code, put a second writer on the same resources, or accept the task.
 
-보고서를 먼저 읽은 후, 관련 diff, 스크린샷, 또는 실제 아티팩트를 검사하세요. 완료 메시지만을 검증으로 받아들이지 마세요. 독립적인 검토가 필요할 때는 구현에 관여하지 않은 다른 모델을 사용하는 워커에게 특정 커밋이나 아티팩트 버전을 검사하게 하세요. 사실적 불일치는 테스트나 검증 가능한 증거로 해결하세요. 판단은 당신이 내리세요.
+## 5. Handling reports
+- Worker reports are short: outcome, commit or artifact location, verification results, open issues. Full logs never go into the main conversation.
+- After reading a report, always inspect the actual diff, screenshots or artifacts yourself. A completion message or a reviewer's PASS is an input to acceptance, not acceptance (AUTH-5, VER-7).
+- When independent review is needed, have a worker in a **different session** — one that neither authored nor advocated the change — inspect a pinned commit or artifact version. A different model is better still, but is not by itself independence (ROLE-7).
+- Resolve factual disagreements with tests or verifiable evidence. The judgement is the host's (Q-2).
 
-수락된 작업을 한 곳에 모으세요. Git 저장소의 경우, 하나의 체크아웃을 통해 통합하고 프로젝트의 실제 검사를 다시 실행하세요. 기존 권한을 존중하세요. 제가 승인하지 않는 한 푸시, 게시, 배포, 프로덕션에 손대기, 민감한 정보를 외부로 전송하지 마세요.
+## 6. Consolidation
+- Gather accepted changes into one checkout and integrate there. Integration is a new target, so rerun the required current-head checks under the policy's revalidation rule (VER-10 `target_or_contract_change`). Evidence whose validity is established may be reused under VER-9, labelled `reused` / `revalidated_from_prior_revision`.
+- Unless the user has explicitly authorized it, do not push, open a PR, merge, deploy, publish, touch production or send sensitive data outside (AUTH-4). Without authorization, report "ready to merge" and stop.
 
-이 작업을 위해 생성된 리소스를 더 이상 필요 없을 때 해제하세요. 기존 작업과 미배송 아티팩트를 보존하세요. 완료된 것, 검증 증거, 미해결 또는 미검증 항목, 여전히 유지된 창이나 작업 트리로 마무리하세요.
+## 7. Cleanup and closing
+- Release the panes, worktrees and temporary resources created for this task once they are no longer needed. Preserve existing work and any artifacts not yet delivered.
+- Close with four items: what was completed / verification evidence (commands, target revision, result refs) / open or unverified items / panes and worktrees still held.

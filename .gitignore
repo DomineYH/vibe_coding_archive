@@ -1,0 +1,11 @@
+
+# jev_task_routing: local task records
+.routing/tasks/*.json
+.routing/evidence/*.json
+.routing/hook_log.jsonl
+
+# Local-only files (never commit): production setup notes, secrets, dev DB, caches
+settings.md
+.env
+storage/
+.routing/__pycache__/
