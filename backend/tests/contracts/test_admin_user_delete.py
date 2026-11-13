@@ -411,3 +411,202 @@ def test_exact_recent_and_key_deadlines(member_app, monkeypatch, boundary, offse
             assert result(browser, key).status_code == 200
         else:
             assert result(browser, key).status_code == (200 if offset < 0 else 410)
+
+
+def shared_browser_admin(client):
+    """The target signs in and out, then the administrator signs in on the same browser flow."""
+    browser = signed_in(client)
+    assert browser.logout().status_code == 204
+    browser.anonymous()
+    assert browser.login(AUTH_MEMBERS["admin"][1]).status_code == 200
+    return browser
+
+
+def live_recovery(db, flow_id):
+    return db.execute(
+        "SELECT count(*) FROM recovery_credentials WHERE flow_id=? AND revoked_at IS NULL",
+        (flow_id,),
+    ).fetchone()[0]
+
+
+def test_same_browser_flow_delete_keeps_the_calling_administrator(member_app):
+    from app.auth_maintenance import reconcile
+
+    app, path = member_app()
+    with TestClient(app) as client:
+        admin = shared_browser_admin(client)
+        with sqlite3.connect(path) as db:
+            old = db.execute(
+                "SELECT flow_id,issued_seq FROM sessions WHERE member_id=?", (TARGET,)
+            ).fetchall()
+        assert [flow_id for flow_id, _ in old] == [admin.flow]
+        key = issue(admin).json()["key"]
+        deleted = execute(admin, key)
+        assert deleted.status_code == 204, deleted.text
+        assert result(admin, key).json()["state"] == "succeeded"
+        assert admin.me().status_code == 200
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT revoked_at FROM auth_flows WHERE id=?", (admin.flow,)
+            ).fetchone() == (None,)
+            assert (
+                db.execute("SELECT id FROM members WHERE id=?", (TARGET,)).fetchall()
+                == []
+            )
+            assert (
+                db.execute(
+                    "SELECT 1 FROM sessions WHERE member_id=?", (TARGET,)
+                ).fetchall()
+                == []
+            )
+            assert (
+                db.execute(
+                    "SELECT flow_id,issued_seq FROM auth_retired_credentials WHERE kind='session'"
+                ).fetchall()
+                == old
+            )
+            assert live_recovery(db, admin.flow) == 1
+            assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+        reconcile(app.state.session_factory)
+        assert admin.me().status_code == 200
+        assert admin.logout().status_code == 204
+        again = admin.anonymous().login(AUTH_MEMBERS["approved"][1])
+        assert again.status_code == 401
+        assert code(again) == "INVALID_CREDENTIALS"
+
+
+@pytest.mark.parametrize("left_as", ["anonymous", "signed_out"])
+def test_delete_from_another_browser_keeps_a_flow_the_target_left(member_app, left_as):
+    from app.auth_maintenance import reconcile
+
+    app, path = member_app()
+    with TestClient(app) as shared, TestClient(app) as admin_client:
+        visitor = signed_in(shared)
+        assert visitor.logout().status_code == 204
+        if left_as == "anonymous":
+            visitor.anonymous()
+        admin = signed_in(admin_client, "admin")
+        assert execute(admin, issue(admin).json()["key"]).status_code == 204
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT revoked_at FROM auth_flows WHERE id=?", (visitor.flow,)
+            ).fetchone() == (None,)
+            assert (
+                db.execute(
+                    "SELECT 1 FROM sessions WHERE member_id=?", (TARGET,)
+                ).fetchall()
+                == []
+            )
+            assert live_recovery(db, visitor.flow) == 1
+        reconcile(app.state.session_factory)
+        if left_as == "signed_out":
+            visitor.anonymous()
+        assert (
+            shared.get(
+                "/api/v1/auth/csrf", headers={"X-EduVibe-Flow-Id": visitor.flow}
+            ).status_code
+            == 200
+        )
+        assert code(visitor.login(AUTH_MEMBERS["approved"][1])) == "INVALID_CREDENTIALS"
+        assert visitor.login(AUTH_MEMBERS["hangul"][1]).status_code == 200
+
+
+def test_pending_login_on_a_flow_the_target_left_cannot_sign_in_the_deleted_member(
+    member_app,
+):
+    app, path = member_app()
+    with TestClient(app) as shared, TestClient(app) as admin_client:
+        visitor = signed_in(shared)
+        assert visitor.logout().status_code == 204
+        permit = visitor.anonymous().admit("login")
+        assert permit.status_code == 201, permit.text
+        admin = signed_in(admin_client, "admin")
+        assert execute(admin, issue(admin).json()["key"]).status_code == 204
+        late = visitor.execute_login(permit.json(), AUTH_MEMBERS["approved"][1])
+        assert late.status_code == 401
+        assert code(late) == "INVALID_CREDENTIALS"
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT state,failure_code FROM auth_transitions WHERE transition_id=?",
+                (permit.json()["transition_id"],),
+            ).fetchone() == ("failed", "INVALID_CREDENTIALS")
+            assert (
+                db.execute(
+                    "SELECT 1 FROM sessions WHERE member_id=?", (TARGET,)
+                ).fetchall()
+                == []
+            )
+            assert (
+                db.execute("SELECT id FROM members WHERE id=?", (TARGET,)).fetchall()
+                == []
+            )
+
+
+def test_revoked_but_still_current_target_session_ends_its_flow(member_app):
+    from app.auth_maintenance import reconcile
+    from tests.contracts.test_admin_approval import execute as approval_execute
+    from tests.contracts.test_admin_approval import issue as approval_issue
+
+    app, path = member_app()
+    with TestClient(app) as client, TestClient(app) as target_client:
+        admin = signed_in(client, "admin")
+        target = signed_in(target_client)
+        other = approval_issue(admin, target_id=TARGET, approved=False).json()["key"]
+        assert (
+            approval_execute(admin, other, target_id=TARGET, approved=False).status_code
+            == 200
+        )
+        with sqlite3.connect(path) as db:
+            # Approval revoke leaves the revoked target session as the flow's current pointer.
+            assert db.execute(
+                "SELECT s.member_id,s.revoked_at IS NOT NULL FROM auth_flows f JOIN sessions s ON s.flow_id=f.id AND s.issued_seq=f.current_session_generation WHERE f.id=?",
+                (target.flow,),
+            ).fetchone() == (TARGET, 1)
+        assert execute(admin, issue(admin).json()["key"]).status_code == 204
+        with sqlite3.connect(path) as db:
+            assert db.execute(
+                "SELECT revoked_at IS NOT NULL,current_session_generation FROM auth_flows WHERE id=?",
+                (target.flow,),
+            ).fetchone() == (1, None)
+            assert live_recovery(db, target.flow) == 0
+            assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+        reconcile(app.state.session_factory)
+        assert target.me().status_code == 401
+        assert admin.me().status_code == 200
+
+
+def test_restore_replay_of_a_shared_flow_delete_revokes_all_restored_authority(
+    member_app, tmp_path
+):
+    from app.auth_maintenance import reconcile
+
+    app, path = member_app()
+    backup = tmp_path / "backup.sqlite3"
+    with TestClient(app) as client:
+        admin = shared_browser_admin(client)
+        with sqlite3.connect(path) as src, sqlite3.connect(backup) as dst:
+            src.backup(dst)
+        assert execute(admin, issue(admin).json()["key"]).status_code == 204
+        with sqlite3.connect(backup) as src, sqlite3.connect(path) as dst:
+            src.backup(dst)
+        for _ in range(2):
+            reconcile(app.state.session_factory, restored=True)
+            with sqlite3.connect(path) as db:
+                assert (
+                    db.execute(
+                        "SELECT id FROM members WHERE id=?", (TARGET,)
+                    ).fetchall()
+                    == []
+                )
+                assert (
+                    db.execute(
+                        "SELECT 1 FROM sessions WHERE member_id=?", (TARGET,)
+                    ).fetchall()
+                    == []
+                )
+                for table in ("sessions", "recovery_credentials", "auth_flows"):
+                    assert db.execute(
+                        f"SELECT count(*) FROM {table} WHERE revoked_at IS NULL"
+                    ).fetchone() == (0,)
+                assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+            assert admin.me().status_code == 401
