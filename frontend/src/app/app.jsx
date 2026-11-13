@@ -2092,6 +2092,7 @@ export default function App() {
   }, []);
   const authController = useRef(null);
   const pageAway = useRef(document.visibilityState === "hidden");
+  const everFocused = useRef(document.hasFocus());
   const authSnapshot = useRef({
     user: null,
     flow: null,
@@ -2400,11 +2401,19 @@ export default function App() {
     void beginAuthTransition();
   }, [beginAuthTransition]);
 
-  const restoreOnReturn = useCallback(() => {
-    if (document.visibilityState === "hidden") return;
-    pageAway.current = false;
-    if (!authController.current) void restoreAuth();
-  }, [restoreAuth]);
+  const restoreOnReturn = useCallback(
+    (event) => {
+      if (document.visibilityState === "hidden") return;
+      // #328: a first focus is not a return; rechecking would swap the header under the click that caused it.
+      const firstFocus =
+        event?.type === "focus" && !everFocused.current && !pageAway.current;
+      if (event?.type === "focus") everFocused.current = true;
+      pageAway.current = false;
+      if (firstFocus) return;
+      if (!authController.current) void restoreAuth();
+    },
+    [restoreAuth],
+  );
 
   const recheckAuth = useCallback(() => {
     if (document.visibilityState !== "hidden") pageAway.current = false;
