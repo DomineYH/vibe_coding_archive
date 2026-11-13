@@ -2107,8 +2107,13 @@ export default function App() {
     error: null,
     concealed: document.visibilityState === "hidden",
   });
+  // The latest queued auth state: a focus between a queued update and its commit must not read the old one.
   const authNow = useRef(auth);
-  authNow.current = auth;
+  const queueAuth = useCallback((value) => {
+    authNow.current =
+      typeof value === "function" ? value(authNow.current) : value;
+    setAuth(authNow.current);
+  }, []);
   const [logoutPending, setLogoutPending] = useState(false);
   const [deletion, setDeletion] = useState(null);
   const deletionAttempt = useRef(0);
@@ -2250,7 +2255,7 @@ export default function App() {
       const controller = new AbortController();
       authController.current = controller;
       const observationId = ++authObservation.current;
-      setAuth({
+      queueAuth({
         ...authSnapshot.current,
         status: "checking",
         observationId,
@@ -2307,7 +2312,7 @@ export default function App() {
           error: null,
           concealed: pageAway.current || document.visibilityState === "hidden",
         };
-        setAuth(next);
+        queueAuth(next);
         return next;
       } catch (error) {
         if (request !== authRequest.current || controller.signal.aborted)
@@ -2319,7 +2324,7 @@ export default function App() {
           error,
           concealed: pageAway.current || document.visibilityState === "hidden",
         };
-        setAuth(failed);
+        queueAuth(failed);
         return failed;
       } finally {
         if (authController.current === controller)
@@ -2332,6 +2337,7 @@ export default function App() {
       cancelProtectedQueries,
       clearChangedScopeQueries,
       queryClient,
+      queueAuth,
     ],
   );
 
@@ -2387,7 +2393,7 @@ export default function App() {
     authController.current?.abort();
     authController.current = null;
     const observationId = ++authObservation.current;
-    setAuth({
+    queueAuth({
       ...authSnapshot.current,
       status: "ready",
       observationId,
@@ -2395,7 +2401,7 @@ export default function App() {
       concealed: true,
     });
     await cancelProtectedQueries();
-  }, [apiAuthEnabled, cancelProtectedQueries]);
+  }, [apiAuthEnabled, cancelProtectedQueries, queueAuth]);
 
   const concealOnDeparture = useCallback(() => {
     if (pageAway.current) return;
@@ -2673,7 +2679,7 @@ export default function App() {
           error.outcome === "unknown"
         ) {
           // Keep the original transition for explicit confirmation; never repeat the POST.
-          setAuth({
+          queueAuth({
             ...previous,
             status: "unresolved",
             error,
@@ -2693,7 +2699,13 @@ export default function App() {
         throw error;
       }
     },
-    [beginAuthTransition, navigate, restoreAuth, isCurrentObservation],
+    [
+      beginAuthTransition,
+      navigate,
+      restoreAuth,
+      isCurrentObservation,
+      queueAuth,
+    ],
   );
 
   const logout = useCallback(async () => {
@@ -2896,7 +2908,7 @@ export default function App() {
       return;
     }
     if (!apiAuthEnabled) {
-      setAuth((current) => ({
+      queueAuth((current) => ({
         ...current,
         status: "unavailable",
         user: null,
@@ -2913,7 +2925,7 @@ export default function App() {
       activeDeletion.current?.navigationObservations.add(
         authObservation.current,
       );
-  }, [apiAuthEnabled, location, navigationType, restoreAuth]);
+  }, [apiAuthEnabled, location, navigationType, restoreAuth, queueAuth]);
   useEffect(() => {
     const previous = previousLocation.current;
     const historyTraversal =
