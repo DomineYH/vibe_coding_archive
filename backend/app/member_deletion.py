@@ -16,6 +16,10 @@ def delete_member(db, member_id, stamp, *, app_ids=()):
     )
     for flow_id in {row["flow_id"] for row in sessions}:
         item = flow(db, flow_id, live=False)
+        removed = {row["issued_seq"] for row in sessions if row["flow_id"] == flow_id}
+        if item["current_session_generation"] not in removed:
+            # The flow now serves someone else (or nobody): only the member's rows go (#326).
+            continue
         terminalize(db, item, "cancelled")
         item["revoked_at"] = item["revoked_at"] or stamp
         item["last_identity_change_revision"] = increment(item["revision"])
@@ -27,9 +31,7 @@ def delete_member(db, member_id, stamp, *, app_ids=()):
                 ),
                 {"stamp": stamp, "flow": flow_id},
             )
-        removed = {row["issued_seq"] for row in sessions if row["flow_id"] == flow_id}
-        if item["current_session_generation"] in removed:
-            item["current_session_generation"] = None
+        item["current_session_generation"] = None
         save_flow(db, item)
     for row in sessions:
         db.execute(
