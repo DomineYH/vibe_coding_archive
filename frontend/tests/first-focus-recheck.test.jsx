@@ -189,3 +189,99 @@ it("a first focus that arrives during a running check uses up the exemption", as
   await send("focus");
   await waitFor(() => expect(again).toHaveBeenCalledTimes(1));
 });
+
+// #328 repair: a return or auth notification before the first focus uses up the exemption.
+async function failOnceAndSettle(observe, calls) {
+  await waitFor(() => expect(observe).toHaveBeenCalledTimes(calls));
+  expect(
+    await banner().findByRole("button", { name: "다시 확인" }),
+  ).toBeVisible();
+  await waitFor(() =>
+    expect(banner().queryByText("로그인 상태 확인 중")).not.toBeInTheDocument(),
+  );
+}
+async function focusObservesOnceMore(observe, calls) {
+  await send("focus");
+  await waitFor(() => expect(observe).toHaveBeenCalledTimes(calls + 1));
+  expect(await logoutButton()).toBeVisible();
+  expect(observe).toHaveBeenCalledTimes(calls + 1);
+}
+
+it.each([
+  ["mock", "eduvibe-archive-mock-v1"],
+  ["api", "eduvibe-auth-flow-v1"],
+])(
+  "%s: an auth notification before the first focus uses up the exemption",
+  async (mode, key) => {
+    if (mode === "api") {
+      vi.stubGlobal("__DATA_MODE__", "api");
+      localStorage.setItem(
+        key,
+        JSON.stringify({ flowId: "synthetic-retained-flow" }),
+      );
+    }
+    visit({ focused: false });
+    await logoutButton();
+    const observe = vi
+      .spyOn(authService, "getCurrentAuthState")
+      .mockRejectedValueOnce(new Error("transient"));
+    await act(async () =>
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key,
+          newValue: localStorage.getItem(key),
+        }),
+      ),
+    );
+    await failOnceAndSettle(observe, 1);
+    await focusObservesOnceMore(observe, 1);
+  },
+);
+
+it("a return from hidden before the first focus uses up the exemption", async () => {
+  visit({ focused: false });
+  await logoutButton();
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValueOnce(new Error("transient"));
+  const visibility = vi
+    .spyOn(document, "visibilityState", "get")
+    .mockReturnValue("hidden");
+  await send("visibilitychange", document);
+  visibility.mockReturnValue("visible");
+  await send("visibilitychange", document);
+  await failOnceAndSettle(observe, 1);
+  await focusObservesOnceMore(observe, 1);
+});
+
+it("a bfcache pageshow before the first focus uses up the exemption", async () => {
+  visit({ focused: false });
+  await logoutButton();
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValueOnce(new Error("transient"));
+  await act(async () =>
+    window.dispatchEvent(
+      new PageTransitionEvent("pageshow", { persisted: true }),
+    ),
+  );
+  await failOnceAndSettle(observe, 1);
+  await focusObservesOnceMore(observe, 1);
+});
+
+it("an initial-load pageshow keeps the first-focus exemption", async () => {
+  visit({ focused: false });
+  await logoutButton();
+  const observe = vi.spyOn(authService, "getCurrentAuthState");
+  await act(async () =>
+    window.dispatchEvent(
+      new PageTransitionEvent("pageshow", { persisted: false }),
+    ),
+  );
+  await waitFor(() => expect(observe).toHaveBeenCalledTimes(1));
+  const button = await logoutButton();
+  await send("focus");
+  expect(banner().queryByText("로그인 상태 확인 중")).not.toBeInTheDocument();
+  expect(banner().getByRole("button", { name: "로그아웃" })).toBe(button);
+  expect(observe).toHaveBeenCalledTimes(1);
+});
