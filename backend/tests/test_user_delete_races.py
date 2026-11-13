@@ -361,9 +361,7 @@ def test_writer_contention_leaves_key_unresolved(member_app):
         assert execute(browser, key).status_code == 204
 
 
-def test_shared_flow_with_target_history_rolls_back_if_calling_authority_is_revoked(
-    member_app,
-):
+def test_shared_flow_with_target_history_keeps_the_calling_authority(member_app):
     app, path = member_app()
     with TestClient(app) as client:
         browser = signed_in(client, "admin")
@@ -374,5 +372,17 @@ def test_shared_flow_with_target_history_rolls_back_if_calling_authority_is_revo
                 (browser.flow, TARGET),
             )
         before = snapshot(path)
-        assert execute(browser, key).status_code == 401
-        assert snapshot(path) == before
+        assert execute(browser, key).status_code == 204
+        after = snapshot(path)
+        # Only the target's own history leaves the calling administrator's flow.
+        for table in ("auth_flows", "recovery_credentials", "auth_transitions"):
+            assert after[table] == before[table]
+        assert after["sessions"] == [
+            row for row in before["sessions"] if row[0] != "synthetic-history"
+        ]
+        assert (browser.flow, "session", "0") in after["auth_retired_credentials"]
+        assert after["members"] == [
+            row for row in before["members"] if row[0] != TARGET
+        ]
+        assert browser.me().status_code == 200
+        assert result(browser, key).json()["state"] == "succeeded"
