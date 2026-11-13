@@ -16,6 +16,8 @@ import App from "../src/app/app";
 import { authService } from "../src/services/mock/auth";
 import { DEMO_ACCOUNTS } from "../src/services/mock/accounts";
 import { resetMockState } from "../src/services/mock/state";
+import { captureAuthInvalidation } from "../src/services/auth-invalidation";
+import { ServiceError } from "../src/services/service-error";
 
 vi.mock("../src/services/api/auth", () => ({
   prepareApiAuth: vi.fn(),
@@ -284,4 +286,41 @@ it("an initial-load pageshow keeps the first-focus exemption", async () => {
   expect(banner().queryByText("로그인 상태 확인 중")).not.toBeInTheDocument();
   expect(banner().getByRole("button", { name: "로그아웃" })).toBe(button);
   expect(observe).toHaveBeenCalledTimes(1);
+});
+
+// #328 repair 2: any failed proof before the first focus leaves the retry state, so that focus rechecks.
+it("a failed recheck after an auth invalidation before the first focus is retried by that focus", async () => {
+  visit({ focused: false });
+  await logoutButton();
+  const invalidate = captureAuthInvalidation();
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValueOnce(new Error("transient"));
+  await act(async () =>
+    invalidate(
+      new ServiceError("AUTH_REQUIRED", "auth required", { httpStatus: 401 }),
+    ),
+  );
+  await failOnceAndSettle(observe, 1);
+  await focusObservesOnceMore(observe, 1);
+});
+
+it("a failed initial observation is retried by the first focus", async () => {
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValueOnce(new Error("transient"));
+  visit({ focused: false });
+  await failOnceAndSettle(observe, 1);
+  await focusObservesOnceMore(observe, 1);
+});
+
+it("a failed mock-reset refresh before the first focus is retried by that focus", async () => {
+  visit({ focused: false });
+  await logoutButton();
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValueOnce(new Error("transient"));
+  await send("eduvibe:mock-reset");
+  await failOnceAndSettle(observe, 1);
+  await focusObservesOnceMore(observe, 1);
 });
