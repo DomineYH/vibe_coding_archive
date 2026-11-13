@@ -324,3 +324,43 @@ it("a failed mock-reset refresh before the first focus is retried by that focus"
   await failOnceAndSettle(observe, 1);
   await focusObservesOnceMore(observe, 1);
 });
+
+// #328 repair 3: a proof that fails before React commits its error must not leave the first focus exempt.
+async function failBeforeCommit(focusAndCheck) {
+  visit({ focused: false });
+  await logoutButton();
+  const invalidate = captureAuthInvalidation();
+  const observe = vi
+    .spyOn(authService, "getCurrentAuthState")
+    .mockRejectedValueOnce(new Error("transient"));
+  const settle = async () => {
+    for (let i = 0; i < 50; i++) await Promise.resolve();
+  };
+  await act(async () => {
+    invalidate(
+      new ServiceError("AUTH_REQUIRED", "auth required", { httpStatus: 401 }),
+    );
+    await settle();
+    expect(observe).toHaveBeenCalledTimes(1);
+    expect(banner().getByRole("button", { name: "로그아웃" })).toBeVisible();
+    window.dispatchEvent(new Event("focus"));
+    await settle();
+    focusAndCheck?.(observe);
+  });
+  return observe;
+}
+
+it("a failed proof whose error is not yet committed is retried by the first focus", async () => {
+  const observe = await failBeforeCommit();
+  await waitFor(() => expect(observe).toHaveBeenCalledTimes(2));
+  expect(await logoutButton()).toBeVisible();
+  expect(observe).toHaveBeenCalledTimes(2);
+});
+
+it("the first focus before the error commits starts the retry itself", async () => {
+  const observe = await failBeforeCommit((spy) =>
+    expect(spy).toHaveBeenCalledTimes(2),
+  );
+  expect(await logoutButton()).toBeVisible();
+  expect(observe).toHaveBeenCalledTimes(2);
+});
