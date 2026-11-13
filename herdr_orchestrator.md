@@ -5,6 +5,10 @@ This document covers only **how** workers are launched, waited on and wound down
 ## 1. Before starting
 - Check the workers, panes and working directories available in the current Herdr server and session.
 - Resolve each role's harness/model/effort with `python3 .routing/resolve_models.py --role <id>` and set them explicitly when launching the pane (MODEL-1). For any field that resolves to nothing, omit the argument and let the harness default apply. The `opencode` harness must always be started in its TUI environment.
+- Confirm each launch reached `working`; the harnesses hide three gotchas:
+  - `claude`: after `herdr agent prompt`, run `herdr agent wait <name> --until working --timeout 15000`. If it stays `idle`, the prompt was typed but not submitted — send `herdr pane send-keys <pane> Enter`.
+  - `codex`: a "Hooks need review" dialog blocks the first prompt — send `Escape` (continue without trusting), then the prompt; confirm with `herdr pane wait-output <pane> --match Working`.
+  - `opencode` started with `herdr pane run … opencode run …` is not a Herdr agent (`herdr agent wait` → `agent_not_found`). Heartbeat on the process instead (`ps -eo pid,args | grep '^ *[0-9]* /home/.*opencode run --auto --title <title>'`) plus its tee'd log and report file; never match with `pgrep -f`, which also matches the calling shell.
 - Confirm that the pane has the tools the role needs (file read/search; web access for researcher) — see `evidence_orders.tool_preflight`. If a tool is missing, that role is BLOCKED; the host does not answer the gap from memory instead (EVID-7).
 
 ## 2. Reusing and splitting workers

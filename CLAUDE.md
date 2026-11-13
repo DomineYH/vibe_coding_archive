@@ -1,17 +1,6 @@
 ## Rules
-You are the host (the routing policy also calls this the coordinator). You get code written **by workers**;
-you never edit product code yourself (AUTH-1). You read, plan, issue work orders, inspect results and accept.
+The host role, precedence, Herdr-only workers, model resolution and waiting are in the jev-routing block below.
 
-Precedence when documents disagree (AUTH-7):
-user authorization & repository safeguards → the current work order → `.routing/ROUTING_POLICY.md` with
-`jev_task_routing.json` / `models.json` (what and when) → `herdr_orchestrator.md` (how: panes, worktrees,
-waiting, cleanup) → the rest of this file.
-
-- **Every worker is a Herdr pane, including roles on the `claude` harness.** Your own Agent/subagent/Task tools are
-  not a launch channel for delegated roles (ORDER-9); use them only for your own read-only intake within the
-  8-file cap. Each role's harness/model/effort comes from `.routing/models.json`
-  (`python3 .routing/resolve_models.py --role <id>`, MODEL-1); set them explicitly at launch when resolved,
-  omit when unset. The `opencode` harness in particular must be started in its TUI environment.
 - Workers are slower and less capable than you: the work order **is** the instruction. Send the order,
   the relevant verification-plan entries and shared constraints — not the full policy, not this prompt
   (ORDER-2, ENF-7). Required fields and defaults: `templates.work_order`, `evidence_orders.order_defaults`.
@@ -21,10 +10,7 @@ waiting, cleanup) → the rest of this file.
   preferred, not sufficient (ROLE-7). Never reuse a worker pane to review its own output.
 - Research and review workers are read-only on the target; their only write is the report path named in
   their order (ORDER-7, ENF-4).
-- After delegating, wait for a pane signal: RESULT_SUBMITTED, NEEDS_DECISION, BLOCKED, or a heartbeat
-  timeout. Check a silent pane every 600,000 ms; after two silent checks mark the order BLOCKED and reissue.
-  A worker that exited without a report has not submitted a result — do not accept its artifacts (ORDER-8).
-  While waiting you may answer worker questions and issue read-only orders; nothing else (ORDER-8).
+- Planner and reviewer orders point the worker to `CODING_STANDARDS.md` (judgement rules applied to a diff).
 - No push, PR, merge, deploy, publishing, or sending data outside the project without explicit
   authorization (AUTH-4).
 
@@ -48,7 +34,7 @@ waiting, cleanup) → the rest of this file.
 
 ### Checks
 
-검사 명령(pytest, ruff, black, 브라우저 검사, live 스트리밍 검사)은 `README.md`의 테스트 절에 있다. CI와 pre-commit이 같은 명령을 실행하며, 모두 통과해야 변경이 끝난 것이다.
+검사 명령은 `.routing/repo_checks.json`(CI job·step별 명령 그대로)과 `README.md`의 "테스트와 검사" 절에 있다. pre-commit 훅은 없고 CI가 유일한 게이트이며, 필수 CI job이 모두 통과해야 변경이 끝난 것이다.
 
 # Code Quality
 
@@ -69,7 +55,7 @@ waiting, cleanup) → the rest of this file.
 - Do not run the full test suite repeatedly during development.
 - Run the full suite locally only for broad or high-risk changes, or when the affected scope cannot be determined reliably. Otherwise, full regression testing belongs to CI.
 - Never reduce test scope when shared APIs, schemas, database models, configuration, or widely used components are changed without first evaluating their impact.
-- Run pytest by referring to `pytest.md`
+- A local full-suite run counts as evidence only on an idle machine (1-minute load average below the CPU count, `uptime` / `nproc`). Otherwise record it NOT RUN and let CI decide; when CI runs the same suite, a local full run is never a plan gate.
 
 <!-- jev-routing:start (managed by init_routing.sh — do not edit between markers) -->
 ## Task routing (jev_task_routing v2.5.5-draft)
