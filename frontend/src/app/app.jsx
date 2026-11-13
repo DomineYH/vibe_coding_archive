@@ -2407,7 +2407,9 @@ export default function App() {
       // #328: a first focus is not a return; rechecking would swap the header under the click that caused it.
       const firstFocus =
         event?.type === "focus" && !everFocused.current && !pageAway.current;
-      if (event?.type === "focus") everFocused.current = true;
+      // A return or a bfcache restore uses up the exemption; the initial-load pageshow does not.
+      if (event?.type !== "pageshow" || event.persisted)
+        everFocused.current = true;
       pageAway.current = false;
       if (firstFocus) return;
       if (!authController.current) void restoreAuth();
@@ -2923,13 +2925,17 @@ export default function App() {
   useEffect(() => {
     const onStorage = (event) => {
       if (__DATA_MODE__ === "api" && event.key === "eduvibe-auth-flow-v1") {
+        everFocused.current = true;
         void beginAuthTransition().then(() => restoreAuth({ concealed: true }));
       }
       if (__DATA_MODE__ === "mock" && event.key === "eduvibe-archive-mock-v1") {
         reconcileMockReset(event.newValue);
         if (isMockHealthStorageUpdate(event.oldValue, event.newValue))
           onMockHealthUpdated();
-        else void refreshMockState();
+        else {
+          everFocused.current = true;
+          void refreshMockState();
+        }
       }
     };
     const onMockReset = () => void refreshMockState();
@@ -2966,7 +2972,7 @@ export default function App() {
     document.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("blur", concealOnDeparture);
     window.addEventListener("focus", restoreOnReturn);
-    const onPageShow = () => restoreOnReturn();
+    const onPageShow = (event) => restoreOnReturn(event);
     window.addEventListener("pageshow", onPageShow);
     return () => {
       window.removeEventListener("eduvibe:mock-reset", onMockReset);
